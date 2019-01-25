@@ -1,0 +1,17 @@
+variable x index 0 list "0" "1" "2"
+variable y index 1 list "0" "1" "2"
+jobs
+endjobs
+task main
+	// Line comment test
+	copy "as sdfs " "as"
+	/* Block comment */
+	copy node:"as" root:"as"
+	onerror fail
+	exec "python" "$x" "test"
+	shexec "as"
+	shexec "/path/to/script.py arg1"
+	lexec "/usr/bin/python" "/usr/bin/python" "script_${y}.py"
+	lpexec "python" "python" "script_${y}.py"
+endtask
+

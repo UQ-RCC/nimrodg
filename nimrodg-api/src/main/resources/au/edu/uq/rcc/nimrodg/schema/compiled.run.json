@@ -1,0 +1,145 @@
+{
+	"$schema": "http://json-schema.org/draft-04/schema#",
+	"definitions": {
+		"substitution": {
+			"type": "object",
+			"properties": {
+				"name": {
+					"$ref": "base.json#/definitions/variable_identifier"
+				},
+				"start": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"end": {
+					"type": "integer",
+					"minimum": 0
+				},
+				"relative": {
+					"type": "integer",
+					"minimum": 0
+				}
+			},
+			"required": ["name", "start", "end", "relative"],
+			"additionalProperties": false
+		},
+		"argument": {
+			"type": "object",
+			"properties": {
+				"text": { "type": "string" },
+				"substitutions": {
+					"type": "array",
+					"items": { "$ref": "#/definitions/substitution" }
+				}
+			},
+			"required": ["text", "substitutions"],
+			"additionalProperties": false
+		},
+		"normalisedCommand": {
+			"type": "object",
+			"properties": {
+				"type": { "enum": ["onerror", "copy", "exec"] },
+				"arguments": {
+					"type": "array",
+					"minItems": 1,
+					"items": { "$ref": "#/definitions/argument" }
+				}
+			},
+			"additionalProperties": false
+		},
+		"onerrorCommand": {
+			"type": "object",
+			"properties": {
+				"type": { "enum": ["onerror"] },
+				"action": { "enum": ["fail", "ignore"] }
+			},
+			"required": ["type", "action"],
+			"additionalProperties": false
+		},
+		"redirectCommand": {
+			"type": "object",
+			"properties": {
+				"type": { "enum": ["redirect"] },
+				"stream": { "enum": ["stdout", "stderr"] },
+				"target": { "enum": ["off", "default", "file"] },
+				"file": { "$ref": "#/definitions/argument" }
+			},
+			"additionalProperties": false
+		},
+		"copyContext": { "enum": ["root", "node"] },
+		"copyCommand": {
+			"type": "object",
+			"properties": {
+				"type": { "enum": ["copy"] },
+				"source_context": { "$ref": "#/definitions/copyContext" },
+				"source_path": { "$ref": "#/definitions/argument" },
+				"destination_context": { "$ref": "#/definitions/copyContext" },
+				"destination_path": { "$ref": "#/definitions/argument" }
+			},
+			"required": [
+				"source_context",
+				"source_path",
+				"destination_context",
+				"destination_path"
+			],
+			"additionalProperties": false
+		},
+		"execCommand": {
+			"type": "object",
+			"properties": {
+				"program": { "type": "string" },
+				"search_path": { "type": "boolean" },
+				"type": { "enum": ["exec"] },
+				"arguments": {
+					"type": "array",
+					"minItems": 1,
+					"items": { "$ref": "#/definitions/argument" }
+				}
+			},
+			"required": ["program", "search_path", "type", "arguments"],
+			"additionalProperties": false
+		},
+		"command": {
+			"anyOf": [
+				{ "$ref": "#/definitions/onerrorCommand" },
+				{ "$ref": "#/definitions/copyCommand" },
+				{ "$ref": "#/definitions/execCommand" }
+			]
+		},
+		"task": {
+			"type": "array",
+			"items": { "$ref": "#/definitions/command" },
+			"minItems": 1
+		}
+	},
+	"type": "object",
+	"properties": {
+		"variables": {
+			"type": "array",
+			"minItems": 1,
+			"items": { "$ref": "base.json#/definitions/variable_definition" }
+		},
+		"tasks": {
+			"type": "object",
+			"properties": {
+				"rootstart": { "$ref": "#/definitions/task" },
+				"nodestart": { "$ref": "#/definitions/task" },
+				"main": { "$ref": "#/definitions/task" },
+				"nodefinish": { "$ref": "#/definitions/task" },
+				"rootfinish": { "$ref": "#/definitions/task" }
+			},
+			"required": ["main"]
+		},
+		"jobs": {
+			"type": "array",
+			"items": {
+				"type": "array",
+				"items": { "type": "integer" },
+				"minLength": 1
+			},
+			"minItems": 0
+		}
+	},
+	"required": ["variables", "tasks"],
+	"additionalProperties": false
+}

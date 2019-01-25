@@ -1,0 +1,16 @@
+{
+	"$schema": "http://json-schema.org/draft-04/schema#",
+	"allOf": [
+		{ "$ref": "resource_base.json#/definitions/batched_cluster_resource" },
+		{
+			"type": "object",
+			"properties": {
+				"pbsargs": {
+					"type": "array",
+					"items": { "type": "string" }
+				}
+			},
+			"required": ["slurmargs"]
+		}
+	]
+}

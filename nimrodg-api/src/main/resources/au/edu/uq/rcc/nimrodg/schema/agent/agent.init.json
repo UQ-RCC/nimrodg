@@ -1,0 +1,10 @@
+{
+	"$schema": "http://json-schema.org/draft-04/schema#",
+	"type": "object",
+	"properties": {
+		"uuid": { "$ref": "agent.message.json#/definitions/uuid" },
+		"type": { "$ref": "agent.message.json#/definitions/message_type" }
+	},
+	"required": [ "uuid", "type" ],
+	"additionalProperties": false
+}

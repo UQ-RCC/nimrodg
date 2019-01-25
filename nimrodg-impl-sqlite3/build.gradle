@@ -1,0 +1,6 @@
+dependencies {
+	compile group: 'org.xerial', name: 'sqlite-jdbc', version: '3.23.1'
+
+	implementation project(':nimrodg-impl-base-db')
+	testImplementation project(':nimrodg-test')
+}

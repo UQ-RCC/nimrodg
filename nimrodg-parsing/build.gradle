@@ -1,0 +1,16 @@
+apply plugin: 'antlr'
+
+generateGrammarSource {
+	outputDirectory = new File("${outputDirectory}/au/edu/uq/rcc/nimrodg/parsing/antlr")
+	arguments += ["-visitor", "-listener"]
+	//excludes += ["NimrodCString.g4"]
+	includes += ["**/NimrodFile*.g4"]
+}
+
+dependencies {
+	antlr group: 'org.antlr', name: 'antlr4', version: '4.7.1'
+
+	implementation project(':nimrodg-api')
+
+	testRuntimeOnly group: 'org.glassfish', name: 'javax.json', version: JAVAX_JSON_VERSION
+}

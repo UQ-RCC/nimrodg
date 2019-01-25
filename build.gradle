@@ -1,0 +1,53 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath 'org.ajoberstar:grgit:1.1.0'
+    }
+}
+
+plugins {
+	id 'fr.brouillard.oss.gradle.jgitver' version '0.5.0'
+}
+
+jgitver {
+	useDistance true
+	useGitCommitID true
+}
+
+apply plugin: 'base'
+apply plugin: 'idea'
+
+subprojects {
+	apply plugin: 'java'
+	//apply plugin: 'idea'
+
+	version = rootProject.description
+
+	sourceCompatibility = 10
+	[compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
+
+	repositories {
+		mavenCentral()
+		/* For org.everit.json.schema */
+		maven { url 'https://jitpack.io' }
+	}
+
+	dependencies {
+		testCompile group:	'junit', name: 'junit', version: '4.10'
+	}
+
+	tasks.withType(JavaCompile) {
+		options.compilerArgs << '-Xlint:unchecked'
+		options.deprecation = true
+	}
+}
+
+allprojects {
+	ext {
+		LOG4J_VERSION = '2.10.0'
+		JAVAX_JSON_VERSION = '1.1'
+	}
+}

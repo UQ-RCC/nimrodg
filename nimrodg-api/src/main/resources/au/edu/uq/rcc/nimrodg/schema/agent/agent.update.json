@@ -1,0 +1,31 @@
+{
+	"$schema": "http://json-schema.org/draft-04/schema#",
+	"definitions": {
+		"command_result": {
+			"type": "object",
+			"properties": {
+				"status": { "enum": [ "success", "precondition_failure", "system_error", "exception", "aborted" ] },
+				"index": {
+					"type": "integer",
+					"minLength": 0
+				},
+				"retval": { "type": "integer" },
+				"message": { "type": "string" },
+				"error_code": { "type": "integer" },
+				"time": { "type": "number", "minimum": 0.0 }
+			},
+			"required": [ "status", "index", "retval", "message", "error_code", "time" ],
+			"additionalProperties": false
+		}
+	},
+	"type": "object",
+	"properties": {
+		"uuid": { "$ref": "agent.message.json#/definitions/uuid" },
+		"type": { "$ref": "agent.message.json#/definitions/message_type" },
+		"job_uuid": { "$ref": "agent.message.json#/definitions/uuid" },
+		"command_result": { "$ref": "#/definitions/command_result" },
+		"action": { "enum": [ "continue", "stop" ] }
+	},
+	"required": [ "uuid", "type", "job_uuid", "command_result", "action" ],
+	"additionalProperties": false
+}

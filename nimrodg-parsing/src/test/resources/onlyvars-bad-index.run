@@ -1,0 +1,8 @@
+variable x index 0 list "0" "1" "2" "3" "4" "5"
+variable y index 2 list "0" "1" "2" "3" "4" "5"
+jobs
+endjobs
+task main
+	onerror fail
+endtask
+

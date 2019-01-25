@@ -1,0 +1,12 @@
+{
+	"$schema": "http://json-schema.org/draft-04/schema#",
+	"type": "object",
+	"properties": {
+		"uuid": { "$ref": "agent.message.json#/definitions/uuid" },
+		"type": { "$ref": "agent.message.json#/definitions/message_type" },
+		"reason": { "enum": [ "hostsignal", "requested", "expired" ] },
+		"signal": { "type": "integer" }
+	},
+	"required": [ "uuid", "type", "reason", "signal" ],
+	"additionalProperties": false
+}

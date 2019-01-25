@@ -1,0 +1,15 @@
+apply plugin: 'application'
+
+mainClassName = 'au.edu.uq.rcc.nimrodg.debug.agent.Controller'
+
+dependencies {
+	implementation group: 'org.apache.logging.log4j', name: 'log4j-slf4j-impl', version: LOG4J_VERSION
+	implementation group: 'org.apache.logging.log4j', name: 'log4j-core', version: LOG4J_VERSION
+	implementation group: 'org.apache.logging.log4j', name: 'log4j-1.2-api', version: LOG4J_VERSION
+	implementation group: 'com.rabbitmq', name: 'amqp-client', version: '4.2.0'
+
+	implementation project(':nimrodg-internal-api')
+	implementation project(':nimrodg-parsing')
+
+	runtimeOnly group: 'org.glassfish', name: 'javax.json', version: JAVAX_JSON_VERSION
+}

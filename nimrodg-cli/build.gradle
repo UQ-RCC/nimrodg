@@ -1,0 +1,88 @@
+apply plugin: 'application'
+
+mainClassName = 'au.edu.uq.rcc.nimrodg.cli.NimrodCLI'
+
+dependencies {
+	implementation group: 'net.sourceforge.argparse4j', name: 'argparse4j', version: '0.7.0'
+
+	implementation group: 'org.apache.commons', name: 'commons-csv', version: '1.5'
+	implementation group: 'org.ini4j', name: 'ini4j', version: '0.5.4'
+
+	implementation group: 'org.apache.logging.log4j', name: 'log4j-core', version: LOG4J_VERSION
+	implementation group: 'org.apache.logging.log4j', name: 'log4j-1.2-api', version: LOG4J_VERSION
+
+	implementation project(':nimrodg-internal-api')
+	implementation project(':nimrodg-parsing')
+	implementation project(':nimrodg-resources')
+	implementation project(':nimrodg-master')
+	implementation project(':nimrodg-rest')
+
+	runtimeOnly project(':nimrodg-impl-postgres')
+	runtimeOnly project(':nimrodg-impl-sqlite3')
+
+	runtimeOnly group: 'org.apache.logging.log4j', name: 'log4j-jul', version: LOG4J_VERSION
+	runtimeOnly group: 'org.apache.logging.log4j', name: 'log4j-slf4j-impl', version: LOG4J_VERSION
+	runtimeOnly group: 'org.glassfish', name: 'javax.json', version: JAVAX_JSON_VERSION
+}
+
+task cli(type: JavaExec, dependsOn: classes) {
+	main = mainClassName
+	classpath = sourceSets.main.runtimeClasspath
+
+	standardInput = System.in
+	args = []
+
+	for(int i = 0; i < 100; ++i) {
+		if(project.hasProperty("arg$i")) {
+			args += project.getProperty("arg$i");
+		}
+	}
+}
+
+task cli2(type: JavaExec, dependsOn: classes) {
+	main = mainClassName
+	classpath = sourceSets.main.runtimeClasspath
+
+	standardInput = System.in
+	args = []
+
+	if(project.hasProperty("appArgs")) {
+        args Eval.me(appArgs)
+    }
+}
+
+
+task staging(type: JavaExec, dependsOn: classes) {
+	main = mainClassName
+	classpath = sourceSets.main.runtimeClasspath
+
+	if(project.hasProperty('arg1')) {
+		args = ["staging", "$arg1"]
+	} else {
+		args = ["staging"]
+	}
+}
+
+task master(type: JavaExec, dependsOn: classes) {
+	main = mainClassName
+	classpath = sourceSets.main.runtimeClasspath
+	args = ["master"]
+	standardInput = System.in
+}
+
+task serve(type: JavaExec, dependsOn: classes) {
+	main = mainClassName
+	classpath = sourceSets.main.runtimeClasspath
+	args = ["serve"]
+}
+
+task repl(type: JavaExec, dependsOn: classes) {
+	main = mainClassName
+	classpath = sourceSets.main.runtimeClasspath
+	args = ["repl"]
+	standardInput = System.in
+}
+
+run {
+	standardInput = System.in
+}

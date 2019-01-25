@@ -1,0 +1,19 @@
+variable x index 0 list "0" "1" "2" "a" "za" "sf" "a" "s" "a" "sdfa" "sd" "asdfasd" "\x20"
+variable y index 1 list "0" "5" "10"
+
+jobs
+	0001 0 0 a
+	0002 1 0 asasdfas
+endjobs
+task main
+	// Line comment test
+	copy "as sdfs " "as";
+	/* Block comment */
+	copy node:"as" root:"as";
+	onerror fail;
+	exec "python" "$x" "test"
+	shexec "as"
+	lexec "/usr/bin/python" "/usr/bin/python" "script.py"
+	lpexec "python" "python" "script.py"
+endtask
+

@@ -1,0 +1,15 @@
+dependencies {
+	implementation group: 'com.rabbitmq', name: 'amqp-client', version: '5.1.2'
+	compileOnly group: 'com.rabbitmq', name: 'amqp-client', version: '5.1.2', classifier: 'javadoc'
+	compileOnly group: 'com.rabbitmq', name: 'amqp-client', version: '5.1.2', classifier: 'sources'
+
+	implementation group: 'org.apache.logging.log4j', name: 'log4j-api', version: LOG4J_VERSION
+	implementation group: 'org.apache.logging.log4j', name: 'log4j-core', version: LOG4J_VERSION
+	implementation group: 'org.apache.logging.log4j', name: 'log4j-iostreams', version: LOG4J_VERSION
+
+	implementation group: 'org.apache.commons', name: 'commons-collections4', version: '4.1'
+
+	implementation project(':nimrodg-internal-api')
+	implementation project(':nimrodg-utils')
+	implementation project(':nimrodg-resources')
+}

@@ -1,0 +1,14 @@
+parameter aircraft_model files select anyof "A3??.dat" "737-*.dat"
+parameter AoA label "Angle of attack" float range from -45 to 45 step 2.5
+parameter winglets text select anyof "none" "fence" "blended" "raked"
+parameter airspeed integer range from 50 to 600 step 50
+parameter turbulence label "Normalized Reynolds" float random from 1 to 2
+
+task main
+	copy root:${aircraft_model} node:.
+	copy root:wing_test.zip node:.
+	exec unzip wing_test.zip
+	shexec "./run_wing_test.sh ${aircraft_model} ${winglets} ${AoA} ${airspeed} ${turbulence} >> output.${jobindex}"
+	shexec "zip results.${jobindex} *"
+	copy node:results.${jobindex}.zip root:.
+endtask

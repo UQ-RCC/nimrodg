@@ -1,0 +1,23 @@
+rootProject.name = 'nimrodg'
+
+include 'nimrodg-api'
+include 'nimrodg-utils'
+include 'nimrodg-internal-api'
+include 'nimrodg-agent'
+include 'nimrodg-test'
+include 'nimrodg-parsing'
+
+include 'nimrodg-impl-base-db'
+include 'nimrodg-impl-postgres'
+include 'nimrodg-impl-sqlite3'
+
+include 'nimrodg-resources'
+include 'nimrodg-cli'
+
+include 'nimrodg-master'
+
+include 'nimrodg-debugger-agent'
+
+include 'nimrodg-rest'
+
+include 'nimrod'

@@ -1,0 +1,24 @@
+dependencies {
+	implementation group: 'net.sourceforge.argparse4j', name: 'argparse4j', version: '0.7.0'
+	implementation group: 'org.apache.sshd', name: 'sshd-core', version: '2.0.0'
+	compileOnly group: 'org.apache.sshd', name: 'sshd-core', version: '2.0.0', classifier: 'sources'
+
+	implementation group: 'org.apache.sshd', name: 'sshd-scp', version: '2.0.0'
+	compileOnly group: 'org.apache.sshd', name: 'sshd-scp', version: '2.0.0', classifier: 'sources'
+
+	implementation group: 'org.bouncycastle', name: 'bcprov-jdk15on', version: '1.60'
+	implementation group: 'org.bouncycastle', name: 'bcpkix-jdk15on', version: '1.60'
+
+	implementation group: 'commons-io', name: 'commons-io', version: '2.6'
+	implementation group: 'org.apache.logging.log4j', name: 'log4j-api', version: LOG4J_VERSION
+
+	implementation group: 'com.github.everit-org.json-schema', name: 'org.everit.json.schema', version: '1.9.1'
+	
+	implementation project(':nimrodg-internal-api')
+	implementation project(':nimrodg-utils')
+	testImplementation project(':nimrodg-test')
+	testImplementation group: 'com.google.jimfs', name: 'jimfs', version: '1.1'
+
+	testRuntimeOnly group: 'org.glassfish', name: 'javax.json', version: JAVAX_JSON_VERSION
+}
+

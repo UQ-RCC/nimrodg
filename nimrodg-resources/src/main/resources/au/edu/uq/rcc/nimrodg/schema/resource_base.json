@@ -1,0 +1,93 @@
+{
+	"$schema": "http://json-schema.org/draft-04/schema#",
+	"definitions": {
+		"ssh_resource": {
+			"type": "object",
+			"properties": {
+				"agent_platform": { "type": "string" },
+				"transport": {
+					"oneOf": [
+						{
+							"type": "object",
+							"properties": {
+								"name": { "enum": ["sshd"] },
+								"uri": { "type": "string", "format": "uri" },
+								"keyfile": { "type": "string" },
+								"hostkeys": {
+                                    "type": "array",
+                                    "minItems": 1,
+                                    "items": { "type": "string" }
+                                }
+							},
+							"required": ["name", "uri", "keyfile", "hostkeys"]
+						},
+						{
+							"type": "object",
+							"properties": {
+								"name": { "enum": ["openssh"] },
+								"uri": { "type": "string" },
+								"keyfile": { "type": "string" },
+								"executable": { "type": "string" }
+							},
+							"required": [
+								"name",
+								"uri",
+								"keyfile",
+								"executable"
+							]
+						}
+					]
+				}
+			},
+			"required": ["agent_platform", "transport"]
+		},
+		"cluster_resource": {
+			"allOf": [
+				{ "$ref": "#/definitions/ssh_resource" },
+				{
+					"type": "object",
+					"properties": {
+						"limit": { "type": "integer", "minimum": 1 },
+						"tmpvar": {
+							"type": "string",
+							"pattern": "^([A-Z_][A-Z0-9+]*)$"
+						}
+					},
+					"required": ["limit", "tmpvar"]
+				}
+			]
+		},
+		"batched_cluster_resource": {
+			"allOf": [
+				{ "$ref": "#/definitions/cluster_resource" },
+				{
+					"type": "object",
+					"properties": {
+						"max_batch_size": { "type": "integer", "minimum": 1 },
+						"batch_config": {
+							"type": "array",
+							"minItems": 0,
+							"items": {
+								"type": "object",
+								"properties": {
+									"name": {
+										"type": "string",
+										"pattern": "^([\\w-]+)$"
+									},
+									"value": { "type": ["string", "integer"] },
+									"scale": { "type": "boolean" }
+								},
+								"additionalProperties": false,
+								"required": ["name", "value", "scale"]
+							}
+						}
+					},
+					"required": [
+						"max_batch_size",
+						"batch_config"
+					]
+				}
+			]
+		}
+	}
+}

@@ -1,0 +1,70 @@
+apply plugin: 'distribution'
+apply plugin: 'application'
+
+mainClassName = 'au.edu.uq.rcc.nimrodg.cli.NimrodCLI'
+
+configurations {
+	/* Packages that need to be loaded by Kepler. */
+	nimrodK
+	/* Packages that should be in a separate classloader. */
+	nimrodKRuntime
+	nimrodKRuntime.extendsFrom nimrodK
+}
+
+dependencies {
+	implementation project(':nimrodg-cli')
+	nimrodK project(':nimrodg-api')
+	nimrodK group: 'org.glassfish', name: 'javax.json', version: JAVAX_JSON_VERSION
+	nimrodKRuntime project(':nimrodg-parsing')
+	nimrodKRuntime project(':nimrodg-impl-postgres')
+}
+
+distributions {
+	main {
+		baseName = 'nimrod'
+		contents {
+			from project(':nimrodg-cli').jar
+			
+			// This is empty, exclude it
+			exclude jar.archiveName
+		}
+		distZip.enabled = false
+	}
+
+	jenkins {
+		baseName = main.baseName
+		contents { with main.contents }
+		jenkinsDistZip.enabled = false
+	}
+}
+
+jenkinsDistTar {
+	version = ''
+}
+
+task buildNimrodKFatJar(type: Jar, dependsOn: configurations.nimrodKRuntime) {
+	baseName = 'nimrod-kepler-fatjar'
+	version = ''
+	extension = 'nimjar'
+	from {
+		(configurations.nimrodKRuntime - configurations.nimrodK).collect {
+			it.isDirectory() ? it : zipTree(it)
+		}
+	}
+
+	exclude 'module-info.class'
+	exclude 'META-INF/'
+	exclude 'Log4j-charsets.properties'
+}
+
+task generateNimrodKModule(type: Copy, dependsOn: [buildNimrodKFatJar, configurations.nimrodK]) {
+	configurations.nimrodK.each {
+		from(it) into ("${buildDir}/nimrodk/lib/jar/nimrodg")
+	}
+
+	from(buildNimrodKFatJar.archivePath) into ("${buildDir}/nimrodk/lib/jar/nimrodg")
+}
+
+task(generateArtifacts, dependsOn:[assembleDist, assembleJenkinsDist]) {
+}
+

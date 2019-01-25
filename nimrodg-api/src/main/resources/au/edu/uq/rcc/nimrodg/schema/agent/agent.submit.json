@@ -1,0 +1,104 @@
+{
+	"$schema": "http://json-schema.org/draft-04/schema#",
+	"definitions": {
+		"onerrorCommand": {
+			"type": "object",
+			"properties": {
+				"type": { "enum": ["onerror"] },
+				"action": { "enum": ["fail", "ignore"] }
+			},
+			"required": ["type", "action"],
+			"additionalProperties": false
+		},
+		"redirectCommand": {
+			"type": "object",
+			"properties": {
+				"type": { "enum": ["redirect"] },
+				"stream": { "enum": ["stdout", "stderr"] },
+				"append": { "type": "boolean" },
+				"file": { "type": "string" }
+			},
+			"additionalProperties": false
+		},
+		"copyCommand": {
+			"type": "object",
+			"properties": {
+				"type": { "enum": ["copy"] },
+				"source_context": { "type": "string" },
+				"source_path": { "type": "string" },
+				"destination_context": { "type": "string" },
+				"destination_path": { "type": "string" }
+			},
+			"required": [
+				"source_context",
+				"source_path",
+				"destination_context",
+				"destination_path"
+			],
+			"additionalProperties": false
+		},
+		"execCommand": {
+			"type": "object",
+			"properties": {
+				"program": { "type": "string" },
+				"search_path": { "type": "boolean" },
+				"type": { "enum": ["exec"] },
+				"arguments": {
+					"type": "array",
+					"minItems": 1,
+					"items": { "type": "string" }
+				}
+			},
+			"required": ["program", "search_path", "type", "arguments"],
+			"additionalProperties": false
+		},
+		"command": {
+			"anyOf": [
+				{ "$ref": "#/definitions/onerrorCommand" },
+				{ "$ref": "#/definitions/redirectCommand" },
+				{ "$ref": "#/definitions/execCommand" },
+				{ "$ref": "#/definitions/copyCommand" }
+			]
+		},
+		"job": {
+			"type": "object",
+			"properties": {
+				"uuid": { "$ref": "agent.message.json#/definitions/uuid" },
+				"index": { "type": "integer" },
+				"txuri": { "type": "string" },
+				"txuser": { "type": "string" },
+				"txpass": { "type": "string" },
+				"token": { "type": "string" },
+				"environment": {
+					"type": "object",
+					"additionalProperties": { "type": "string" }
+				},
+				"commands": {
+					"type": "array",
+					"minItems": 1,
+					"items": { "$ref": "#/definitions/command" }
+				}
+			},
+			"required": [
+				"uuid",
+				"index",
+				"txuri",
+				"txuser",
+				"txpass",
+				"token",
+				"environment",
+				"commands"
+			],
+			"additionalProperties": false
+		}
+	},
+	"type": "object",
+	"properties": {
+		"uuid": { "$ref": "agent.message.json#/definitions/uuid" },
+		"type": { "$ref": "agent.message.json#/definitions/message_type" },
+		"job": { "$ref": "#/definitions/job" }
+	},
+
+	"required": ["uuid", "type", "job"],
+	"additionalProperties": false
+}
