@@ -97,12 +97,14 @@ public class MasterCmd extends NimrodCLICommand {
 			return 1;
 		}
 
+		String tlsProtocol = nimrod.getPropertyOrDefault("nimrod.master.amqp.tls_protocol", "TLSv1.2");
+
 		//try(Master m = new Master((NimrodMasterAPI)nimrod, exp, DefaultJobScheduler.FACTORY, DefaultAgentScheduler.FACTORY)) {
 		try(Master2 m = new Master2((NimrodMasterAPI)nimrod, exp, DefaultJobScheduler.FACTORY, DefaultAgentScheduler.FACTORY)) {
 			try(AMQProcessor amqp = new AMQProcessor(
 					amqpUri.uri,
 					certs,
-					"TLSv1.2",
+					tlsProtocol,
 					cfg.getAmqpRoutingKey(),
 					amqpUri.noVerifyPeer,
 					amqpUri.noVerifyHost,

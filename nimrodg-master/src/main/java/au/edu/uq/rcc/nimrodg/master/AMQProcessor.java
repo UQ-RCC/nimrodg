@@ -60,7 +60,7 @@ public class AMQProcessor implements AutoCloseable {
 
 	private final MessageBackend m_MessageBackend;
 
-	public AMQProcessor(URI uri, Certificate[] certs, String sslProtocol, String routingKey, boolean noVerifyPeer, boolean noVerifyHost, MessageBackend msgBackend, MessageQueueListener listener, ExecutorService execs) throws IOException, TimeoutException, URISyntaxException, GeneralSecurityException {
+	public AMQProcessor(URI uri, Certificate[] certs, String tlsProtocol, String routingKey, boolean noVerifyPeer, boolean noVerifyHost, MessageBackend msgBackend, MessageQueueListener listener, ExecutorService execs) throws IOException, TimeoutException, URISyntaxException, GeneralSecurityException {
 		m_Listener = listener;
 		ConnectionFactory cf = new ConnectionFactory();
 
@@ -86,7 +86,7 @@ public class AMQProcessor implements AutoCloseable {
 			TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
 			tmf.init(ks);
 
-			SSLContext cc = SSLContext.getInstance(sslProtocol);
+			SSLContext cc = SSLContext.getInstance(tlsProtocol);
 			cc.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
 
 			cf.useSslProtocol(cc);
