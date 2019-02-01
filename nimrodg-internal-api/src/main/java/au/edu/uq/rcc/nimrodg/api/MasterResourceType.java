@@ -19,9 +19,6 @@
  */
 package au.edu.uq.rcc.nimrodg.api;
 
-import au.edu.uq.rcc.nimrodg.api.Resource;
-import au.edu.uq.rcc.nimrodg.api.ResourceType;
-import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import java.io.IOException;
 import java.security.cert.Certificate;
 

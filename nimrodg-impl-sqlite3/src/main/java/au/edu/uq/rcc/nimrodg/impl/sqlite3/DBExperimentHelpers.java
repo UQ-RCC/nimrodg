@@ -77,6 +77,7 @@ public class DBExperimentHelpers extends DBBaseHelper {
 	private final PreparedStatement qInsertJob;
 	private final PreparedStatement qInsertJobVariable;
 
+	private final PreparedStatement qGetExperiments;
 	private final PreparedStatement qGetExperimentById;
 	private final PreparedStatement qGetExperimentByName;
 	private final PreparedStatement qGetExperimentVariables;
@@ -124,6 +125,7 @@ public class DBExperimentHelpers extends DBBaseHelper {
 		this.qInsertJob = prepareStatement("INSERT INTO nimrod_jobs(exp_id, job_index, created, path) VALUES(?, ?, ?, ?)", true);
 		this.qInsertJobVariable = prepareStatement("INSERT INTO nimrod_job_variables(job_id, variable_id, value) VALUES(?, ?, ?)");
 
+		this.qGetExperiments = prepareStatement("SELECT * FROM nimrod_experiments");
 		this.qGetExperimentById = prepareStatement("SELECT * FROM nimrod_experiments WHERE id = ?");
 		this.qGetExperimentByName = prepareStatement("SELECT * FROM nimrod_experiments WHERE name = ?");
 		this.qGetExperimentVariables = prepareStatement("SELECT id, name FROM nimrod_variables WHERE exp_id = ?");
@@ -181,7 +183,13 @@ public class DBExperimentHelpers extends DBBaseHelper {
 	}
 
 	public List<TempExperiment> listExperiments() throws SQLException {
-		return null;
+		List<TempExperiment> exps = new ArrayList<>();
+		try(ResultSet rs = qGetExperiments.executeQuery()) {
+			while(rs.next()) {
+				exps.add(experimentFromRow(rs));
+			}
+		}
+		return exps;
 	}
 
 	private List<String> getExperimentUserVars(long expId) throws SQLException {
@@ -192,6 +200,7 @@ public class DBExperimentHelpers extends DBBaseHelper {
 				vars.add(vrs.getString("name"));
 			}
 		}
+
 		return vars;
 	}
 
@@ -268,37 +277,25 @@ public class DBExperimentHelpers extends DBBaseHelper {
 		return taskBuilders.values().stream().map(tb -> tb.build()).collect(Collectors.toList());
 	}
 
-	private Optional<TempExperiment> getExperimentInternal(ResultSet rs) throws SQLException {
-		if(!rs.next()) {
-			return Optional.empty();
-		}
-
-		long expId = rs.getLong("id");
-
-		return Optional.of(new TempExperiment(
-				expId,
-				rs.getString("name"),
-				rs.getString("work_dir"),
-				Experiment.stringToState(rs.getString("state")),
-				DBUtils.getLongInstant(rs, "created"),
-				rs.getString("file_token"),
-				rs.getString("path"),
-				getExperimentUserVars(expId),
-				getExperimentTasks(expId)
-		));
-	}
-
 	public Optional<TempExperiment> getExperiment(long id) throws SQLException {
 		qGetExperimentById.setLong(1, id);
 		try(ResultSet rs = qGetExperimentById.executeQuery()) {
-			return getExperimentInternal(rs);
+			if(!rs.next()) {
+				return Optional.empty();
+			}
+
+			return Optional.of(experimentFromRow(rs));
 		}
 	}
 
 	public Optional<TempExperiment> getExperiment(String name) throws SQLException {
 		qGetExperimentByName.setString(1, name);
 		try(ResultSet rs = qGetExperimentByName.executeQuery()) {
-			return getExperimentInternal(rs);
+			if(!rs.next()) {
+				return Optional.empty();
+			}
+
+			return Optional.of(experimentFromRow(rs));
 		}
 	}
 
@@ -914,6 +911,21 @@ public class DBExperimentHelpers extends DBBaseHelper {
 
 			return rs.getLong("id");
 		}
+	}
+
+	private TempExperiment experimentFromRow(ResultSet rs) throws SQLException {
+		long expId = rs.getLong("id");
+		return new TempExperiment(
+				expId,
+				rs.getString("name"),
+				rs.getString("work_dir"),
+				Experiment.stringToState(rs.getString("state")),
+				DBUtils.getLongInstant(rs, "created"),
+				rs.getString("file_token"),
+				rs.getString("path"),
+				getExperimentUserVars(expId),
+				getExperimentTasks(expId)
+		);
 	}
 
 	private static TempJobAttempt attemptFromRow(ResultSet rs) throws SQLException {

@@ -160,3 +160,6 @@ CREATE OR REPLACE FUNCTION get_experiment(_name TEXT) RETURNS SETOF nimrod_full_
 	SELECT * FROM nimrod_full_experiments WHERE name = _name;
 $$ LANGUAGE SQL STABLE;
 
+CREATE OR REPLACE FUNCTION get_experiments() RETURNS SETOF nimrod_full_experiments AS $$
+	SELECT * FROM nimrod_full_experiments;
+$$ LANGUAGE SQL STABLE;

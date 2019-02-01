@@ -60,12 +60,12 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import javax.json.JsonValue;
-import junit.framework.Assert;
 import org.junit.Test;
 import au.edu.uq.rcc.nimrodg.api.Resource;
 import java.util.AbstractMap;
 import java.util.HashSet;
 import java.util.Optional;
+import org.junit.Assert;
 
 public abstract class APITests {
 
@@ -76,6 +76,18 @@ public abstract class APITests {
 	@Test
 	public void getNonExistentExperimentTestw() {
 		Assert.assertNull(getNimrod().getExperiment("asdfasdf"));
+	}
+
+	@Test
+	public void experimentEnumerationTest() throws NimrodAPIException, IOException, RunBuilder.RunfileBuildException, SubstitutionException, PlanfileParseException {
+		NimrodAPI api = getNimrod();
+		Experiment exp1 = api.addExperiment("test1", TestUtils.getSampleExperiment());
+		Experiment exp2 = api.addExperiment("test2", TestUtils.getSampleExperiment());
+		Experiment exp3 = api.addExperiment("test3", TestUtils.getSampleExperiment());
+		Experiment exp4 = api.addExperiment("test4", TestUtils.getSampleExperiment());
+
+		Experiment[] exp = api.getExperiments().stream().toArray(Experiment[]::new);
+		Assert.assertArrayEquals(new Experiment[]{ exp1, exp2, exp3, exp4 }, exp);
 	}
 
 	@Test
