@@ -27,6 +27,9 @@ import java.security.PublicKey;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import javax.json.Json;
+import javax.json.JsonArray;
+import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import javax.json.JsonString;
 import javax.json.JsonValue;
@@ -41,16 +44,21 @@ public interface TransportFactory {
 		public final Optional<Path> privateKey;
 		public final Optional<KeyPair> keyPair;
 		public final Optional<Path> executablePath;
+		public final SSHTunnel[] tunnels;
 
-		public Config(URI uri, Optional<String> user, PublicKey[] hostKeys, Optional<Path> privateKey, Optional<KeyPair> keyPair, Optional<Path> executablePath) {
+		public Config(URI uri, Optional<String> user, PublicKey[] hostKeys, Optional<Path> privateKey, Optional<KeyPair> keyPair, Optional<Path> executablePath, SSHTunnel[] tunnels) {
 			this.uri = uri;
 			this.user = user;
 			this.hostKeys = Arrays.copyOf(hostKeys, hostKeys.length);
 			this.privateKey = privateKey;
 			this.keyPair = keyPair;
 			this.executablePath = executablePath;
+			if(tunnels != null) {
+				this.tunnels = Arrays.copyOf(tunnels, tunnels.length);
+			} else {
+				this.tunnels = new SSHTunnel[0];
+			}
 		}
-
 	};
 
 	RemoteShell create(Config cfg) throws IOException;
@@ -78,4 +86,27 @@ public interface TransportFactory {
 				.filter(s -> !s.isEmpty());
 	}
 
+	public static SSHTunnel[] readTunnels(JsonObject cfg) {
+		return cfg.getJsonArray("tunnels").stream()
+				.map(jt -> jt.asJsonObject())
+				.map(jt -> new SSHTunnel(
+				"remote".equals(jt.getString("type")),
+				jt.getString("srchost"),
+				jt.getInt("srcport"),
+				jt.getString("dsthost"),
+				jt.getInt("dstport"))
+		).toArray(SSHTunnel[]::new);
+	}
+
+	public static JsonArray writeTunnels(SSHTunnel[] tunnels) {
+		JsonArrayBuilder jab = Json.createArrayBuilder();
+		Arrays.stream(tunnels).forEach(t -> jab.add(Json.createObjectBuilder()
+				.add("type", t.remote ? "remote" : "local")
+				.add("srchost", t.srcHost)
+				.add("srcport", t.srcPort)
+				.add("dsthost", t.dstHost)
+				.add("dstport", t.dstPort)
+		));
+		return jab.build();
+	}
 }

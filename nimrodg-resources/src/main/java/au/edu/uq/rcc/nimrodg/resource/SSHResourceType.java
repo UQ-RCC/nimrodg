@@ -47,6 +47,7 @@ import au.edu.uq.rcc.nimrodg.api.Resource;
 import au.edu.uq.rcc.nimrodg.resource.ssh.OpenSSHClient;
 import au.edu.uq.rcc.nimrodg.resource.ssh.RemoteShell;
 import au.edu.uq.rcc.nimrodg.resource.ssh.SSHClient;
+import au.edu.uq.rcc.nimrodg.resource.ssh.SSHTunnel;
 import au.edu.uq.rcc.nimrodg.resource.ssh.TransportFactory;
 import java.util.Optional;
 import net.sourceforge.argparse4j.impl.Arguments;
@@ -135,7 +136,8 @@ public abstract class SSHResourceType extends BaseResourceType {
 				hkk.map(k -> new PublicKey[]{k}).orElse(new PublicKey[0]),
 				keyFile,
 				kp,
-				Optional.ofNullable(ns.getString("openssh_executable")).map(s -> Paths.get(s))
+				Optional.ofNullable(ns.getString("openssh_executable")).map(s -> Paths.get(s)),
+				new SSHTunnel[0]
 		);
 
 		TransportFactory.Config cfg;
@@ -206,6 +208,11 @@ public abstract class SSHResourceType extends BaseResourceType {
 				.type(String.class)
 				.help("Path to the OpenSSH executable. Ignored if not using OpenSSH transport.")
 				.setDefault("ssh");
+
+		parser.addArgument("--tunnel-local")
+				.dest("tunnel")
+				.help("")
+				.nargs("*");
 
 		/* Hidden argument mainly used for testing. Don't attempt to load the private key if set. */
 		parser.addArgument("--no-validate-private-key")

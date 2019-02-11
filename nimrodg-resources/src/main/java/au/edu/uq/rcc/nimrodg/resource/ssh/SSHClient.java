@@ -59,9 +59,11 @@ import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.client.scp.ScpClient;
 import org.apache.sshd.client.scp.ScpClientCreator;
 import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.client.session.forward.PortForwardingTracker;
 import org.apache.sshd.common.config.keys.AuthorizedKeyEntry;
 import org.apache.sshd.common.scp.ScpTimestamp;
 import org.apache.sshd.common.signature.BuiltinSignatures;
+import org.apache.sshd.common.util.net.SshdSocketAddress;
 
 public class SSHClient implements RemoteShell {
 
@@ -75,6 +77,7 @@ public class SSHClient implements RemoteShell {
 	public final SshClient client;
 	public final ClientSession session;
 	public final ScpClient scp;
+	private final ArrayList<PortForwardingTracker> ptrackers;
 
 	private boolean closed;
 
@@ -147,6 +150,7 @@ public class SSHClient implements RemoteShell {
 		}
 
 		scp = ScpClientCreator.instance().createScpClient(session);
+		ptrackers = new ArrayList<>();
 		closed = false;
 	}
 
@@ -161,6 +165,13 @@ public class SSHClient implements RemoteShell {
 		} finally {
 			closed = true;
 		}
+	}
+
+	public void createTunnel(String srcHost, int srcPort, String dstHost, int dstPort) throws IOException {
+		//this.session.createRemotePortForwardingTracker(SshdSocketAddress.LOCALHOST_ADDRESS, SshdSocketAddress.LOCALHOST_ADDRESS)
+		SshdSocketAddress src = new SshdSocketAddress(srcHost, srcPort);
+		SshdSocketAddress dst = new SshdSocketAddress(dstHost, dstPort);
+		ptrackers.add(session.createRemotePortForwardingTracker(dst, src));
 	}
 
 	@Override
@@ -285,7 +296,8 @@ public class SSHClient implements RemoteShell {
 					hostKeys,
 					cfg.privateKey,
 					cfg.keyPair,
-					Optional.empty()
+					Optional.empty(),
+					cfg.tunnels
 			);
 		}
 
@@ -301,6 +313,7 @@ public class SSHClient implements RemoteShell {
 					.add("uri", cfg.uri.toString())
 					.add("keyfile", cfg.privateKey.map(p -> p.toString()).orElse(""))
 					.add("hostkeys", ja)
+					.add("tunnels", TransportFactory.writeTunnels(cfg.tunnels))
 					.build();
 		}
 
@@ -356,7 +369,8 @@ public class SSHClient implements RemoteShell {
 					hostKeys,
 					privateKey,
 					Optional.empty(),
-					Optional.empty()
+					Optional.empty(),
+					TransportFactory.readTunnels(cfg)
 			));
 		}
 	};

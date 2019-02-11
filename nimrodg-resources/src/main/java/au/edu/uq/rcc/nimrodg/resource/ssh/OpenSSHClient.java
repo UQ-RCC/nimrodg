@@ -283,6 +283,7 @@ public class OpenSSHClient implements RemoteShell {
 					.add("uri", cfg.uri.toString())
 					.add("keyfile", cfg.privateKey.map(p -> p.toString()).orElse(""))
 					.add("executable", cfg.executablePath.map(p -> p.toString()).orElse(""))
+					.add("tunnels", TransportFactory.writeTunnels(cfg.tunnels))
 					.build();
 		}
 
@@ -310,7 +311,8 @@ public class OpenSSHClient implements RemoteShell {
 					new PublicKey[0],
 					TransportFactory.getOrNullIfEmpty(cfg, "keyfile").map(s -> Paths.get(s)),
 					Optional.empty(),
-					TransportFactory.getOrNullIfEmpty(cfg, "executable").map(s -> Paths.get(s))
+					TransportFactory.getOrNullIfEmpty(cfg, "executable").map(s -> Paths.get(s)),
+					TransportFactory.readTunnels(cfg)
 			));
 		}
 	};
