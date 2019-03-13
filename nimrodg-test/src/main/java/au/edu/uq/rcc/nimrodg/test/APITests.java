@@ -543,4 +543,29 @@ public abstract class APITests {
 			api.unassignResource(res2, exp1);
 		}
 	}
+
+	@Test
+	public void jobAdditionTest() throws IOException, RunBuilder.RunfileBuildException, SubstitutionException, PlanfileParseException {
+		NimrodAPI api = getNimrod();
+
+		Experiment exp = api.addExperiment("exp1", TestUtils.getSimpleSampleEmptyExperiment());
+
+		List<? extends Job> jobs = new ArrayList<>(exp.filterJobs(EnumSet.allOf(JobAttempt.Status.class), 0, 0));
+		Assert.assertEquals(0, jobs.size());
+
+		List<Map<String, String>> newJobs = new ArrayList<>();
+		api.addJobs(exp, newJobs);
+
+		jobs = new ArrayList<>(exp.filterJobs(EnumSet.allOf(JobAttempt.Status.class), 0, 0));
+		Assert.assertEquals(0, jobs.size());
+
+		newJobs.add(new HashMap<>(){{
+			put("x", "0");
+			put("y", "1");
+		}});
+		api.addJobs(exp, newJobs);
+
+		jobs = new ArrayList<>(exp.filterJobs(EnumSet.allOf(JobAttempt.Status.class), 0, 0));
+		Assert.assertEquals(1, jobs.size());
+	}
 }

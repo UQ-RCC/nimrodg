@@ -146,7 +146,7 @@ public class DBExperimentHelpers extends DBBaseHelper {
 
 		/* The finer-grained filtering is done application-side, row by row. */
 		this.qFilterJobs = prepareStatement("SELECT id FROM nimrod_jobs WHERE exp_id = ? AND job_index >= COALESCE(?, 0) ORDER BY job_index ASC LIMIT ?");
-		this.qGetNextJobId = prepareStatement("SELECT COALESCE(MAX(job_index) + 1, 0) FROM nimrod_jobs WHERE exp_id = ?");
+		this.qGetNextJobId = prepareStatement("SELECT COALESCE(MAX(job_index) + 1, 1) FROM nimrod_jobs WHERE exp_id = ?");
 
 		this.qCreateJobAttempt = prepareStatement("INSERT INTO nimrod_job_attempts(job_id, uuid, token, path) VALUES(?, ?, ?, ?)", true);
 		this.qStartJobAttempt = prepareStatement("UPDATE nimrod_job_attempts SET status = ?, agent_uuid = ? WHERE id = ?");
@@ -731,7 +731,7 @@ public class DBExperimentHelpers extends DBBaseHelper {
 
 		List<Long> jobs = new ArrayList<>();
 
-		long _start = start < 0 ? 0 : start;
+		long _start = start <= 0 ? 1 : start;
 		while(jobs.size() < limit) {
 			int queryCount = (int)limit - jobs.size();
 			if(queryCount > 1000) {
