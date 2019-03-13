@@ -17,4 +17,4 @@
 **/*.ipr
 **/*.iws
 /.vscode/
-
+/.nb-gradle-properties
