@@ -22,6 +22,7 @@ dependencies {
 	nimrodK group: 'org.glassfish', name: 'javax.json', version: JAVAX_JSON_VERSION
 	nimrodKRuntime project(':nimrodg-parsing')
 	nimrodKRuntime project(':nimrodg-impl-postgres')
+	nimrodKRuntime project(':nimrodg-impl-sqlite3')
 }
 
 distributions {
