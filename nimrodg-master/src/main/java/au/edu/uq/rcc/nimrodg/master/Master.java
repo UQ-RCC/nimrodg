@@ -297,6 +297,25 @@ public class Master implements MessageQueueListener, AutoCloseable {
 		return true;
 	}
 
+
+//	private void safsdfasdfasdf() {
+//		//runningJobs.put(uuid, new RunningJob(uuid, att, nj, agent, true));
+//		nimrod.getAssignedResources(experiment).stream()
+//				.flatMap(r -> nimrod.getResourceAgents(r).stream())
+//				.filter(ag -> !ag.getExpired() && ag.getState() != Agent.State.SHUTDOWN)
+//				.forEach(ag -> {
+//
+//					aaaaa.createActuator(root)
+//					AgentInfo ai = new AgentInfo(ag.getUUID(), root, actuator, instance, state);
+//
+//					if(ag.getState() == Agent.State.BUSY) {
+//						//runningJobs.put(k, v)
+//
+//						new RunningJob(ag.getUUID(), nimrod.getatt, job, new R, false);
+//					}
+//				});
+//	}
+
 	private State startProc(State state, Mode mode) {
 		if(mode == Mode.Enter) {
 			/* Create psuedo-events for initial configuration values. */

@@ -132,7 +132,8 @@ CREATE TABLE nimrod_resource_agents(
 	expiry_time				INTEGER DEFAULT NULL CHECK(expiry_time >= created),
 	expired_at				INTEGER DEFAULT NULL CHECK(expired_at >= created),
 	expired					BOOLEAN NOT NULL DEFAULT FALSE,
-	location				INTEGER REFERENCES nimrod_resources(id) ON DELETE CASCADE
+	location				INTEGER REFERENCES nimrod_resources(id) ON DELETE CASCADE,
+	actuator_data			TEXT
 );
 DROP INDEX IF EXISTS i_agent_location;
 CREATE INDEX i_agent_location ON nimrod_resource_agents(location) WHERE location IS NOT NULL;

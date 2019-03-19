@@ -48,6 +48,7 @@ import java.util.concurrent.TimeoutException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import au.edu.uq.rcc.nimrodg.api.Resource;
+import javax.json.Json;
 
 public class LocalActuator implements Actuator {
 
@@ -398,6 +399,10 @@ public class LocalActuator implements Actuator {
 		// Good for testing
 		//state.setExpiryTime(Instant.now(Clock.systemUTC()).plusSeconds(10));
 		la.state = LocalState.CONNECTED;
+		state.setActuatorData(Json.createObjectBuilder()
+				.add("pid", la.process.pid())
+				.build()
+		);
 	}
 
 	@Override

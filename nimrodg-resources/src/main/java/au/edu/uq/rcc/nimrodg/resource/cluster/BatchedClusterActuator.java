@@ -38,6 +38,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import au.edu.uq.rcc.nimrodg.api.Resource;
+import javax.json.Json;
 
 public abstract class BatchedClusterActuator<C extends BatchedClusterConfig> extends ClusterActuator<C> {
 
@@ -232,6 +233,11 @@ public abstract class BatchedClusterActuator<C extends BatchedClusterConfig> ext
 		/* Set the walltime. */
 		config.dialect.getWalltime(config.batchConfig)
 				.ifPresent(l -> state.setExpiryTime(state.getCreationTime().plusSeconds(l)));
+
+		state.setActuatorData(Json.createObjectBuilder()
+				.add("batch_id", b.jobId)
+				.add("batch_size", b.results.length)
+				.build());
 	}
 
 	@Override

@@ -24,7 +24,6 @@ import au.edu.uq.rcc.nimrodg.agent.AgentState;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPIException;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
-import au.edu.uq.rcc.nimrodg.impl.base.db.BrokenDBInvariantException;
 import au.edu.uq.rcc.nimrodg.impl.base.db.DBBaseHelper;
 import au.edu.uq.rcc.nimrodg.impl.base.db.DBUtils;
 import au.edu.uq.rcc.nimrodg.impl.base.db.TempAgent;
@@ -38,6 +37,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import javax.json.JsonObject;
 import javax.json.JsonStructure;
 
 public class DBResourceHelpers extends DBBaseHelper {
@@ -96,8 +96,8 @@ public class DBResourceHelpers extends DBBaseHelper {
 		this.qGetAgentsOnResource = prepareStatement("SELECT * FROM nimrod_resource_agents WHERE location = ? AND expired = FALSE");
 		this.qAddAgent = prepareStatement("INSERT INTO nimrod_resource_agents(\n"
 				+ "	state, queue, agent_uuid, shutdown_signal, shutdown_reason,\n"
-				+ "	expiry_time, location\n"
-				+ ") VALUES(?, ?, ?, ?, ?, ?, ?)", true);
+				+ "	expiry_time, location, actuator_data\n"
+				+ ") VALUES(?, ?, ?, ?, ?, ?, ?, ?)", true);
 		this.qUpdateAgent = prepareStatement("UPDATE nimrod_resource_agents SET state = ?, shutdown_signal = ?, shutdown_reason = ?, last_heard_from = ?, expired = ? WHERE agent_uuid = ?");
 	}
 
@@ -287,6 +287,12 @@ public class DBResourceHelpers extends DBBaseHelper {
 		qAddAgent.setString(5, AgentShutdown.reasonToString(agent.getShutdownReason()));
 		DBUtils.setLongInstant(qAddAgent, 6, agent.getExpiryTime());
 		qAddAgent.setLong(7, resId);
+		JsonObject data = agent.getActuatorData();
+		if(data == null) {
+			qAddAgent.setString(8, null);
+		} else {
+			qAddAgent.setString(8, data.toString());
+		}
 
 		if(qAddAgent.executeUpdate() == 0) {
 			throw new SQLException("Creating agent failed, no rows affected");

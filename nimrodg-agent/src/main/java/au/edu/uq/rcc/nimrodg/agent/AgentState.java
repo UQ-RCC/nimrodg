@@ -22,6 +22,8 @@ package au.edu.uq.rcc.nimrodg.agent;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
 import java.time.Instant;
 import java.util.UUID;
+import javax.json.JsonObject;
+
 
 public interface AgentState {
 
@@ -66,4 +68,7 @@ public interface AgentState {
 
 	public void setExpired(boolean expired);
 
+	public JsonObject getActuatorData();
+
+	void setActuatorData(JsonObject data);
 }
