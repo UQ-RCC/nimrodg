@@ -66,19 +66,16 @@ public abstract class AAAAA implements AutoCloseable {
 		private final ActuatorState actstate;
 
 		public final UUID[] uuids;
-		public final Resource node;
+		public final Resource resource;
 		public final String rootPath;
-		public final CompletableFuture<Resource[]> future;
 		public final CompletableFuture<Actuator> actuatorFuture;
 		public final CompletableFuture<LaunchResult[]> launchResults;
 
-		private LaunchRequest(UUID[] uuids, Resource wantedNode, ActuatorState actstate) {
+		private LaunchRequest(UUID[] uuids, Resource resource, ActuatorState actstate) {
 			this.actstate = actstate;
-
 			this.uuids = uuids;
-			this.node = wantedNode;
-			this.rootPath = this.node.getPath();
-			this.future = new CompletableFuture<>();
+			this.resource = resource;
+			this.rootPath = this.resource.getPath();
 			this.actuatorFuture = actstate.actuator;
 			this.launchResults = new CompletableFuture<>();
 		}
@@ -132,21 +129,21 @@ public abstract class AAAAA implements AutoCloseable {
 					/* NB: getNow() will never fail. */
 					launchResults = rq.actstate.actuator.getNow(null).launchAgents(rq.uuids);
 				} catch(IOException | RuntimeException e) {
-					rq.future.completeExceptionally(e);
+					rq.launchResults.completeExceptionally(e);
 					continue;
 				}
 
-				rq.launchResults.complete(launchResults);
-
 				/* At least one agent was spawned, complete the future */
 				for(int i = 0; i < launchResults.length; ++i) {
+					assert(rq.resource.equals(launchResults[i].node));
 					if(launchResults[i].node == null) {
-						reportLaunchFailure(rq.uuids[i], rq.node, launchResults[i].t);
+						reportLaunchFailure(rq.uuids[i], rq.resource, launchResults[i].t);
 					} else {
 						LOGGER.trace("Actuator placed agent {} on '{}'", rq.uuids[i], launchResults[i].node.getPath());
 					}
 				}
-				rq.future.complete(Stream.of(launchResults).map(r -> r.node).toArray(Resource[]::new));
+
+				rq.launchResults.complete(launchResults);
 			} finally {
 				rq.actstate.busy.set(false);
 			}
@@ -204,7 +201,7 @@ public abstract class AAAAA implements AutoCloseable {
 		LaunchRequest rq = new LaunchRequest(uuids, node, as);
 
 		/* Set up the failure code. If this happens, no agents from the batch were launched.*/
-		rq.future.exceptionally(t -> {
+		rq.launchResults.exceptionally(t -> {
 			Throwable at = t;
 			if(t instanceof CancellationException) {
 				for(int i = 0; i < rq.uuids.length; ++i) {
@@ -226,7 +223,7 @@ public abstract class AAAAA implements AutoCloseable {
 			}
 
 			for(int i = 0; i < rq.uuids.length; ++i) {
-				reportLaunchFailure(rq.uuids[i], rq.node, at);
+				reportLaunchFailure(rq.uuids[i], rq.resource, at);
 			}
 
 			return null;
@@ -264,7 +261,7 @@ public abstract class AAAAA implements AutoCloseable {
 
 			/* Kill any pending launches and gather their futures. */
 			LOGGER.trace("Cancelling pending launches...");
-			m_Requests.forEach(rq -> rq.future.cancel(true));
+			m_Requests.forEach(rq -> rq.launchResults.cancel(true));
 			m_Requests.clear();
 
 			m_Actuators.values().forEach(as -> as.actuator.cancel(true));

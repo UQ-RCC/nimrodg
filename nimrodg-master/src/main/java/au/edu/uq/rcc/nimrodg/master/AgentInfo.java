@@ -29,16 +29,14 @@ import au.edu.uq.rcc.nimrodg.api.Resource;
 class AgentInfo {
 
 	public final UUID uuid;
-	public final Resource node;
-	public final Resource root;
+	public final Resource resource;
 	public final Actuator actuator;
 	public final ReferenceAgent instance;
 	public final AgentState state;
 
-	public AgentInfo(UUID uuid, Resource node, Resource root, Actuator actuator, ReferenceAgent instance, AgentState state) {
+	public AgentInfo(UUID uuid, Resource resource, Actuator actuator, ReferenceAgent instance, AgentState state) {
 		this.uuid = uuid;
-		this.node = node;
-		this.root = root;
+		this.resource = resource;
 		this.actuator = actuator;
 		this.instance = instance;
 		this.state = state;

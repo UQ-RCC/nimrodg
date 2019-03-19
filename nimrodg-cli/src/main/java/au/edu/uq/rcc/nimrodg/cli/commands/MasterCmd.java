@@ -32,11 +32,9 @@ import au.edu.uq.rcc.nimrodg.cli.NimrodCLI;
 import au.edu.uq.rcc.nimrodg.cli.NimrodCLICommand;
 import au.edu.uq.rcc.nimrodg.master.AMQProcessor;
 import au.edu.uq.rcc.nimrodg.master.Master;
-import au.edu.uq.rcc.nimrodg.master.Master2;
 import au.edu.uq.rcc.nimrodg.master.MessageQueueListener;
 import au.edu.uq.rcc.nimrodg.master.sched.DefaultAgentScheduler;
 import au.edu.uq.rcc.nimrodg.master.sched.DefaultJobScheduler;
-import au.edu.uq.rcc.nimrodg.agent.messages.json.JsonBackend;
 import au.edu.uq.rcc.nimrodg.resource.act.ActuatorUtils;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -99,8 +97,7 @@ public class MasterCmd extends NimrodCLICommand {
 
 		String tlsProtocol = nimrod.getPropertyOrDefault("nimrod.master.amqp.tls_protocol", "TLSv1.2");
 
-		//try(Master m = new Master((NimrodMasterAPI)nimrod, exp, DefaultJobScheduler.FACTORY, DefaultAgentScheduler.FACTORY)) {
-		try(Master2 m = new Master2((NimrodMasterAPI)nimrod, exp, DefaultJobScheduler.FACTORY, DefaultAgentScheduler.FACTORY)) {
+		try(Master m = new Master((NimrodMasterAPI)nimrod, exp, DefaultJobScheduler.FACTORY, DefaultAgentScheduler.FACTORY)) {
 			try(AMQProcessor amqp = new AMQProcessor(
 					amqpUri.uri,
 					certs,

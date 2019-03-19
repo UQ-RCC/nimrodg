@@ -303,6 +303,8 @@ public class Master implements MessageQueueListener, AutoCloseable {
 			nimrod.getProperties().entrySet().stream()
 					.map(e -> new ConfigChangeMasterEvent(e.getKey(), null, e.getValue()))
 					.forEach(events::add);
+
+			// TODO: Recover agent states
 			return state;
 		} else if(mode == Mode.Leave) {
 			return state;
@@ -412,7 +414,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 			 * If our future's not done, defer the message.
 			 * This happens sometimes with PBS, the jobs start before qsub's returned.
 			 */
-			if(!_info.future.isDone()) {
+			if(!_info.launchResults.isDone()) {
 				LOGGER.debug("Agent connected, but actuator hasn't finished, deferring...");
 				pendingAgentConnections.put(hello.getAgentUUID(), _info);
 				return MessageQueueListener.MessageOperation.RejectAndRequeue;
@@ -461,7 +463,6 @@ public class Master implements MessageQueueListener, AutoCloseable {
 				return MessageQueueListener.MessageOperation.Terminate;
 			}
 			/* getNow(null) will never fail here. */
-			Resource[] batchNodes = _info.future.getNow(null);
 			Actuator.LaunchResult[] launchResults = _info.launchResults.getNow(null);
 
 			UUID agentUuid = msg.getAgentUUID();
@@ -483,7 +484,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 				throw new IllegalStateException("batchIndex < 0, this should never happen");
 			}
 			agentState.setExpiryTime(launchResults[batchIndex].expiryTime);
-			ai = new AgentInfo(msg.getAgentUUID(), batchNodes[batchIndex], _info.node, _info.actuatorFuture.getNow(null), new ReferenceAgent(agentState, agentListener), agentState);
+			ai = new AgentInfo(msg.getAgentUUID(), _info.resource, _info.actuatorFuture.getNow(null), new ReferenceAgent(agentState, agentListener), agentState);
 			allAgents.put(ai.uuid, ai);
 		}
 
@@ -754,7 +755,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 			if(oldState == Agent.State.WAITING_FOR_HELLO && newState == Agent.State.READY) {
 				ai.state.setCreationTime(Instant.now());
 				ai.actuator.notifyAgentConnection(ai.state);
-				nimrod.addAgent(ai.node, ai.state);
+				nimrod.addAgent(ai.resource, ai.state);
 				heart.onAgentConnect(ai.uuid);
 			} else {
 				if(newState == Agent.State.SHUTDOWN) {
@@ -770,7 +771,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 			}
 
 			/* Execute this with priority so it's processed before the next scheduler tick. */
-			runLater("agOnStateChange", () -> agentScheduler.onAgentStateUpdate(agent, ai.node, oldState, newState), true);
+			runLater("agOnStateChange", () -> agentScheduler.onAgentStateUpdate(agent, ai.resource, oldState, newState), true);
 		}
 
 		@Override

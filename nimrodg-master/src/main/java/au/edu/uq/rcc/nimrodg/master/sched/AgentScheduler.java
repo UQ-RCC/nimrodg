@@ -120,12 +120,6 @@ public interface AgentScheduler {
 	 */
 	void setAgentOperations(Operations ops) throws IllegalArgumentException;
 
-	/* Mater->Scheduler operations. The scheduler should make no functional operations, only store the event
-	 * and respond to it later. */
-	void onResourceAdd(Resource res);
-
-	void onResourceRemove(Resource res);
-
 	/**
 	 * Called by the master when an agent's state updates.
 	 *

@@ -92,16 +92,6 @@ public class DefaultAgentScheduler implements AgentScheduler {
 	}
 
 	@Override
-	public void onResourceAdd(Resource res) {
-		LOGGER.trace("onResourceAdd({})", res.getPath());
-	}
-
-	@Override
-	public void onResourceRemove(Resource res) {
-		LOGGER.trace("onResourceRemove({})", res.getPath());
-	}
-
-	@Override
 	public void onAgentStateUpdate(Agent agent, Resource node, Agent.State oldState, Agent.State newState) {
 		LOGGER.trace("onAgentStateUpdate({}, {}, {}, {})", agent.getUUID(), node.getPath(), oldState, newState);
 
