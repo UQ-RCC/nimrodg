@@ -48,7 +48,11 @@ import java.util.concurrent.TimeoutException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import au.edu.uq.rcc.nimrodg.api.Resource;
+import java.util.Optional;
 import javax.json.Json;
+import javax.json.JsonNumber;
+import javax.json.JsonObject;
+import javax.json.JsonString;
 
 public class LocalActuator implements Actuator {
 
@@ -74,6 +78,7 @@ public class LocalActuator implements Actuator {
 		public final Path outputPath;
 		public final ProcessBuilder builder;
 		public Process process;
+		public ProcessHandle handle;
 		public CompletableFuture<Void> future;
 		public LocalState state;
 
@@ -210,6 +215,71 @@ public class LocalActuator implements Actuator {
 		return agents;
 	}
 
+	private Void agentShutdownHandler(LocalAgent la, Throwable t) {
+		if(t != null) {
+			LOGGER.info("Agent {} future failed exceptionally.");
+			LOGGER.catching(t);
+			ops.reportAgentFailure(this, la.uuid, AgentShutdown.Reason.HostSignal, 9);
+		} else {
+			int ret;
+			if(la.process == null) {
+				/* No way to get the return code of an orphaned agent, just use 0. */
+				ret = 0;
+			} else {
+				ret = la.process.exitValue();
+			}
+
+			LOGGER.info("Agent {} process {} exited with return code {}.", la.uuid, la.handle.pid(), ret);
+
+			/*
+			 * Alright, we need to be a bit delicate here.
+			 *
+			 * The agent has three known return values:
+			 * 0 - All good
+			 * 1 - Something bad happened
+			 * 2 - Invalid arguments
+			 *
+			 * If it's > 128, it was killed by a signal, which is (val - 128).
+			 *
+			 * The only time we can guarantee the final "agent.shutdown" message has been
+			 * sent is when the return value is 0.
+			 *
+			 * There's a chance that the agent may have sent it's dying request, but report the failure anyway.
+			 * The master is able to handle this.
+			 */
+			if(ret != 0) {
+				if(ret > 128) {
+					ops.reportAgentFailure(this, la.uuid, AgentShutdown.Reason.HostSignal, ret - 128);
+				} else {
+					ops.reportAgentFailure(this, la.uuid, AgentShutdown.Reason.HostSignal, -1);
+				}
+			}
+		}
+
+		if(captureMode == CaptureMode.COPY) {
+			Path logPath = tmpRoot.resolve(String.format("agent-%s.txt", la.uuid));
+			try {
+				Files.move(la.outputPath, logPath);
+			} catch(IOException e) {
+				LOGGER.error("Error copying agent output back.");
+				LOGGER.catching(e);
+			}
+		}
+
+		try {
+			NimrodUtils.deltree(la.path);
+		} catch(IOException e) {
+			LOGGER.error("Error cleaning up after agent {}.", la.uuid);
+			LOGGER.catching(e);
+		}
+
+		synchronized(agents) {
+			agents.remove(la.uuid);
+		}
+
+		return null;
+	}
+
 	@Override
 	public LaunchResult[] launchAgents(UUID[] uuids) throws IOException {
 		if(isClosed) {
@@ -246,70 +316,15 @@ public class LocalActuator implements Actuator {
 				continue;
 			}
 
+			la.handle = la.process.toHandle();
+
 			synchronized(agents) {
 				agents.put(la.uuid, la);
 			}
 
 			results[i] = new LaunchResult(node, null);
-			LOGGER.info("Launched agent {} with PID {}", la.uuid, la.process.pid());
-
-			la.future = la.process.onExit().handle((p, t) -> {
-				if(t != null) {
-					LOGGER.info("Agent {} future failed exceptionally.");
-					LOGGER.catching(t);
-					ops.reportAgentFailure(this, la.uuid, AgentShutdown.Reason.HostSignal, 9);
-				} else {
-					int ret = la.process.exitValue();
-					LOGGER.info("Agent {} process {} exited with return code {}.", la.uuid, la.process.pid(), ret);
-
-					/*
-					 * Alright, we need to be a bit delicate here.
-					 *
-					 * The agent has three known return values:
-					 * 0 - All good
-					 * 1 - Something bad happened
-					 * 2 - Invalid arguments
-					 *
-					 * If it's > 128, it was killed by a signal, which is (val - 128).
-					 *
-					 * The only time we can guarantee the final "agent.shutdown" message has been
-					 * sent is when the return value is 0.
-					 *
-					 * There's a chance that the agent may have sent it's dying request, but report the failure anyway.
-					 * The master is able to handle this.
-					 */
-					if(ret != 0) {
-						if(ret > 128) {
-							ops.reportAgentFailure(this, la.uuid, AgentShutdown.Reason.HostSignal, ret - 128);
-						} else {
-							ops.reportAgentFailure(this, la.uuid, AgentShutdown.Reason.HostSignal, -1);
-						}
-					}
-				}
-
-				if(captureMode == CaptureMode.COPY) {
-					Path logPath = tmpRoot.resolve(String.format("agent-%s.txt", la.uuid));
-					try {
-						Files.move(la.outputPath, logPath);
-					} catch(IOException e) {
-						LOGGER.error("Error copying agent output back.");
-						LOGGER.catching(e);
-					}
-				}
-
-				try {
-					NimrodUtils.deltree(la.path);
-				} catch(IOException e) {
-					LOGGER.error("Error cleaning up after agent {}.", la.uuid);
-					LOGGER.catching(e);
-				}
-
-				synchronized(agents) {
-					agents.remove(la.uuid);
-				}
-
-				return null;
-			});
+			LOGGER.info("Launched agent {} with PID {}", la.uuid, la.handle.pid());
+			la.future = la.process.onExit().handle((p, t) -> agentShutdownHandler(la, t));
 		}
 
 		return results;
@@ -332,7 +347,7 @@ public class LocalActuator implements Actuator {
 		 * future's completed. Best case scenario, it dies and the cleanup runs
 		 * silently.
 		 */
-		la.process.destroyForcibly();
+		la.handle.destroyForcibly();
 		la.future.obtrudeValue(null);
 		return true;
 	}
@@ -348,7 +363,7 @@ public class LocalActuator implements Actuator {
 		CompletableFuture af;
 		synchronized(agents) {
 			af = CompletableFuture.allOf(agents.values().stream().map(a -> a.future).toArray(CompletableFuture[]::new));
-			agents.values().stream().map(a -> a.process).forEach(Process::destroy);
+			agents.values().stream().map(a -> a.handle).forEach(ProcessHandle::destroy);
 		}
 
 		long msWait = 5000;
@@ -400,7 +415,9 @@ public class LocalActuator implements Actuator {
 		//state.setExpiryTime(Instant.now(Clock.systemUTC()).plusSeconds(10));
 		la.state = LocalState.CONNECTED;
 		state.setActuatorData(Json.createObjectBuilder()
-				.add("pid", la.process.pid())
+				.add("pid", la.handle.pid())
+				.add("path", la.path.toString())
+				.add("output_path", la.outputPath.toString())
 				.build()
 		);
 	}
@@ -416,7 +433,7 @@ public class LocalActuator implements Actuator {
 
 		la.state = LocalState.DISCONNECTED;
 		/* Just in case */
-		la.process.destroy();
+		la.handle.destroy();
 	}
 
 	@Override
@@ -424,4 +441,54 @@ public class LocalActuator implements Actuator {
 		return agents.size() + num <= parallelism;
 	}
 
+	public boolean adopt(AgentState state) {
+		JsonObject data = state.getActuatorData();
+		if(data == null) {
+			return false;
+		}
+
+		JsonNumber jpid = data.getJsonNumber("pid");
+		if(jpid == null) {
+			return false;
+		}
+
+		JsonString jpath = data.getJsonString("path");
+		if(jpath == null) {
+			return false;
+		}
+
+		JsonString joutpath = data.getJsonString("output_path");
+		if(joutpath == null) {
+			return false;
+		}
+
+		/* See if the process is alive. */
+		Optional<ProcessHandle> oph = ProcessHandle.of(jpid.longValue());
+		if(!oph.isPresent()) {
+			return true;
+		}
+
+		LocalAgent la = new LocalAgent(
+				state.getUUID(),
+				Paths.get(jpath.getString()),
+				Paths.get(joutpath.getString()),
+				null
+		);
+
+		la.handle = oph.get();
+		la.state = LocalState.CONNECTED;
+
+		/* Only "adopt" us if we're not a dupe. */
+		boolean adopted;
+		synchronized(agents) {
+			adopted = agents.putIfAbsent(state.getUUID(), la) == null;
+		}
+
+		/* Only add the shutdown handler if we were adopted. */
+		if(adopted) {
+			la.future = la.handle.onExit().handle((p, t) -> agentShutdownHandler(la, t));
+		}
+
+		return true;
+	}
 }
