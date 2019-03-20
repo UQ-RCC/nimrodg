@@ -74,17 +74,17 @@ public class LocalActuator implements Actuator {
 	private class LocalAgent {
 
 		public final UUID uuid;
-		public final Path path;
-		public final Path outputPath;
+		public final Path workRoot;
+		public final Optional<Path> outputPath;
 		public final ProcessBuilder builder;
 		public Process process;
 		public ProcessHandle handle;
 		public CompletableFuture<Void> future;
 		public LocalState state;
 
-		public LocalAgent(UUID uuid, Path path, Path outputPath, ProcessBuilder builder) {
+		public LocalAgent(UUID uuid, Path workRoot, Optional<Path> outputPath, ProcessBuilder builder) {
 			this.uuid = uuid;
-			this.path = path;
+			this.workRoot = workRoot;
 			this.outputPath = outputPath;
 			this.builder = builder;
 			this.process = null;
@@ -189,7 +189,7 @@ public class LocalActuator implements Actuator {
 			agentArgs.add("--work-root");
 			agentArgs.add(workRoot.toString());
 
-			Path outputPath = null;
+			Optional<Path> outputPath = Optional.empty();
 
 			ProcessBuilder pb = new ProcessBuilder(agentArgs);
 			if(captureMode == CaptureMode.OFF) {
@@ -199,12 +199,12 @@ public class LocalActuator implements Actuator {
 			} else {
 				String fname = String.format("agent-%s.txt", uuids[i]);
 				if(captureMode == CaptureMode.COPY) {
-					outputPath = tmpDir.resolve(fname);
+					outputPath = Optional.of(tmpDir.resolve(fname));
 				} else {
-					outputPath = tmpRoot.resolve(fname);
+					outputPath = Optional.of(tmpRoot.resolve(fname));
 				}
 				/* NB: Comment these for testing the master's robustness. Stdout will block. */
-				pb.redirectOutput(ProcessBuilder.Redirect.to(outputPath.toFile()));
+				pb.redirectOutput(ProcessBuilder.Redirect.to(outputPath.map(Path::toFile).get()));
 			}
 
 			pb.redirectErrorStream(true);
@@ -259,7 +259,7 @@ public class LocalActuator implements Actuator {
 		if(captureMode == CaptureMode.COPY) {
 			Path logPath = tmpRoot.resolve(String.format("agent-%s.txt", la.uuid));
 			try {
-				Files.move(la.outputPath, logPath);
+				Files.move(la.outputPath.get(), logPath);
 			} catch(IOException e) {
 				LOGGER.error("Error copying agent output back.");
 				LOGGER.catching(e);
@@ -267,7 +267,7 @@ public class LocalActuator implements Actuator {
 		}
 
 		try {
-			NimrodUtils.deltree(la.path);
+			NimrodUtils.deltree(la.workRoot);
 		} catch(IOException e) {
 			LOGGER.error("Error cleaning up after agent {}.", la.uuid);
 			LOGGER.catching(e);
@@ -416,8 +416,8 @@ public class LocalActuator implements Actuator {
 		la.state = LocalState.CONNECTED;
 		state.setActuatorData(Json.createObjectBuilder()
 				.add("pid", la.handle.pid())
-				.add("path", la.path.toString())
-				.add("output_path", la.outputPath.toString())
+				.add("work_root", la.workRoot.toString())
+				.add("output_path", la.outputPath.map(p -> p.toString()).orElse(""))
 				.build()
 		);
 	}
@@ -452,15 +452,15 @@ public class LocalActuator implements Actuator {
 			return false;
 		}
 
-		JsonString jpath = data.getJsonString("path");
-		if(jpath == null) {
+		JsonString jworkroot = data.getJsonString("work_root");
+		if(jworkroot == null) {
 			return false;
 		}
 
-		JsonString joutpath = data.getJsonString("output_path");
-		if(joutpath == null) {
-			return false;
-		}
+		Optional<Path> outputPath = Optional.ofNullable(data.getJsonString("output_path"))
+				.map(js -> js.getString())
+				.filter(s -> !s.isEmpty())
+				.map(s -> Paths.get(s));
 
 		/* See if the process is alive. */
 		Optional<ProcessHandle> oph = ProcessHandle.of(jpid.longValue());
@@ -470,8 +470,8 @@ public class LocalActuator implements Actuator {
 
 		LocalAgent la = new LocalAgent(
 				state.getUUID(),
-				Paths.get(jpath.getString()),
-				Paths.get(joutpath.getString()),
+				Paths.get(jworkroot.getString()),
+				outputPath,
 				null
 		);
 
