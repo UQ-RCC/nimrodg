@@ -24,6 +24,7 @@ import au.edu.uq.rcc.nimrodg.agent.DefaultAgentState;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
 import java.time.Instant;
 import java.util.UUID;
+import javax.json.JsonObject;
 
 public class TempAgent {
 
@@ -37,8 +38,9 @@ public class TempAgent {
 	public final Instant expiryTime;
 	public final boolean expired;
 	public final Long location;
+	public final JsonObject actuatorData;
 
-	public TempAgent(long id, Agent.State state, String queue, UUID uuid, int shutdownSignal, AgentShutdown.Reason shutdownReason, Instant created, Instant expiryTime, boolean expired, Long location) {
+	public TempAgent(long id, Agent.State state, String queue, UUID uuid, int shutdownSignal, AgentShutdown.Reason shutdownReason, Instant created, Instant expiryTime, boolean expired, Long location, JsonObject actuatorData) {
 		this.id = id;
 		this.state = state;
 		this.queue = queue;
@@ -49,6 +51,7 @@ public class TempAgent {
 		this.expiryTime = expiryTime == null ? Instant.MAX : expiryTime;
 		this.expired = expired;
 		this.location = location;
+		this.actuatorData = actuatorData;
 	}
 
 	public Impl create() {
@@ -65,6 +68,7 @@ public class TempAgent {
 			this.setShutdownReason(ta.shutdownReason);
 			this.setCreationTime(ta.created);
 			this.setExpiryTime(ta.expiryTime);
+			this.setActuatorData(ta.actuatorData);
 		}
 	}
 

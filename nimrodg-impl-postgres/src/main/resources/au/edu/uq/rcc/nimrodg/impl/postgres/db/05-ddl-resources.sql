@@ -123,7 +123,8 @@ CREATE TABLE nimrod_resource_agents(
 	expiry_time				TIMESTAMP WITH TIME ZONE CHECK(expiry_time >= created),
 	expired_at				TIMESTAMP WITH TIME ZONE DEFAULT NULL CHECK(expired_at >= created),
 	expired					BOOLEAN NOT NULL DEFAULT FALSE,
-	location				BIGINT REFERENCES nimrod_resources(id) ON DELETE CASCADE
+	location				BIGINT REFERENCES nimrod_resources(id) ON DELETE CASCADE,
+	actuator_data			JSONB
 );
 CREATE INDEX ON nimrod_resource_agents(location) WHERE location IS NOT NULL;
 
@@ -307,7 +308,7 @@ CREATE OR REPLACE FUNCTION get_agents_on_resource(_res_id BIGINT) RETURNS SETOF 
 	SELECT * FROM nimrod_resource_agents WHERE location = _res_id AND expired = FALSE;
 $$ LANGUAGE SQL;
 
-CREATE OR REPLACE FUNCTION add_agent(_state nimrod_agent_state, _queue TEXT, _uuid UUID, _shutdown_signal INTEGER, _shutdown_reason nimrod_agent_shutdown_reason, _expiry_time TIMESTAMP WITH TIME ZONE, _location BIGINT) RETURNS nimrod_resource_agents AS $$
+CREATE OR REPLACE FUNCTION add_agent(_state nimrod_agent_state, _queue TEXT, _uuid UUID, _shutdown_signal INTEGER, _shutdown_reason nimrod_agent_shutdown_reason, _expiry_time TIMESTAMP WITH TIME ZONE, _location BIGINT, _actuator_data JSONB) RETURNS nimrod_resource_agents AS $$
 	INSERT INTO nimrod_resource_agents(
 		state,
 		queue,
@@ -315,7 +316,8 @@ CREATE OR REPLACE FUNCTION add_agent(_state nimrod_agent_state, _queue TEXT, _uu
 		shutdown_signal,
 		shutdown_reason,
 		expiry_time,
-		location
+		location,
+		actuator_data
 	)
 	VALUES(
 		_state,
@@ -324,7 +326,8 @@ CREATE OR REPLACE FUNCTION add_agent(_state nimrod_agent_state, _queue TEXT, _uu
 		_shutdown_signal,
 		_shutdown_reason,
 		_expiry_time,
-		_location
+		_location,
+		_actuator_data
 	)
 	RETURNING *;
 $$ LANGUAGE SQL;

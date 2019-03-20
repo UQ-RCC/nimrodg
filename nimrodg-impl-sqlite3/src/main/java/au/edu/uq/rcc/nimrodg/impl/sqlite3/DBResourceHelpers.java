@@ -279,7 +279,7 @@ public class DBResourceHelpers extends DBBaseHelper {
 		}
 	}
 
-	public TempAgent addAgent(long resId, AgentState agent) throws SQLException {
+	public void addAgent(long resId, AgentState agent) throws SQLException {
 		qAddAgent.setString(1, Agent.stateToString(agent.getState()));
 		qAddAgent.setString(2, agent.getQueue());
 		qAddAgent.setString(3, agent.getUUID().toString());
@@ -297,17 +297,6 @@ public class DBResourceHelpers extends DBBaseHelper {
 		if(qAddAgent.executeUpdate() == 0) {
 			throw new SQLException("Creating agent failed, no rows affected");
 		}
-
-		long id;
-		try(ResultSet rs = qAddResource.getGeneratedKeys()) {
-			if(rs.next()) {
-				id = rs.getLong(1);
-			} else {
-				throw new SQLException("Creating agent failed, no id obtained");
-			}
-		}
-
-		return getAgentInformationByUUID(agent.getUUID()).get();
 	}
 
 	public boolean updateAgent(AgentState agent) throws SQLException {
@@ -368,7 +357,8 @@ public class DBResourceHelpers extends DBBaseHelper {
 				DBUtils.getLongInstant(rs, "created"),
 				DBUtils.getLongInstant(rs, "expiry_time"),
 				rs.getBoolean("expired"),
-				rs.getLong("location")
+				rs.getLong("location"),
+				DBUtils.getJSONObject(rs, "actuator_data")
 		);
 	}
 }

@@ -32,6 +32,7 @@ import au.edu.uq.rcc.nimrodg.api.NimrodMasterAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import java.util.Arrays;
 import au.edu.uq.rcc.nimrodg.api.Resource;
+import javax.json.Json;
 
 public class DummyActuator implements Actuator {
 
@@ -88,7 +89,9 @@ public class DummyActuator implements Actuator {
 
 	@Override
 	public void notifyAgentConnection(AgentState state) {
-
+		state.setActuatorData(Json.createObjectBuilder()
+				.add("hashCode", state.hashCode())
+				.build());
 	}
 
 	@Override

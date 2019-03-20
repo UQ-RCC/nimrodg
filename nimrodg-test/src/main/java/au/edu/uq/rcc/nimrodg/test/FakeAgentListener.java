@@ -20,15 +20,25 @@
 package au.edu.uq.rcc.nimrodg.test;
 
 import au.edu.uq.rcc.nimrodg.agent.Agent;
+import au.edu.uq.rcc.nimrodg.agent.AgentState;
 import au.edu.uq.rcc.nimrodg.agent.ReferenceAgent;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentMessage;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentPong;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentSubmit;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentUpdate;
+import au.edu.uq.rcc.nimrodg.api.NimrodMasterAPI;
 import java.io.IOException;
 import java.time.Instant;
 
 public class FakeAgentListener implements ReferenceAgent.AgentListener {
+
+	public final DummyActuator actuator;
+	public final NimrodMasterAPI nimrod;
+
+	public FakeAgentListener(NimrodMasterAPI nimrod, DummyActuator act) {
+		this.nimrod = nimrod;
+		this.actuator = act;
+	}
 
 	@Override
 	public void send(Agent agent, AgentMessage msg) throws IOException {
@@ -36,8 +46,29 @@ public class FakeAgentListener implements ReferenceAgent.AgentListener {
 	}
 
 	@Override
-	public void onStateChange(Agent agent, Agent.State oldState, Agent.State newState) {
+	public void onStateChange(Agent _agent, Agent.State oldState, Agent.State newState) {
+		if(oldState == null) {
+			/* Initial state setup, we don't do anything here. */
+			return;
+		}
 
+		ReferenceAgent agent = (ReferenceAgent)_agent;
+		AgentState as = agent.getDataStore();
+
+		if(oldState == Agent.State.WAITING_FOR_HELLO && newState == Agent.State.READY) {
+			as.setCreationTime(Instant.now());
+			actuator.notifyAgentConnection(as);
+			nimrod.addAgent(actuator.getNode(), as);
+		} else {
+			if(newState == Agent.State.SHUTDOWN) {
+				as.setExpired(true);
+			}
+			nimrod.updateAgent(as);
+
+			if(newState == Agent.State.SHUTDOWN) {
+				actuator.notifyAgentDisconnection(as.getUUID());
+			}
+		}
 	}
 
 	@Override
