@@ -232,7 +232,7 @@ public abstract class POSIXActuator<C extends SSHConfig> implements Actuator {
 	protected abstract LaunchResult[] launchAgents(RemoteShell shell, UUID[] uuids) throws IOException;
 
 	@Override
-	public final Resource getNode() {
+	public final Resource getResource() {
 		return node;
 	}
 

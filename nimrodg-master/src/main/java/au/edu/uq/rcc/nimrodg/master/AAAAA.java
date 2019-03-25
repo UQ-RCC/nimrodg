@@ -284,7 +284,7 @@ public abstract class AAAAA implements AutoCloseable {
 				return null;
 			}
 
-			String path = a.getNode().getPath();
+			String path = a.getResource().getPath();
 			try {
 				a.close();
 			} catch(IOException | RuntimeException ex) {
