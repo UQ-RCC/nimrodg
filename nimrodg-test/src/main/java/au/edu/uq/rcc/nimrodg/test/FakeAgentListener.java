@@ -58,7 +58,7 @@ public class FakeAgentListener implements ReferenceAgent.AgentListener {
 		if(oldState == Agent.State.WAITING_FOR_HELLO && newState == Agent.State.READY) {
 			as.setCreationTime(Instant.now());
 			actuator.notifyAgentConnection(as);
-			nimrod.addAgent(actuator.getNode(), as);
+			nimrod.addAgent(actuator.getResource(), as);
 		} else {
 			if(newState == Agent.State.SHUTDOWN) {
 				as.setExpired(true);

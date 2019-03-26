@@ -60,6 +60,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -297,24 +298,44 @@ public class Master implements MessageQueueListener, AutoCloseable {
 		return true;
 	}
 
+	/*
+	 * Register an agent with the master, creating its state machine et al.
+	 */
+	private AgentInfo registerAgent(AgentState as, Resource res, Optional<Actuator> act, boolean initial) {
+		AgentInfo ai = new AgentInfo(as.getUUID(), res, act, new ReferenceAgent(as, agentListener, initial), as);
+		allAgents.put(ai.uuid, ai);
+		return ai;
+	}
 
-//	private void safsdfasdfasdf() {
-//		//runningJobs.put(uuid, new RunningJob(uuid, att, nj, agent, true));
-//		nimrod.getAssignedResources(experiment).stream()
-//				.flatMap(r -> nimrod.getResourceAgents(r).stream())
-//				.filter(ag -> !ag.getExpired() && ag.getState() != Agent.State.SHUTDOWN)
-//				.forEach(ag -> {
-//
-//					aaaaa.createActuator(root)
-//					AgentInfo ai = new AgentInfo(ag.getUUID(), root, actuator, instance, state);
-//
-//					if(ag.getState() == Agent.State.BUSY) {
-//						//runningJobs.put(k, v)
-//
-//						new RunningJob(ag.getUUID(), nimrod.getatt, job, new R, false);
-//					}
-//				});
-//	}
+	private void checkOrphanage() {
+		Map<Resource, Collection<? extends AgentState>> agentMap = nimrod.getAssignedResources(experiment).stream()
+				.collect(Collectors.toMap(
+						r -> r,
+ 						r -> nimrod.getResourceAgents(r)
+				));
+
+		for(Resource r : agentMap.keySet()) {
+			CompletableFuture<Actuator> af = aaaaa.getOrLaunchActuator(r);
+			for(AgentState as : agentMap.get(r)) {
+				AgentInfo ai = registerAgent(as, r, Optional.empty(), false);
+				heart.onAgentConnect(as.getUUID());
+				af.handle((a, t) -> {
+					if(t != null) {
+						LOGGER.warn("Cannot adopt agent {}, actuator failed to launch.", ai.uuid);
+						return null;
+					}
+
+					if(a.adopt(as)) {
+						LOGGER.info("Resource {} actuator adopted orphaned agent {}.", r.getPath(), as.getUUID());
+						ai.actuator = Optional.of(a);
+					} else {
+						LOGGER.info("Resource {} actuator rejected orphaned agent {}.", r.getPath(), as.getUUID());
+					}
+					return null;
+				});
+			}
+		}
+	}
 
 	private State startProc(State state, Mode mode) {
 		if(mode == Mode.Enter) {
@@ -323,7 +344,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 					.map(e -> new ConfigChangeMasterEvent(e.getKey(), null, e.getValue()))
 					.forEach(events::add);
 
-			// TODO: Recover agent states
+			checkOrphanage();
 			return state;
 		} else if(mode == Mode.Leave) {
 			return state;
@@ -502,9 +523,9 @@ public class Master implements MessageQueueListener, AutoCloseable {
 			if(batchIndex < 0) {
 				throw new IllegalStateException("batchIndex < 0, this should never happen");
 			}
+			agentState.setUUID(msg.getAgentUUID());
 			agentState.setExpiryTime(launchResults[batchIndex].expiryTime);
-			ai = new AgentInfo(msg.getAgentUUID(), _info.resource, _info.actuatorFuture.getNow(null), new ReferenceAgent(agentState, agentListener), agentState);
-			allAgents.put(ai.uuid, ai);
+			ai = registerAgent(agentState, _info.resource, Optional.of(_info.actuatorFuture.getNow(null)), true);
 		}
 
 		/* Process the agent message, do this in the main thread. */
@@ -773,7 +794,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 
 			if(oldState == Agent.State.WAITING_FOR_HELLO && newState == Agent.State.READY) {
 				ai.state.setCreationTime(Instant.now());
-				ai.actuator.notifyAgentConnection(ai.state);
+				ai.actuator.ifPresent(a -> a.notifyAgentConnection(ai.state));
 				nimrod.addAgent(ai.resource, ai.state);
 				heart.onAgentConnect(ai.uuid);
 			} else {
@@ -783,7 +804,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 				nimrod.updateAgent(ai.state);
 
 				if(newState == Agent.State.SHUTDOWN) {
-					ai.actuator.notifyAgentDisconnection(ai.uuid);
+					ai.actuator.ifPresent(a -> a.notifyAgentDisconnection(ai.uuid));
 					heart.onAgentDisconnect(ai.uuid);
 					allAgents.remove(ai.uuid);
 				}
@@ -861,8 +882,10 @@ public class Master implements MessageQueueListener, AutoCloseable {
 		public void expireAgent(UUID u) {
 			AgentInfo ai = allAgents.remove(u);
 			ai.state.setExpired(true);
-			ai.actuator.forceTerminateAgent(u);
-			ai.actuator.notifyAgentDisconnection(u);
+			ai.actuator.ifPresent(a -> {
+				a.forceTerminateAgent(u);
+				a.notifyAgentDisconnection(u);
+			});
 			runLater("heartExpireAgent", () -> agentScheduler.onAgentExpiry(u));
 			nimrod.updateAgent(ai.state);
 		}

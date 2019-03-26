@@ -441,6 +441,7 @@ public class LocalActuator implements Actuator {
 		return agents.size() + num <= parallelism;
 	}
 
+	@Override
 	public boolean adopt(AgentState state) {
 		JsonObject data = state.getActuatorData();
 		if(data == null) {

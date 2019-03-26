@@ -133,4 +133,8 @@ public interface Actuator extends AutoCloseable {
 	 * @throws IllegalArgumentException if node is not a node we manage.
 	 */
 	boolean canSpawnAgents(int num) throws IllegalArgumentException;
+
+	default boolean adopt(AgentState state) {
+		return false; //FIXME: 
+	}
 }
