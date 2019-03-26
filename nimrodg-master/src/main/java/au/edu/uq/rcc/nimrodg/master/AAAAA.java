@@ -37,7 +37,7 @@ import au.edu.uq.rcc.nimrodg.api.Resource;
 /**
  * AAAAA - Amazing Always Active Actuator Accelerator
  *
- * Manages a pool of threads, handling actuator setup and agent spawns.
+ * Manages actuator spawning.
  */
 public abstract class AAAAA implements AutoCloseable {
 
@@ -74,16 +74,16 @@ public abstract class AAAAA implements AutoCloseable {
 
 	private static final Logger LOGGER = LogManager.getLogger(AAAAA.class);
 
-	private final LinkedBlockingDeque<LaunchRequest> m_Requests;
-	private final AtomicBoolean m_WantStop;
-	private final ConcurrentHashMap<Resource, ActuatorState> m_Actuators;
-	private final CompletableFuture<Void> m_ShutdownFuture;
+	private final LinkedBlockingDeque<LaunchRequest> requests;
+	private final AtomicBoolean wantStop;
+	private final ConcurrentHashMap<Resource, ActuatorState> actuators;
+	private final CompletableFuture<Void> shutdownFuture;
 
 	public AAAAA() {
-		m_Requests = new LinkedBlockingDeque<>();
-		m_WantStop = new AtomicBoolean(false);
-		m_Actuators = new ConcurrentHashMap<>();
-		m_ShutdownFuture = new CompletableFuture<>();
+		requests = new LinkedBlockingDeque<>();
+		wantStop = new AtomicBoolean(false);
+		actuators = new ConcurrentHashMap<>();
+		shutdownFuture = new CompletableFuture<>();
 	}
 
 	public CompletableFuture<Actuator> getOrLaunchActuator(Resource root) {
@@ -91,7 +91,7 @@ public abstract class AAAAA implements AutoCloseable {
 	}
 
 	private ActuatorState getOrLaunchActuatorInternal(Resource root) {
-		return NimrodUtils.getOrAddLazy(m_Actuators, root, key -> {
+		return NimrodUtils.getOrAddLazy(actuators, root, key -> {
 			CompletableFuture<Actuator> launchFuture = new CompletableFuture<>();
 
 			return new ActuatorState(CompletableFuture.supplyAsync(() -> {
@@ -105,7 +105,7 @@ public abstract class AAAAA implements AutoCloseable {
 				if(t != null) {
 					LOGGER.error("Error launching actuator on '{}'", key.getPath());
 					LOGGER.catching(t);
-					m_Actuators.remove(key);
+					actuators.remove(key);
 					if(t instanceof CompletionException) {
 						launchFuture.completeExceptionally(((CompletionException)t).getCause());
 						throw (CompletionException)t;
@@ -130,7 +130,7 @@ public abstract class AAAAA implements AutoCloseable {
 	}
 
 	public LaunchRequest launchAgents(Resource node, int num) {
-		if(m_WantStop.get()) {
+		if(wantStop.get()) {
 			throw new IllegalStateException();
 		}
 
@@ -147,7 +147,7 @@ public abstract class AAAAA implements AutoCloseable {
 				for(int i = 0; i < rq.uuids.length; ++i) {
 					LOGGER.info("Agent '{}' launch on '{}' cancelled.", rq.uuids[i], node.getPath());
 				}
-				if(!m_Requests.remove(rq)) {
+				if(!requests.remove(rq)) {
 					/* cancel() has been called on the future, but we've already started spawning. Tough titties. */
 					LOGGER.warn("Can't cancel, already spawning. Agent will be rejected...");
 				}
@@ -169,7 +169,7 @@ public abstract class AAAAA implements AutoCloseable {
 			return null;
 		});
 
-		m_Requests.addLast(rq);
+		requests.addLast(rq);
 
 		/* NB: This must be async, we don't want it blocking this call. */
 		as.launchFuture.handleAsync((a, t) -> {
@@ -209,12 +209,12 @@ public abstract class AAAAA implements AutoCloseable {
 	}
 
 	public boolean isShutdown() {
-		return m_ShutdownFuture.isDone();
+		return shutdownFuture.isDone();
 	}
 
 	public CompletableFuture<Void> shutdown() {
-		if(m_ShutdownFuture.isDone()) {
-			return m_ShutdownFuture;
+		if(shutdownFuture.isDone()) {
+			return shutdownFuture;
 		}
 
 		/*
@@ -222,19 +222,19 @@ public abstract class AAAAA implements AutoCloseable {
 		 * 1. Set the stop flag, interrupt the threads and wait for them to die.
 		 * 2. Cancel any pending launches and wait on all the futures.
 		 */
-		m_WantStop.set(true);
+		wantStop.set(true);
 
-		m_Actuators.values().forEach(as -> as.launchFuture.obtrudeException(new CancellationException()));
+		actuators.values().forEach(as -> as.launchFuture.obtrudeException(new CancellationException()));
 
 		/* Stop pending launches. */
 		CompletableFuture.runAsync(() -> {
 			/* Kill any pending launches and gather their futures. */
 			LOGGER.trace("Cancelling pending launches...");
-			m_Requests.forEach(rq -> rq.launchResults.cancel(true));
-			m_Requests.clear();
-		}).thenRun(() -> m_ShutdownFuture.complete(null));
+			requests.forEach(rq -> rq.launchResults.cancel(true));
+			requests.clear();
+		}).thenRun(() -> shutdownFuture.complete(null));
 
-		return m_ShutdownFuture;
+		return shutdownFuture;
 	}
 
 	@Override
@@ -243,9 +243,9 @@ public abstract class AAAAA implements AutoCloseable {
 		this.shutdown().join();
 
 		/* Kill the actuators. */
-		LOGGER.info("Waiting on {} actuator(s)...", m_Actuators.size());
+		LOGGER.info("Waiting on {} actuator(s)...", actuators.size());
 
-		CompletableFuture.allOf(m_Actuators.values().stream()
+		CompletableFuture.allOf(actuators.values().stream()
 				.map(as -> as.actuatorFuture.handle((a, t) -> {
 			if(a == null) {
 				return null;
@@ -262,7 +262,7 @@ public abstract class AAAAA implements AutoCloseable {
 			}
 			return null;
 		})).toArray(CompletableFuture[]::new)).join();
-		m_Actuators.clear();
+		actuators.clear();
 	}
 
 	protected abstract void reportLaunchFailure(UUID uuid, Resource node, Throwable t);
