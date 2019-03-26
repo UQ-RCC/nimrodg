@@ -360,6 +360,7 @@ public class DBResourceHelpers extends DBBaseHelper {
 				rs.getInt("shutdown_signal"),
 				AgentShutdown.reasonFromString(rs.getString("shutdown_reason")),
 				DBUtils.getLongInstant(rs, "created"),
+				DBUtils.getLongInstant(rs, "last_heard_from"),
 				DBUtils.getLongInstant(rs, "expiry_time"),
 				rs.getBoolean("expired"),
 				rs.getLong("location")
