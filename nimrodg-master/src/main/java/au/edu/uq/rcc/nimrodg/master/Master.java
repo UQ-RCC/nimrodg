@@ -198,7 +198,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 		this.taskQueuePrio = new LinkedBlockingDeque<>();
 		this.agentMessages = new LinkedBlockingDeque<>();
 
-		this.aaaaa = new _AAAAA(5);
+		this.aaaaa = new _AAAAA();
 		this.allAgents = new ConcurrentHashMap<>();
 		this.pendingAgentConnections = new HashMap<>();
 
@@ -558,7 +558,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 
 	@Override
 	public void close() {
-
+		aaaaa.close();
 	}
 
 	private class _JobOperations implements JobScheduler.Operations {
@@ -822,10 +822,6 @@ public class Master implements MessageQueueListener, AutoCloseable {
 	}
 
 	private class _AAAAA extends AAAAA {
-
-		public _AAAAA(int numThreads) {
-			super(numThreads);
-		}
 
 		@Override
 		protected void reportLaunchFailure(UUID uuid, Resource resource, Throwable t) {

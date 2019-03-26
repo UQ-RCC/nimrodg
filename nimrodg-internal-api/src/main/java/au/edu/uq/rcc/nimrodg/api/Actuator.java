@@ -49,7 +49,7 @@ public interface Actuator extends AutoCloseable {
 		NimrodMasterAPI getNimrod();
 	}
 
-	public Resource getNode() throws NimrodAPIException;
+	public Resource getResource() throws NimrodAPIException;
 
 	public NimrodURI getAMQPUri();
 

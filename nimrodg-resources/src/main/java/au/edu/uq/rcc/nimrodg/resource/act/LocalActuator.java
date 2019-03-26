@@ -130,7 +130,7 @@ public class LocalActuator implements Actuator {
 	}
 
 	@Override
-	public Resource getNode() throws NimrodAPIException {
+	public Resource getResource() throws NimrodAPIException {
 		return node;
 	}
 
