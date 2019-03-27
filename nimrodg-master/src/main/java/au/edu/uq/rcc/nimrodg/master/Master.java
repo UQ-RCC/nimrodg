@@ -352,7 +352,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 
 		/* Process database events. */
 		events.addAll(nimrod.pollMasterEvents());
-		events.forEach(e -> processEvent(e));
+		events.forEach(this::processEvent);
 		events.clear();
 
 		/* Process agents. */
