@@ -35,13 +35,14 @@ public class TempAgent {
 	public final int shutdownSignal;
 	public final AgentShutdown.Reason shutdownReason;
 	public final Instant created;
+	public final Instant connectedAt;
 	public final Instant lastHeardFrom;
 	public final Instant expiryTime;
 	public final boolean expired;
 	public final Long location;
 	public final JsonObject actuatorData;
 
-	public TempAgent(long id, Agent.State state, String queue, UUID uuid, int shutdownSignal, AgentShutdown.Reason shutdownReason, Instant created, Instant lastHeardFrom, Instant expiryTime, boolean expired, Long location, JsonObject actuatorData) {
+	public TempAgent(long id, Agent.State state, String queue, UUID uuid, int shutdownSignal, AgentShutdown.Reason shutdownReason, Instant created, Instant connectedAt, Instant lastHeardFrom, Instant expiryTime, boolean expired, Long location, JsonObject actuatorData) {
 		this.id = id;
 		this.state = state;
 		this.queue = queue;
@@ -49,6 +50,7 @@ public class TempAgent {
 		this.shutdownSignal = shutdownSignal;
 		this.shutdownReason = shutdownReason;
 		this.created = created;
+		this.connectedAt = connectedAt;
 		this.lastHeardFrom = lastHeardFrom;
 		this.expiryTime = expiryTime == null ? Instant.MAX : expiryTime;
 		this.expired = expired;
@@ -69,6 +71,7 @@ public class TempAgent {
 			this.setShutdownSignal(ta.shutdownSignal);
 			this.setShutdownReason(ta.shutdownReason);
 			this.setCreationTime(ta.created);
+			this.setConnectionTime(ta.connectedAt);
 			this.setLastHeardFrom(ta.lastHeardFrom);
 			this.setExpiryTime(ta.expiryTime);
 			this.setActuatorData(ta.actuatorData);

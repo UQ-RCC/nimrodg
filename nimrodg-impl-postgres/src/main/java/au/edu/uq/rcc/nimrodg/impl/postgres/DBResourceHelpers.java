@@ -33,6 +33,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -88,7 +89,7 @@ public class DBResourceHelpers extends DBBaseHelper {
 		this.qGetAgentResource = prepareStatement("SELECT * FROM get_agent_resource(?::UUID)");
 		this.qGetAgentsOnResource = prepareStatement("SELECT * FROM get_agents_on_resource(?)");
 		this.qAddAgent = prepareStatement("SELECT * FROM add_agent(?::nimrod_agent_state, ?, ?::UUID, ?, ?::nimrod_agent_shutdown_reason, ?, ?, ?::JSONB)");
-		this.qUpdateAgent = prepareStatement("SELECT * FROM update_agent(?::UUID, ?::nimrod_agent_state, ?, ?::nimrod_agent_shutdown_reason, ?, ?)");
+		this.qUpdateAgent = prepareStatement("SELECT * FROM update_agent(?::UUID, ?::nimrod_agent_state, ?, ?::nimrod_agent_shutdown_reason, ?, ?, ?, ?)");
 	}
 
 	// <editor-fold defaultstate="collapsed" desc="Resources">
@@ -289,8 +290,10 @@ public class DBResourceHelpers extends DBBaseHelper {
 		qUpdateAgent.setString(2, Agent.stateToString(agent.getState()));
 		qUpdateAgent.setInt(3, agent.getShutdownSignal());
 		qUpdateAgent.setString(4, AgentShutdown.reasonToString(agent.getShutdownReason()));
-		DBUtils.setInstant(qUpdateAgent, 5, agent.getLastHeardFrom());
-		qUpdateAgent.setBoolean(6, agent.getExpired());
+		DBUtils.setInstant(qUpdateAgent, 5, agent.getConnectionTime());
+		DBUtils.setInstant(qUpdateAgent, 6, agent.getLastHeardFrom());
+		DBUtils.setInstant(qUpdateAgent, 7, agent.getExpiryTime());
+		qUpdateAgent.setBoolean(8, agent.getExpired());
 		try(ResultSet rs = qUpdateAgent.executeQuery()) {
 			return rs.next();
 		}
@@ -343,6 +346,7 @@ public class DBResourceHelpers extends DBBaseHelper {
 				rs.getInt("shutdown_signal"),
 				AgentShutdown.reasonFromString(rs.getString("shutdown_reason")),
 				DBUtils.getInstant(rs, "created"),
+				DBUtils.getInstant(rs, "connected_at"),
 				DBUtils.getInstant(rs, "last_heard_from"),
 				DBUtils.getInstant(rs, "expiry_time"),
 				rs.getBoolean("expired"),

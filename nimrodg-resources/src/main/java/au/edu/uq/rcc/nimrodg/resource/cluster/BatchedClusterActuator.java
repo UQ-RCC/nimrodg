@@ -232,7 +232,7 @@ public abstract class BatchedClusterActuator<C extends BatchedClusterConfig> ext
 
 		/* Set the walltime. */
 		config.dialect.getWalltime(config.batchConfig)
-				.ifPresent(l -> state.setExpiryTime(state.getCreationTime().plusSeconds(l)));
+				.ifPresent(l -> state.setExpiryTime(state.getConnectionTime().plusSeconds(l)));
 
 		state.setActuatorData(Json.createObjectBuilder()
 				.add("batch_id", b.jobId)

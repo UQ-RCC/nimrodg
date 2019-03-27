@@ -119,6 +119,7 @@ CREATE TABLE nimrod_resource_agents(
 	shutdown_reason			nimrod_agent_shutdown_reason NOT NULL,
 	/* From here, none of this is actually state. */
 	created					TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+	connected_at			TIMESTAMP WITH TIME ZONE CHECK(connected_at >= created),
 	last_heard_from			TIMESTAMP WITH TIME ZONE CHECK(last_heard_from >= created),
 	expiry_time				TIMESTAMP WITH TIME ZONE CHECK(expiry_time >= created),
 	expired_at				TIMESTAMP WITH TIME ZONE DEFAULT NULL CHECK(expired_at >= created),
@@ -332,13 +333,15 @@ CREATE OR REPLACE FUNCTION add_agent(_state nimrod_agent_state, _queue TEXT, _uu
 	RETURNING *;
 $$ LANGUAGE SQL;
 
-CREATE OR REPLACE FUNCTION update_agent(_uuid UUID, _state nimrod_agent_state, _signal INTEGER, _reason nimrod_agent_shutdown_reason, _last_heard_from TIMESTAMP WITH TIME ZONE, _expired BOOLEAN) RETURNS SETOF nimrod_resource_agents AS $$
+CREATE OR REPLACE FUNCTION update_agent(_uuid UUID, _state nimrod_agent_state, _signal INTEGER, _reason nimrod_agent_shutdown_reason, _connected_at TIMESTAMP WITH TIME ZONE, _last_heard_from TIMESTAMP WITH TIME ZONE, _expiry_time TIMESTAMP WITH TIME ZONE, _expired BOOLEAN) RETURNS SETOF nimrod_resource_agents AS $$
 	UPDATE nimrod_resource_agents
 	SET
 		state = _state,
 		shutdown_signal = _signal,
 		shutdown_reason = _reason,
+		connected_at = _connected_at,
 		last_heard_from = _last_heard_from,
+		expiry_time = _expiry_time,
 		expired = _expired
 	WHERE
 		agent_uuid = _uuid

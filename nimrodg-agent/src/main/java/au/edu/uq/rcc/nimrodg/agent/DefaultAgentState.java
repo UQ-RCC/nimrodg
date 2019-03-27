@@ -33,6 +33,7 @@ public class DefaultAgentState implements AgentState {
 	private AgentShutdown.Reason shutdownReason;
 	private Instant lastHeardFrom;
 	private Instant creationTime;
+	private Instant connectionTime;
 	private Instant expiryTime;
 	private boolean expired;
 	private JsonObject actuatorData;
@@ -102,9 +103,18 @@ public class DefaultAgentState implements AgentState {
 		return creationTime;
 	}
 
-	@Override
 	public void setCreationTime(Instant time) {
 		creationTime = time;
+	}
+
+	@Override
+	public Instant getConnectionTime() {
+		return connectionTime;
+	}
+
+	@Override
+	public void setConnectionTime(Instant time) {
+		connectionTime = time;
 	}
 
 	@Override

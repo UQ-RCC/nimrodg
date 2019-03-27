@@ -33,6 +33,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -98,7 +99,7 @@ public class DBResourceHelpers extends DBBaseHelper {
 				+ "	state, queue, agent_uuid, shutdown_signal, shutdown_reason,\n"
 				+ "	expiry_time, location, actuator_data\n"
 				+ ") VALUES(?, ?, ?, ?, ?, ?, ?, ?)", true);
-		this.qUpdateAgent = prepareStatement("UPDATE nimrod_resource_agents SET state = ?, shutdown_signal = ?, shutdown_reason = ?, last_heard_from = ?, expired = ? WHERE agent_uuid = ?");
+		this.qUpdateAgent = prepareStatement("UPDATE nimrod_resource_agents SET state = ?, shutdown_signal = ?, shutdown_reason = ?, connected_at = ?, last_heard_from = ?, expiry_time = ?, expired = ? WHERE agent_uuid = ?");
 	}
 
 	public Optional<TempResourceType> getResourceTypeInfo(String name) throws SQLException {
@@ -303,9 +304,11 @@ public class DBResourceHelpers extends DBBaseHelper {
 		qUpdateAgent.setString(1, Agent.stateToString(agent.getState()));
 		qUpdateAgent.setInt(2, agent.getShutdownSignal());
 		qUpdateAgent.setString(3, AgentShutdown.reasonToString(agent.getShutdownReason()));
-		DBUtils.setLongInstant(qUpdateAgent, 4, agent.getLastHeardFrom());
-		qUpdateAgent.setBoolean(5, agent.getExpired());
-		qUpdateAgent.setString(6, agent.getUUID().toString());
+		DBUtils.setLongInstant(qUpdateAgent, 4, agent.getConnectionTime());
+		DBUtils.setLongInstant(qUpdateAgent, 5, agent.getLastHeardFrom());
+		DBUtils.setLongInstant(qUpdateAgent, 6, agent.getExpiryTime());
+		qUpdateAgent.setBoolean(7, agent.getExpired());
+		qUpdateAgent.setString(7, agent.getUUID().toString());
 
 		return qUpdateAgent.executeUpdate() != 0;
 	}
@@ -355,6 +358,7 @@ public class DBResourceHelpers extends DBBaseHelper {
 				rs.getInt("shutdown_signal"),
 				AgentShutdown.reasonFromString(rs.getString("shutdown_reason")),
 				DBUtils.getLongInstant(rs, "created"),
+				DBUtils.getLongInstant(rs, "connected_at"),
 				DBUtils.getLongInstant(rs, "last_heard_from"),
 				DBUtils.getLongInstant(rs, "expiry_time"),
 				rs.getBoolean("expired"),

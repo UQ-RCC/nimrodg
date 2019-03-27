@@ -128,6 +128,7 @@ CREATE TABLE nimrod_resource_agents(
 	shutdown_reason			TEXT NOT NULL CHECK(shutdown_reason IN ('HostSignal', 'Requested')),
 	/* From here, none of this is actually state. */
 	created					INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+	connected_at			INTEGER DEFAULT NULL CHECK(connected_at >= created),
 	last_heard_from			INTEGER DEFAULT NULL CHECK(last_heard_from >= created),
 	expiry_time				INTEGER DEFAULT NULL CHECK(expiry_time >= created),
 	expired_at				INTEGER DEFAULT NULL CHECK(expired_at >= created),
@@ -142,4 +143,10 @@ DROP TRIGGER IF EXISTS t_agent_expire_on_shutdown;
 CREATE TRIGGER t_agent_expire_on_shutdown AFTER UPDATE ON nimrod_resource_agents FOR EACH ROW WHEN OLD.state != 'SHUTDOWN' AND NEW.state = 'SHUTDOWN'
 BEGIN
 	UPDATE nimrod_resource_agents SET expired_at = strftime('%s', 'now'), expired = TRUE WHERE id = OLD.id;
+END;
+
+DROP TRIGGER IF EXISTS t_agent_connect;
+CREATE TRIGGER t_agent_connect AFTER UPDATE ON nimrod_resource_agents FOR EACH ROW WHEN OLD.state = 'WAITING_FOR_HELLO' AND NEW.state = 'READY'
+BEGIN
+	UPDATE nimrod_resource_agents SET connected_at = strftime('%s', 'now') WHERE id = OLD.id;
 END;

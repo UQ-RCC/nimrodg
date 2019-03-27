@@ -21,6 +21,7 @@ package au.edu.uq.rcc.nimrodg.test;
 
 import au.edu.uq.rcc.nimrodg.agent.Agent;
 import au.edu.uq.rcc.nimrodg.agent.AgentState;
+import au.edu.uq.rcc.nimrodg.agent.DefaultAgentState;
 import au.edu.uq.rcc.nimrodg.agent.ReferenceAgent;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentMessage;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentPong;
@@ -53,7 +54,7 @@ public class FakeAgentListener implements ReferenceAgent.AgentListener {
 		}
 
 		ReferenceAgent agent = (ReferenceAgent)_agent;
-		AgentState as = agent.getDataStore();
+		DefaultAgentState as = (DefaultAgentState)agent.getDataStore();
 
 		if(oldState == Agent.State.WAITING_FOR_HELLO && newState == Agent.State.READY) {
 			as.setCreationTime(Instant.now());
