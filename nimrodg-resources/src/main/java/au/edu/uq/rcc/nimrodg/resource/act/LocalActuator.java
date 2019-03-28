@@ -322,7 +322,12 @@ public class LocalActuator implements Actuator {
 				agents.put(la.uuid, la);
 			}
 
-			results[i] = new LaunchResult(node, null);
+			results[i] = new LaunchResult(node, null, null, Json.createObjectBuilder()
+					.add("pid", la.handle.pid())
+					.add("work_root", la.workRoot.toString())
+					.add("output_path", la.outputPath.map(p -> p.toString()).orElse(""))
+					.build()
+			);
 			LOGGER.info("Launched agent {} with PID {}", la.uuid, la.handle.pid());
 			la.future = la.process.onExit().handle((p, t) -> agentShutdownHandler(la, t));
 		}
@@ -414,12 +419,6 @@ public class LocalActuator implements Actuator {
 		// Good for testing
 		//state.setExpiryTime(Instant.now(Clock.systemUTC()).plusSeconds(10));
 		la.state = LocalState.CONNECTED;
-		state.setActuatorData(Json.createObjectBuilder()
-				.add("pid", la.handle.pid())
-				.add("work_root", la.workRoot.toString())
-				.add("output_path", la.outputPath.map(p -> p.toString()).orElse(""))
-				.build()
-		);
 	}
 
 	@Override

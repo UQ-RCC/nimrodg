@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.security.cert.Certificate;
 import java.time.Instant;
 import java.util.UUID;
+import javax.json.JsonObject;
 
 public interface Actuator extends AutoCloseable {
 
@@ -60,15 +61,17 @@ public interface Actuator extends AutoCloseable {
 		public final Resource node;
 		public final Throwable t;
 		public final Instant expiryTime;
+		public final JsonObject actuatorData;
 
 		public LaunchResult(Resource node, Throwable t) {
-			this(node, t, null);
+			this(node, t, null, null);
 		}
 
-		public LaunchResult(Resource node, Throwable t, Instant expiryTime) {
+		public LaunchResult(Resource node, Throwable t, Instant expiryTime, JsonObject actuatorData) {
 			this.node = node;
 			this.t = t;
 			this.expiryTime = expiryTime;
+			this.actuatorData = actuatorData;
 		}
 
 	}

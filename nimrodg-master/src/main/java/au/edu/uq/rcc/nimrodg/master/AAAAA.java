@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import au.edu.uq.rcc.nimrodg.api.Resource;
+import java.util.Arrays;
 
 /**
  * AAAAA - Amazing Always Active Actuator Accelerator
@@ -129,56 +130,42 @@ public abstract class AAAAA implements AutoCloseable {
 		return u;
 	}
 
-	public LaunchRequest launchAgents(Resource node, int num) {
+	public LaunchRequest launchAgents(Resource node, UUID[] uuids) {
 		if(wantStop.get()) {
 			throw new IllegalStateException();
 		}
-
-		UUID[] uuids = generateRandomUUIDs(num);
 
 		ActuatorState as = getOrLaunchActuatorInternal(node);
 
 		LaunchRequest rq = new LaunchRequest(uuids, node, as.launchFuture);
 
-		/* Set up the failure code. If this happens, no agents from the batch were launched.*/
+		/* If the launch failed, complete the future but mark each result as failed. */
 		rq.launchResults.exceptionally(t -> {
-			Throwable at = t;
-			if(t instanceof CancellationException) {
-				for(int i = 0; i < rq.uuids.length; ++i) {
-					LOGGER.info("Agent '{}' launch on '{}' cancelled.", rq.uuids[i], node.getPath());
-				}
-				if(!requests.remove(rq)) {
-					/* cancel() has been called on the future, but we've already started spawning. Tough titties. */
-					LOGGER.warn("Can't cancel, already spawning. Agent will be rejected...");
-				}
-			} else {
-				for(int i = 0; i < rq.uuids.length; ++i) {
-					LOGGER.info("Agent '{}' launch on '{}' failed.", rq.uuids[i], node.getPath());
-				}
-				if(at instanceof CompletionException) {
-					at = ((CompletionException)at).getCause();
-				}
+			Actuator.LaunchResult lr = new LaunchResult(node, t);
+			Actuator.LaunchResult[] lrs = new LaunchResult[uuids.length];
+			Arrays.setAll(lrs, i -> lr);
+			return lrs;
+		});
 
-				LOGGER.catching(t);
-			}
-
-			for(int i = 0; i < rq.uuids.length; ++i) {
-				reportLaunchFailure(rq.uuids[i], rq.resource, at);
-			}
-
+		/* Remove our request whether we succeeded or failed. */
+		rq.launchResults.handle((r, t) -> {
+			requests.remove(rq);
 			return null;
 		});
 
 		requests.addLast(rq);
 
-		/* NB: This must be async, we don't want it blocking this call. */
-		as.launchFuture.handleAsync((a, t) -> {
-			/* If the actuator failed to launch, fail the future and let it cleanup. */
-			if(t != null) {
-				rq.launchResults.completeExceptionally(t);
-				return null;
-			}
+		/* If the actuator failed to launch, fail the launch future to trigger the above. */
+		as.launchFuture.exceptionally(t -> {
+			rq.launchResults.completeExceptionally(t);
+			return null;
+		});
 
+		/*
+		 * If the actuator was created, actually launch the agents.
+		 * NB: This must be async, we don't want it blocking this call.
+		 */
+		as.launchFuture.thenAcceptAsync(a -> {
 			/* Try to launch the agent. If it goes badly, fail the future and let it handle cleanup. */
 			Actuator.LaunchResult[] launchResults;
 			try {
@@ -188,21 +175,10 @@ public abstract class AAAAA implements AutoCloseable {
 				}
 			} catch(IOException | RuntimeException e) {
 				rq.launchResults.completeExceptionally(e);
-				return null;
-			}
-
-			/* At least one agent was spawned, complete the future */
-			for(int i = 0; i < launchResults.length; ++i) {
-				assert (rq.resource.equals(launchResults[i].node));
-				if(launchResults[i].node == null) {
-					reportLaunchFailure(rq.uuids[i], rq.resource, launchResults[i].t);
-				} else {
-					LOGGER.trace("Actuator placed agent {} on '{}'", rq.uuids[i], launchResults[i].node.getPath());
-				}
+				return;
 			}
 
 			rq.launchResults.complete(launchResults);
-			return null;
 		});
 
 		return rq;
@@ -265,7 +241,6 @@ public abstract class AAAAA implements AutoCloseable {
 		actuators.clear();
 	}
 
-	protected abstract void reportLaunchFailure(UUID uuid, Resource node, Throwable t);
-
+	//protected abstract void reportLaunchFailure(UUID uuid, Resource node, Throwable t);
 	protected abstract Actuator createActuator(Resource root) throws IOException, IllegalArgumentException;
 }

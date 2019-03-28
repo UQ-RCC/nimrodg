@@ -184,7 +184,11 @@ public abstract class BatchedClusterActuator<C extends BatchedClusterConfig> ext
 				jobId = submitBatch(shell, tb);
 				Batch b = new Batch(jobId, new LaunchResult[tb.to - tb.from]);
 				res = goodLaunch;
-				Arrays.setAll(b.results, i -> goodLaunch);
+				Arrays.setAll(b.results, i -> new LaunchResult(node, null, null, Json.createObjectBuilder()
+						.add("batch_id", b.jobId)
+						.add("batch_size", b.results.length)
+						.add("batch_index", i)
+						.build()));
 				Arrays.stream(tb.uuids).forEach(u -> jobNames.put(u, b));
 			} catch(IOException e) {
 				res = new LaunchResult(null, e);
@@ -233,11 +237,6 @@ public abstract class BatchedClusterActuator<C extends BatchedClusterConfig> ext
 		/* Set the walltime. */
 		config.dialect.getWalltime(config.batchConfig)
 				.ifPresent(l -> state.setExpiryTime(state.getConnectionTime().plusSeconds(l)));
-
-		state.setActuatorData(Json.createObjectBuilder()
-				.add("batch_id", b.jobId)
-				.add("batch_size", b.results.length)
-				.build());
 	}
 
 	@Override

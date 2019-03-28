@@ -52,6 +52,7 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -168,7 +169,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 
 	private final AAAAA aaaaa;
 	private final ConcurrentHashMap<UUID, AgentInfo> allAgents;
-	private final Map<UUID, LaunchRequest> pendingAgentConnections;
+	private final Map<UUID, CompletableFuture<LaunchRequest>> pendingAgentConnections;
 
 	private final _AgentListener agentListener;
 	private final _ActuatorOperations actuatorOps;
@@ -303,6 +304,12 @@ public class Master implements MessageQueueListener, AutoCloseable {
 	 */
 	private AgentInfo registerAgent(AgentState as, Resource res, Optional<Actuator> act, boolean initial) {
 		AgentInfo ai = new AgentInfo(as.getUUID(), res, act, new ReferenceAgent(as, agentListener, initial), as);
+
+		/* ReferenceAgent will reset the UUID the initial flag is set. */
+		if(initial) {
+			as.setUUID(ai.uuid);
+		}
+
 		allAgents.put(ai.uuid, ai);
 		return ai;
 	}
@@ -433,9 +440,35 @@ public class Master implements MessageQueueListener, AutoCloseable {
 
 		AgentInfo ai = getAgentInfo(msg.getAgentUUID());
 		if(ai == null) {
-			LOGGER.warn("Message from unknown agent {}, terminating...", msg.getAgentUUID());
-			return MessageOperation.Terminate;
+			if(msg.getType() != AgentMessage.Type.Hello) {
+				LOGGER.warn("Message from unknown agent {}, terminating...", msg.getAgentUUID());
+				return MessageQueueListener.MessageOperation.Terminate;
+			}
+
+			AgentHello hello = (AgentHello)msg;
+			LOGGER.trace("Received agent.hello with (uuid, queue) = ({}, {})", hello.getAgentUUID(), hello.queue);
+
+			if(state != State.Started) {
+				LOGGER.warn("Agent connection during shutdown, terminating...");
+				return MessageQueueListener.MessageOperation.Terminate;
+			}
+
+			CompletableFuture<LaunchRequest> _info;
+			if((_info = pendingAgentConnections.get(hello.getAgentUUID())) == null) {
+				LOGGER.warn("Agent connection unexpected, terminating...");
+				return MessageQueueListener.MessageOperation.Terminate;
+			}
+
+			/*
+			 * Handle cases where the agent's connected before the launch has technically finished. 
+			 * This happens sometimes with PBS, the jobs start before qsub's returned.
+			 */
+			assert !_info.isDone();
+			LOGGER.debug("Agent connected, but launch hasn't finished, deferring...");
+			return MessageQueueListener.MessageOperation.RejectAndRequeue;
 		}
+
+		assert ai != null;
 
 		// TODO: Consider doing an adoption check here
 		// TODO: Handle expiry (by checking nimrod)
@@ -445,9 +478,16 @@ public class Master implements MessageQueueListener, AutoCloseable {
 			AgentHello hello = (AgentHello)msg;
 			LOGGER.trace("Received agent.hello with (uuid, queue) = ({}, {})", hello.getAgentUUID(), hello.queue);
 
-			if(ai.state.getQueue() != null) {
-				/* Agent sent a superflous hello, we can just ignore this. */
-				return MessageOperation.Ack;
+			String queue = ai.state.getQueue();
+			if(queue != null) {
+				if(hello.queue.equals(queue)) {
+					/* Agent sent a superflous hello, we can just ignore this. */
+					return MessageOperation.Ack;
+				} else {
+					/* Okay, there's actually a duplicate UUID. Dafuq? */
+					LOGGER.warn("Agent connection with duplicate UUID, buy a lottery ticket.");
+					return MessageQueueListener.MessageOperation.Terminate;
+				}
 			}
 
 			if(state != State.Started) {
@@ -455,37 +495,19 @@ public class Master implements MessageQueueListener, AutoCloseable {
 				return MessageQueueListener.MessageOperation.Terminate;
 			}
 
-			LaunchRequest _info;
-			if((_info = pendingAgentConnections.remove(hello.getAgentUUID())) == null) {
-				LOGGER.warn("Agent connection unexpected, terminating...");
-				return MessageQueueListener.MessageOperation.Terminate;
-			}
-
-			/*
-			 * If our future's not done, defer the message.
-			 * This happens sometimes with PBS, the jobs start before qsub's returned.
-			 */
-			Actuator.LaunchResult[] launchResults = _info.launchResults.getNow(null);
-			if(launchResults == null) {
-				LOGGER.debug("Agent connected, but actuator hasn't finished, deferring...");
-				pendingAgentConnections.put(hello.getAgentUUID(), _info);
-				return MessageQueueListener.MessageOperation.RejectAndRequeue;
-			}
-
-			if(!hello.queue.equals(ai.state.getQueue())) {
-				/* Okay, there's actually a duplicate UUID. Dafuq? */
-				LOGGER.warn("Agent connection with duplicate UUID, buy a lottery ticket.");
-				return MessageQueueListener.MessageOperation.Terminate;
-			}
+			/* If we're this far, this future should be complete. */
+			LaunchRequest lrq = pendingAgentConnections.get(hello.getAgentUUID()).getNow(null);
+			assert lrq != null && !lrq.launchResults.isCompletedExceptionally() && lrq.launchResults.isDone();
+			Actuator.LaunchResult[] launchResults = lrq.launchResults.getNow(null);
 
 			int batchIndex = -1;
 			{
-				for(int i = 0; i < _info.uuids.length; ++i) {
-					if(_info.uuids[i] == null) {
+				for(int i = 0; i < lrq.uuids.length; ++i) {
+					if(lrq.uuids[i] == null) {
 						continue;
 					}
 
-					if(_info.uuids[i].equals(ai.uuid)) {
+					if(lrq.uuids[i].equals(ai.uuid)) {
 						batchIndex = i;
 						break;
 					}
@@ -496,7 +518,6 @@ public class Master implements MessageQueueListener, AutoCloseable {
 				throw new IllegalStateException("batchIndex < 0, this should never happen");
 			}
 			ai.state.setExpiryTime(launchResults[batchIndex].expiryTime);
-			ai.actuator = Optional.of(_info.actuatorFuture.getNow(null)); // FIXME:
 		} else if(msg.getType() == AgentMessage.Type.Shutdown && ai.state.getState() == Agent.State.SHUTDOWN) {
 			/*
 			 * We can ignore a stray shutdown.
@@ -610,16 +631,46 @@ public class Master implements MessageQueueListener, AutoCloseable {
 				throw new IllegalArgumentException();
 			}
 
-			LaunchRequest rq = aaaaa.launchAgents(res, num);
-
-			for(int i = 0; i < rq.uuids.length; ++i) {
-				AgentState as = new DefaultAgentState();
-				as.setUUID(rq.uuids[i]);
-				registerAgent(as, res, Optional.empty(), true);
-				nimrod.addAgent(res, as);
+			UUID[] uuids = AAAAA.generateRandomUUIDs(num);
+			CompletableFuture<LaunchRequest> fff = new CompletableFuture<>();
+			for(int i = 0; i < num; ++i) {
+				pendingAgentConnections.put(uuids[i], fff);
 			}
 
-			Stream.of(rq.uuids).forEach(u -> pendingAgentConnections.put(u, rq));
+			LaunchRequest rq = aaaaa.launchAgents(res, uuids);
+
+			/*
+			 * NB: rq.launchResults will never fail. In the case of an actuator failure,
+			 * AAAAA will fail each request instead of the entire future.
+			 */
+			rq.launchResults.thenAccept(lrs -> {
+				for(int i = 0; i < lrs.length; ++i) {
+					Optional<Actuator> act;
+					if(rq.actuatorFuture.isCompletedExceptionally()) {
+						act = Optional.empty();
+					} else {
+						act = Optional.ofNullable(rq.actuatorFuture.getNow(null));
+					}
+
+					Actuator.LaunchResult lr = lrs[i];
+					UUID uuid = rq.uuids[i];
+					runLater("launchAgents", () -> {
+						if(lr.t != null) {
+							agentScheduler.onAgentLaunchFailure(uuid, lr.node, lr.t);
+							pendingAgentConnections.remove(uuid);
+						} else {
+							AgentState as = new DefaultAgentState();
+							as.setUUID(uuid);
+							as.setActuatorData(lr.actuatorData);
+							AgentInfo ai = registerAgent(as, res, act, true);
+							nimrod.addAgent(res, ai.state);
+						}
+
+						fff.complete(rq);
+					}, true);
+				}
+			});
+
 			return rq.uuids;
 		}
 
@@ -824,11 +875,6 @@ public class Master implements MessageQueueListener, AutoCloseable {
 	}
 
 	private class _AAAAA extends AAAAA {
-
-		@Override
-		protected void reportLaunchFailure(UUID uuid, Resource resource, Throwable t) {
-			agentScheduler.onAgentLaunchFailure(uuid, resource, t);
-		}
 
 		@Override
 		protected Actuator createActuator(Resource resource) throws IOException, IllegalArgumentException {

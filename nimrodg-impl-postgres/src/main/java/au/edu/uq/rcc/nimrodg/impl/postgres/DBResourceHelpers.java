@@ -88,7 +88,7 @@ public class DBResourceHelpers extends DBBaseHelper {
 		this.qGetAgentResource = prepareStatement("SELECT * FROM get_agent_resource(?::UUID)");
 		this.qGetAgentsOnResource = prepareStatement("SELECT * FROM get_agents_on_resource(?)");
 		this.qAddAgent = prepareStatement("SELECT * FROM add_agent(?::nimrod_agent_state, ?, ?::UUID, ?, ?::nimrod_agent_shutdown_reason, ?, ?, ?::JSONB)");
-		this.qUpdateAgent = prepareStatement("SELECT * FROM update_agent(?::UUID, ?, ?::nimrod_agent_state, ?, ?::nimrod_agent_shutdown_reason, ?, ?, ?, ?)");
+		this.qUpdateAgent = prepareStatement("SELECT * FROM update_agent(?::UUID, ?::nimrod_agent_state, ?, ?, ?::nimrod_agent_shutdown_reason, ?, ?, ?, ?)");
 	}
 
 	// <editor-fold defaultstate="collapsed" desc="Resources">
@@ -286,8 +286,8 @@ public class DBResourceHelpers extends DBBaseHelper {
 
 	public boolean updateAgent(AgentState agent) throws SQLException {
 		qUpdateAgent.setString(1, agent.getUUID().toString());
-		qUpdateAgent.setString(2, agent.getQueue());
-		qUpdateAgent.setString(3, Agent.stateToString(agent.getState()));
+		qUpdateAgent.setString(2, Agent.stateToString(agent.getState()));
+		qUpdateAgent.setString(3, agent.getQueue());
 		qUpdateAgent.setInt(4, agent.getShutdownSignal());
 		qUpdateAgent.setString(5, AgentShutdown.reasonToString(agent.getShutdownReason()));
 		DBUtils.setInstant(qUpdateAgent, 6, agent.getConnectionTime());
