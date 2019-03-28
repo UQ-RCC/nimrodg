@@ -33,7 +33,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -99,7 +98,7 @@ public class DBResourceHelpers extends DBBaseHelper {
 				+ "	state, queue, agent_uuid, shutdown_signal, shutdown_reason,\n"
 				+ "	expiry_time, location, actuator_data\n"
 				+ ") VALUES(?, ?, ?, ?, ?, ?, ?, ?)", true);
-		this.qUpdateAgent = prepareStatement("UPDATE nimrod_resource_agents SET state = ?, shutdown_signal = ?, shutdown_reason = ?, connected_at = ?, last_heard_from = ?, expiry_time = ?, expired = ? WHERE agent_uuid = ?");
+		this.qUpdateAgent = prepareStatement("UPDATE nimrod_resource_agents SET state = ?, queue = ?, shutdown_signal = ?, shutdown_reason = ?, connected_at = ?, last_heard_from = ?, expiry_time = ?, expired = ? WHERE agent_uuid = ?");
 	}
 
 	public Optional<TempResourceType> getResourceTypeInfo(String name) throws SQLException {
@@ -302,13 +301,14 @@ public class DBResourceHelpers extends DBBaseHelper {
 
 	public boolean updateAgent(AgentState agent) throws SQLException {
 		qUpdateAgent.setString(1, Agent.stateToString(agent.getState()));
-		qUpdateAgent.setInt(2, agent.getShutdownSignal());
-		qUpdateAgent.setString(3, AgentShutdown.reasonToString(agent.getShutdownReason()));
-		DBUtils.setLongInstant(qUpdateAgent, 4, agent.getConnectionTime());
-		DBUtils.setLongInstant(qUpdateAgent, 5, agent.getLastHeardFrom());
-		DBUtils.setLongInstant(qUpdateAgent, 6, agent.getExpiryTime());
-		qUpdateAgent.setBoolean(7, agent.getExpired());
-		qUpdateAgent.setString(7, agent.getUUID().toString());
+		qUpdateAgent.setString(2, agent.getQueue());
+		qUpdateAgent.setInt(3, agent.getShutdownSignal());
+		qUpdateAgent.setString(4, AgentShutdown.reasonToString(agent.getShutdownReason()));
+		DBUtils.setLongInstant(qUpdateAgent, 5, agent.getConnectionTime());
+		DBUtils.setLongInstant(qUpdateAgent, 6, agent.getLastHeardFrom());
+		DBUtils.setLongInstant(qUpdateAgent, 7, agent.getExpiryTime());
+		qUpdateAgent.setBoolean(8, agent.getExpired());
+		qUpdateAgent.setString(9, agent.getUUID().toString());
 
 		return qUpdateAgent.executeUpdate() != 0;
 	}

@@ -113,18 +113,18 @@ DROP TABLE IF EXISTS nimrod_resource_agents CASCADE;
 CREATE TABLE nimrod_resource_agents(
 	id						BIGSERIAL NOT NULL PRIMARY KEY,
 	state					nimrod_agent_state NOT NULL,
-	queue					TEXT NOT NULL,
+	queue					TEXT CHECK((state != 'WAITING_FOR_HELLO'::nimrod_agent_state) != (queue IS NULL)),
 	agent_uuid				UUID NOT NULL UNIQUE,
 	shutdown_signal			INTEGER NOT NULL,
 	shutdown_reason			nimrod_agent_shutdown_reason NOT NULL,
 	/* From here, none of this is actually state. */
 	created					TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-	connected_at			TIMESTAMP WITH TIME ZONE CHECK(connected_at >= created),
+	connected_at				TIMESTAMP WITH TIME ZONE CHECK(connected_at >= created),
 	last_heard_from			TIMESTAMP WITH TIME ZONE CHECK(last_heard_from >= created),
 	expiry_time				TIMESTAMP WITH TIME ZONE CHECK(expiry_time >= created),
 	expired_at				TIMESTAMP WITH TIME ZONE DEFAULT NULL CHECK(expired_at >= created),
 	expired					BOOLEAN NOT NULL DEFAULT FALSE,
-	location				BIGINT REFERENCES nimrod_resources(id) ON DELETE CASCADE,
+	location					BIGINT REFERENCES nimrod_resources(id) ON DELETE CASCADE,
 	actuator_data			JSONB
 );
 CREATE INDEX ON nimrod_resource_agents(location) WHERE location IS NOT NULL;
@@ -333,10 +333,11 @@ CREATE OR REPLACE FUNCTION add_agent(_state nimrod_agent_state, _queue TEXT, _uu
 	RETURNING *;
 $$ LANGUAGE SQL;
 
-CREATE OR REPLACE FUNCTION update_agent(_uuid UUID, _state nimrod_agent_state, _signal INTEGER, _reason nimrod_agent_shutdown_reason, _connected_at TIMESTAMP WITH TIME ZONE, _last_heard_from TIMESTAMP WITH TIME ZONE, _expiry_time TIMESTAMP WITH TIME ZONE, _expired BOOLEAN) RETURNS SETOF nimrod_resource_agents AS $$
+CREATE OR REPLACE FUNCTION update_agent(_uuid UUID, _state nimrod_agent_state, _queue TEXT, _signal INTEGER, _reason nimrod_agent_shutdown_reason, _connected_at TIMESTAMP WITH TIME ZONE, _last_heard_from TIMESTAMP WITH TIME ZONE, _expiry_time TIMESTAMP WITH TIME ZONE, _expired BOOLEAN) RETURNS SETOF nimrod_resource_agents AS $$
 	UPDATE nimrod_resource_agents
 	SET
 		state = _state,
+		queue = _queue,
 		shutdown_signal = _signal,
 		shutdown_reason = _reason,
 		connected_at = _connected_at,

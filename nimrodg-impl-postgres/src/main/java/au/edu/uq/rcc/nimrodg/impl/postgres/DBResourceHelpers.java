@@ -33,7 +33,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -89,7 +88,7 @@ public class DBResourceHelpers extends DBBaseHelper {
 		this.qGetAgentResource = prepareStatement("SELECT * FROM get_agent_resource(?::UUID)");
 		this.qGetAgentsOnResource = prepareStatement("SELECT * FROM get_agents_on_resource(?)");
 		this.qAddAgent = prepareStatement("SELECT * FROM add_agent(?::nimrod_agent_state, ?, ?::UUID, ?, ?::nimrod_agent_shutdown_reason, ?, ?, ?::JSONB)");
-		this.qUpdateAgent = prepareStatement("SELECT * FROM update_agent(?::UUID, ?::nimrod_agent_state, ?, ?::nimrod_agent_shutdown_reason, ?, ?, ?, ?)");
+		this.qUpdateAgent = prepareStatement("SELECT * FROM update_agent(?::UUID, ?, ?::nimrod_agent_state, ?, ?::nimrod_agent_shutdown_reason, ?, ?, ?, ?)");
 	}
 
 	// <editor-fold defaultstate="collapsed" desc="Resources">
@@ -287,13 +286,14 @@ public class DBResourceHelpers extends DBBaseHelper {
 
 	public boolean updateAgent(AgentState agent) throws SQLException {
 		qUpdateAgent.setString(1, agent.getUUID().toString());
-		qUpdateAgent.setString(2, Agent.stateToString(agent.getState()));
-		qUpdateAgent.setInt(3, agent.getShutdownSignal());
-		qUpdateAgent.setString(4, AgentShutdown.reasonToString(agent.getShutdownReason()));
-		DBUtils.setInstant(qUpdateAgent, 5, agent.getConnectionTime());
-		DBUtils.setInstant(qUpdateAgent, 6, agent.getLastHeardFrom());
-		DBUtils.setInstant(qUpdateAgent, 7, agent.getExpiryTime());
-		qUpdateAgent.setBoolean(8, agent.getExpired());
+		qUpdateAgent.setString(2, agent.getQueue());
+		qUpdateAgent.setString(3, Agent.stateToString(agent.getState()));
+		qUpdateAgent.setInt(4, agent.getShutdownSignal());
+		qUpdateAgent.setString(5, AgentShutdown.reasonToString(agent.getShutdownReason()));
+		DBUtils.setInstant(qUpdateAgent, 6, agent.getConnectionTime());
+		DBUtils.setInstant(qUpdateAgent, 7, agent.getLastHeardFrom());
+		DBUtils.setInstant(qUpdateAgent, 8, agent.getExpiryTime());
+		qUpdateAgent.setBoolean(9, agent.getExpired());
 		try(ResultSet rs = qUpdateAgent.executeQuery()) {
 			return rs.next();
 		}
