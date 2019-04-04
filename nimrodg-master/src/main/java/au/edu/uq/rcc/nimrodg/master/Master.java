@@ -656,7 +656,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 					UUID uuid = rq.uuids[i];
 					runLater("launchAgents", () -> {
 						if(lr.t != null) {
-							agentScheduler.onAgentLaunchFailure(uuid, lr.node, lr.t);
+							agentScheduler.onAgentLaunchFailure(uuid, res, lr.t);
 							pendingAgentConnections.remove(uuid);
 						} else {
 							AgentState as = new DefaultAgentState();
