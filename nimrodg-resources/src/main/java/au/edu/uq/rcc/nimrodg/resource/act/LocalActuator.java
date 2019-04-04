@@ -19,6 +19,7 @@
  */
 package au.edu.uq.rcc.nimrodg.resource.act;
 
+import au.edu.uq.rcc.nimrodg.agent.Agent;
 import au.edu.uq.rcc.nimrodg.agent.AgentState;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
 import au.edu.uq.rcc.nimrodg.api.AgentInfo;
@@ -444,6 +445,10 @@ public class LocalActuator implements Actuator {
 	public boolean adopt(AgentState state) {
 		JsonObject data = state.getActuatorData();
 		if(data == null) {
+			return false;
+		}
+
+		if(state.getState() == Agent.State.SHUTDOWN) {
 			return false;
 		}
 
