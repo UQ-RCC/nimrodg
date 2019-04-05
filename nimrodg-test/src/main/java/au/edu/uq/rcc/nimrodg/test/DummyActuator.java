@@ -109,4 +109,9 @@ public class DummyActuator implements Actuator {
 	public boolean canSpawnAgents(int num) throws IllegalArgumentException {
 		return true;
 	}
+
+	@Override
+	public boolean adopt(AgentState state) {
+		return true;
+	}
 }
