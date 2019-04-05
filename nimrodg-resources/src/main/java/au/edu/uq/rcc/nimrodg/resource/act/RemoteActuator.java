@@ -224,7 +224,8 @@ public class RemoteActuator extends POSIXActuator<SSHResourceType.SSHConfig> {
 
 		RemoteAgent ra = new RemoteAgent(state.getUUID(), jpid.intValue(), jworkroot.getString());
 		ra.state = state.getState() == Agent.State.WAITING_FOR_HELLO ? RemoteState.NOT_CONNECTED : RemoteState.CONNECTED;
+		agents.putIfAbsent(ra.uuid, ra);
 
-		return agents.putIfAbsent(ra.uuid, ra) == null;
+		return true;
 	}
 }

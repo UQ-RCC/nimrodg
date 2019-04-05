@@ -137,7 +137,5 @@ public interface Actuator extends AutoCloseable {
 	 */
 	boolean canSpawnAgents(int num) throws IllegalArgumentException;
 
-	default boolean adopt(AgentState state) {
-		return false; //FIXME: 
-	}
+	boolean adopt(AgentState state);
 }
