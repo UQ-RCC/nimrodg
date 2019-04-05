@@ -290,6 +290,9 @@ public class ActuatorUtils {
 
 		if(batch) {
 			args.add("--batch");
+
+			args.add("--output");
+			args.add("workroot");
 		}
 		return args;
 	}
