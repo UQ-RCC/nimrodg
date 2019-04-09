@@ -17,4 +17,6 @@
 **/*.ipr
 **/*.iws
 /.vscode/
+/debian/usr/share/nimrod*
+/debian/DEBIAN/control
 
