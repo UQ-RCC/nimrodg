@@ -52,8 +52,8 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -66,7 +66,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -142,15 +141,17 @@ public class Master implements MessageQueueListener, AutoCloseable {
 	private class RunningJob {
 
 		public final UUID uuid;
+		public final Job job;
 		public final JobAttempt att;
-		public final NetworkJob job;
+		public final NetworkJob networkJob;
 		public final Agent agent;
 		public final boolean managed;
 
-		public RunningJob(UUID uuid, JobAttempt att, NetworkJob job, Agent agent, boolean managed) {
+		public RunningJob(UUID uuid, Job job, JobAttempt att, NetworkJob networkJob, Agent agent, boolean managed) {
 			this.uuid = uuid;
-			this.att = att;
 			this.job = job;
+			this.att = att;
+			this.networkJob = networkJob;
 			this.agent = agent;
 			this.managed = managed;
 		}
@@ -344,6 +345,49 @@ public class Master implements MessageQueueListener, AutoCloseable {
 		}
 	}
 
+	private NetworkJob buildNetworkJob(JobAttempt att, Job job, AgentInfo ai) {
+		/* FIXME: handle cert path, etc. */
+		return nimrod.getAssignmentStatus(ai.resource, experiment)
+				.map(u -> MsgUtils.resolveJob(att.getUUID(), job, Task.Name.Main, u.uri, nimrod.getJobAttemptToken(att)))
+				.orElseThrow(() -> new IllegalStateException("Resource not assigned"));
+	}
+
+	private void resyncJobAttempts() {
+		/* NB: This should be idempotent if possible. */
+
+		Collection<? extends Job> activeJobs = experiment.filterJobs(EnumSet.of(JobAttempt.Status.RUNNING), 0, 0);
+
+		/* Get all active attempts we don't already know about. */
+		Map<Job, List<JobAttempt>> activeAttempts = activeJobs.stream()
+				.collect(Collectors.toMap(
+						j -> j,
+						j -> j.getAttempts().stream()
+								.filter(att -> att.getStatus() == JobAttempt.Status.RUNNING)
+								.filter(att -> !runningJobs.containsKey(att.getUUID()))
+								.collect(Collectors.toList())
+				));
+
+		activeAttempts.entrySet().forEach(je -> je.getValue().forEach(att -> {
+
+			AgentInfo ai = allAgents.get(att.getAgentUUID());
+			/* If there's no agent associated, something screwy's going on. Fail the attempt and let it reschedule. */
+			if(ai == null) {
+				LOGGER.warn("Active job attempt {} has invalid agent {}, marking as failed.", att.getUUID(), att.getAgentUUID());
+				nimrod.finishJobAttempt(att, true);
+				return;
+			}
+
+			Job job = je.getKey();
+			RunningJob rj = new RunningJob(att.getUUID(), job, att, buildNetworkJob(att, job, ai), ai.instance, true);
+			runningJobs.put(rj.uuid, rj);
+		}));
+	}
+
+	private void resyncSchedulers() {
+		this.runningJobs.values().stream().forEach(j -> jobScheduler.recordAttempt(j.att, j.job));
+		/* TODO: Agent scheduler. */
+	}
+
 	private State startProc(State state, Mode mode) {
 		if(mode == Mode.Enter) {
 			/* Create psuedo-events for initial configuration values. */
@@ -352,6 +396,8 @@ public class Master implements MessageQueueListener, AutoCloseable {
 					.forEach(events::add);
 
 			checkOrphanage();
+			resyncJobAttempts();
+			resyncSchedulers();
 			return state;
 		} else if(mode == Mode.Leave) {
 			return state;
@@ -694,27 +740,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 
 			UUID uuid = att.getUUID();
 
-			final NetworkJob nj;
-			try {
-				/* FIXME: handle cert path, etc. */
-				Optional<NimrodURI> txUri = nimrod.getAssignmentStatus(getAgentResource(agent), experiment);
-				if(!txUri.isPresent()) {
-					throw new IllegalStateException();
-				}
-				nj = MsgUtils.resolveJob(uuid, job, Task.Name.Main, txUri.map(u -> u.uri).get(), nimrod.getJobAttemptToken(att));
-			} catch(IllegalArgumentException e) {
-				/*
-				 * This is a resolution failure. This indicates an underlying issue with the job that wasn't
-				 * picked up during compilation.
-				 *
-				 * Notify the agent scheduler, then notify the job scheduler which will decide what to do.
-				 */
-				runLater("agentDoRunJob(resolutionFailure)", () -> {
-					agentScheduler.onJobLaunchFailure(att, null, agent, true, e);
-					jobScheduler.onJobLaunchFailure(att, null, e);
-				});
-				return uuid;
-			}
+			NetworkJob nj = buildNetworkJob(att, job, allAgents.get(agent.getUUID()));
 
 			Throwable t = null;
 			try {
@@ -725,7 +751,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 			}
 
 			if(t == null) {
-				runningJobs.put(uuid, new RunningJob(uuid, att, nj, agent, true));
+				runningJobs.put(uuid, new RunningJob(uuid, job, att, nj, agent, true));
 				runLater("agentDoRunJob(js:onJobLaunchSuccess)", () -> jobScheduler.onJobLaunchSuccess(att, agent.getUUID()));
 			} else {
 				/* This is an agent issue, try reschedule the job. */
@@ -750,7 +776,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 					return;
 				}
 
-				runningJobs.put(job.uuid, new RunningJob(job.uuid, null, job, agent, false));
+				runningJobs.put(job.uuid, new RunningJob(job.uuid, null, null, job, agent, false));
 			});
 		}
 
@@ -860,10 +886,10 @@ public class Master implements MessageQueueListener, AutoCloseable {
 			assert rj.agent.equals(agent);
 			if(rj.managed) {
 				/* Managed job, it's for the job scheduler */
-				runLater("agOnJobUpdate", () -> jobScheduler.onJobUpdate(rj.att, au, rj.job.numCommands));
+				runLater("agOnJobUpdate", () -> jobScheduler.onJobUpdate(rj.att, au, rj.networkJob.numCommands));
 			} else {
 				/* Unmanaged job, it's for the agent scheduler */
-				runLater("agOnJobUpdate", () -> agentScheduler.onUnmanagedJobUpdate(rj.job, au, agent));
+				runLater("agOnJobUpdate", () -> agentScheduler.onUnmanagedJobUpdate(rj.networkJob, au, agent));
 			}
 		}
 

@@ -73,6 +73,14 @@ public interface JobScheduler {
 	 */
 	void setJobOperations(Operations ops) throws IllegalArgumentException;
 
+	/**
+	 * Record a job attempt without actually launching it. This should only be used for state recovery purposes.
+	 *
+	 * @param att The job attempt.
+	 * @param job The attempt's job.
+	 */
+	void recordAttempt(JobAttempt att, Job job);
+
 	void onJobAdd(Job job);
 
 	void onConfigChange(String key, String oldValue, String newValue);
