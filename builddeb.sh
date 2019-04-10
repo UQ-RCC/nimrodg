@@ -44,7 +44,7 @@ Package: nimrodg
 Version: ${VERSION}-0ubuntu1
 Architecture: all
 Depends: openjdk-11-jre-headless
-Recommends: postgresql-10
+Recommends: postgresql-10, rabbitmq-server
 Description: Nimrod is a specialised parametric modelling system. 
  It uses a simple declarative parametric modelling language to express
  a parametric experiment. 
