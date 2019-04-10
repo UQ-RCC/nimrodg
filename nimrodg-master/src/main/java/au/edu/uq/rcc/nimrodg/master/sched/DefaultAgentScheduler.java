@@ -92,6 +92,7 @@ public class DefaultAgentScheduler implements AgentScheduler {
 				.forEach(m_ReadyAgents::add);
 		agents.stream()
 				.filter(ag -> ag.getState() == Agent.State.WAITING_FOR_HELLO)
+				.map(ag -> ag.getUUID())
 				.forEach(m_LaunchingAgents::add);
 
 		jobs.stream()
@@ -206,7 +207,7 @@ public class DefaultAgentScheduler implements AgentScheduler {
 
 	@Override
 	public void onJobRun(JobAttempt att) {
-		LOGGER.trace("onJobRun({})", att.getJob().getPath());
+		//LOGGER.trace("onJobRun({})", att.getJob().getPath());
 		m_PendingJobs.add(att);
 	}
 
@@ -214,6 +215,7 @@ public class DefaultAgentScheduler implements AgentScheduler {
 	public void onJobCancel(JobAttempt att) {
 		LOGGER.trace("onJobCancel({})", att.getJob().getPath());
 		m_PendingJobs.remove(att);
+		m_HeldJobs.remove(att);
 	}
 
 	public static boolean didAgentFail(NetworkJob job, AgentUpdate au) {
