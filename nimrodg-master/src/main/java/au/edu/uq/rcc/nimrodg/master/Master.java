@@ -53,7 +53,6 @@ import java.security.cert.CertificateException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -62,6 +61,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.UUID;
+import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -239,6 +239,17 @@ public class Master implements MessageQueueListener, AutoCloseable {
 		interruptFlag.compareAndSet(false, true);
 	}
 
+	/**
+	 * Run a task sometime in the future.
+	 *
+	 * Tasks with priority are always executed, even in the shutdown handler.
+	 *
+	 * They should be used for things like agent and job state updates.
+	 *
+	 * @param name The name of the function submitting. This is for debug purposes only.
+	 * @param r The task.
+	 * @param prio Does this task have priority?
+	 */
 	private void runLater(String name, Runnable r, boolean prio) {
 		if(prio) {
 			taskQueuePrio.offer(new QTask(name, r));
@@ -422,13 +433,8 @@ public class Master implements MessageQueueListener, AutoCloseable {
 		processAgents(state);
 
 		/* Process tasks. */
-		{
-			/* Use a secondary queue so we don't get stuck in an infinite runSync() loop */
-			List<QTask> tasks = new ArrayList<>();
-			taskQueuePrio.drainTo(tasks);
-			taskQueue.drainTo(tasks);
-			tasks.forEach(qt -> qt.runnable.run());
-		}
+		processQueue(taskQueuePrio);
+		processQueue(taskQueue);
 
 		/* Tick the job scheduler. */
 		if(!jobScheduler.tick()) {
@@ -487,6 +493,13 @@ public class Master implements MessageQueueListener, AutoCloseable {
 		}
 
 		heart.tick(Instant.now());
+	}
+
+	private void processQueue(BlockingDeque<QTask> tasks) {
+		/* Use a secondary queue so we don't get stuck in an infinite runSync() loop */
+		List<QTask> _tasks = new ArrayList<>();
+		tasks.drainTo(_tasks);
+		tasks.forEach(qt -> qt.runnable.run());
 	}
 
 	private MessageOperation doProcessAgentMessage2(State state, _AgentMessage _msg) throws IllegalStateException, IOException {
@@ -622,7 +635,10 @@ public class Master implements MessageQueueListener, AutoCloseable {
 		/* Process agents. */
 		processAgents(state);
 
-		if(!aaaaa.isShutdown() || !allAgents.isEmpty()) {
+		/* Process priority tasks. */
+		processQueue(taskQueuePrio);
+
+		if(!aaaaa.isShutdown() || !allAgents.isEmpty() || !taskQueuePrio.isEmpty()) {
 			return State.Stopping;
 		}
 
@@ -893,10 +909,10 @@ public class Master implements MessageQueueListener, AutoCloseable {
 			assert rj.agent.equals(agent);
 			if(rj.managed) {
 				/* Managed job, it's for the job scheduler */
-				runLater("agOnJobUpdate", () -> jobScheduler.onJobUpdate(rj.att, au, rj.networkJob.numCommands));
+				runLater("agOnJobUpdate", () -> jobScheduler.onJobUpdate(rj.att, au, rj.networkJob.numCommands), true);
 			} else {
 				/* Unmanaged job, it's for the agent scheduler */
-				runLater("agOnJobUpdate", () -> agentScheduler.onUnmanagedJobUpdate(rj.networkJob, au, agent));
+				runLater("agOnJobUpdate", () -> agentScheduler.onUnmanagedJobUpdate(rj.networkJob, au, agent), true);
 			}
 		}
 
