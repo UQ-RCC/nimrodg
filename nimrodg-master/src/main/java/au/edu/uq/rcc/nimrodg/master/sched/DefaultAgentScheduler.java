@@ -209,8 +209,6 @@ public class DefaultAgentScheduler implements AgentScheduler {
 			return;
 		}
 
-		AgentUpdate.CommandResult_ cr = au.getCommandResult();
-
 		boolean bad = didAgentFail(job, au);
 		if(bad) {
 			/* TODO: What should be the policy here? Unassign the resource? Retry? Currently it'll retry indefinitely. */

@@ -16,4 +16,4 @@ fi
 
 CMD+="]"
 
-$CMD
+exec $CMD

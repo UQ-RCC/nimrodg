@@ -13,18 +13,24 @@ if [ ! -f ${TARBALL} ]; then
 fi
 
 pushd debian
+
+chmod 755 DEBIAN/postinst DEBIAN/postrm
+
 mkdir -p usr/share
+chmod 755 usr usr/share
 
 pushd usr/share
 rm -rf nimrod nimrod-*
 tar -xf ${TARBALL}
 mv nimrod-${VERSION} nimrod
 
-find . -type f -name "*.jar" -print0 | xargs -0 sudo chmod 644
-find . -type d -print0 | xargs -0 sudo chmod 755
+find . -type f -name "*.jar" -print0 | xargs -0 chmod 644
+find . -type d -print0 | xargs -0 chmod 755
 rm -f ./nimrod/bin/nimrod.bat
 
 popd
+
+
 
 cat <<EOF > DEBIAN/control
 Source: nimrodg
@@ -32,12 +38,13 @@ Section: devel
 Priority: optional
 Maintainer: $(git config --get user.name) <$(git config --get user.email)>
 Standards-Version: 3.9.5
-Build-Depends: debhelper (>= 7)
+Build-Depends: openjdk-11-jdk-headless, gradle (>= 4.7)
 Homepage: https://rcc.uq.edu.au/nimrod
 Package: nimrodg
 Version: ${VERSION}-0ubuntu1
 Architecture: all
-Depends: openjdk-11-jre-headless, postgresql-10
+Depends: openjdk-11-jre-headless
+Recommends: postgresql-10
 Description: Nimrod is a specialised parametric modelling system. 
  It uses a simple declarative parametric modelling language to express
  a parametric experiment. 

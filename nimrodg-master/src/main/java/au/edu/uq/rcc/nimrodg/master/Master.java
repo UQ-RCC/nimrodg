@@ -812,16 +812,13 @@ public class Master implements MessageQueueListener, AutoCloseable {
 
 		@Override
 		public Resource getAgentResource(Agent agent) {
-			return nimrod.getAgentResource(agent.getUUID());
+			return allAgents.get(agent.getUUID()).resource;
 		}
 
 		@Override
 		public List<Agent> getResourceAgents(Resource node) {
-			/* Get agents, ignoring ones we don't have an instance for. */
-			return nimrod.getResourceAgents(node)
-					.stream()
-					.map(s -> getAgentInfo(s.getUUID()))
-					.filter(ai -> ai != null)
+			return allAgents.values().stream()
+					.filter(ai -> ai.resource.equals(node))
 					.map(ai -> ai.instance)
 					.collect(Collectors.toList());
 		}
