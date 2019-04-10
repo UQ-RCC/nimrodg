@@ -22,6 +22,7 @@ package au.edu.uq.rcc.nimrodg.agent;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
 import java.time.Instant;
 import java.util.UUID;
+import javax.json.JsonObject;
 
 public class DefaultAgentState implements AgentState {
 
@@ -32,8 +33,10 @@ public class DefaultAgentState implements AgentState {
 	private AgentShutdown.Reason shutdownReason;
 	private Instant lastHeardFrom;
 	private Instant creationTime;
+	private Instant connectionTime;
 	private Instant expiryTime;
 	private boolean expired;
+	private JsonObject actuatorData;
 
 	@Override
 	public Agent.State getState() {
@@ -100,9 +103,18 @@ public class DefaultAgentState implements AgentState {
 		return creationTime;
 	}
 
-	@Override
 	public void setCreationTime(Instant time) {
 		creationTime = time;
+	}
+
+	@Override
+	public Instant getConnectionTime() {
+		return connectionTime;
+	}
+
+	@Override
+	public void setConnectionTime(Instant time) {
+		connectionTime = time;
 	}
 
 	@Override
@@ -123,5 +135,15 @@ public class DefaultAgentState implements AgentState {
 	@Override
 	public void setExpired(boolean e) {
 		expired = e;
+	}
+
+	@Override
+	public JsonObject getActuatorData() {
+		return actuatorData;
+	}
+
+	@Override
+	public void setActuatorData(JsonObject data) {
+		actuatorData = data;
 	}
 }

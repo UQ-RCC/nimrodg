@@ -33,13 +33,9 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
-import org.apache.commons.collections4.bidimap.DualHashBidiMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -57,18 +53,6 @@ public class DefaultJobScheduler implements JobScheduler {
 
 	private int bufferSize;
 	private int bufferThreshold;
-
-	private class ExpInfo {
-
-		public final Experiment exp;
-		public long highestIndex;
-
-		public ExpInfo(Experiment exp) {
-			this.exp = exp;
-			this.highestIndex = 0;
-		}
-
-	}
 
 	private class JobInfo {
 
@@ -102,6 +86,13 @@ public class DefaultJobScheduler implements JobScheduler {
 		this.highestIndex = 0;
 	}
 
+	private void reset() {
+		this.highestIndex = 0;
+		this.incomingJobs.clear();
+		this.jobInfo.clear();
+		this.runningAttempts.clear();
+	}
+
 	@Override
 	public void setJobOperations(Operations ops) throws IllegalArgumentException {
 		if(ops == null || this.ops != null) {
@@ -109,7 +100,15 @@ public class DefaultJobScheduler implements JobScheduler {
 		}
 		this.ops = ops;
 		this.exp = ops.getExperiment();
-		this.highestIndex = 0;
+		reset();
+	}
+
+	@Override
+	public void recordAttempt(JobAttempt att, Job job) {
+		this.incomingJobs.remove(job);
+		/* NB: These guys are sets, they'll handle the duplicates themselves. */
+		NimrodUtils.getOrAddLazy(this.jobInfo, job, j -> new JobInfo(j)).attempts.add(att);
+		this.runningAttempts.add(att);
 	}
 
 	@Override
@@ -252,17 +251,13 @@ public class DefaultJobScheduler implements JobScheduler {
 		incomingJobs.clear();
 
 		/* FIXME: Just schedule everything */
-		{
-			jobQueue.forEach(j -> {
-				LOGGER.info("Scheduling job '{}'", j.getPath());
-				JobInfo info = NimrodUtils.getOrAddLazy(jobInfo, j, jj -> new JobInfo(j));
-				JobAttempt att = ops.runJob(j);
-				info.attempts.add(att);
-				runningAttempts.add(att);
-			});
+		jobQueue.forEach(j -> {
+			LOGGER.info("Scheduling job '{}'", j.getPath());
+			JobAttempt att = ops.runJob(j);
+			recordAttempt(att, j);
+		});
 
-			jobQueue.clear();
-		}
+		jobQueue.clear();
 
 		return !jobInfo.isEmpty();
 	}

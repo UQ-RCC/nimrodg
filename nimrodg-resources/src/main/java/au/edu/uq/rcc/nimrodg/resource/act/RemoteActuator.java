@@ -19,6 +19,7 @@
  */
 package au.edu.uq.rcc.nimrodg.resource.act;
 
+import au.edu.uq.rcc.nimrodg.agent.Agent;
 import au.edu.uq.rcc.nimrodg.agent.AgentState;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.api.Resource;
@@ -35,6 +36,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import javax.json.Json;
+import javax.json.JsonNumber;
+import javax.json.JsonObject;
+import javax.json.JsonString;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -52,11 +57,13 @@ public class RemoteActuator extends POSIXActuator<SSHResourceType.SSHConfig> {
 
 		public final UUID uuid;
 		public final int pid;
+		public final String workRoot;
 		public RemoteState state;
 
-		public RemoteAgent(UUID uuid, int pid) {
+		public RemoteAgent(UUID uuid, int pid, String workRoot) {
 			this.uuid = uuid;
 			this.pid = pid;
+			this.workRoot = workRoot;
 			this.state = RemoteState.NOT_CONNECTED;
 		}
 
@@ -91,14 +98,14 @@ public class RemoteActuator extends POSIXActuator<SSHResourceType.SSHConfig> {
 				continue;
 			}
 
-			String workDir = ActuatorUtils.posixJoinPaths(tmpDir, String.format("agent-%s", uuids[i]));
+			String workRoot = ActuatorUtils.posixJoinPaths(tmpDir, String.format("agent-%s", uuids[i]));
 
-			shell.runCommand("mkdir", "-p", workDir);
+			shell.runCommand("mkdir", "-p", workRoot);
 
 			Optional<String> certPath = Optional.empty();
 			if(this.certs.length > 0) {
 				byte[] bcert = ActuatorUtils.writeCertificatesToPEM(this.certs);
-				certPath = Optional.of(ActuatorUtils.posixJoinPaths(workDir, "cert.pem"));
+				certPath = Optional.of(ActuatorUtils.posixJoinPaths(workRoot, "cert.pem"));
 				shell.upload(certPath.get(), bcert, O600, Instant.now());
 			}
 
@@ -106,7 +113,7 @@ public class RemoteActuator extends POSIXActuator<SSHResourceType.SSHConfig> {
 			ArrayList<String> args = ActuatorUtils.posixBuildLaunchCommand(
 					this.remoteAgentPath,
 					uuids[i],
-					workDir,
+					workRoot,
 					uri,
 					routingKey,
 					certPath,
@@ -134,8 +141,11 @@ public class RemoteActuator extends POSIXActuator<SSHResourceType.SSHConfig> {
 				continue;
 			}
 
-			agents.put(uuids[i], new RemoteAgent(uuids[i], pid));
-			results[i] = new LaunchResult(node, null);
+			agents.put(uuids[i], new RemoteAgent(uuids[i], pid, workRoot));
+			results[i] = new LaunchResult(node, null, null, Json.createObjectBuilder()
+					.add("pid", pid)
+					.add("work_root", workRoot)
+					.build());
 		}
 
 		return results;
@@ -191,4 +201,31 @@ public class RemoteActuator extends POSIXActuator<SSHResourceType.SSHConfig> {
 		return agents.size() + num <= limit;
 	}
 
+	@Override
+	public boolean adopt(AgentState state) {
+		JsonObject data = state.getActuatorData();
+		if(data == null) {
+			return false;
+		}
+
+		if(state.getState() == Agent.State.SHUTDOWN) {
+			return false;
+		}
+
+		JsonNumber jpid = data.getJsonNumber("pid");
+		if(jpid == null) {
+			return false;
+		}
+
+		JsonString jworkroot = data.getJsonString("work_root");
+		if(jworkroot == null) {
+			return false;
+		}
+
+		RemoteAgent ra = new RemoteAgent(state.getUUID(), jpid.intValue(), jworkroot.getString());
+		ra.state = state.getState() == Agent.State.WAITING_FOR_HELLO ? RemoteState.NOT_CONNECTED : RemoteState.CONNECTED;
+		agents.putIfAbsent(ra.uuid, ra);
+
+		return true;
+	}
 }

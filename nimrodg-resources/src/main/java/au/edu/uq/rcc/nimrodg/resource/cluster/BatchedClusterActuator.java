@@ -19,6 +19,7 @@
  */
 package au.edu.uq.rcc.nimrodg.resource.cluster;
 
+import au.edu.uq.rcc.nimrodg.agent.Agent;
 import au.edu.uq.rcc.nimrodg.agent.AgentState;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.api.ResourceFullException;
@@ -33,11 +34,14 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.EnumSet;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import au.edu.uq.rcc.nimrodg.api.Resource;
+import javax.json.Json;
+import javax.json.JsonNumber;
+import javax.json.JsonObject;
+import javax.json.JsonString;
 
 public abstract class BatchedClusterActuator<C extends BatchedClusterConfig> extends ClusterActuator<C> {
 
@@ -68,15 +72,12 @@ public abstract class BatchedClusterActuator<C extends BatchedClusterConfig> ext
 
 		public final String jobId;
 		public final LaunchResult[] results;
+		public final UUID[] uuids;
 
-		public final Set<UUID> pendingAgents;
-		public final Set<UUID> activeAgents;
-
-		public Batch(String jobId, LaunchResult[] results) {
+		public Batch(String jobId, int size) {
 			this.jobId = jobId;
-			this.results = results;
-			this.pendingAgents = new HashSet<>();
-			this.activeAgents = new HashSet<>();
+			this.results = new LaunchResult[size];
+			this.uuids = new UUID[size];
 		}
 	}
 
@@ -181,9 +182,14 @@ public abstract class BatchedClusterActuator<C extends BatchedClusterConfig> ext
 			String jobId;
 			try {
 				jobId = submitBatch(shell, tb);
-				Batch b = new Batch(jobId, new LaunchResult[tb.to - tb.from]);
+				Batch b = new Batch(jobId, tb.to - tb.from);
 				res = goodLaunch;
-				Arrays.setAll(b.results, i -> goodLaunch);
+				Arrays.setAll(b.results, i -> new LaunchResult(node, null, null, Json.createObjectBuilder()
+						.add("batch_id", b.jobId)
+						.add("batch_size", b.results.length)
+						.add("batch_index", i)
+						.build()));
+				Arrays.setAll(b.uuids, i -> tb.uuids[i]);
 				Arrays.stream(tb.uuids).forEach(u -> jobNames.put(u, b));
 			} catch(IOException e) {
 				res = new LaunchResult(null, e);
@@ -221,22 +227,72 @@ public abstract class BatchedClusterActuator<C extends BatchedClusterConfig> ext
 
 	@Override
 	public void notifyAgentConnection(AgentState state) {
-		UUID uuid = state.getUUID();
-		Batch b = jobNames.getOrDefault(uuid, null);
-
-		b.activeAgents.remove(uuid);
-		if(b.pendingAgents.isEmpty()) {
-			jobNames.remove(uuid);
-		}
-
 		/* Set the walltime. */
 		config.dialect.getWalltime(config.batchConfig)
-				.ifPresent(l -> state.setExpiryTime(state.getCreationTime().plusSeconds(l)));
+				.ifPresent(l -> state.setExpiryTime(state.getConnectionTime().plusSeconds(l)));
 	}
 
 	@Override
 	public void notifyAgentDisconnection(UUID uuid) {
 		/* Agent gone, remove its name */
 		jobNames.remove(uuid);
+	}
+
+	@Override
+	public boolean adopt(AgentState state) {
+		JsonObject data = state.getActuatorData();
+		if(data == null) {
+			return false;
+		}
+
+		if(state.getState() == Agent.State.SHUTDOWN) {
+			return false;
+		}
+
+		JsonString jbatchid = data.getJsonString("batch_id");
+		if(jbatchid == null) {
+			return false;
+		}
+
+		JsonNumber jbatchsize = data.getJsonNumber("batch_size");
+		if(jbatchsize == null) {
+			return false;
+		}
+
+		JsonNumber jbatchindex = data.getJsonNumber("batch_index");
+		if(jbatchindex == null) {
+			return false;
+		}
+
+		String batchId = jbatchid.getString();
+		int batchSize = jbatchsize.intValue();
+		int batchIndex = jbatchindex.intValue();
+
+		Batch batch = jobNames.get(state.getUUID());
+		if(batch == null) {
+			batch = new Batch(batchId, jbatchsize.intValue());
+		}
+
+		if(!batch.jobId.equals(batchId)) {
+			return false;
+		}
+
+		if(batch.results.length != batchSize || batchIndex >= batchSize) {
+			return false;
+		}
+
+		if(batch.uuids[batchIndex] == state.getUUID()) {
+			return true;
+		}
+
+		if(batch.uuids[batchIndex] != state.getUUID() && batch.uuids[batchIndex] != null) {
+			return false;
+		}
+
+		batch.uuids[batchIndex] = state.getUUID();
+		batch.results[batchIndex] = new LaunchResult(node, null, state.getExpiryTime(), data);
+		jobNames.putIfAbsent(state.getUUID(), batch);
+
+		return true;
 	}
 }

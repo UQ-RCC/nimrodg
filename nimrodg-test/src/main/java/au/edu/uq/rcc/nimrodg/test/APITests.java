@@ -65,6 +65,7 @@ import au.edu.uq.rcc.nimrodg.api.Resource;
 import java.util.AbstractMap;
 import java.util.HashSet;
 import java.util.Optional;
+import javax.json.Json;
 import org.junit.Assert;
 
 public abstract class APITests {
@@ -276,19 +277,22 @@ public abstract class APITests {
 			}
 
 			hellos = ((DummyActuator)act).simulateHellos();
-		}
 
-		ReferenceAgent[] agents = new ReferenceAgent[hellos.size()];
+			ReferenceAgent[] agents = new ReferenceAgent[hellos.size()];
 
-		FakeAgentListener l = new FakeAgentListener();
-		for(int i = 0; i < agents.length; ++i) {
-			agents[i] = new ReferenceAgent(new DefaultAgentState(), l);
-			agents[i].processMessage(hellos.get(i), Instant.now());
-			napi.addAgent(nodeMap.get(hellos.get(i).getAgentUUID()), agents[i].getDataStore());
-		}
+			FakeAgentListener l = new FakeAgentListener(napi, (DummyActuator)act);
 
-		for(int i = 0; i < agents.length; ++i) {
-			napi.updateAgent(agents[i].getDataStore());
+			for(int i = 0; i < agents.length; ++i) {
+				agents[i] = new ReferenceAgent(new DefaultAgentState(), l);
+				agents[i].processMessage(hellos.get(i), Instant.now());
+
+				Assert.assertEquals(
+						Json.createObjectBuilder()
+								.add("hashCode", agents[i].getDataStore().hashCode())
+								.build(),
+						agents[i].getDataStore().getActuatorData()
+				);
+			}
 		}
 	}
 

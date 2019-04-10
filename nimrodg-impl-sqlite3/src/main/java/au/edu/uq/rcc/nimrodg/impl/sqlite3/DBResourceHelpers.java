@@ -24,7 +24,6 @@ import au.edu.uq.rcc.nimrodg.agent.AgentState;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPIException;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
-import au.edu.uq.rcc.nimrodg.impl.base.db.BrokenDBInvariantException;
 import au.edu.uq.rcc.nimrodg.impl.base.db.DBBaseHelper;
 import au.edu.uq.rcc.nimrodg.impl.base.db.DBUtils;
 import au.edu.uq.rcc.nimrodg.impl.base.db.TempAgent;
@@ -38,6 +37,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import javax.json.JsonObject;
 import javax.json.JsonStructure;
 
 public class DBResourceHelpers extends DBBaseHelper {
@@ -96,9 +96,9 @@ public class DBResourceHelpers extends DBBaseHelper {
 		this.qGetAgentsOnResource = prepareStatement("SELECT * FROM nimrod_resource_agents WHERE location = ? AND expired = FALSE");
 		this.qAddAgent = prepareStatement("INSERT INTO nimrod_resource_agents(\n"
 				+ "	state, queue, agent_uuid, shutdown_signal, shutdown_reason,\n"
-				+ "	expiry_time, location\n"
-				+ ") VALUES(?, ?, ?, ?, ?, ?, ?)", true);
-		this.qUpdateAgent = prepareStatement("UPDATE nimrod_resource_agents SET state = ?, shutdown_signal = ?, shutdown_reason = ?, last_heard_from = ?, expired = ? WHERE agent_uuid = ?");
+				+ "	expiry_time, location, actuator_data\n"
+				+ ") VALUES(?, ?, ?, ?, ?, ?, ?, ?)", true);
+		this.qUpdateAgent = prepareStatement("UPDATE nimrod_resource_agents SET state = ?, queue = ?, shutdown_signal = ?, shutdown_reason = ?, connected_at = ?, last_heard_from = ?, expiry_time = ?, expired = ? WHERE agent_uuid = ?");
 	}
 
 	public Optional<TempResourceType> getResourceTypeInfo(String name) throws SQLException {
@@ -279,7 +279,7 @@ public class DBResourceHelpers extends DBBaseHelper {
 		}
 	}
 
-	public TempAgent addAgent(long resId, AgentState agent) throws SQLException {
+	public void addAgent(long resId, AgentState agent) throws SQLException {
 		qAddAgent.setString(1, Agent.stateToString(agent.getState()));
 		qAddAgent.setString(2, agent.getQueue());
 		qAddAgent.setString(3, agent.getUUID().toString());
@@ -287,30 +287,28 @@ public class DBResourceHelpers extends DBBaseHelper {
 		qAddAgent.setString(5, AgentShutdown.reasonToString(agent.getShutdownReason()));
 		DBUtils.setLongInstant(qAddAgent, 6, agent.getExpiryTime());
 		qAddAgent.setLong(7, resId);
+		JsonObject data = agent.getActuatorData();
+		if(data == null) {
+			qAddAgent.setString(8, null);
+		} else {
+			qAddAgent.setString(8, data.toString());
+		}
 
 		if(qAddAgent.executeUpdate() == 0) {
 			throw new SQLException("Creating agent failed, no rows affected");
 		}
-
-		long id;
-		try(ResultSet rs = qAddResource.getGeneratedKeys()) {
-			if(rs.next()) {
-				id = rs.getLong(1);
-			} else {
-				throw new SQLException("Creating agent failed, no id obtained");
-			}
-		}
-
-		return getAgentInformationByUUID(agent.getUUID()).get();
 	}
 
 	public boolean updateAgent(AgentState agent) throws SQLException {
 		qUpdateAgent.setString(1, Agent.stateToString(agent.getState()));
-		qUpdateAgent.setInt(2, agent.getShutdownSignal());
-		qUpdateAgent.setString(3, AgentShutdown.reasonToString(agent.getShutdownReason()));
-		DBUtils.setLongInstant(qUpdateAgent, 4, agent.getLastHeardFrom());
-		qUpdateAgent.setBoolean(5, agent.getExpired());
-		qUpdateAgent.setString(6, agent.getUUID().toString());
+		qUpdateAgent.setString(2, agent.getQueue());
+		qUpdateAgent.setInt(3, agent.getShutdownSignal());
+		qUpdateAgent.setString(4, AgentShutdown.reasonToString(agent.getShutdownReason()));
+		DBUtils.setLongInstant(qUpdateAgent, 5, agent.getConnectionTime());
+		DBUtils.setLongInstant(qUpdateAgent, 6, agent.getLastHeardFrom());
+		DBUtils.setLongInstant(qUpdateAgent, 7, agent.getExpiryTime());
+		qUpdateAgent.setBoolean(8, agent.getExpired());
+		qUpdateAgent.setString(9, agent.getUUID().toString());
 
 		return qUpdateAgent.executeUpdate() != 0;
 	}
@@ -360,10 +358,12 @@ public class DBResourceHelpers extends DBBaseHelper {
 				rs.getInt("shutdown_signal"),
 				AgentShutdown.reasonFromString(rs.getString("shutdown_reason")),
 				DBUtils.getLongInstant(rs, "created"),
+				DBUtils.getLongInstant(rs, "connected_at"),
 				DBUtils.getLongInstant(rs, "last_heard_from"),
 				DBUtils.getLongInstant(rs, "expiry_time"),
 				rs.getBoolean("expired"),
-				rs.getLong("location")
+				rs.getLong("location"),
+				DBUtils.getJSONObject(rs, "actuator_data")
 		);
 	}
 }

@@ -29,7 +29,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import au.edu.uq.rcc.nimrodg.api.Resource;
+import au.edu.uq.rcc.nimrodg.master.Master;
 import java.util.Optional;
+import java.util.Set;
 
 public interface AgentScheduler {
 
@@ -110,6 +112,13 @@ public interface AgentScheduler {
 		 */
 		void reportJobFailure(JobAttempt att, Agent agent, FailureReason r);
 	}
+
+	/**
+	 * Re-synchronise state with the master.
+	 * @param agents A set of all agents.
+	 * @param jobs A set of the currently-running jobs.
+	 */
+	void resync(Set<Agent> agents, Set<Master.RunningJob> jobs);
 
 	/**
 	 * Set the agent operations instance. This may only set once.

@@ -43,7 +43,6 @@ public interface Agent {
 		 * Calling {@link #terminate()} here will cause the state to change to {@link #SHUTDOWN} with the shutdown
 		 * reason set to {@link au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown.Reason#Requested}.
 		 * </li>
-		 * <li>This should be considered a transient state and not saved, serialised, or persisted.</li>
 		 * </ul>
 		 */
 		WAITING_FOR_HELLO,

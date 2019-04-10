@@ -122,17 +122,19 @@ DROP TABLE IF EXISTS nimrod_resource_agents;
 CREATE TABLE nimrod_resource_agents(
 	id						INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
 	state					TEXT NOT NULL CHECK(state IN ('WAITING_FOR_HELLO', 'READY', 'BUSY', 'SHUTDOWN')),
-	queue					TEXT NOT NULL,
+	queue					TEXT CHECK((state != 'WAITING_FOR_HELLO') != (queue IS NULL)),
 	agent_uuid				UUID NOT NULL UNIQUE,
 	shutdown_signal			INTEGER NOT NULL,
 	shutdown_reason			TEXT NOT NULL CHECK(shutdown_reason IN ('HostSignal', 'Requested')),
 	/* From here, none of this is actually state. */
 	created					INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+	connected_at			INTEGER DEFAULT NULL CHECK(connected_at >= created),
 	last_heard_from			INTEGER DEFAULT NULL CHECK(last_heard_from >= created),
 	expiry_time				INTEGER DEFAULT NULL CHECK(expiry_time >= created),
 	expired_at				INTEGER DEFAULT NULL CHECK(expired_at >= created),
 	expired					BOOLEAN NOT NULL DEFAULT FALSE,
-	location				INTEGER REFERENCES nimrod_resources(id) ON DELETE CASCADE
+	location				INTEGER REFERENCES nimrod_resources(id) ON DELETE CASCADE,
+	actuator_data			TEXT
 );
 DROP INDEX IF EXISTS i_agent_location;
 CREATE INDEX i_agent_location ON nimrod_resource_agents(location) WHERE location IS NOT NULL;
@@ -141,4 +143,10 @@ DROP TRIGGER IF EXISTS t_agent_expire_on_shutdown;
 CREATE TRIGGER t_agent_expire_on_shutdown AFTER UPDATE ON nimrod_resource_agents FOR EACH ROW WHEN OLD.state != 'SHUTDOWN' AND NEW.state = 'SHUTDOWN'
 BEGIN
 	UPDATE nimrod_resource_agents SET expired_at = strftime('%s', 'now'), expired = TRUE WHERE id = OLD.id;
+END;
+
+DROP TRIGGER IF EXISTS t_agent_connect;
+CREATE TRIGGER t_agent_connect AFTER UPDATE ON nimrod_resource_agents FOR EACH ROW WHEN OLD.state = 'WAITING_FOR_HELLO' AND NEW.state = 'READY'
+BEGIN
+	UPDATE nimrod_resource_agents SET connected_at = strftime('%s', 'now') WHERE id = OLD.id;
 END;

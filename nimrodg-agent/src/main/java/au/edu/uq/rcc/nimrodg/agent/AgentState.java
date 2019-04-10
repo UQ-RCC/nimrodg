@@ -22,6 +22,8 @@ package au.edu.uq.rcc.nimrodg.agent;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
 import java.time.Instant;
 import java.util.UUID;
+import javax.json.JsonObject;
+
 
 public interface AgentState {
 
@@ -45,13 +47,16 @@ public interface AgentState {
 
 	public void setShutdownReason(AgentShutdown.Reason r);
 
+	public Instant getCreationTime();
+
+	// The time at which the state changed from WAITING_FOR_HELLO to READY
+	public Instant getConnectionTime();
+
+	public void setConnectionTime(Instant time);
+
 	public Instant getLastHeardFrom();
 
 	public void setLastHeardFrom(Instant time);
-
-	public Instant getCreationTime();
-
-	public void setCreationTime(Instant time);
 
 	/**
 	 * Get the Unix timestamp at which this agent should be expired.
@@ -66,4 +71,7 @@ public interface AgentState {
 
 	public void setExpired(boolean expired);
 
+	public JsonObject getActuatorData();
+
+	void setActuatorData(JsonObject data);
 }
