@@ -48,6 +48,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.io.IoBuilder;
 import au.edu.uq.rcc.nimrodg.api.Resource;
+import au.edu.uq.rcc.nimrodg.master.Master;
 
 public class DefaultAgentScheduler implements AgentScheduler {
 
@@ -81,6 +82,36 @@ public class DefaultAgentScheduler implements AgentScheduler {
 				.forLogger(LOGGER)
 				.setLevel(Level.INFO)
 				.buildPrintStream();
+	}
+
+	@Override
+	public void resync(Set<Agent> agents, Set<Master.RunningJob> jobs) {
+		m_AllAgents.addAll(agents);
+		agents.stream()
+				.filter(ag -> ag.getState() == Agent.State.READY)
+				.forEach(m_ReadyAgents::add);
+		agents.stream()
+				.filter(ag -> ag.getState() == Agent.State.WAITING_FOR_HELLO)
+				.forEach(m_LaunchingAgents::add);
+
+		jobs.stream()
+				.filter(rj -> rj.managed)
+				.forEach(rj -> {
+					m_PendingJobs.remove(rj.att);
+					m_HeldJobs.remove(rj.att);
+					m_AssJob.registerJobRun(rj.uuid, rj.att, rj.agent);
+				});
+
+		/* Handle job setups. */
+		jobs.stream()
+				.filter(rj -> !rj.managed)
+				.forEach(rj -> {
+					/* FIXME: getExperiment() */
+					Experiment exp = rj.job.getExperiment();
+					Resource res = ops.getAgentResource(rj.agent);
+					m_Setups.markAgentRequested(rj.agent.getUUID(), res, exp);
+					m_Setups.markRunning(rj.uuid, res, exp);
+				});
 	}
 
 	@Override

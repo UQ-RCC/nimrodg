@@ -53,6 +53,7 @@ import java.security.cert.CertificateException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -138,7 +139,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 		}
 	}
 
-	private class RunningJob {
+	public class RunningJob {
 
 		public final UUID uuid;
 		public final Job job;
@@ -147,7 +148,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 		public final Agent agent;
 		public final boolean managed;
 
-		public RunningJob(UUID uuid, Job job, JobAttempt att, NetworkJob networkJob, Agent agent, boolean managed) {
+		private RunningJob(UUID uuid, Job job, JobAttempt att, NetworkJob networkJob, Agent agent, boolean managed) {
 			this.uuid = uuid;
 			this.job = job;
 			this.att = att;
@@ -353,8 +354,15 @@ public class Master implements MessageQueueListener, AutoCloseable {
 	}
 
 	private void resyncJobAttempts() {
-		/* NB: This should be idempotent if possible. */
-
+		/*
+		 * NB: This should be idempotent if possible.
+		 *
+		 * FIXME: Issue #13
+		 * This won't handle attempts that are NOT_RUN. If we already know about them, good.
+		 * If we don't, then they're not hurting anything by being there.
+		 *
+		 * To handle them, I'd need to add a new API call that can directly query attempts without a job reference.
+		 */
 		Collection<? extends Job> activeJobs = experiment.filterJobs(EnumSet.of(JobAttempt.Status.RUNNING), 0, 0);
 
 		/* Get all active attempts we don't already know about. */
@@ -372,6 +380,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 			AgentInfo ai = allAgents.get(att.getAgentUUID());
 			/* If there's no agent associated, something screwy's going on. Fail the attempt and let it reschedule. */
 			if(ai == null) {
+				/* FIXME: What if the job scheduler actually knows about it and somethings really gone screwy? */
 				LOGGER.warn("Active job attempt {} has invalid agent {}, marking as failed.", att.getUUID(), att.getAgentUUID());
 				nimrod.finishJobAttempt(att, true);
 				return;
@@ -381,11 +390,13 @@ public class Master implements MessageQueueListener, AutoCloseable {
 			RunningJob rj = new RunningJob(att.getUUID(), job, att, buildNetworkJob(att, job, ai), ai.instance, true);
 			runningJobs.put(rj.uuid, rj);
 		}));
-	}
 
-	private void resyncSchedulers() {
-		this.runningJobs.values().stream().forEach(j -> jobScheduler.recordAttempt(j.att, j.job));
-		/* TODO: Agent scheduler. */
+		/* Resync the schedulers. */
+		runningJobs.values().stream().forEach(j -> jobScheduler.recordAttempt(j.att, j.job));
+		agentScheduler.resync(
+				allAgents.values().stream().map(ai -> ai.instance).collect(Collectors.toSet()),
+				runningJobs.values().stream().collect(Collectors.toSet())
+		);
 	}
 
 	private State startProc(State state, Mode mode) {
@@ -397,7 +408,6 @@ public class Master implements MessageQueueListener, AutoCloseable {
 
 			checkOrphanage();
 			resyncJobAttempts();
-			resyncSchedulers();
 			return state;
 		} else if(mode == Mode.Leave) {
 			return state;

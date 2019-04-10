@@ -67,7 +67,7 @@ public class SetupTracker {
 		CapPair cp = new CapPair(node, exp);
 
 		if(m_AgentMap.containsValue(cp)) {
-			throw new IllegalArgumentException();
+			return;
 		}
 		m_AgentMap.put(agentUuid, cp);
 	}
@@ -76,10 +76,10 @@ public class SetupTracker {
 		CapPair cp = new CapPair(node, exp);
 
 		if(m_JobMap.containsValue(cp)) {
-			throw new IllegalArgumentException();
+			return;
 		}
 
-		m_JobMap.put(jobUuid, cp);
+		m_JobMap.putIfAbsent(jobUuid, cp);
 	}
 
 	public void markJobDone(UUID jobUuid) {
