@@ -121,6 +121,28 @@ public class Staging extends DefaultCLICommand {
 		return 0;
 	}
 
+	public void goodTest(UserConfig config, NimrodAPI nimrod, PrintStream out, PrintStream err, String[] args) throws Exception {
+		CompiledRun cr = PARSE_API.parseRunToBuilder(
+				"parameter x integer range from 1 to 1000 step 1\n"
+				+ "\n"
+				+ "task main\n"
+				+ "	onerror ignore\n"
+				+ "	redirect stdout to output.txt\n"
+				+ "	redirect stderr append to output.txt\n"
+				+ "	exec echo $x\n"
+				+ "	copy node:output.txt root:output-$x.txt\n"
+				+ "endtask", new ArrayList<>()).build();
+
+		Experiment exp1 = nimrod.getExperiment("exp1");
+		if(exp1 != null) {
+			nimrod.deleteExperiment(exp1);
+		}
+		exp1 = nimrod.addExperiment("exp1", cr);
+
+		Resource local = createLocal(nimrod, "local", "x86_64-pc-linux-musl", 10);
+		nimrod.assignResource(local, exp1);
+	}
+
 	public void singleAgentSleep(UserConfig config, NimrodAPI nimrod, PrintStream out, PrintStream err, String[] args) throws Exception {
 		nAgentSleep(config, nimrod, out, err, new String[]{"1", "100"});
 	}
