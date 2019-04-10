@@ -51,6 +51,6 @@ public abstract class DefaultCLICommand implements CLICommand {
 			ini.load(is);
 		}
 
-		return new IniUserConfig(ini);
+		return new IniUserConfig(ini, configFile);
 	}
 }

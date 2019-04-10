@@ -60,7 +60,10 @@ public final class IniSetupConfig implements SetupConfig {
 	private final Map<String, String> actualProperties;
 
 	public IniSetupConfig(Ini ini) {
+		Map<String, String> envMap = IniUserConfig.buildEnvironmentMap();
+
 		Section _cfg = IniUserConfig.requireSection(ini, "config");
+		_cfg.putAll(envMap);
 
 		String _workDir = IniUserConfig.requireValue(_cfg, "workdir");
 		if(!_workDir.endsWith("/")) {
@@ -75,6 +78,7 @@ public final class IniSetupConfig implements SetupConfig {
 		this.storeDir = _storeDir;
 
 		Section _amqp = IniUserConfig.requireSection(ini, "amqp");
+		_amqp.putAll(envMap);
 		this.amqpUri = URI.create(IniUserConfig.requireValue(_amqp, "uri"));
 		this.amqpRoutingKey = IniUserConfig.requireValue(_amqp, "routing_key");
 		this.amqpCertPath = IniUserConfig.requireValue(_amqp, "cert");
@@ -82,6 +86,7 @@ public final class IniSetupConfig implements SetupConfig {
 		this.amqpNoVerifyHost = Boolean.parseBoolean(IniUserConfig.requireValue(_amqp, "no_verify_host"));
 
 		Section _tx = IniUserConfig.requireSection(ini, "transfer");
+		_tx.putAll(envMap);
 		{
 			String uri = IniUserConfig.requireValue(_tx, "uri");
 			if(!uri.endsWith("/")) {

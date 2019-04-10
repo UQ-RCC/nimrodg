@@ -20,9 +20,10 @@
 package au.edu.uq.rcc.nimrodg.cli;
 
 import au.edu.uq.rcc.nimrodg.setup.UserConfig;
+import java.nio.file.Path;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.ini4j.Ini;
 import org.ini4j.Profile.Section;
 
@@ -33,14 +34,28 @@ public class IniUserConfig implements UserConfig {
 
 	private final Map<String, Map<String, String>> actualConfig;
 
-	public IniUserConfig(Ini ini) {
+	public IniUserConfig(Ini ini, Path configPath) {
 		Section _cfg = IniUserConfig.requireSection(ini, "config");
+
+		/* Patch the entire ini with our "env:" variables. */
+		Map<String, String> envMap = buildEnvironmentMap();
+		envMap.put("nimrod:confdir", configPath.getParent().toAbsolutePath().toString());
+
+		patchIni(ini, envMap);
+
 		this.factory = requireValue(_cfg, "factory");
 
-		this.actualConfig = new HashMap<>(ini);
-		
+		/* "Resolve" the entire ini file and strip any "env:" entries. */
+		this.actualConfig = ini.entrySet().stream()
+				.collect(Collectors.toMap(
+						e -> e.getKey(),
+						e -> e.getValue().keySet().stream()
+								.filter(k -> !k.startsWith("env:") && !k.startsWith("nimrod:"))
+								.collect(Collectors.toMap(k -> k, v -> e.getValue().fetch(v))))
+				);
+
 		this.config = Collections.unmodifiableMap(actualConfig);
-		
+
 	}
 
 	public static Section requireSection(Ini ini, String name) {
@@ -57,6 +72,26 @@ public class IniUserConfig implements UserConfig {
 			throw new IllegalArgumentException(String.format("Missing key '%s' in [%s] section", name, s.getName()));
 		}
 		return val;
+	}
+
+	public static Map<String, String> buildEnvironmentMap() {
+		return System.getenv().entrySet().stream()
+				.collect(Collectors.toMap(e -> "env:" + e.getKey(), e -> e.getValue()));
+	}
+
+	private static void _patch(Section s, Map<String, String> envMap) {
+		s.putAll(envMap);
+		for(String ss : s.childrenNames()) {
+			_patch(s.getChild(ss), envMap);
+		}
+	}
+
+	public static void patchIni(Ini ini, Map<String, String> patch) {
+		ini.keySet().forEach(s -> _patch(ini.get(s), patch));
+	}
+
+	public static void patchIniWithEnvironment(Ini ini) {
+		patchIni(ini, buildEnvironmentMap());
 	}
 
 	@Override
