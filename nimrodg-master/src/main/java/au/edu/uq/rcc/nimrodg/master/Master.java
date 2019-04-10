@@ -499,7 +499,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 		/* Use a secondary queue so we don't get stuck in an infinite runSync() loop */
 		List<QTask> _tasks = new ArrayList<>();
 		tasks.drainTo(_tasks);
-		tasks.forEach(qt -> qt.runnable.run());
+		_tasks.forEach(qt -> qt.runnable.run());
 	}
 
 	private MessageOperation doProcessAgentMessage2(State state, _AgentMessage _msg) throws IllegalStateException, IOException {
