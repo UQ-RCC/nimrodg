@@ -36,9 +36,7 @@ public abstract class DefaultCLICommand implements CLICommand {
 		return execute(args, loadConfigFile(Paths.get(args.getString("config"))), out, err);
 	}
 
-	public int execute(Namespace args, UserConfig cfg, PrintStream out, PrintStream err) throws Exception {
-		throw new UnsupportedOperationException();
-	}
+	public abstract int execute(Namespace args, UserConfig cfg, PrintStream out, PrintStream err) throws Exception;
 
 	public static IniUserConfig loadConfigFile(Path configFile) throws IOException {
 		/* Load the configuration */

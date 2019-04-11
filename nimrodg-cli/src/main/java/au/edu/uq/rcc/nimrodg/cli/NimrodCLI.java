@@ -23,6 +23,7 @@ import au.edu.uq.rcc.nimrodg.cli.commands.AddExp;
 import au.edu.uq.rcc.nimrodg.cli.commands.AddJobs;
 import au.edu.uq.rcc.nimrodg.cli.commands.Compile;
 import au.edu.uq.rcc.nimrodg.cli.commands.DelExp;
+import au.edu.uq.rcc.nimrodg.cli.commands.GenConfig;
 import au.edu.uq.rcc.nimrodg.cli.commands.GetProp;
 import au.edu.uq.rcc.nimrodg.cli.commands.MasterCmd;
 import au.edu.uq.rcc.nimrodg.cli.commands.PortalAPI;
@@ -59,6 +60,7 @@ public class NimrodCLI {
 		PortalAPI.DEFINITION,
 		REST.DEFINITION,
 		Compile.DEFINITION,
+		GenConfig.DEFINITION,
 		Staging.DEFINITION
 	};
 

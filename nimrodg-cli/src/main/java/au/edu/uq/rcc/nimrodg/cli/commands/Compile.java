@@ -25,8 +25,8 @@ import au.edu.uq.rcc.nimrodg.api.PlanfileParseException;
 import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledRun;
 import au.edu.uq.rcc.nimrodg.api.utils.run.JsonUtils;
 import au.edu.uq.rcc.nimrodg.api.utils.run.RunBuilder;
+import au.edu.uq.rcc.nimrodg.cli.CLICommand;
 import au.edu.uq.rcc.nimrodg.cli.CommandEntry;
-import au.edu.uq.rcc.nimrodg.cli.DefaultCLICommand;
 import au.edu.uq.rcc.nimrodg.parsing.ANTLR4ParseAPIImpl;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -37,7 +37,7 @@ import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
 
-public class Compile extends DefaultCLICommand {
+public class Compile implements CLICommand {
 
 	@Override
 	public String getCommand() {
