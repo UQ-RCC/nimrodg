@@ -96,11 +96,13 @@ number and kind of resources to complete the job, e.g., HPC and
 virtual machines, can be selected and used.
 
 Nimrod helps researchers run computations remotely on the cloud. It can
-turn your laptop into a supercomputer. With Nirmod you can run many
+turn your laptop into a supercomputer. With Nimrod you can run many
 jobs — millions if need be.
 '''
 	packageMaintainer = 'Research Computing Centre <rcc-admin@uq.edu.au>'
 	packageUrl = 'https://rcc.uq.edu.au/nimrod'
+
+	packageInstallDir = '/usr/share/nimrod'
 }
 
 task buildDeb(type: Deb, dependsOn: assembleDist) {
@@ -120,7 +122,7 @@ task buildDeb(type: Deb, dependsOn: assembleDist) {
 	permissionGroup		'root'
 
 
-	into '/usr/share/nimrod'
+	into project.packageInstallDir
 
 	def distContents = copySpec {
 		with distributions.main.contents
@@ -131,7 +133,7 @@ task buildDeb(type: Deb, dependsOn: assembleDist) {
 
 	with distContents
 
-	link('/usr/bin/nimrod', '../share/nimrod/bin/nimrod')
+	link('/usr/bin/nimrod', "${project.packageInstallDir}/bin/nimrod")
 
 	//eachFile { println it }
 }
@@ -154,7 +156,7 @@ task buildRpm(type: Rpm, dependsOn: assembleDist) {
 	user				'root'
 	permissionGroup		'root'
 
-	into '/usr/share/nimrod'
+	into project.packageInstallDir
 
 	def distContents = copySpec {
 		with distributions.main.contents
@@ -164,7 +166,7 @@ task buildRpm(type: Rpm, dependsOn: assembleDist) {
 	}
 
 	with distContents
-	link('/usr/bin/nimrod', '/usr/share/nimrod/bin/nimrod')
+	link('/usr/bin/nimrod', "${project.packageInstallDir}/bin/nimrod")
 }
 
 task(generateArtifacts, dependsOn:[assembleDist, assembleCiDist, buildDeb, buildRpm]) {
