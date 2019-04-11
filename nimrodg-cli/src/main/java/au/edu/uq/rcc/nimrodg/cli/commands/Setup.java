@@ -72,7 +72,7 @@ public class Setup extends DefaultCLICommand {
 					}
 				}
 
-				IniSetupConfig cfg = new IniSetupConfig(ini);
+				IniSetupConfig cfg = new IniSetupConfig(ini, config.configPath());
 				try(NimrodSetupAPI api = fact.getSetupAPI(config)) {
 					api.reset();
 					api.setup(cfg);

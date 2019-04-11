@@ -19,11 +19,17 @@
  */
 package au.edu.uq.rcc.nimrodg.setup;
 
+import java.nio.file.Path;
 import java.util.Map;
+import java.util.Optional;
 
 public interface UserConfig {
 
 	String factory();
 
 	Map<String, Map<String, String>> config();
+
+	default Optional<Path> configPath() {
+		return Optional.empty();
+	}
 }

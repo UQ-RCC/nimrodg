@@ -21,10 +21,12 @@ package au.edu.uq.rcc.nimrodg.cli;
 
 import au.edu.uq.rcc.nimrodg.setup.SetupConfig;
 import java.net.URI;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -59,8 +61,11 @@ public final class IniSetupConfig implements SetupConfig {
 	private final Map<String, String> actualResourceTypes;
 	private final Map<String, String> actualProperties;
 
-	public IniSetupConfig(Ini ini) {
+	public IniSetupConfig(Ini ini, Optional<Path> userConfigPath) {
 		Map<String, String> envMap = IniUserConfig.buildEnvironmentMap();
+
+		/* I'd rather have it a dummy invalid value than empty. */
+		envMap.put("nimrod:confdir", userConfigPath.map(p -> p.getParent().toAbsolutePath().toString()).orElse("/nonexistent"));
 
 		Section _cfg = IniUserConfig.requireSection(ini, "config");
 		_cfg.putAll(envMap);

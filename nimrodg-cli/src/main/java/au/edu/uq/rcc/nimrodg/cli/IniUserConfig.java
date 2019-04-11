@@ -23,6 +23,7 @@ import au.edu.uq.rcc.nimrodg.setup.UserConfig;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import org.ini4j.Ini;
 import org.ini4j.Profile.Section;
@@ -31,6 +32,7 @@ public class IniUserConfig implements UserConfig {
 
 	public final String factory;
 	public final Map<String, Map<String, String>> config;
+	public final Path configPath;
 
 	private final Map<String, Map<String, String>> actualConfig;
 
@@ -55,6 +57,7 @@ public class IniUserConfig implements UserConfig {
 				);
 
 		this.config = Collections.unmodifiableMap(actualConfig);
+		this.configPath = configPath;
 
 	}
 
@@ -104,4 +107,8 @@ public class IniUserConfig implements UserConfig {
 		return config;
 	}
 
+	@Override
+	public Optional<Path> configPath() {
+		return Optional.of(configPath);
+	}
 }
