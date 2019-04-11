@@ -1,5 +1,0 @@
-#!/bin/sh
-set -e
-
-rm -f /usr/bin/nimrod
-ln -s /usr/share/nimrod/bin/nimrod /usr/bin/nimrod
