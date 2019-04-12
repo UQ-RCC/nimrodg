@@ -94,35 +94,13 @@ public class NimrodCLI {
 		return argparser;
 	}
 
-	public static Path xdgResolve() {
-		/*
-		 * https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html
-		 *
-		 * $XDG_CONFIG_HOME defines the base directory relative to which user specific
-		 * configuration files should be stored.
-		 */
-		String home = System.getenv("XDG_CONFIG_HOME");
-		if(home != null && !home.isEmpty()) {
-			return Paths.get(home).resolve("nimrod");
-		}
-
-		/* If $XDG_CONFIG_HOME is either not set or empty, a default equal to $HOME/.config should be used. */
-		home = System.getenv("HOME");
-		if(home == null || home.isEmpty()) {
-			/* Just fall back to Java's home here */
-			home = System.getProperty("user.home");
-		}
-
-		return Paths.get(home).resolve(".config").resolve("nimrod");
-	}
-
 	public static int cliMain(String[] args) throws Exception {
 		System.setProperty("java.util.logging.manager", "org.apache.logging.log4j.jul.LogManager");
 
-		Path xdgHome = xdgResolve();
+		XDGDirs xdg = XDGDirs.resolve();
 
 		Map<String, CLICommand> commands = new HashMap<>();
-		ArgumentParser parser = buildParser(commands, xdgHome.resolve("nimrod.ini"));
+		ArgumentParser parser = buildParser(commands, xdg.configHome.resolve("nimrod.ini"));
 		Namespace ns;
 		try {
 			ns = parser.parseArgs(args);
