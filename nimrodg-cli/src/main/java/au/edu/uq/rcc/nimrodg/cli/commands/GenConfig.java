@@ -50,6 +50,8 @@ public class GenConfig implements CLICommand {
 			rawCfg = is.readAllBytes();
 		}
 
+		Files.createDirectories(config.getParent());
+
 		if(args.getBoolean("force")) {
 			Files.write(config, rawCfg, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
 		} else {

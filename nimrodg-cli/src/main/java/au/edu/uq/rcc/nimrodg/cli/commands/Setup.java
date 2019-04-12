@@ -33,6 +33,7 @@ import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
@@ -54,6 +55,27 @@ public class Setup extends DefaultCLICommand {
 		NimrodAPIFactory fact = NimrodCLICommand.createFactory(config);
 
 		switch(args.getString("operation")) {
+			case "generate": {
+
+				byte[] rawCfg;
+				try(InputStream is = NimrodCLI.class.getResourceAsStream("nimrod-setup-defaults.ini")) {
+					rawCfg = is.readAllBytes();
+				}
+
+				String _ini = args.getString("setupini");
+				if(_ini.equals("-")) {
+					System.out.write(rawCfg);
+				} else if(args.getBoolean("force")) {
+					Files.write(Paths.get(_ini), rawCfg, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+				} else {
+					Files.write(Paths.get(_ini), rawCfg, StandardOpenOption.CREATE_NEW);
+				}
+
+				System.err.printf("Sample setup configuration written to %s.\n", _ini.equals("-") ? "stdout" : _ini);
+				System.err.printf("Please edit appropriately and run:\n");
+				System.err.printf("  nimrod setup init <path>\n");
+				return 0;
+			}
 			case "bareinit": {
 				try(NimrodSetupAPI api = fact.getSetupAPI(config)) {
 					api.reset();
@@ -139,6 +161,19 @@ public class Setup extends DefaultCLICommand {
 
 			Subparsers subs = parser.addSubparsers()
 					.dest("operation");
+
+			{
+				Subparser sp = subs.addParser("generate")
+						.help("Generate a sample setup configuration file.");
+
+				sp.addArgument("--force", "-f")
+						.dest("force")
+						.type(Boolean.class)
+						.action(Arguments.storeTrue())
+						.help("Force creation if already exists.");
+
+				sp.addArgument("setupini");
+			}
 
 			{
 				Subparser sp = subs.addParser("dbinit")
