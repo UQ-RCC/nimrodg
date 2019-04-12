@@ -125,6 +125,8 @@ public class XDGDirs {
 		return Arrays.stream(env.split(":")).distinct().map(p -> Paths.get(p)).collect(Collectors.toList());
 	}
 
+	public static final XDGDirs INSTANCE = resolve();
+
 	public static XDGDirs resolve() {
 		Path home = resolveHome();
 		return new XDGDirs(

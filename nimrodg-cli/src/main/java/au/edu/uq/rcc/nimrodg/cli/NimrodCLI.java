@@ -97,10 +97,8 @@ public class NimrodCLI {
 	public static int cliMain(String[] args) throws Exception {
 		System.setProperty("java.util.logging.manager", "org.apache.logging.log4j.jul.LogManager");
 
-		XDGDirs xdg = XDGDirs.resolve();
-
 		Map<String, CLICommand> commands = new HashMap<>();
-		ArgumentParser parser = buildParser(commands, xdg.configHome.resolve("nimrod.ini"));
+		ArgumentParser parser = buildParser(commands, XDGDirs.INSTANCE.configHome.resolve("nimrod/nimrod.ini"));
 		Namespace ns;
 		try {
 			ns = parser.parseArgs(args);

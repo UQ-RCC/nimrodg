@@ -28,12 +28,20 @@ import au.edu.uq.rcc.nimrodg.cli.DefaultCLICommand;
 import au.edu.uq.rcc.nimrodg.cli.IniSetupConfig;
 import au.edu.uq.rcc.nimrodg.cli.NimrodCLI;
 import au.edu.uq.rcc.nimrodg.cli.NimrodCLICommand;
+import au.edu.uq.rcc.nimrodg.cli.XDGDirs;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.stream.Stream;
 import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
@@ -57,6 +65,7 @@ public class Setup extends DefaultCLICommand {
 		switch(args.getString("operation")) {
 			case "generate": {
 
+				/* NB: Not using resolveSetupConfiguration() here to keep the formatting. */
 				byte[] rawCfg;
 				try(InputStream is = NimrodCLI.class.getResourceAsStream("nimrod-setup-defaults.ini")) {
 					rawCfg = is.readAllBytes();
@@ -83,16 +92,7 @@ public class Setup extends DefaultCLICommand {
 				return 0;
 			}
 			case "init": {
-				Ini ini = new Ini();
-				String _iniPath = args.getString("setupini");
-				if(_iniPath.equals("-")) {
-					ini.load(System.in);
-				} else {
-					Path iniPath = Paths.get(args.getString("setupini"));
-					try(InputStream is = Files.newInputStream(iniPath)) {
-						ini.load(is);
-					}
-				}
+				Ini ini = resolveSetupConfiguration(XDGDirs.INSTANCE, args.getString("setupini"), false, args.getBoolean("skip_system"));
 
 				IniSetupConfig cfg = new IniSetupConfig(ini, config.configPath());
 				try(NimrodSetupAPI api = fact.getSetupAPI(config)) {
@@ -150,6 +150,55 @@ public class Setup extends DefaultCLICommand {
 		return 0;
 	}
 
+	private static Ini resolveSetupConfiguration(XDGDirs xdg, String userPath, boolean skipInternal, boolean skipSystem) throws IOException, UncheckedIOException {
+
+		Ini internalDefaults = new Ini();
+		if(!skipInternal) {
+			/* Load our internal defaults. */
+			try(InputStream is = NimrodCLI.class.getResourceAsStream("nimrod-setup-defaults.ini")) {
+				internalDefaults.load(is);
+			}
+		}
+
+		Stream<Ini> sysInis = Stream.empty();
+		if(!skipSystem) {
+			/* Load system-wide configuration from each XDG_CONFIG_DIRS. */
+			List<Path> xdgDirs = new ArrayList<>(xdg.configDirs);
+			Collections.reverse(xdgDirs);
+			sysInis = xdgDirs.stream()
+					.map(p -> p.resolve("nimrod/setup-defaults.ini"))
+					.filter(p -> Files.exists(p))
+					.map(p -> {
+						try(InputStream is = Files.newInputStream(p)) {
+							return new Ini(is);
+						} catch(IOException e) {
+							throw new UncheckedIOException(e);
+						}
+					});
+		}
+
+		/* Load user-spsecified configuration. */
+		Ini userConfig = new Ini();
+		if(userPath.equals("-")) {
+			userConfig.load(System.in);
+		} else {
+			Path iniPath = Paths.get(userPath);
+			try(InputStream is = Files.newInputStream(iniPath)) {
+				userConfig.load(is);
+			}
+		}
+
+		/* Merge the configurations. */
+		Ini newIni = new Ini();
+		Stream.concat(Stream.concat(Stream.of(internalDefaults), sysInis), Stream.of(userConfig)).forEach(i -> {
+			new HashSet<>(i.keySet()).forEach(s -> newIni.merge(s, i.get(s), (a, b) -> {
+				new HashSet<>(b.keySet()).forEach(k -> a.merge(k, b.get(k), (aa, bb) -> bb));
+				return a;
+			}));
+		});
+		return newIni;
+	}
+
 	public static void main(String[] args) throws Exception {
 		System.exit(NimrodCLI.cliMain(new String[]{"setup", "init", "/home/zane/.config/nimrod/nimrod-setup.ini"}));
 	}
@@ -196,6 +245,13 @@ public class Setup extends DefaultCLICommand {
 
 			{
 				Subparser sp = subs.addParser("init");
+
+				sp.addArgument("--skip-system")
+						.dest("skip_system")
+						.type(Boolean.class)
+						.action(Arguments.storeTrue())
+						.help("Ignore system-wide configuration");
+
 				sp.addArgument("setupini");
 			}
 
