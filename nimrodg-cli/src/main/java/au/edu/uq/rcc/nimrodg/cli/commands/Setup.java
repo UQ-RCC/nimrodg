@@ -41,6 +41,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.Namespace;
@@ -92,7 +93,12 @@ public class Setup extends DefaultCLICommand {
 				return 0;
 			}
 			case "init": {
-				Ini ini = resolveSetupConfiguration(XDGDirs.INSTANCE, args.getString("setupini"), false, args.getBoolean("skip_system"));
+				Ini ini = resolveSetupConfiguration(
+						XDGDirs.INSTANCE,
+						Optional.ofNullable(args.getString("setupini")),
+						false,
+						args.getBoolean("skip_system")
+				);
 
 				IniSetupConfig cfg = new IniSetupConfig(ini, config.configPath());
 				try(NimrodSetupAPI api = fact.getSetupAPI(config)) {
@@ -150,13 +156,14 @@ public class Setup extends DefaultCLICommand {
 		return 0;
 	}
 
-	private static Ini resolveSetupConfiguration(XDGDirs xdg, String userPath, boolean skipInternal, boolean skipSystem) throws IOException, UncheckedIOException {
-
+	private static Ini resolveSetupConfiguration(XDGDirs xdg, Optional<String> userPath, boolean skipInternal, boolean skipSystem) {
 		Ini internalDefaults = new Ini();
 		if(!skipInternal) {
 			/* Load our internal defaults. */
 			try(InputStream is = NimrodCLI.class.getResourceAsStream("nimrod-setup-defaults.ini")) {
 				internalDefaults.load(is);
+			} catch(IOException e) {
+				throw new UncheckedIOException(e);
 			}
 		}
 
@@ -179,14 +186,20 @@ public class Setup extends DefaultCLICommand {
 
 		/* Load user-spsecified configuration. */
 		Ini userConfig = new Ini();
-		if(userPath.equals("-")) {
-			userConfig.load(System.in);
-		} else {
-			Path iniPath = Paths.get(userPath);
-			try(InputStream is = Files.newInputStream(iniPath)) {
-				userConfig.load(is);
+		userPath.ifPresent(p -> {
+			try {
+				if(p.equals("-")) {
+					userConfig.load(System.in);
+				} else {
+					Path iniPath = Paths.get(p);
+					try(InputStream is = Files.newInputStream(iniPath)) {
+						userConfig.load(is);
+					}
+				}
+			} catch(IOException e) {
+				throw new UncheckedIOException(e);
 			}
-		}
+		});
 
 		/* Merge the configurations. */
 		Ini newIni = new Ini();
@@ -252,7 +265,10 @@ public class Setup extends DefaultCLICommand {
 						.action(Arguments.storeTrue())
 						.help("Ignore system-wide configuration");
 
-				sp.addArgument("setupini");
+				sp.addArgument("setupini")
+						.setDefault((String)null)
+						.nargs("?")
+						.help("The user setup configuration. May be omitted.");
 			}
 
 			{
