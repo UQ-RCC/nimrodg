@@ -51,6 +51,11 @@ distributions {
 	}
 }
 
+distTar {
+	compression = Compression.GZIP
+	extension = 'tar.gz' /* Not .tgz */
+}
+
 task buildNimrodKFatJar(type: Jar, dependsOn: configurations.nimrodKRuntime) {
 	baseName = 'nimrod-kepler-fatjar'
 	version = ''
