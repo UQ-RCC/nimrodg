@@ -5,6 +5,7 @@ buildscript {
 
 	dependencies {
 		classpath 'com.netflix.nebula:gradle-ospackage-plugin:6.1.2'
+		classpath 'de.undercouch:gradle-download-task:3.4.3'
 	}
 }
 
@@ -12,6 +13,7 @@ apply plugin: 'distribution'
 apply plugin: 'application'
 apply plugin: 'nebula.rpm'
 apply plugin: 'nebula.deb'
+apply plugin: 'de.undercouch.download'
 
 mainClassName = 'au.edu.uq.rcc.nimrodg.cli.NimrodCLI'
 
@@ -47,16 +49,6 @@ distributions {
 		}
 		distZip.enabled = false
 	}
-
-	ci {
-		baseName = main.baseName
-		contents { with main.contents }
-		ciDistZip.enabled = false
-	}
-}
-
-ciDistTar {
-	version = 'ci-current'
 }
 
 task buildNimrodKFatJar(type: Jar, dependsOn: configurations.nimrodKRuntime) {
@@ -83,6 +75,7 @@ task generateNimrodKModule(type: Copy, dependsOn: [buildNimrodKFatJar, configura
 }
 
 ext {
+	/* TODO: Move all of this to a separate file builddef.gradle or something. */
 	packageSummary = 'A specialised parametric modelling system.'
 	packageDescription = '''It uses a simple declarative parametric modelling language to express
 a parametric experiment.
@@ -103,7 +96,44 @@ jobs — millions if need be.
 	packageUrl = 'https://rcc.uq.edu.au/nimrod'
 
 	packageInstallDir = '/usr/share/nimrod'
+
+	agentVersion = '1.1.1'
+	agentList = [
+		[platform:'x86_64-pc-linux-musl',		sha256:'ede1a9b56342f8c91952e0ce6bc6a0fea5b0e1ab8cb954edf28203fa98743f1a'],
+		[platform:'i686-pc-linux-musl',			sha256:'44d4bec004214b928ab81af16e6078e94553f15d9da2109dae3c2b125dd5a1e7'],
+		[platform:'armv8-rpi3-linux-gnueabihf',	sha256:'d4c1073cb284e1ca0fbe869cedc0e83ca809f6cc34db941f16cfcc0be4007408'],
+		[platform:'armv6-rpi-linux-gnueabi',	sha256:'558d07d33983943f28506383dfab3c4ccbc05fd913210e77bad3caaed63dc8f7']
+	]
 }
+
+/* Create download and verify tasks for each agent. */
+agentList.each { agent ->
+
+	def destFile = "${buildDir}/agents/agent-${agent.platform}"
+
+	tasks.create(name: "downloadAgent${agent.platform}", type: Download) {
+		src "https://github.com/UQ-RCC/nimrodg-agent/releases/download/${project.agentVersion}/agent-${agent.platform}-${project.agentVersion}"
+		dest destFile
+		onlyIfModified true
+	}
+
+	tasks.create(name: "verifyAgent${agent.platform}", type: Verify, dependsOn: "downloadAgent${agent.platform}") {
+		src destFile
+		algorithm 'SHA-256'
+		checksum agent.sha256
+	}
+
+	/* Add them to the distribution */
+	distributions.main.contents.with {
+		from(destFile) {
+			into 'agents'
+			fileMode 0755
+		}
+	}
+
+	[distTar, distZip].each { it.dependsOn += "verifyAgent${agent.platform}" }
+}
+
 
 task buildDeb(type: Deb, dependsOn: assembleDist) {
 	summary				project.packageSummary
@@ -130,12 +160,16 @@ task buildDeb(type: Deb, dependsOn: assembleDist) {
 		/* Lintian gets cranky about this. */
 		exclude 'nimrod.bat'
 	}
-
 	with distContents
 
-	link('/usr/bin/nimrod', "${project.packageInstallDir}/bin/nimrod")
+	from('setup-defaults.ini') {
+		into '/etc/xdg/nimrod'
+		fileMode 0644
+	}
 
-	//eachFile { println it }
+	configurationFile('/etc/xdg/nimrod/setup-defaults.ini')
+
+	link('/usr/bin/nimrod', "${project.packageInstallDir}/bin/nimrod")
 }
 
 task buildRpm(type: Rpm, dependsOn: assembleDist) {
@@ -166,9 +200,16 @@ task buildRpm(type: Rpm, dependsOn: assembleDist) {
 	}
 
 	with distContents
+
+	from('setup-defaults.ini') {
+		into '/etc/xdg/nimrod'
+		fileMode 0644
+		fileType CONFIG
+	}
+
 	link('/usr/bin/nimrod', "${project.packageInstallDir}/bin/nimrod")
 }
 
-task(generateArtifacts, dependsOn:[assembleDist, assembleCiDist, buildDeb, buildRpm]) {
+task(generateArtifacts, dependsOn:[assembleDist, buildDeb, buildRpm]) {
 }
 
