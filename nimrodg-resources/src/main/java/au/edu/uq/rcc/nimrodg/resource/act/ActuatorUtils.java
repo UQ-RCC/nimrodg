@@ -22,6 +22,9 @@ package au.edu.uq.rcc.nimrodg.resource.act;
 import au.edu.uq.rcc.nimrodg.api.AgentInfo;
 import au.edu.uq.rcc.nimrodg.api.AgentProvider;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
+import au.edu.uq.rcc.nimrodg.resource.ssh.RemoteShell;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -487,9 +490,11 @@ public class ActuatorUtils {
 	}
 
 	public static Optional<String> getUriUser(URI uri) {
-		return Optional.ofNullable(uri)
-				.map(u -> u.getUserInfo())
-				.map(ui -> ui.split(":", 1)[0]);
+		return getUriUser(Optional.ofNullable(uri));
+	}
+
+	public static Optional<String> getUriUser(Optional<URI> uri) {
+		return uri.map(u -> u.getUserInfo()).map(ui -> ui.split(":", 1)[0]);
 	}
 
 	public static Optional<AgentInfo> lookupAgentByPlatform(AgentProvider ap, String plat, List<String> errors) {
@@ -498,6 +503,33 @@ public class ActuatorUtils {
 			errors.add(String.format("No agent exists with platform string '%s'.", plat));
 		}
 		return op;
+	}
+
+	public static RemoteShell.CommandResult doProcessOneshot(Process p, String[] args, byte[] input) throws IOException {
+		BufferedOutputStream stdin = new BufferedOutputStream(p.getOutputStream());
+		BufferedInputStream stdout = new BufferedInputStream(p.getInputStream());
+		BufferedInputStream stderr = new BufferedInputStream(p.getErrorStream());
+
+		/* TODO: Do this properly in threads to avoid blocking. */
+		if(input.length > 0) {
+			stdin.write(input);
+		}
+		stdin.close();
+
+		byte[] out = stdout.readAllBytes();
+		byte[] err = stderr.readAllBytes();
+
+		String output = new String(out, StandardCharsets.UTF_8);
+		String error = new String(err, StandardCharsets.UTF_8).trim();
+
+		while(p.isAlive()) {
+			try {
+				p.waitFor();
+			} catch(InterruptedException e) {
+				/* nop */
+			}
+		}
+		return new RemoteShell.CommandResult(ActuatorUtils.posixBuildEscapedCommandLine(args), p.exitValue(), output, error);
 	}
 
 	/**

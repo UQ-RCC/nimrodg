@@ -245,6 +245,10 @@ public class SSHClient implements RemoteShell {
 	public static TransportFactory FACTORY = new TransportFactory() {
 		@Override
 		public RemoteShell create(TransportFactory.Config cfg) throws IOException {
+			if(!cfg.uri.isPresent()) {
+				throw new IOException("No URI provided.");
+			}
+
 			if(cfg.hostKeys.length == 0) {
 				throw new IOException("No host keys provided");
 			}
@@ -260,21 +264,27 @@ public class SSHClient implements RemoteShell {
 				kp = cfg.keyPair.get();
 			}
 
-			return new SSHClient(cfg.uri, cfg.hostKeys, kp);
+			return new SSHClient(cfg.uri.get(), cfg.hostKeys, kp);
 		}
 
 		@Override
 		public TransportFactory.Config resolveConfiguration(TransportFactory.Config cfg) throws IOException {
+			if(!cfg.uri.isPresent()) {
+				throw new IOException("No URI provided.");
+			}
+
 			if(cfg.hostKeys.length > 0) {
 				return cfg;
 			}
 
-			int port = cfg.uri.getPort();
+			URI uri = cfg.uri.get();
+
+			int port = uri.getPort();
 			if(port <= 0) {
 				port = 22;
 			}
 
-			PublicKey[] hostKeys = resolveHostKeys(cfg.user.orElse(""), cfg.uri.getHost(), port);
+			PublicKey[] hostKeys = resolveHostKeys(cfg.user.orElse(""), uri.getHost(), port);
 			if(hostKeys.length == 0) {
 				throw new IOException("No host keys resolved");
 			}
@@ -298,7 +308,7 @@ public class SSHClient implements RemoteShell {
 
 			return Json.createObjectBuilder()
 					.add("name", TRANSPORT_NAME)
-					.add("uri", cfg.uri.toString())
+					.add("uri", cfg.uri.map(u -> u.toString()).orElse(""))
 					.add("keyfile", cfg.privateKey.map(p -> p.toString()).orElse(""))
 					.add("hostkeys", ja)
 					.build();
@@ -327,13 +337,14 @@ public class SSHClient implements RemoteShell {
 			/* Not going to lie, I got some perverse pleasure from doing this. */
 			PublicKey[] hostKeys = Optional.ofNullable(cfg.get("hostkeys"))
 					.filter(v -> JsonValue.ValueType.ARRAY.equals(v.getValueType()))
-					.map(v -> ((JsonArray)v).stream()
-							.filter(jv -> JsonValue.ValueType.STRING.equals(jv.getValueType()))
-							.map(jv -> ((JsonString)jv).getString())
-							.map(s -> ActuatorUtils.validateHostKey(s, errors))
-							.filter(s -> s.isPresent())
-							.map(s -> s.get())
-							.toArray(PublicKey[]::new)
+					.map(
+							v -> ((JsonArray)v).stream()
+									.filter(jv -> JsonValue.ValueType.STRING.equals(jv.getValueType()))
+									.map(jv -> ((JsonString)jv).getString())
+									.map(s -> ActuatorUtils.validateHostKey(s, errors))
+									.filter(s -> s.isPresent())
+									.map(s -> s.get())
+									.toArray(PublicKey[]::new)
 					).orElse(new PublicKey[0]);
 
 			if(hostKeys.length == 0) {
@@ -351,7 +362,7 @@ public class SSHClient implements RemoteShell {
 			}
 
 			return Optional.of(new TransportFactory.Config(
-					uri,
+					Optional.of(uri),
 					user,
 					hostKeys,
 					privateKey,

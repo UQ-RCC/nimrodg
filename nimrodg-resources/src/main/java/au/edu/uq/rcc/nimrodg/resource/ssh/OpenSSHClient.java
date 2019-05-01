@@ -20,8 +20,6 @@
 package au.edu.uq.rcc.nimrodg.resource.ssh;
 
 import au.edu.uq.rcc.nimrodg.resource.act.ActuatorUtils;
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -170,33 +168,7 @@ public class OpenSSHClient implements RemoteShell {
 	}
 
 	private CommandResult runCommandInternal(String[] args, byte[] input) throws IOException {
-		return this.runSsh(args, p -> {
-
-			BufferedOutputStream stdin = new BufferedOutputStream(p.getOutputStream());
-			BufferedInputStream stdout = new BufferedInputStream(p.getInputStream());
-			BufferedInputStream stderr = new BufferedInputStream(p.getErrorStream());
-
-			/* TODO: Do this properly in threads to avoid blocking. */
-			if(input.length > 0) {
-				stdin.write(input);
-			}
-			stdin.close();
-
-			byte[] out = stdout.readAllBytes();
-			byte[] err = stderr.readAllBytes();
-
-			String output = new String(out, StandardCharsets.UTF_8);
-			String error = new String(err, StandardCharsets.UTF_8).trim();
-
-			while(p.isAlive()) {
-				try {
-					p.waitFor();
-				} catch(InterruptedException e) {
-					/* nop */
-				}
-			}
-			return new CommandResult(ActuatorUtils.posixBuildEscapedCommandLine(args), p.exitValue(), output, error);
-		});
+		return this.runSsh(args, p -> ActuatorUtils.doProcessOneshot(p, args, input));
 	}
 
 	private String readNextLine(InputStream is) throws IOException {
@@ -268,11 +240,18 @@ public class OpenSSHClient implements RemoteShell {
 	public static TransportFactory FACTORY = new TransportFactory() {
 		@Override
 		public RemoteShell create(TransportFactory.Config cfg) throws IOException {
-			return new OpenSSHClient(cfg.uri, cfg.privateKey, cfg.executablePath.map(p -> p.toString()).orElse(null));
+			if(!cfg.uri.isPresent()) {
+				throw new IOException("No URI provided.");
+			}
+
+			return new OpenSSHClient(cfg.uri.get(), cfg.privateKey, cfg.executablePath.map(p -> p.toString()).orElse(null));
 		}
 
 		@Override
 		public TransportFactory.Config resolveConfiguration(TransportFactory.Config cfg) throws IOException {
+			if(!cfg.uri.isPresent()) {
+				throw new IOException("No URI provided.");
+			}
 			return cfg;
 		}
 
@@ -280,7 +259,7 @@ public class OpenSSHClient implements RemoteShell {
 		public JsonObject buildJsonConfiguration(TransportFactory.Config cfg) {
 			return Json.createObjectBuilder()
 					.add("name", TRANSPORT_NAME)
-					.add("uri", cfg.uri.toString())
+					.add("uri", cfg.uri.map(u -> u.toString()).orElse(""))
 					.add("keyfile", cfg.privateKey.map(p -> p.toString()).orElse(""))
 					.add("executable", cfg.executablePath.map(p -> p.toString()).orElse(""))
 					.build();
@@ -305,7 +284,7 @@ public class OpenSSHClient implements RemoteShell {
 			}
 
 			return Optional.of(new TransportFactory.Config(
-					uri,
+					Optional.of(uri),
 					ActuatorUtils.getUriUser(uri),
 					new PublicKey[0],
 					TransportFactory.getOrNullIfEmpty(cfg, "keyfile").map(s -> Paths.get(s)),

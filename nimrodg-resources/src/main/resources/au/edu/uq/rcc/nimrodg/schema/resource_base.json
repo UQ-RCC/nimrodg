@@ -35,6 +35,13 @@
 								"keyfile",
 								"executable"
 							]
+						},
+						{
+							"type": "object",
+							"properties": {
+								"name": { "enum": ["local"] }
+							},
+							"required": [ "name" ]
 						}
 					]
 				}

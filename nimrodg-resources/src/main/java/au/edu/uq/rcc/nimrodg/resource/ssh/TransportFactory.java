@@ -35,14 +35,14 @@ public interface TransportFactory {
 
 	public static class Config {
 
-		public final URI uri;
+		public final Optional<URI> uri;
 		public final Optional<String> user;
 		public final PublicKey[] hostKeys;
 		public final Optional<Path> privateKey;
 		public final Optional<KeyPair> keyPair;
 		public final Optional<Path> executablePath;
 
-		public Config(URI uri, Optional<String> user, PublicKey[] hostKeys, Optional<Path> privateKey, Optional<KeyPair> keyPair, Optional<Path> executablePath) {
+		public Config(Optional<URI> uri, Optional<String> user, PublicKey[] hostKeys, Optional<Path> privateKey, Optional<KeyPair> keyPair, Optional<Path> executablePath) {
 			this.uri = uri;
 			this.user = user;
 			this.hostKeys = Arrays.copyOf(hostKeys, hostKeys.length);
@@ -66,8 +66,21 @@ public interface TransportFactory {
 	 */
 	Optional<Config> validateConfiguration(JsonObject cfg, List<String> errors);
 
+	/**
+	 * Given a configuration, "resolve" it. That is, fill in any blanks.
+	 *
+	 * @param cfg
+	 * @return
+	 * @throws IOException
+	 */
 	Config resolveConfiguration(Config cfg) throws IOException;
 
+	/**
+	 * Build a JsonObject from a resolved configuration.
+	 *
+	 * @param cfg The resolved configuration.
+	 * @return The JsonObject.
+	 */
 	JsonObject buildJsonConfiguration(Config cfg);
 
 	// FIXME: This should really go in a helper class

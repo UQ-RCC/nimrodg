@@ -44,6 +44,7 @@ import net.sourceforge.argparse4j.inf.Namespace;
 import org.apache.sshd.common.config.keys.AuthorizedKeyEntry;
 import org.apache.sshd.common.config.keys.PublicKeyEntryResolver;
 import au.edu.uq.rcc.nimrodg.api.Resource;
+import au.edu.uq.rcc.nimrodg.resource.ssh.LocalShell;
 import au.edu.uq.rcc.nimrodg.resource.ssh.OpenSSHClient;
 import au.edu.uq.rcc.nimrodg.resource.ssh.RemoteShell;
 import au.edu.uq.rcc.nimrodg.resource.ssh.SSHClient;
@@ -88,8 +89,9 @@ public abstract class SSHResourceType extends BaseResourceType {
 		boolean detectPlatform = platform == null || platform.equals("autodetect");
 
 		List<String> errors = new ArrayList<>();
-		URI uri = ActuatorUtils.validateUriString(ns.getString("uri"), errors);
-		if(uri == null) {
+		Optional<URI> uri = Optional.ofNullable(ns.getString("uri")).map(u -> ActuatorUtils.validateUriString(u, errors));
+
+		if(!errors.isEmpty()) {
 			errors.forEach(e -> err.println(e));
 			return false;
 		}
@@ -180,14 +182,14 @@ public abstract class SSHResourceType extends BaseResourceType {
 		parser.addArgument("--transport")
 				.dest("transport")
 				.type(String.class)
-				.choices("sshd", "openssh")
+				.choices("sshd", "openssh", "local")
 				.setDefault("sshd");
 
 		parser.addArgument("--uri")
 				.dest("uri")
 				.type(String.class)
 				.help("SSH URI")
-				.required(true);
+				.required(false);
 
 		parser.addArgument("--key")
 				.dest("key")
@@ -225,6 +227,8 @@ public abstract class SSHResourceType extends BaseResourceType {
 				return SSHClient.FACTORY;
 			case OpenSSHClient.TRANSPORT_NAME:
 				return OpenSSHClient.FACTORY;
+			case LocalShell.TRANSPORT_NAME:
+				return LocalShell.FACTORY;
 		}
 
 		return null;
