@@ -251,7 +251,8 @@ public class ResourceTests {
 			Assert.assertTrue(topt.isPresent());
 
 			TransportFactory.Config tcfg = topt.get();
-			Assert.assertEquals(uri, tcfg.uri);
+			Assert.assertTrue(tcfg.uri.isPresent());
+			Assert.assertEquals(uri, tcfg.uri.get());
 			Assert.assertArrayEquals(new PublicKey[]{hostKey.get()}, tcfg.hostKeys);
 			Assert.assertTrue(tcfg.privateKey.isPresent());
 			Assert.assertEquals(privKey, tcfg.privateKey.get());
@@ -283,7 +284,8 @@ public class ResourceTests {
 			Assert.assertTrue(topt.isPresent());
 
 			TransportFactory.Config tcfg = topt.get();
-			Assert.assertEquals(uri, tcfg.uri);
+			Assert.assertTrue(tcfg.uri.isPresent());
+			Assert.assertEquals(uri, tcfg.uri.get());
 			Assert.assertArrayEquals(new PublicKey[0], tcfg.hostKeys);
 			Assert.assertTrue(tcfg.privateKey.isPresent());
 			Assert.assertEquals(privKey, tcfg.privateKey.get());
