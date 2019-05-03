@@ -1,0 +1,20 @@
+language: java
+jdk:
+- openjdk11
+cache:
+  directories:
+  - "$HOME/.gradle/caches/"
+  - "$HOME/.gradle/wrapper/"
+script: ./gradlew check -x :nimrodg-impl-postgres:test
+install: ./gradlew generateArtifacts
+deploy:
+  provider: releases
+  api_key:
+    secure: ey00pedcjSKXu/sD3QQEmxJdTcO9QsvMvUhGtZDYxAKXaJlVPjfVn9PbbMHBvJv0inya7bf7lIzhW1WR5jGjSbl3T+tGe7gC5HW2S2cV8Orkpg7wyVPvtC6LXkd7FbhSjE/FeZAVCpj6TXuX9KXXI8HujWxKNcu3+gurCtgwjuPrtiPSxsAXBQM2EbrDq/iOPMs/tvZdsB9FoYkusME2X84MGpyE8TIkPli4R23Gdh2BqKmsHmqSmzE6blP4sGnQM5d76ORBw4tD+rYgrl0gklct9yvWjuGpwNfyyGQ7wiFPzTJ+Nds359Lu5xDHFmG3NJ458s0GzEkYq0cSJUYGFVm6VEmmdf0fVj4R1W/wcpN/0rI0Uyqe9+zkwdLqfk0A2JY4kKasvMU78Y5YkSVaYuBvZeCJ+PZedQB9/WCmJfZ5tAHir1pi/WrF5Ex4EhWLPb7UxBf0Ce2R2GCb0RrXfFlkzOlKB3Qt5eE2pe+8TIIaIjr0rPorTrfZI+mOHey2NPGtd8WDxW6t/Qt32mnu88iVt94104gFdAO0MoQ2JWAFEv1p9ALsza235VQm9e91t3DqYhWkbwcYLgwHKaPIfjjiD3NILph/A6pkJIK9bHnMGEjPD4XTGFr0n7/dR4ObCC4paQoDxAnD2oh6TUcvWvWGXrYm03iPhcYdD9PSqy8=
+  skip_cleanup: true
+  file_glob: true
+  file: nimrod/build/distributions/*
+  draft: true
+  on:
+    repo: UQ-RCC/nimrodg
+    tags: true
