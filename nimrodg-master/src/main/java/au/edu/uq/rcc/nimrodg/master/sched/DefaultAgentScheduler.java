@@ -67,6 +67,9 @@ public class DefaultAgentScheduler implements AgentScheduler {
 	private final SetupTracker m_Setups;
 	private final PrintStream m_LogStream;
 
+	int m_LastPendingJobs;
+	int m_LastHeldJobs;
+
 	public DefaultAgentScheduler() {
 		this.ops = null;
 		m_PendingJobs = new LinkedHashSet<>();
@@ -82,6 +85,7 @@ public class DefaultAgentScheduler implements AgentScheduler {
 				.forLogger(LOGGER)
 				.setLevel(Level.INFO)
 				.buildPrintStream();
+		m_LastPendingJobs = m_LastHeldJobs = 0;
 	}
 
 	@Override
@@ -336,8 +340,14 @@ public class DefaultAgentScheduler implements AgentScheduler {
 		schedulePending(expMap, capMap);
 
 		m_AgentHeuristic.dumpStats(m_LogStream);
-		LOGGER.trace("{} pending jobs", m_PendingJobs.size());
-		LOGGER.trace("{} held jobs", m_HeldJobs.size());
+		{
+			if(m_PendingJobs.size() != m_LastPendingJobs || m_HeldJobs.size() != m_LastHeldJobs) {
+				LOGGER.trace("{} pending jobs", m_PendingJobs.size());
+				LOGGER.trace("{} held jobs", m_HeldJobs.size());
+			}
+			m_LastPendingJobs = m_PendingJobs.size();
+			m_LastHeldJobs = m_HeldJobs.size();
+		}
 		m_LaunchingAgents.addAll(m_AgentHeuristic.launchAgents(ops));
 
 		/* If we have ready agents, held jobs, and no pending jobs, see if we can release some. */
