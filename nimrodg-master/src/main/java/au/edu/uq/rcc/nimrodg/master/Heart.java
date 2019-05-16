@@ -21,6 +21,7 @@ package au.edu.uq.rcc.nimrodg.master;
 
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
 import au.edu.uq.rcc.nimrodg.api.utils.NimrodUtils;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
@@ -55,10 +56,10 @@ class Heart {
 		public Instant lastPing;
 		public int missedBeats;
 
-		public ExpiryInfo() {
+		public ExpiryInfo(Instant now) {
 			this.lastExpiryCheck = Instant.MIN;
 			this.retryCount = 0;
-			this.lastPing = Instant.MIN;
+			this.lastPing = now;
 			this.missedBeats = 0;
 		}
 
@@ -142,6 +143,7 @@ class Heart {
 	private void tickHeartbeat(UUID u, ExpiryInfo ei, Instant now, Set<UUID> exps) {
 		//long commDiff = ops.getLastHeardFrom(u).until(now.plus(1, ChronoUnit.SECONDS), ChronoUnit.SECONDS);
 		long commDiff = ops.getLastHeardFrom(u).until(now, ChronoUnit.SECONDS);
+		//LOGGER.trace("Agent {} commDiff = {}", u, commDiff);
 		/* FIXME: Set this to the actual delay */
 		long processingDelay = 1;
 		if(commDiff < (heartbeatInterval + processingDelay) || heartbeatInterval == 0) {
@@ -155,9 +157,12 @@ class Heart {
 			return;
 		}
 
-		ei.lastPing = now;
-		ops.pingAgent(u);
-		++ei.missedBeats;
+		if(Duration.between(ei.lastPing, now).getSeconds() > heartbeatInterval) {
+			ops.pingAgent(u);
+			ei.lastPing = now;
+			++ei.missedBeats;
+			//LOGGER.trace("Agent {} now at {} missed beats.", u, ei.missedBeats);
+		}
 	}
 
 	public void onAgentPong(UUID u) {
@@ -173,8 +178,19 @@ class Heart {
 	 *
 	 * @param u The UUID of the agent.
 	 */
-	public void onAgentConnect(UUID u) {
-		expiryInfo.put(u, new ExpiryInfo());
+	public void onAgentConnect(UUID u, Instant now) {
+		expiryInfo.put(u, new ExpiryInfo(now));
+	}
+
+	/**
+	 * Reset the ping timer, causing a ping to be sent next tick.
+	 * @param u The UUID of the agent.
+	 */
+	public void resetPingTimer(UUID u) {
+		ExpiryInfo ei = expiryInfo.get(u);
+		if(ei != null) {
+			ei.lastPing = Instant.MIN;
+		}
 	}
 
 	/**

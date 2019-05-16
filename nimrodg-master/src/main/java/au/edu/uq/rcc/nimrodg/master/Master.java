@@ -338,7 +338,8 @@ public class Master implements MessageQueueListener, AutoCloseable {
 			CompletableFuture<Actuator> af = aaaaa.getOrLaunchActuator(r);
 			for(AgentState as : agentMap.get(r)) {
 				AgentInfo ai = registerAgent(as, r, Optional.empty(), false);
-				heart.onAgentConnect(as.getUUID());
+				heart.onAgentConnect(as.getUUID(), Instant.now());
+				heart.resetPingTimer(as.getUUID());
 				af.handle((a, t) -> {
 					if(t != null) {
 						LOGGER.warn("Cannot adopt agent {}, actuator failed to launch.", ai.uuid);
@@ -877,7 +878,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 			if(oldState == Agent.State.WAITING_FOR_HELLO && newState == Agent.State.READY) {
 				ai.state.setConnectionTime(Instant.now());
 				ai.actuator.ifPresent(a -> a.notifyAgentConnection(ai.state));
-				heart.onAgentConnect(ai.uuid);
+				heart.onAgentConnect(ai.uuid, Instant.now());
 			} else {
 				if(newState == Agent.State.SHUTDOWN) {
 					ai.state.setExpired(true);
