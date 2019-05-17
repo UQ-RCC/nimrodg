@@ -10,6 +10,7 @@ dependencies {
 
 	implementation project(':nimrodg-internal-api')
 	implementation project(':nimrodg-parsing')
+	implementation project(':nimrodg-master')
 
 	runtimeOnly group: 'org.glassfish', name: 'javax.json', version: JAVAX_JSON_VERSION
 }

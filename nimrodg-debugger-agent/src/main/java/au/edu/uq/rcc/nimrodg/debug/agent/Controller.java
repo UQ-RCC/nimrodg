@@ -36,31 +36,24 @@ import au.edu.uq.rcc.nimrodg.api.Task;
 import au.edu.uq.rcc.nimrodg.api.utils.MsgUtils;
 import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledRun;
 import au.edu.uq.rcc.nimrodg.api.utils.run.RunBuilder;
+import au.edu.uq.rcc.nimrodg.master.AMQProcessor;
+import au.edu.uq.rcc.nimrodg.master.MessageQueueListener;
 import au.edu.uq.rcc.nimrodg.parsing.ANTLR4ParseAPIImpl;
-import com.rabbitmq.client.AMQP;
-import com.rabbitmq.client.BuiltinExchangeType;
-import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.ConfirmListener;
-import com.rabbitmq.client.Connection;
-import com.rabbitmq.client.ConnectionFactory;
-import com.rabbitmq.client.DefaultConsumer;
-import com.rabbitmq.client.Envelope;
-import com.rabbitmq.client.MessageProperties;
-import com.rabbitmq.client.ReturnListener;
-import com.rabbitmq.client.impl.ForgivingExceptionHandler;
 import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.IOException;
+import java.net.URI;
 import java.net.URISyntaxException;
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
+import java.security.GeneralSecurityException;
+import java.security.cert.Certificate;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeoutException;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
@@ -69,15 +62,7 @@ public class Controller {
 
 	private final AgentGUI m_View;
 
-	private ConnectionFactory m_ConnectionFactory;
-	private Connection m_Connection;
-	private Channel m_Channel;
-	private AMQP.Exchange.DeclareOk m_BroadcastExchangeOk;
-	private AMQP.Exchange.DeclareOk m_DirectExchangeOk;
-	private AMQP.Queue.DeclareOk m_QueueOk;
-
-	private static final String BROADCAST_EXCHANGE = "amq.fanout";
-	private static final String DIRECT_EXCHANGE = "amq.direct";
+	private AMQProcessor m_AMQP;
 
 	private ReferenceAgent m_Agent;
 	private final _AgentListener m_AgentListener;
@@ -117,9 +102,8 @@ public class Controller {
 		m_Logger = m_View.getLogger();
 		m_StatusPanel = m_View.getStatusPanel();
 
-		m_ConnectionFactory = null;
-		m_Connection = null;
-		m_Channel = null;
+		m_AMQP = null;
+
 		m_Agent = null;
 		m_AgentListener = new _AgentListener();
 
@@ -127,7 +111,7 @@ public class Controller {
 	}
 
 	public boolean isConnected() {
-		return m_Connection != null;
+		return m_AMQP != null;
 	}
 
 	public void connect(String uri) {
@@ -135,81 +119,28 @@ public class Controller {
 			throw new IllegalStateException();
 		}
 
-		m_ConnectionFactory = new ConnectionFactory();
-		m_ConnectionFactory.setAutomaticRecoveryEnabled(true);
-		m_ConnectionFactory.setTopologyRecoveryEnabled(true);
-		m_ConnectionFactory.setExceptionHandler(new ForgivingExceptionHandler() {
-			@Override
-			protected void log(String message, Throwable e) {
-				super.log(message, e);
-				m_Logger.log(ILogger.Level.ERR, message);
-				m_Logger.log(ILogger.Level.ERR, e);
-			}
-
-		});
-		try {
-			m_ConnectionFactory.setUri(uri);
-		} catch(KeyManagementException | NoSuchAlgorithmException | URISyntaxException e) {
-			m_ConnectionFactory = null;
-			m_View.setConnectStatus(e.getMessage(), Color.red);
-			return;
-		} catch(NullPointerException e) {
-			m_ConnectionFactory = null;
-			m_Logger.log(ILogger.Level.ERR, "Connection Error: Invalid AMQP URI");
-			return;
-		}
-
+		String routingKey = m_View.getRoutingKey();
 		m_View.setConnectionPanelState(AgentGUI.ConnectionPanelState.LOCKED);
 		m_View.setConnectStatus("Connecting...", Color.black);
-
 		m_View.setConnectProgress(0.0f);
 
-		String routingKey = m_View.getRoutingKey();
 		SwingUtilities.invokeLater(() -> {
 			try {
-				m_View.setConnectStatus("Establishing connection...", Color.black);
-				m_Connection = m_ConnectionFactory.newConnection();
-
+				m_AMQP = new AMQProcessor(new URI(uri), new Certificate[0], "TLSv1.2", m_View.getRoutingKey(), true, true, m_MessageBackend, new _MessageQueueListener(), ForkJoinPool.commonPool());
 				m_Logger.log(ILogger.Level.INFO, "Connected to %s", uri);
 
-				m_View.setConnectProgress(0.2f);
-				m_View.setConnectStatus("Creating channel...", Color.black);
-				m_Channel = m_Connection.createChannel();
-				m_Channel.addConfirmListener(new _ConfirmListener());
-				m_Channel.addReturnListener(new _ReturnListener());
-
-				m_View.setConnectProgress(0.4f);
-				m_BroadcastExchangeOk = m_Channel.exchangeDeclare(BROADCAST_EXCHANGE, BuiltinExchangeType.FANOUT, true, false, false, null);
-				m_DirectExchangeOk = m_Channel.exchangeDeclare(DIRECT_EXCHANGE, BuiltinExchangeType.DIRECT, true, false, false, null);
-				m_View.setConnectProgress(0.6f);
-				m_QueueOk = m_Channel.queueDeclare("", true, true, true, null);
-				m_Logger.log(ILogger.Level.INFO, "Created queue %s", m_QueueOk.getQueue());
-
-				m_Channel.queueBind(m_QueueOk.getQueue(), BROADCAST_EXCHANGE, "");
-				m_Logger.log(ILogger.Level.INFO, "Bound to broadcast exchange %s", BROADCAST_EXCHANGE);
-
-				m_Channel.queueBind(m_QueueOk.getQueue(), DIRECT_EXCHANGE, routingKey);
-				m_Logger.log(ILogger.Level.INFO, "Bound to direct exchange %s with routing key %s", DIRECT_EXCHANGE, routingKey);
-
-				m_Channel.basicConsume(m_QueueOk.getQueue(), false, new _Consumer(m_Channel));
-				m_View.setConnectProgress(0.8f);
-			} catch(IOException | TimeoutException e) {
+				m_Agent = new ReferenceAgent(new DefaultAgentState(), m_AgentListener);
+				m_StatusPanel.setAgent(m_Agent);
+				m_View.setConnectProgress(1.0f);
+				m_View.setConnectStatus(String.format("%s <===> %s (via %s)", m_AMQP.getQueue(), m_AMQP.getExchange(), routingKey), Color.black);
+				m_View.setConnectionPanelState(AgentGUI.ConnectionPanelState.DISCONNECT);
+			} catch(IOException | URISyntaxException | GeneralSecurityException | TimeoutException e) {
+				m_AMQP = null;
 				m_View.setConnectProgress(0.0f);
 				m_View.setConnectStatus("Disconnected", Color.red);
 				m_View.setConnectionPanelState(AgentGUI.ConnectionPanelState.CONNECT);
-
 				m_Logger.log(ILogger.Level.ERR, e);
-				m_ConnectionFactory = null;
-				m_Connection = null;
-				m_Channel = null;
-				return;
 			}
-
-			m_Agent = new ReferenceAgent(new DefaultAgentState(), m_AgentListener);
-			m_StatusPanel.setAgent(m_Agent);
-			m_View.setConnectProgress(1.0f);
-			m_View.setConnectStatus(String.format("%s <===> %s (via %s)", m_QueueOk.getQueue(), DIRECT_EXCHANGE, routingKey), Color.black);
-			m_View.setConnectionPanelState(AgentGUI.ConnectionPanelState.DISCONNECT);
 		});
 	}
 
@@ -221,14 +152,12 @@ public class Controller {
 		m_Agent.disconnect(AgentShutdown.Reason.Requested, -1);
 
 		try {
-			m_Connection.close();
-		} catch(IOException e) {
-			int x = 0;
+			m_AMQP.close();
+		} catch(IOException|TimeoutException e) {
+			m_Logger.log(ILogger.Level.ERR, e);
 		}
 
-		m_ConnectionFactory = null;
-		m_Connection = null;
-		m_Channel = null;
+		m_AMQP = null;
 		m_View.setConnectionPanelState(AgentGUI.ConnectionPanelState.CONNECT);
 		m_View.setConnectStatus("Disconnected", Color.red);
 		m_View.setConnectProgress(0.0f);
@@ -288,30 +217,11 @@ public class Controller {
 		}
 	}
 
-	private void handleAck(long deliveryTag, boolean multiple) throws IOException {
-		int x = 0;
-	}
-
-	private void handleNack(long deliveryTag, boolean multiple) throws IOException {
-		int x = 0;
-	}
-
-	private void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
-		AgentMessage msg = m_MessageBackend.fromBytes(body);
-		if(msg == null) {
-			throw new IOException("Message deserialisation failure");
-		}
-
-		if(m_Agent == null) {
-			int x = 0;
-		}
+	private MessageQueueListener.MessageOperation handleAgentMessage(AgentMessage msg) throws IOException {
 
 		UUID uuid = msg.getAgentUUID();
 
 		if(m_Agent.getUUID() != null && !uuid.equals(m_Agent.getUUID())) {
-
-			m_Channel.basicReject(envelope.getDeliveryTag(), false);
-
 			/* If we've received a hello, send a terminate back */
 			if(msg.getType() == AgentMessage.Type.Hello) {
 				AgentHello hello = (AgentHello)msg;
@@ -320,15 +230,15 @@ public class Controller {
 			} else {
 				m_Logger.log(ILogger.Level.WARN, "Ignoring message from unknown agent %s", uuid);
 			}
-			return;
+			return MessageQueueListener.MessageOperation.Reject;
 		}
 
 		try {
 			m_Agent.processMessage(msg, Instant.now());
-			m_Channel.basicAck(envelope.getDeliveryTag(), false);
+			return MessageQueueListener.MessageOperation.Ack;
 		} catch(IllegalStateException e) {
 			m_Logger.log(ILogger.Level.ERR, e);
-			m_Channel.basicReject(envelope.getDeliveryTag(), false);
+			return MessageQueueListener.MessageOperation.Reject;
 		}
 	}
 
@@ -338,7 +248,7 @@ public class Controller {
 			throw new IOException("Message serialisation failure");
 		}
 
-		m_Channel.basicPublish(DIRECT_EXCHANGE, key, true, false, MessageProperties.PERSISTENT_BASIC, bytes);
+		m_AMQP.sendMessage(key, msg);
 	}
 
 	private void onAgentStateChange(Agent agent, Agent.State oldState, Agent.State newState) {
@@ -490,36 +400,11 @@ public class Controller {
 
 	}
 
-	private class _ConfirmListener implements ConfirmListener {
+	private class _MessageQueueListener implements MessageQueueListener {
 
 		@Override
-		public void handleAck(long deliveryTag, boolean multiple) throws IOException {
-			Controller.this.handleAck(deliveryTag, multiple);
-		}
-
-		@Override
-		public void handleNack(long deliveryTag, boolean multiple) throws IOException {
-			Controller.this.handleNack(deliveryTag, multiple);
-		}
-	}
-
-	private class _ReturnListener implements ReturnListener {
-
-		@Override
-		public void handleReturn(int arg0, String arg1, String arg2, String arg3, AMQP.BasicProperties arg4, byte[] arg5) throws IOException {
-			int x = 0;
-		}
-	}
-
-	private class _Consumer extends DefaultConsumer {
-
-		public _Consumer(Channel channel) {
-			super(channel);
-		}
-
-		@Override
-		public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
-			Controller.this.handleDelivery(consumerTag, envelope, properties, body);
+		public MessageOperation processAgentMessage(AgentMessage msg) throws IllegalStateException, IOException {
+			return handleAgentMessage(msg);
 		}
 	}
 }

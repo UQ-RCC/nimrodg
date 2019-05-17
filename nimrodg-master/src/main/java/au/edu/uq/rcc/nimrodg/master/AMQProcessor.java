@@ -34,6 +34,7 @@ import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.MessageProperties;
 import com.rabbitmq.client.ReturnListener;
+import com.rabbitmq.client.impl.ForgivingExceptionHandler;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -45,15 +46,18 @@ import java.util.concurrent.TimeoutException;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class AMQProcessor implements AutoCloseable {
+
+	private static final Logger LOGGER = LogManager.getLogger(Master.class);
 
 	private final MessageQueueListener m_Listener;
 	private final Connection m_Connection;
 	private final Channel m_Channel;
-	private final String m_BroadcastName;
 	private final String m_DirectName;
-	private final AMQP.Exchange.DeclareOk m_BroadcastExchangeOk;
 	private final AMQP.Exchange.DeclareOk m_DirectExchangeOk;
 	private final AMQP.Queue.DeclareOk m_QueueOk;
 	private final _Consumer m_Consumer;
@@ -98,6 +102,18 @@ public class AMQProcessor implements AutoCloseable {
 		cf.setSharedExecutor(execs);
 		cf.setShutdownExecutor(execs);
 
+		cf.setRequestedHeartbeat(30);
+		cf.setAutomaticRecoveryEnabled(true);
+		cf.setTopologyRecoveryEnabled(true);
+
+		cf.setExceptionHandler(new ForgivingExceptionHandler() {
+			@Override
+			protected void log(String message, Throwable e) {
+				super.log(message, e);
+				LOGGER.log(Level.ERROR, e);
+			}
+		});
+
 		m_Connection = cf.newConnection();
 
 		m_Channel = m_Connection.createChannel();
@@ -108,14 +124,9 @@ public class AMQProcessor implements AutoCloseable {
 		m_Channel.addConfirmListener(new _ConfirmListener());
 		m_Channel.addReturnListener(new _ReturnListener());
 
-		m_BroadcastName = "amq.fanout";
 		m_DirectName = "amq.direct";
-		m_BroadcastExchangeOk = m_Channel.exchangeDeclare(m_BroadcastName, BuiltinExchangeType.FANOUT, true, false, false, null);
 		m_DirectExchangeOk = m_Channel.exchangeDeclare(m_DirectName, BuiltinExchangeType.DIRECT, true, false, false, null);
 		m_QueueOk = m_Channel.queueDeclare("", true, true, true, null);
-
-		/* Broadcast exchange, routing key is ignored */
-		m_Channel.queueBind(m_QueueOk.getQueue(), m_BroadcastName, "");
 
 		/* No agents yet, don't bind anything to the direct exchange */
 		m_Channel.queueBind(m_QueueOk.getQueue(), m_DirectName, routingKey);
@@ -128,13 +139,21 @@ public class AMQProcessor implements AutoCloseable {
 
 	@Override
 	public void close() throws IOException, TimeoutException {
-		try(Connection c = m_Connection) {
+		try(m_Connection) {
 			//m_Channel.close();
 			/* abort() will wait for the close to finish. */
 			m_Channel.abort();
 		} catch(AlreadyClosedException e) {
 			// nop
 		}
+	}
+
+	public String getQueue() {
+		return m_QueueOk.getQueue();
+	}
+
+	public String getExchange() {
+		return m_DirectName;
 	}
 
 	public void sendMessage(String key, AgentMessage msg) throws IOException {
