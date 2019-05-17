@@ -136,7 +136,7 @@ public class AgentGUI extends javax.swing.JFrame {
         jLabel3.setText("AMQP URI");
         jLabel3.setHorizontalTextPosition(javax.swing.SwingConstants.LEADING);
 
-        m_AMQPUrl.setText("amqp://user:pass@127.0.0.1/nimrod");
+        m_AMQPUrl.setText("amqp://guest:guest@127.0.0.1/nimrod");
 
         m_ConnectBtn.setText("Connect");
         m_ConnectBtn.setActionCommand("connect");
