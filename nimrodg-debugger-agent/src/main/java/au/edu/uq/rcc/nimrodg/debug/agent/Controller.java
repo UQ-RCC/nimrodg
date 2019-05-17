@@ -107,6 +107,8 @@ public class Controller {
 		m_Agent = null;
 		m_AgentListener = new _AgentListener();
 
+		m_Agent = new ReferenceAgent(new DefaultAgentState(), m_AgentListener);
+		m_StatusPanel.setAgent(m_Agent);
 		m_MessageBackend = MessageBackend.createBackend();
 	}
 
@@ -129,8 +131,6 @@ public class Controller {
 				m_AMQP = new AMQProcessor(new URI(uri), new Certificate[0], "TLSv1.2", m_View.getRoutingKey(), true, true, m_MessageBackend, new _MessageQueueListener(), ForkJoinPool.commonPool());
 				m_Logger.log(ILogger.Level.INFO, "Connected to %s", uri);
 
-				m_Agent = new ReferenceAgent(new DefaultAgentState(), m_AgentListener);
-				m_StatusPanel.setAgent(m_Agent);
 				m_View.setConnectProgress(1.0f);
 				m_View.setConnectStatus(String.format("%s <===> %s (via %s)", m_AMQP.getQueue(), m_AMQP.getExchange(), routingKey), Color.black);
 				m_View.setConnectionPanelState(AgentGUI.ConnectionPanelState.DISCONNECT);
@@ -149,11 +149,9 @@ public class Controller {
 			throw new IllegalStateException();
 		}
 
-		m_Agent.disconnect(AgentShutdown.Reason.Requested, -1);
-
 		try {
 			m_AMQP.close();
-		} catch(IOException|TimeoutException e) {
+		} catch(IOException | TimeoutException e) {
 			m_Logger.log(ILogger.Level.ERR, e);
 		}
 
