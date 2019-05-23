@@ -572,4 +572,11 @@ public abstract class APITests {
 		jobs = new ArrayList<>(exp.filterJobs(EnumSet.allOf(JobAttempt.Status.class), 0, 0));
 		Assert.assertEquals(1, jobs.size());
 	}
+
+	@Test
+	public void add250000JobsTest() throws IOException, RunBuilder.RunfileBuildException, SubstitutionException, PlanfileParseException {
+		NimrodAPI api = getNimrod();
+		/* This will trigger postgres to batch jobs. */
+		Experiment exp = api.addExperiment("exp1", TestUtils.get250000Run());
+	}
 }

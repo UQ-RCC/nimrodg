@@ -230,7 +230,7 @@ public class DBExperimentHelpers extends DBBaseHelper {
 		//System.err.printf("TRAILING one\n");
 		JsonArray jaa = ja.build();
 		if(!jaa.isEmpty()) {
-			addMultipleJobsInternal(te.id, vars, ja.build().toString());
+			addMultipleJobsInternal(te.id, vars, jaa.toString());
 		}
 
 		return te;
