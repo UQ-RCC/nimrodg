@@ -36,6 +36,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import javax.json.Json;
 import javax.json.JsonNumber;
 import javax.json.JsonObject;
@@ -158,22 +160,25 @@ public class RemoteActuator extends POSIXActuator<SSHResourceType.SSHConfig> {
 			return false;
 		}
 
-		return kill(shell, ra.pid);
+		return kill(shell, new int[]{ra.pid});
 	}
 
-	private boolean kill(RemoteShell shell, int pid) {
+	@Override
+	protected void close(RemoteShell shell) throws IOException {
+		kill(shell, agents.values().stream().mapToInt(ra -> ra.pid).toArray());
+	}
+
+	private boolean kill(RemoteShell shell, int[] pids) {
+		String[] args = Stream.concat(Stream.of("kill", "-9"), IntStream.of(pids).mapToObj(i -> String.valueOf(i)))
+				.toArray(String[]::new);
+
 		try {
-			shell.runCommand("kill", "-9", Integer.toString(pid));
+			shell.runCommand(args);
 			return true;
 		} catch(IOException e) {
 			LOGGER.catching(e);
 			return false;
 		}
-	}
-
-	@Override
-	protected void close(RemoteShell shell) throws IOException {
-		agents.values().stream().forEach(ra -> kill(shell, ra.pid));
 	}
 
 	@Override
