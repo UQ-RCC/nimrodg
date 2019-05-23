@@ -93,6 +93,19 @@ public class TestUtils {
 				+ "endtask", new ArrayList<>()).build();
 	}
 
+	public static CompiledRun get250000Run() throws IOException, RunBuilder.RunfileBuildException, SubstitutionException, PlanfileParseException {
+		return PARSE_API.parseRunToBuilder(
+				"parameter seed integer random from 1 to 1000000 points 250000\n"
+				+ "\n"
+				+ "task main\n"
+				+ "    onerror fail\n"
+				+ "    //copy root:genpi.py node:.\n"
+				+ "    redirect stdout off\n"
+				+ "    redirect stderr off\n"
+				+ "    exec /home/nimrod/genpi.py $seed 1000000000\n"
+				+ "endtask", new ArrayList<>()).build();
+	}
+
 	public static void createSampleResources(NimrodAPI api) {
 		api.addResource("root", "dummy", JsonValue.EMPTY_JSON_OBJECT, null, null);
 		api.addResource("tinaroo", "dummy", JsonValue.EMPTY_JSON_OBJECT, null, null);
