@@ -63,6 +63,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.json.JsonStructure;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.logging.log4j.Logger;
 import org.apache.sshd.common.config.keys.AuthorizedKeyEntry;
 import org.apache.sshd.common.config.keys.PublicKeyEntryResolver;
 import org.bouncycastle.openssl.PEMKeyPair;
@@ -530,6 +531,33 @@ public class ActuatorUtils {
 			}
 		}
 		return new RemoteShell.CommandResult(ActuatorUtils.posixBuildEscapedCommandLine(args), p.exitValue(), output, error);
+	}
+
+	public static RemoteShell.CommandResult doProcessOneshot(Process p, String[] args) throws IOException {
+		return doProcessOneshot(p, args, new byte[0]);
+	}
+
+	private static RemoteShell.CommandResult doProcessOneshot(String[] args, byte[] input, Logger logger) throws IOException {
+		ProcessBuilder pb = new ProcessBuilder(args);
+		pb.redirectOutput(ProcessBuilder.Redirect.PIPE);
+		pb.redirectError(ProcessBuilder.Redirect.PIPE);
+		pb.redirectInput(ProcessBuilder.Redirect.PIPE);
+
+		logger.trace("Executing command: {}", ActuatorUtils.posixBuildEscapedCommandLine(args));
+
+		Process p = pb.start();
+		try {
+			return ActuatorUtils.doProcessOneshot(p, args, input);
+		} catch(IOException e) {
+			logger.error(new String(p.getErrorStream().readAllBytes(), StandardCharsets.UTF_8));
+			throw e;
+		} finally {
+			p.destroyForcibly();
+		}
+	}
+
+	public static RemoteShell.CommandResult doProcessOneshot(String[] args, Logger logger) throws IOException {
+		return doProcessOneshot(args, new byte[0], logger);
 	}
 
 	/**

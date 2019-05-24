@@ -49,6 +49,10 @@ import au.edu.uq.rcc.nimrodg.resource.ssh.OpenSSHClient;
 import au.edu.uq.rcc.nimrodg.resource.ssh.RemoteShell;
 import au.edu.uq.rcc.nimrodg.resource.ssh.SSHClient;
 import au.edu.uq.rcc.nimrodg.resource.ssh.TransportFactory;
+import java.nio.file.Files;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
+import java.util.EnumSet;
 import java.util.Optional;
 import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.FeatureControl;
@@ -149,14 +153,8 @@ public abstract class SSHResourceType extends BaseResourceType {
 		}
 
 		if(detectPlatform) {
-			try(RemoteShell shell = tf.create(cfg)) {
-				SystemInformation sysInfo = SystemInformation.getSystemInformation(shell);
-				AgentInfo agent = ap.lookupAgentByPosix(sysInfo.kernelName, sysInfo.machine);
-				if(agent == null) {
-					err.printf("No supported agent for machine tuple (%s, %s)", sysInfo.kernelName, sysInfo.machine);
-					return false;
-				}
-				platform = agent.getPlatformString();
+			try {
+				platform = detectPlatform(ap, tf, cfg);
 			} catch(IOException | IllegalArgumentException e) {
 				e.printStackTrace(err);
 				return false;
@@ -167,6 +165,25 @@ public abstract class SSHResourceType extends BaseResourceType {
 		jb.add("transport", tf.buildJsonConfiguration(cfg));
 
 		return valid;
+	}
+
+	private static String detectPlatform(AgentProvider ap, TransportFactory tf, TransportFactory.Config cfg) throws IOException, IllegalArgumentException {
+		Path tmpDir = Files.createTempDirectory(null, PosixFilePermissions.asFileAttribute(EnumSet.of(
+				PosixFilePermission.OWNER_READ,
+				PosixFilePermission.OWNER_WRITE,
+				PosixFilePermission.OWNER_EXECUTE
+		)));
+
+		try(RemoteShell shell = tf.create(cfg, tmpDir)) {
+			SystemInformation sysInfo = SystemInformation.getSystemInformation(shell);
+			AgentInfo agent = ap.lookupAgentByPosix(sysInfo.kernelName, sysInfo.machine);
+			if(agent == null) {
+				return null;
+			}
+			return agent.getPlatformString();
+		} finally {
+			Files.deleteIfExists(tmpDir);
+		}
 	}
 
 	@Override

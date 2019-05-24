@@ -53,33 +53,38 @@ public class OpenSSHClient implements RemoteShell {
 	public static final String TRANSPORT_NAME = "openssh";
 
 	public static final Optional<Path> DEFAULT_PRIVATE_KEY = Optional.empty();
-	public static final String DEFAULT_EXECUTABLE = "ssh";
+	public static final Optional<Path> DEFAULT_EXECUTABLE = Optional.empty();
 
 	public final URI uri;
 	public final Optional<Path> privateKey;
-	public final String executable;
+	public final Path executable;
 
 	private final String[] sshArgs;
+	private final String[] closeArgs;
 
-	public OpenSSHClient(URI uri) throws IOException {
-		this(uri, DEFAULT_PRIVATE_KEY);
+	public OpenSSHClient(URI uri, Path workDir) throws IOException {
+		this(uri, workDir, DEFAULT_PRIVATE_KEY, DEFAULT_EXECUTABLE);
 	}
 
-	public OpenSSHClient(URI uri, Optional<Path> privateKey) throws IOException {
-		this(uri, privateKey, DEFAULT_EXECUTABLE);
-	}
-
-	public OpenSSHClient(URI uri, Optional<Path> privateKey, String executable) throws IOException {
+	public OpenSSHClient(URI uri, Path workDir, Optional<Path> privateKey, Optional<Path> executable) throws IOException {
 		this.uri = uri;
 		this.privateKey = privateKey;
 
-		if(executable == null) {
-			executable = "ssh";
-		}
-		this.executable = executable;
+		this.executable = executable.orElse(Paths.get("ssh"));
+
+		Path socketPath = workDir.resolve(String.format("ssh-control-%d", (long)uri.hashCode() & 0xFFFFFFFFL));
+
+		List<String> commonArgs = List.of(
+				"-q",
+				"-o", "PasswordAuthentication=no",
+				"-o", "StrictHostKeyChecking=no",
+				"-o", "ControlMaster=auto",
+				"-o", "ControlPersist=yes",
+				"-o", String.format("ControlPath=%s", socketPath)
+		);
 
 		ArrayList<String> ssh = new ArrayList<>();
-		ssh.add(executable);
+		ssh.add(this.executable.toString());
 
 		Optional<String> user = ActuatorUtils.getUriUser(uri);
 		if(user.isPresent()) {
@@ -98,22 +103,23 @@ public class OpenSSHClient implements RemoteShell {
 			ssh.add(Integer.toString(port));
 		}
 
-		ssh.add("-q");
-
-		ssh.add("-o");
-		ssh.add("PasswordAuthentication=no");
-
-		ssh.add("-o");
-		ssh.add("StrictHostKeyChecking=no");
-
+		ssh.addAll(commonArgs);
 		//args.add("-tt");
 		ssh.add(uri.getHost());
-
 		ssh.add("--");
-
 		sshArgs = ssh.stream().toArray(String[]::new);
 
-		LOGGER.trace("OpenSSH: {}", ActuatorUtils.posixBuildEscapedCommandLine(ssh));
+		{
+			ssh.clear();
+			ssh.add(this.executable.toString());
+			ssh.addAll(commonArgs);
+			ssh.add("-O");
+			ssh.add("exit");
+			ssh.add(uri.getHost());
+			closeArgs = ssh.stream().toArray(String[]::new);
+		}
+
+		LOGGER.trace("OpenSSH: {}", ActuatorUtils.posixBuildEscapedCommandLine(sshArgs));
 	}
 
 	@Override
@@ -122,7 +128,7 @@ public class OpenSSHClient implements RemoteShell {
 	}
 
 	public static void main(String[] args) throws IOException {
-		try(OpenSSHClient c = new OpenSSHClient(URI.create("ssh://flashlite2"))) {
+		try(OpenSSHClient c = new OpenSSHClient(URI.create("ssh://flashlite2"), Paths.get("/tmp"))) {
 			//CommandResult cr = c.runCommand("echo", "asdf");
 
 			c.upload(
@@ -154,7 +160,6 @@ public class OpenSSHClient implements RemoteShell {
 		pb.redirectInput(ProcessBuilder.Redirect.PIPE);
 
 		LOGGER.trace("Executing command: {}", ActuatorUtils.posixBuildEscapedCommandLine(aa));
-
 		Process p = pb.start();
 		try {
 			return proc.run(p);
@@ -239,12 +244,12 @@ public class OpenSSHClient implements RemoteShell {
 
 	public static TransportFactory FACTORY = new TransportFactory() {
 		@Override
-		public RemoteShell create(TransportFactory.Config cfg) throws IOException {
+		public RemoteShell create(TransportFactory.Config cfg, Path workDir) throws IOException {
 			if(!cfg.uri.isPresent()) {
 				throw new IOException("No URI provided.");
 			}
 
-			return new OpenSSHClient(cfg.uri.get(), cfg.privateKey, cfg.executablePath.map(p -> p.toString()).orElse(null));
+			return new OpenSSHClient(cfg.uri.get(), workDir, cfg.privateKey, cfg.executablePath);
 		}
 
 		@Override
@@ -296,6 +301,6 @@ public class OpenSSHClient implements RemoteShell {
 
 	@Override
 	public void close() throws IOException {
-		/* nop */
+		ActuatorUtils.doProcessOneshot(closeArgs, LOGGER);
 	}
 }

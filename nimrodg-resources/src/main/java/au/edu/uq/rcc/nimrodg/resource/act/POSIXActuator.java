@@ -186,7 +186,7 @@ public abstract class POSIXActuator<C extends SSHConfig> implements Actuator {
 	}
 
 	private RemoteShell makeClient() throws IOException {
-		return config.transportFactory.create(config.transportConfig);
+		return config.transportFactory.create(config.transportConfig, Paths.get(this.nimrod.getConfig().getWorkDir()));
 	}
 
 	/* 'Cause Java doesn't have goto */

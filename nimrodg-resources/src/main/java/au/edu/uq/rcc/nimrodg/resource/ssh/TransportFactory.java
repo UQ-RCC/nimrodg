@@ -53,7 +53,7 @@ public interface TransportFactory {
 
 	};
 
-	RemoteShell create(Config cfg) throws IOException;
+	RemoteShell create(Config cfg, Path workDir) throws IOException;
 
 	/**
 	 * Validate the transport's JSON configuration.

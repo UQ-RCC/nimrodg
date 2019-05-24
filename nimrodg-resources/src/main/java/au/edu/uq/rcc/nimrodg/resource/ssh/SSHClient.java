@@ -244,7 +244,7 @@ public class SSHClient implements RemoteShell {
 
 	public static TransportFactory FACTORY = new TransportFactory() {
 		@Override
-		public RemoteShell create(TransportFactory.Config cfg) throws IOException {
+		public RemoteShell create(TransportFactory.Config cfg, Path workDir) throws IOException {
 			if(!cfg.uri.isPresent()) {
 				throw new IOException("No URI provided.");
 			}

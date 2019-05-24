@@ -90,7 +90,7 @@ public class SSHTests {
 			return;
 		}
 
-		try(OpenSSHClient client = new OpenSSHClient(uri, Optional.of(keyPath), openSsh.toString())) {
+		try(OpenSSHClient client = new OpenSSHClient(uri, tmpDir.getRoot().toPath(), Optional.of(keyPath), Optional.of(openSsh))) {
 			testClient(client);
 		}
 	}

@@ -48,23 +48,7 @@ public class LocalShell implements RemoteShell {
 
 	@Override
 	public CommandResult runCommand(String... args) throws IOException {
-		ProcessBuilder pb = new ProcessBuilder(args);
-		pb.redirectOutput(ProcessBuilder.Redirect.PIPE);
-		pb.redirectError(ProcessBuilder.Redirect.PIPE);
-		pb.redirectInput(ProcessBuilder.Redirect.PIPE);
-
-		LOGGER.trace("Executing command: {}", ActuatorUtils.posixBuildEscapedCommandLine(args));
-
-		Process p = pb.start();
-		try {
-			return ActuatorUtils.doProcessOneshot(p, args, new byte[0]);
-		} catch(IOException e) {
-			String err = new String(p.getErrorStream().readAllBytes(), StandardCharsets.UTF_8);
-			LOGGER.error(err);
-			throw e;
-		} finally {
-			p.destroyForcibly();
-		}
+		return ActuatorUtils.doProcessOneshot(args, LOGGER);
 	}
 
 	@Override
@@ -82,7 +66,7 @@ public class LocalShell implements RemoteShell {
 
 	public static TransportFactory FACTORY = new TransportFactory() {
 		@Override
-		public RemoteShell create(TransportFactory.Config cfg) throws IOException {
+		public RemoteShell create(TransportFactory.Config cfg, Path workDir) throws IOException {
 			return new LocalShell();
 		}
 
