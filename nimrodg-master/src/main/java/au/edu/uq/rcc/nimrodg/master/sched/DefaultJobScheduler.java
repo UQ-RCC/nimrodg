@@ -113,11 +113,13 @@ public class DefaultJobScheduler implements JobScheduler {
 
 	@Override
 	public void onJobLaunchSuccess(JobAttempt att, UUID agentUuid) {
+		LOGGER.debug("onJobLaunchSuccess: {} on {}", att.getPath(), agentUuid);
 		ops.updateJobStarted(att, agentUuid);
 	}
 
 	@Override
 	public void onJobLaunchFailure(JobAttempt att, UUID agentUuid, Throwable t) {
+		LOGGER.debug("onJobLaunchFailure: {} on {}", att.getPath(), agentUuid);
 		ops.updateJobFinished(att, true);
 		tickJobAttempt(att);
 	}
@@ -130,6 +132,14 @@ public class DefaultJobScheduler implements JobScheduler {
 
 		ops.recordCommandResult(att, cr.status, cr.index, cr.time, cr.retVal, cr.message, cr.errorCode, au.getAction() == AgentUpdate.Action.Stop);
 
+		JobAttempt.Status status = att.getStatus();
+
+		if(status != Status.RUNNING) {
+			LOGGER.debug("onJobUpdate: Attempt {} on {}, status != RUNNING, == {}", att.getPath(), att.getAgentUUID(), status);
+		}
+		//assert status == Status.RUNNING;
+
+		
 		if(au.getAction() == AgentUpdate.Action.Stop) {
 			if(cr.index < maxIdx || cr.status != CommandResult.CommandResultStatus.SUCCESS) {
 				/* A command has failed and caused the job to stop. */
