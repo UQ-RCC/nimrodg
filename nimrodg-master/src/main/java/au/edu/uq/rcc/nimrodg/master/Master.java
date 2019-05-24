@@ -779,11 +779,11 @@ public class Master implements MessageQueueListener, AutoCloseable {
 
 			if(t == null) {
 				runningJobs.put(uuid, new RunningJob(uuid, job, att, nj, agent, true));
-				runLater("agentDoRunJob(js:onJobLaunchSuccess)", () -> jobScheduler.onJobLaunchSuccess(att, agent.getUUID()));
+				runLater("agentDoRunJob(js:onJobLaunchSuccess)", () -> jobScheduler.onJobLaunchSuccess(att, agent.getUUID()), true);
 			} else {
 				/* This is an agent issue, try reschedule the job. */
 				Throwable _t = t;
-				runLater("agentDoRunJob(as:onJobLaunchFailure)", () -> agentScheduler.onJobLaunchFailure(att, nj, agent, false, _t));
+				runLater("agentDoRunJob(as:onJobLaunchFailure)", () -> agentScheduler.onJobLaunchFailure(att, nj, agent, false, _t), true);
 			}
 
 			return uuid;
