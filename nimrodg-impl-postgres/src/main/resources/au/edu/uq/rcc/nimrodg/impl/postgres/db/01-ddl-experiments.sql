@@ -197,7 +197,7 @@ BEGIN
 			-- RUNNING -> {FAILED, COMPLETED}
 			NEW.finish_time = NOW();
 		ELSE
-			RAISE EXCEPTION 'Invalid job update, cannot transition from % -> %', OLD.status, NEW.status;
+			RAISE EXCEPTION 'Invalid job attempt update (%), cannot transition from % -> %', OLD.path, OLD.status, NEW.status;
 		END IF;
 	END IF;
 
