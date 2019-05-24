@@ -159,6 +159,11 @@ public abstract class SSHResourceType extends BaseResourceType {
 				e.printStackTrace(err);
 				return false;
 			}
+
+			if(platform == null) {
+				err.printf("Unable to detect agent platform\n");
+				return false;
+			}
 		}
 
 		jb.add("agent_platform", platform);
