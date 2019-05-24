@@ -169,6 +169,10 @@ public class RemoteActuator extends POSIXActuator<SSHResourceType.SSHConfig> {
 	}
 
 	private boolean kill(RemoteShell shell, int[] pids) {
+		if(pids.length == 0) {
+			return true;
+		}
+
 		String[] args = Stream.concat(Stream.of("kill", "-9"), IntStream.of(pids).mapToObj(i -> String.valueOf(i)))
 				.toArray(String[]::new);
 
