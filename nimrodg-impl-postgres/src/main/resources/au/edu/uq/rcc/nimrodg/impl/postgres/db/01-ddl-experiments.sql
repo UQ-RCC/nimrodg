@@ -350,10 +350,6 @@ CREATE OR REPLACE FUNCTION get_job_status(_job_id BIGINT) RETURNS nimrod_job_sta
 	SELECT status FROM _exp_get_attempt_info(_job_id);
 $$ LANGUAGE SQL STABLE;
 
-CREATE OR REPLACE FUNCTION get_job_attempts(_job_id BIGINT) RETURNS SETOF nimrod_job_attempts AS $$
-	SELECT * FROM nimrod_job_attempts WHERE job_id = _job_id;
-$$ LANGUAGE SQL STABLE;
-
 CREATE OR REPLACE FUNCTION filter_job_attempts(_job_id BIGINT, _status nimrod_job_status[]) RETURNS SETOF nimrod_job_attempts AS $$
 	SELECT
 		*

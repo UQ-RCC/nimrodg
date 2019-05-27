@@ -75,7 +75,6 @@ public class DBExperimentHelpers extends DBBaseHelper {
 	private final PreparedStatement qCreateJobAttempt;
 	private final PreparedStatement qStartJobAttempt;
 	private final PreparedStatement qFinishJobAttempt;
-	private final PreparedStatement qGetJobAttempts;
 	private final PreparedStatement qFilterJobAttempts;
 	private final PreparedStatement qGetJobAttempt;
 
@@ -108,7 +107,6 @@ public class DBExperimentHelpers extends DBBaseHelper {
 		this.qCreateJobAttempt = prepareStatement("SELECT * FROM create_job_attempt(?::BIGINT, ?::UUID)");
 		this.qStartJobAttempt = prepareStatement("SELECT * FROM start_job_attempt(?::BIGINT, ?::UUID)");
 		this.qFinishJobAttempt = prepareStatement("SELECT * FROM finish_job_attempt(?::BIGINT, ?::BOOLEAN)");
-		this.qGetJobAttempts = prepareStatement("SELECT * FROM get_job_attempts(?::BIGINT)");
 		this.qFilterJobAttempts = prepareStatement("SELECT * FROM filter_job_attempts(?::BIGINT, ?::nimrod_job_status[])");
 		this.qGetJobAttempt = prepareStatement("SELECT * FROM get_job_attempt(?::BIGINT)");
 
@@ -399,19 +397,6 @@ public class DBExperimentHelpers extends DBBaseHelper {
 
 			return attemptFromRow(rs);
 		}
-	}
-
-	public List<TempJobAttempt> getJobAttempts(long jobId) throws SQLException {
-		qGetJobAttempts.setLong(1, jobId);
-
-		List<TempJobAttempt> atts = new ArrayList<>();
-		try(ResultSet rs = qGetJobAttempts.executeQuery()) {
-			while(rs.next()) {
-				atts.add(attemptFromRow(rs));
-			}
-		}
-
-		return atts;
 	}
 
 	public List<TempJobAttempt> filterJobAttempts(long jobId, EnumSet<JobAttempt.Status> status) throws SQLException {

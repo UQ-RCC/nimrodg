@@ -86,8 +86,6 @@ public interface NimrodDBAPI extends ResourceFunctions<TempResource.Impl, TempEx
 
 	void finishJobAttempt(TempJobAttempt.Impl att, boolean failed) throws SQLException;
 
-	List<TempJobAttempt.Impl> getJobAttempts(TempJob.Impl job) throws SQLException;
-
 	List<TempJobAttempt.Impl> filterJobAttempts(TempJob.Impl job, EnumSet<JobAttempt.Status> status) throws SQLException;
 
 	TempJobAttempt getJobAttempt(TempJobAttempt.Impl att) throws SQLException;

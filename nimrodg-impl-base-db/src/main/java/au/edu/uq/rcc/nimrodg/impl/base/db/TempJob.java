@@ -83,11 +83,6 @@ public class TempJob {
 		}
 
 		@Override
-		public Collection<? extends JobAttempt> getAttempts() {
-			return m_DB.runSQL(() -> m_DB.getJobAttempts(this));
-		}
-
-		@Override
 		public Collection<? extends JobAttempt> filterAttempts(EnumSet<JobAttempt.Status> status) {
 			return m_DB.runSQL(() -> m_DB.filterJobAttempts(this, status));
 		}

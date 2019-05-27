@@ -62,7 +62,6 @@ import java.util.stream.Collectors;
 import javax.json.JsonValue;
 import org.junit.Test;
 import au.edu.uq.rcc.nimrodg.api.Resource;
-import au.edu.uq.rcc.nimrodg.api.utils.NimrodUtils;
 import java.util.AbstractMap;
 import java.util.HashSet;
 import java.util.Optional;
@@ -103,17 +102,13 @@ public abstract class APITests {
 
 		Collection<? extends Task> tasks = exp.getTasks();
 
-		Job newJob;
-		{
-			HashMap<String, String> vals = new HashMap<>();
-			vals.put("x", "xxx");
-			vals.put("y", "yyy");
-			newJob = api.addSingleJob(exp, vals);
-
-			vals.put("jobindex", "3");
-			vals.put("jobname", "3");
-			Assert.assertEquals(vals, newJob.getVariables());
-		}
+		Job newJob = api.addSingleJob(exp, Map.of("x", "xxx", "y", "yyy"));
+		Assert.assertEquals(Map.of(
+				"x", "xxx",
+				"y", "yyy",
+				"jobindex", "3",
+				"jobname", "3"
+		), newJob.getVariables());
 
 		List<? extends Job> jobs = new ArrayList<>(exp.filterJobs(EnumSet.allOf(JobAttempt.Status.class), 0, 0));
 
@@ -218,13 +213,11 @@ public abstract class APITests {
 
 			/* Check filtering everything. */
 			Set<JobAttempt> js0 = attempts.stream().collect(Collectors.toSet());
-			Set<JobAttempt> js1 = j.getAttempts().stream().collect(Collectors.toSet());
-			Set<JobAttempt> js2 = j.filterAttempts(EnumSet.allOf(JobAttempt.Status.class)).stream().collect(Collectors.toSet());
-			Set<JobAttempt> js3 = j.filterAttempts().stream().collect(Collectors.toSet());
+			Set<JobAttempt> js1 = j.filterAttempts(EnumSet.allOf(JobAttempt.Status.class)).stream().collect(Collectors.toSet());
+			Set<JobAttempt> js2 = j.filterAttempts().stream().collect(Collectors.toSet());
 
 			Assert.assertEquals(js0, js1);
 			Assert.assertEquals(js0, js2);
-			Assert.assertEquals(js0, js3);
 
 			/* See if we can filter the NOT_RUN attempt. */
 			Assert.assertEquals(notRunAtt, j.filterAttempts(EnumSet.of(JobAttempt.Status.NOT_RUN)).stream().findFirst().get());
@@ -432,24 +425,14 @@ public abstract class APITests {
 
 		/* A job added to a stopped run shouldn't generate an event. */
 		Assert.assertEquals(Experiment.State.STOPPED, exp.getState());
-		mapi.addSingleJob(exp, new HashMap<String, String>() {
-			{
-				put("x", "xx");
-				put("y", "yy");
-			}
-		});
+		mapi.addSingleJob(exp, Map.of("x", "xx", "y", "yy"));
 
 		Collection<NimrodMasterEvent> _evts = mapi.pollMasterEvents();
 		Assert.assertEquals(0, _evts.size());
 
 		/* Start the experiment, this should cause an event to be created. */
 		mapi.updateExperimentState(exp, Experiment.State.STARTED);
-		mapi.addSingleJob(exp, new HashMap<String, String>() {
-			{
-				put("x", "xx");
-				put("y", "yy");
-			}
-		});
+		mapi.addSingleJob(exp, Map.of("x", "xx", "y", "yy"));
 
 		List<NimrodMasterEvent> evts = new ArrayList<>(mapi.pollMasterEvents());
 		Assert.assertEquals(1, evts.size());

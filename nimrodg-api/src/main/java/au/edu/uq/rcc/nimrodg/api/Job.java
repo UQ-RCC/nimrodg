@@ -34,9 +34,6 @@ public interface Job extends NimrodEntity {
 
 	Instant getCreationTime();
 
-	@Deprecated
-	Collection<? extends JobAttempt> getAttempts();
-
 	/**
 	 * Get a list of attempts that satisfy the given criteria.
 	 *

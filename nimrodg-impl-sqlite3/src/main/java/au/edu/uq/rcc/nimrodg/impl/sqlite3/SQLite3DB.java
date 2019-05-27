@@ -382,13 +382,6 @@ public class SQLite3DB extends SQLUUUUU<NimrodSQLException> implements NimrodDBA
 	}
 
 	@Override
-	public synchronized List<TempJobAttempt.Impl> getJobAttempts(TempJob.Impl job) throws SQLException {
-		return experimentHelpers.getJobAttempts(job.base.id).stream()
-				.map(att -> att.create(this, job))
-				.collect(Collectors.toList());
-	}
-
-	@Override
 	public synchronized List<TempJobAttempt.Impl> filterJobAttempts(TempJob.Impl job, EnumSet<JobAttempt.Status> status) throws SQLException {
 		return experimentHelpers.getJobAttempts(job.base.id).stream()
 				.filter(att -> status.contains(att.status))
