@@ -40,7 +40,6 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
@@ -70,14 +69,17 @@ public class DBExperimentHelpers extends DBBaseHelper {
 	private final PreparedStatement qGetSingleJob;
 	private final PreparedStatement qGetJobStatus;
 	private final PreparedStatement qFilterJobs;
+	private final PreparedStatement qGetJobsById;
 
 	/* Job Attempts */
 	private final PreparedStatement qCreateJobAttempt;
 	private final PreparedStatement qStartJobAttempt;
 	private final PreparedStatement qFinishJobAttempt;
 	private final PreparedStatement qGetJobAttempts;
+	private final PreparedStatement qFilterJobAttempts;
 	private final PreparedStatement qGetJobAttempt;
 
+	private final PreparedStatement qFilterJobAttemptsByExperiment;
 	private final PreparedStatement qAddCommandResult;
 
 	/* Utility */
@@ -101,12 +103,16 @@ public class DBExperimentHelpers extends DBBaseHelper {
 		this.qGetJobStatus = prepareStatement("SELECT * FROM get_job_status(?::BIGINT)");
 
 		this.qFilterJobs = prepareStatement("SELECT * FROM filter_jobs(?::BIGINT, ?::nimrod_job_status[], ?::BIGINT, ?::BIGINT)");
+		this.qGetJobsById = prepareStatement("SELECT * FROM get_jobs_by_id(?::BIGINT[])");
 
 		this.qCreateJobAttempt = prepareStatement("SELECT * FROM create_job_attempt(?::BIGINT, ?::UUID)");
 		this.qStartJobAttempt = prepareStatement("SELECT * FROM start_job_attempt(?::BIGINT, ?::UUID)");
 		this.qFinishJobAttempt = prepareStatement("SELECT * FROM finish_job_attempt(?::BIGINT, ?::BOOLEAN)");
 		this.qGetJobAttempts = prepareStatement("SELECT * FROM get_job_attempts(?::BIGINT)");
+		this.qFilterJobAttempts = prepareStatement("SELECT * FROM filter_job_attempts(?::BIGINT, ?::nimrod_job_status[])");
 		this.qGetJobAttempt = prepareStatement("SELECT * FROM get_job_attempt(?::BIGINT)");
+
+		this.qFilterJobAttemptsByExperiment = prepareStatement("SELECT * FROM filter_job_attempts_by_experiment(?::BIGINT, ?::nimrod_job_status[])");
 
 		this.qAddCommandResult = prepareStatement("SELECT * FROM add_command_result(?::BIGINT, ?::nimrod_command_result_status, ?::BIGINT, ?::REAL, ?::INT, ?::TEXT, ?::INT, ?::BOOLEAN)");
 
@@ -289,23 +295,31 @@ public class DBExperimentHelpers extends DBBaseHelper {
 	}
 
 	public List<TempJob> filterJobs(long expId, EnumSet<JobAttempt.Status> status, long start, long limit) throws SQLException {
-		Array states;
-		if(status == null) {
-			states = null;
-		} else {
-			states = conn.createArrayOf("nimrod_job_status", status.stream()
-					.filter(s -> s != null)
-					.map(s -> s.toString())
-					.toArray());
-		}
-
 		qFilterJobs.setLong(1, expId);
-		qFilterJobs.setArray(2, states);
+		qFilterJobs.setArray(2, conn.createArrayOf("nimrod_job_status", status.stream()
+				.filter(s -> s != null)
+				.map(s -> s.toString())
+				.toArray()));
 		qFilterJobs.setObject(3, start < 0 ? null : start);
 		qFilterJobs.setObject(4, limit <= 0 ? null : limit);
 
 		List<TempJob> j = new ArrayList<>();
 		try(ResultSet rs = qFilterJobs.executeQuery()) {
+			while(rs.next()) {
+				j.add(jobFromRow(rs));
+			}
+		}
+
+		return j;
+	}
+
+	public List<TempJob> getJobsById(long[] ids) throws SQLException {
+		qGetJobsById.setArray(1, conn.createArrayOf("BIGINT", Arrays.stream(ids)
+				.boxed().toArray(Long[]::new)
+		));
+
+		List<TempJob> j = new ArrayList<>();
+		try(ResultSet rs = qGetJobsById.executeQuery()) {
 			while(rs.next()) {
 				j.add(jobFromRow(rs));
 			}
@@ -400,6 +414,23 @@ public class DBExperimentHelpers extends DBBaseHelper {
 		return atts;
 	}
 
+	public List<TempJobAttempt> filterJobAttempts(long jobId, EnumSet<JobAttempt.Status> status) throws SQLException {
+		qFilterJobAttempts.setLong(1, jobId);
+		qFilterJobAttempts.setArray(2, conn.createArrayOf("nimrod_job_status", status.stream()
+				.filter(s -> s != null)
+				.map(s -> s.toString())
+				.toArray()));
+
+		List<TempJobAttempt> atts = new ArrayList<>();
+		try(ResultSet rs = qFilterJobAttempts.executeQuery()) {
+			while(rs.next()) {
+				atts.add(attemptFromRow(rs));
+			}
+		}
+
+		return atts;
+	}
+
 	public TempJobAttempt getJobAttempt(long attId) throws SQLException {
 		qGetJobAttempt.setLong(1, attId);
 
@@ -423,6 +454,23 @@ public class DBExperimentHelpers extends DBBaseHelper {
 
 			return rs.getLong("id");
 		}
+	}
+
+	public List<TempJobAttempt> filterJobAttemptsByExperiment(long expId, EnumSet<JobAttempt.Status> status) throws SQLException {
+		qFilterJobAttemptsByExperiment.setLong(1, expId);
+		qFilterJobAttemptsByExperiment.setArray(2, conn.createArrayOf("nimrod_job_status", status.stream()
+				.filter(s -> s != null)
+				.map(s -> s.toString())
+				.toArray()));
+
+		List<TempJobAttempt> atts = new ArrayList<>();
+		try(ResultSet rs = qFilterJobAttemptsByExperiment.executeQuery()) {
+			while(rs.next()) {
+				atts.add(attemptFromRow(rs));
+			}
+		}
+
+		return atts;
 	}
 
 	public TempCommandResult addCommandResult(long attId, CommandResult.CommandResultStatus status, long index, float time, int retval, String message, int errCode, boolean stop) throws SQLException {

@@ -21,6 +21,7 @@ package au.edu.uq.rcc.nimrodg.api;
 
 import java.time.Instant;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.Map;
 
 public interface Job extends NimrodEntity {
@@ -33,7 +34,22 @@ public interface Job extends NimrodEntity {
 
 	Instant getCreationTime();
 
+	@Deprecated
 	Collection<? extends JobAttempt> getAttempts();
+
+	/**
+	 * Get a list of attempts that satisfy the given criteria.
+	 *
+	 * This list may not be modified.
+	 *
+	 * @param status The statuses of the attempts.
+	 * @return An immutable list of jobs that satisfy the given criteria.
+	 */
+	Collection<? extends JobAttempt> filterAttempts(EnumSet<JobAttempt.Status> status);
+
+	default Collection<? extends JobAttempt> filterAttempts() {
+		return filterAttempts(EnumSet.allOf(JobAttempt.Status.class));
+	}
 
 	/**
 	 * Get the status of the job.

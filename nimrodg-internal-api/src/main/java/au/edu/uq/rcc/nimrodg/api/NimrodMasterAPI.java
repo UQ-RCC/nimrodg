@@ -25,6 +25,8 @@ import java.util.Collection;
 import java.util.UUID;
 import au.edu.uq.rcc.nimrodg.api.events.NimrodMasterEvent;
 import java.security.cert.Certificate;
+import java.util.EnumSet;
+import java.util.Map;
 
 /**
  * This is the Nimrod/G API intended for use by the Experiment Master.
@@ -75,6 +77,8 @@ public interface NimrodMasterAPI extends NimrodAPI {
 	void finishJobAttempt(JobAttempt att, boolean failed);
 
 	String getJobAttemptToken(JobAttempt att);
+
+	Map<? extends Job, Collection<? extends JobAttempt>> filterJobAttempts(Experiment exp, EnumSet<JobAttempt.Status> status);
 
 	/**
 	 * Add a command result.

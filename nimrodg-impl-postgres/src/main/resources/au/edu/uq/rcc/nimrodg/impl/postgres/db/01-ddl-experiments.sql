@@ -354,6 +354,31 @@ CREATE OR REPLACE FUNCTION get_job_attempts(_job_id BIGINT) RETURNS SETOF nimrod
 	SELECT * FROM nimrod_job_attempts WHERE job_id = _job_id;
 $$ LANGUAGE SQL STABLE;
 
+CREATE OR REPLACE FUNCTION filter_job_attempts(_job_id BIGINT, _status nimrod_job_status[]) RETURNS SETOF nimrod_job_attempts AS $$
+	SELECT
+		*
+	FROM
+		nimrod_job_attempts
+	WHERE
+		job_id = _job_id AND
+		status = ANY(COALESCE(_status, enum_range(NULL::nimrod_job_status)))
+	;
+$$ LANGUAGE SQL STABLE;
+
+CREATE OR REPLACE FUNCTION filter_job_attempts_by_experiment(_exp_id BIGINT, _status nimrod_job_status[]) RETURNS SETOF nimrod_job_attempts AS $$
+	SELECT
+		att.*
+	FROM
+		nimrod_job_attempts AS att
+	INNER JOIN
+		nimrod_jobs AS j
+		ON j.id = att.job_id
+	WHERE
+		j.exp_id = _exp_Id AND
+		att.status = ANY(COALESCE(_status, enum_range(NULL::nimrod_job_status)))
+	;
+$$ LANGUAGE SQL STABLE;
+
 CREATE OR REPLACE FUNCTION get_job_attempt(_att_id BIGINT) RETURNS SETOF nimrod_job_attempts AS $$
 	SELECT * FROM nimrod_job_attempts WHERE id = _att_id;
 $$ LANGUAGE SQL STABLE;
@@ -396,6 +421,10 @@ CREATE OR REPLACE FUNCTION filter_jobs(_exp_id BIGINT, _status nimrod_job_status
 		status = ANY(COALESCE(_status, enum_range(NULL::nimrod_job_status)))
 	ORDER BY job_index ASC
 	LIMIT _limit;
+$$ LANGUAGE SQL STABLE;
+
+CREATE OR REPLACE FUNCTION get_jobs_by_id(_ids BIGINT[]) RETURNS SETOF nimrod_full_jobs AS $$
+	SELECT * FROM nimrod_full_jobs WHERE id = ANY(_ids);
 $$ LANGUAGE SQL STABLE;
 
 /*

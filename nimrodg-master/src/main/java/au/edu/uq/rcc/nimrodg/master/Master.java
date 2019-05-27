@@ -368,26 +368,16 @@ public class Master implements MessageQueueListener, AutoCloseable {
 	private void resyncJobAttempts() {
 		/*
 		 * NB: This should be idempotent if possible.
-		 *
-		 * FIXME: Issue #13
-		 * This won't handle attempts that are NOT_RUN. If we already know about them, good.
-		 * If we don't, then they're not hurting anything by being there.
-		 *
-		 * To handle them, I'd need to add a new API call that can directly query attempts without a job reference.
+		 * Get all active attempts we don't already know about.
 		 */
-		Collection<? extends Job> activeJobs = experiment.filterJobs(EnumSet.of(JobAttempt.Status.RUNNING), 0, 0);
-
-		/* Get all active attempts we don't already know about. */
-		Map<Job, List<JobAttempt>> activeAttempts = activeJobs.stream()
-				.collect(Collectors.toMap(
-						j -> j,
-						j -> j.getAttempts().stream()
-								.filter(att -> att.getStatus() == JobAttempt.Status.RUNNING)
-								.filter(att -> !runningJobs.containsKey(att.getUUID()))
-								.collect(Collectors.toList())
-				));
+		Map<? extends Job, Collection<? extends JobAttempt>> activeAttempts = nimrod.filterJobAttempts(experiment,
+				EnumSet.of(JobAttempt.Status.NOT_RUN, JobAttempt.Status.RUNNING)
+		);
 
 		activeAttempts.entrySet().forEach(je -> je.getValue().forEach(att -> {
+			if(runningJobs.containsKey(att.getUUID())) {
+				return;
+			}
 
 			AgentInfo ai = allAgents.get(att.getAgentUUID());
 			/* If there's no agent associated, something screwy's going on. Fail the attempt and let it reschedule. */

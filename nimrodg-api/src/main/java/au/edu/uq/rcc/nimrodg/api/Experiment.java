@@ -50,7 +50,7 @@ public interface Experiment extends NimrodEntity {
 	 * @param status The statuses of the jobs.
 	 * @param start The lowest possible starting number for the job.
 	 * @param limit The maximum number of jobs to return. Set to 0 for no limit.
-	 * @return A list of jobs that satisfy the given criteria.
+	 * @return An immutable list of jobs that satisfy the given criteria.
 	 */
 	Collection<? extends Job> filterJobs(EnumSet<JobAttempt.Status> status, long start, int limit);
 

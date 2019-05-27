@@ -3,6 +3,7 @@ dependencies {
 	implementation group: 'org.apache.logging.log4j', name: 'log4j-api', version: LOG4J_VERSION
 
 	implementation project(':nimrodg-impl-base-db')
+	implementation project(':nimrodg-utils')
 	testImplementation project(':nimrodg-test')
 
 	testRuntimeOnly group: 'org.glassfish', name: 'javax.json', version: JAVAX_JSON_VERSION

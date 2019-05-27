@@ -62,6 +62,7 @@ import java.util.stream.Collectors;
 import javax.json.JsonValue;
 import org.junit.Test;
 import au.edu.uq.rcc.nimrodg.api.Resource;
+import au.edu.uq.rcc.nimrodg.api.utils.NimrodUtils;
 import java.util.AbstractMap;
 import java.util.HashSet;
 import java.util.Optional;
@@ -88,7 +89,7 @@ public abstract class APITests {
 		Experiment exp4 = api.addExperiment("test4", TestUtils.getSampleExperiment());
 
 		Experiment[] exp = api.getExperiments().stream().toArray(Experiment[]::new);
-		Assert.assertArrayEquals(new Experiment[]{ exp1, exp2, exp3, exp4 }, exp);
+		Assert.assertArrayEquals(new Experiment[]{exp1, exp2, exp3, exp4}, exp);
 	}
 
 	@Test
@@ -151,6 +152,8 @@ public abstract class APITests {
 
 		Job j = exp.filterJobs(EnumSet.allOf(JobAttempt.Status.class), 0, 1).stream().findFirst().get();
 
+		UUID agentUuid = UUID.randomUUID();
+		List<JobAttempt> attempts = new ArrayList<>();
 		/* Create one job a attempt and make it run successfully. */
 		{
 			JobAttempt att = mapi.createJobAttempt(j);
@@ -161,7 +164,6 @@ public abstract class APITests {
 			Assert.assertEquals(JobAttempt.Status.NOT_RUN, att.getStatus());
 			Assert.assertEquals(JobAttempt.Status.NOT_RUN, j.getStatus());
 
-			UUID agentUuid = UUID.randomUUID();
 			mapi.startJobAttempt(att, agentUuid);
 
 			Assert.assertEquals(agentUuid, att.getAgentUUID());
@@ -179,6 +181,8 @@ public abstract class APITests {
 			Assert.assertNotNull(att.getFinishTime());
 			Assert.assertEquals(JobAttempt.Status.COMPLETED, att.getStatus());
 			Assert.assertEquals(JobAttempt.Status.COMPLETED, j.getStatus());
+
+			attempts.add(att);
 		}
 
 		/* Create another attempt and fail it immediately */
@@ -198,6 +202,46 @@ public abstract class APITests {
 			Assert.assertNotNull(att.getFinishTime());
 			Assert.assertEquals(JobAttempt.Status.FAILED, att.getStatus());
 			Assert.assertEquals(JobAttempt.Status.COMPLETED, j.getStatus());
+
+			attempts.add(att);
+		}
+
+		{
+			/* Create an attempt and leave it NOT_RUN. */
+			JobAttempt notRunAtt = mapi.createJobAttempt(j);
+			attempts.add(notRunAtt);
+
+			/* Create an attempt and leave it RUNNING. */
+			JobAttempt runningAtt = mapi.createJobAttempt(j);
+			mapi.startJobAttempt(runningAtt, agentUuid);
+			attempts.add(runningAtt);
+
+			/* Check filtering everything. */
+			Set<JobAttempt> js0 = attempts.stream().collect(Collectors.toSet());
+			Set<JobAttempt> js1 = j.getAttempts().stream().collect(Collectors.toSet());
+			Set<JobAttempt> js2 = j.filterAttempts(EnumSet.allOf(JobAttempt.Status.class)).stream().collect(Collectors.toSet());
+			Set<JobAttempt> js3 = j.filterAttempts().stream().collect(Collectors.toSet());
+
+			Assert.assertEquals(js0, js1);
+			Assert.assertEquals(js0, js2);
+			Assert.assertEquals(js0, js3);
+
+			/* See if we can filter the NOT_RUN attempt. */
+			Assert.assertEquals(notRunAtt, j.filterAttempts(EnumSet.of(JobAttempt.Status.NOT_RUN)).stream().findFirst().get());
+
+			/* See if we can filter the RUNNING attempt. */
+			Assert.assertEquals(runningAtt, j.filterAttempts(EnumSet.of(JobAttempt.Status.RUNNING)).stream().findFirst().get());
+		}
+
+		{
+			/* Check filtering by experiment. Used by the master. */
+			Map<Job, Set<JobAttempt>> j0 = Map.of(j, attempts.stream().collect(Collectors.toSet()));
+			Map<Job, Set<JobAttempt>> j1 = mapi.filterJobAttempts(exp, EnumSet.allOf(JobAttempt.Status.class)).entrySet().stream()
+					.collect(Collectors.toMap(
+							e -> e.getKey(),
+							e -> e.getValue().stream().collect(Collectors.toSet())
+					));
+			Assert.assertEquals(j0, j1);
 		}
 	}
 
@@ -265,7 +309,7 @@ public abstract class APITests {
 		 * It really just creates a bunch of agent.hello messages, which is the same thing, really.
 		 */
 		List<AgentHello> hellos;
-		try( Actuator act = napi.createActuator(new _FactuatorOps(napi), rootResource, NimrodURI.create(URI.create("amqp://dummy-server/vhost"), "/not/a/path", true, true), new Certificate[]{})) {
+		try(Actuator act = napi.createActuator(new _FactuatorOps(napi), rootResource, NimrodURI.create(URI.create("amqp://dummy-server/vhost"), "/not/a/path", true, true), new Certificate[]{})) {
 			UUID[] uuids = new UUID[10];
 			for(int i = 0; i < uuids.length; ++i) {
 				uuids[i] = UUID.randomUUID();
@@ -442,7 +486,7 @@ public abstract class APITests {
 		Experiment exp1 = api.addExperiment("exp1", TestUtils.getSimpleSampleEmptyExperiment());
 
 		Assert.assertEquals(Set.of("x", "y"), exp1.getVariables());
-		Assert.assertTrue(exp1.filterJobs(null, 0, 0).isEmpty());
+		Assert.assertTrue(exp1.filterJobs(EnumSet.allOf(JobAttempt.Status.class), 0, 0).isEmpty());
 	}
 
 	@Test
@@ -563,10 +607,12 @@ public abstract class APITests {
 		jobs = new ArrayList<>(exp.filterJobs(EnumSet.allOf(JobAttempt.Status.class), 0, 0));
 		Assert.assertEquals(0, jobs.size());
 
-		newJobs.add(new HashMap<>(){{
-			put("x", "0");
-			put("y", "1");
-		}});
+		newJobs.add(new HashMap<>() {
+			{
+				put("x", "0");
+				put("y", "1");
+			}
+		});
 		api.addJobs(exp, newJobs);
 
 		jobs = new ArrayList<>(exp.filterJobs(EnumSet.allOf(JobAttempt.Status.class), 0, 0));

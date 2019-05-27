@@ -25,6 +25,7 @@ import au.edu.uq.rcc.nimrodg.api.JobAttempt;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.Map;
 
 public class TempJob {
@@ -84,6 +85,11 @@ public class TempJob {
 		@Override
 		public Collection<? extends JobAttempt> getAttempts() {
 			return m_DB.runSQL(() -> m_DB.getJobAttempts(this));
+		}
+
+		@Override
+		public Collection<? extends JobAttempt> filterAttempts(EnumSet<JobAttempt.Status> status) {
+			return m_DB.runSQL(() -> m_DB.filterJobAttempts(this, status));
 		}
 
 		@Override

@@ -53,7 +53,9 @@ import java.util.ArrayList;
 import java.util.List;
 import au.edu.uq.rcc.nimrodg.api.Resource;
 import java.io.UncheckedIOException;
+import java.util.EnumSet;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public abstract class TempNimrodAPIImpl implements NimrodAPI, NimrodMasterAPI, NimrodServeAPI {
 
@@ -346,6 +348,13 @@ public abstract class TempNimrodAPIImpl implements NimrodAPI, NimrodMasterAPI, N
 	public String getJobAttemptToken(JobAttempt _att) {
 		TempJobAttempt.Impl att = validateJobAttempt(_att);
 		return att.getToken();
+	}
+
+	@Override
+	public Map<? extends Job, Collection<? extends JobAttempt>> filterJobAttempts(Experiment _exp, EnumSet<JobAttempt.Status> status) {
+		return db.runSQLTransaction(() -> db.filterJobAttempts(validateExperiment(_exp), status))
+				.entrySet().stream()
+				.collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
 	}
 
 	@Override

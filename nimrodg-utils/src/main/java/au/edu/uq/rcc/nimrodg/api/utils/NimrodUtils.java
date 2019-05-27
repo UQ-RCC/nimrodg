@@ -40,6 +40,7 @@ import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 
 import au.edu.uq.rcc.nimrodg.api.Resource;
+import java.util.stream.Stream;
 
 public class NimrodUtils {
 
@@ -77,9 +78,13 @@ public class NimrodUtils {
 	}
 
 	public static <T, U> Map<T, List<U>> mapToParent(Collection<U> vals, Function<U, T> mapper) {
+		return mapToParent(vals.stream(), mapper);
+	}
+
+	public static <T, U> Map<T, List<U>> mapToParent(Stream<U> vals, Function<U, T> mapper) {
 		Map<T, List<U>> map = new HashMap<>();
 
-		for(U u : vals) {
+		vals.forEach(u -> {
 			T t = mapper.apply(u);
 			List<U> pl = map.getOrDefault(t, null);
 			if(pl == null) {
@@ -87,7 +92,7 @@ public class NimrodUtils {
 				map.put(t, pl);
 			}
 			pl.add(u);
-		}
+		});
 
 		return map;
 	}

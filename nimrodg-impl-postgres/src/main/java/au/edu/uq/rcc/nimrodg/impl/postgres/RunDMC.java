@@ -30,6 +30,7 @@ import au.edu.uq.rcc.nimrodg.api.ResourceTypeInfo;
 import au.edu.uq.rcc.nimrodg.api.events.ConfigChangeMasterEvent;
 import au.edu.uq.rcc.nimrodg.api.events.JobAddMasterEvent;
 import au.edu.uq.rcc.nimrodg.api.events.NimrodMasterEvent;
+import au.edu.uq.rcc.nimrodg.api.utils.NimrodUtils;
 import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledRun;
 import au.edu.uq.rcc.nimrodg.impl.base.db.BrokenDBInvariantException;
 import au.edu.uq.rcc.nimrodg.impl.base.db.DBUtils;
@@ -53,6 +54,7 @@ import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -253,12 +255,39 @@ public class RunDMC extends SQLUUUUU<NimrodSQLException> implements NimrodDBAPI,
 
 	@Override
 	public synchronized List<TempJobAttempt.Impl> getJobAttempts(TempJob.Impl job) throws SQLException {
-		return experimentHelpers.getJobAttempts(job.base.id).stream().map(att -> att.create(this, job)).collect(Collectors.toList());
+		return experimentHelpers.getJobAttempts(job.base.id).stream()
+				.map(att -> att.create(this, job))
+				.collect(Collectors.toList());
+	}
+
+	@Override
+	public synchronized List<TempJobAttempt.Impl> filterJobAttempts(TempJob.Impl job, EnumSet<JobAttempt.Status> status) throws SQLException {
+		return experimentHelpers.filterJobAttempts(job.base.id, status).stream()
+				.map(att -> att.create(this, job))
+				.collect(Collectors.toList());
 	}
 
 	@Override
 	public synchronized TempJobAttempt getJobAttempt(TempJobAttempt.Impl att) throws SQLException {
 		return experimentHelpers.getJobAttempt(att.base.id);
+	}
+
+	@Override
+	public synchronized Map<TempJob.Impl, List<TempJobAttempt.Impl>> filterJobAttempts(TempExperiment.Impl exp, EnumSet<JobAttempt.Status> status) throws SQLException {
+		List<TempJobAttempt> atts = experimentHelpers.filterJobAttemptsByExperiment(exp.base.id, status);
+
+		long[] jids = atts.stream().map(att -> att.jobId).collect(Collectors.toSet()).stream()
+				.mapToLong(j -> j)
+				.toArray();
+
+		Map<Long, TempJob.Impl> jobs = experimentHelpers.getJobsById(jids).stream()
+				.map(j -> j.create(this, exp))
+				.collect(Collectors.toMap(j -> j.base.id, j -> j));
+
+		return NimrodUtils.mapToParent(
+				atts.stream().map(att -> att.create(this, jobs.get(att.jobId))),
+				att -> jobs.get(att.base.jobId)
+		);
 	}
 
 	@Override

@@ -102,6 +102,7 @@ public class DBExperimentHelpers extends DBBaseHelper {
 	private final PreparedStatement qStartJobAttempt;
 	private final PreparedStatement qFinishJobAttempt;
 	private final PreparedStatement qGetJobAttempt;
+	private final PreparedStatement qFilterJobAttemptsByExperiment;
 
 	private final PreparedStatement qAddCommandResult;
 	private final PreparedStatement qGetCommandResult;
@@ -152,6 +153,16 @@ public class DBExperimentHelpers extends DBBaseHelper {
 		this.qStartJobAttempt = prepareStatement("UPDATE nimrod_job_attempts SET status = ?, agent_uuid = ? WHERE id = ?");
 		this.qFinishJobAttempt = prepareStatement("UPDATE nimrod_job_attempts SET status = ? WHERE id = ?");
 		this.qGetJobAttempt = prepareStatement("SELECT * FROM nimrod_job_attempts WHERE id = ?");
+		this.qFilterJobAttemptsByExperiment = prepareStatement("	SELECT\n"
+				+ "		att.*\n"
+				+ "	FROM\n"
+				+ "		nimrod_job_attempts AS att\n"
+				+ "	INNER JOIN\n"
+				+ "		nimrod_jobs AS j\n"
+				+ "		ON j.id = att.job_id\n"
+				+ "	WHERE\n"
+				+ "		j.exp_id = ?\n"
+				+ "	;");
 
 		this.qAddCommandResult = prepareStatement("INSERT INTO nimrod_command_results(attempt_id, status, command_index, time, retval, message, error_code, stop) VALUES(?, ?, ?, ?, ?, ?, ?, ?)", true);
 		this.qGetCommandResult = prepareStatement("SELECT * FROM nimrod_command_results WHERE id = ?");
@@ -774,6 +785,15 @@ public class DBExperimentHelpers extends DBBaseHelper {
 		return _jobs;
 	}
 
+	public List<TempJob> getJobsById(long[] ids) throws SQLException {
+		List<TempJob> jobs = new ArrayList<>(ids.length);
+		for(long id : ids) {
+			getSingleJob(id).ifPresent(jobs::add);
+		}
+
+		return jobs;
+	}
+
 	public List<TempJob> addJobs(long expId, String expPath, Collection<Map<String, String>> jobs) throws SQLException {
 		long nextIndex;
 		qGetNextJobId.setLong(1, expId);
@@ -866,6 +886,21 @@ public class DBExperimentHelpers extends DBBaseHelper {
 
 			return attemptFromRow(rs);
 		}
+	}
+
+	public List<TempJobAttempt> filterJobAttemptsByExperiment(long expId, EnumSet<JobAttempt.Status> status) throws SQLException {
+		qFilterJobAttemptsByExperiment.setLong(1, expId);
+		List<TempJobAttempt> atts = new ArrayList<>();
+		try(ResultSet rs = qGetJobAttempts.executeQuery()) {
+			while(rs.next()) {
+				TempJobAttempt att = attemptFromRow(rs);
+				if(status.contains(att.status)) {
+					atts.add(att);
+				}
+			}
+		}
+
+		return atts;
 	}
 
 	public TempCommandResult addCommandResult(long attId, CommandResult.CommandResultStatus status, long index, float time, int retval, String message, int errCode, boolean stop) throws SQLException {
