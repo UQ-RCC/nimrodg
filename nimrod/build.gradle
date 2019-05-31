@@ -102,12 +102,10 @@ jobs — millions if need be.
 
 	packageInstallDir = '/usr/share/nimrod'
 
-	agentVersion = '1.1.1'
+	agentVersion = '1.1.2'
 	agentList = [
-		[platform:'x86_64-pc-linux-musl',		sha256:'ede1a9b56342f8c91952e0ce6bc6a0fea5b0e1ab8cb954edf28203fa98743f1a'],
-		[platform:'i686-pc-linux-musl',			sha256:'44d4bec004214b928ab81af16e6078e94553f15d9da2109dae3c2b125dd5a1e7'],
-		[platform:'armv8-rpi3-linux-gnueabihf',	sha256:'d4c1073cb284e1ca0fbe869cedc0e83ca809f6cc34db941f16cfcc0be4007408'],
-		[platform:'armv6-rpi-linux-gnueabi',	sha256:'558d07d33983943f28506383dfab3c4ccbc05fd913210e77bad3caaed63dc8f7']
+		[platform:'x86_64-pc-linux-musl',		sha256:'af8209d65366f28ca94f7a5738db2cc61245ad571b060cbcd7cbbd8ce7695bae'],
+		[platform:'i686-pc-linux-musl',			sha256:'dcdb10a3317ab88c253bf9e282078c11f403a6d85e446aad416e6be86310e27c']
 	]
 }
 
@@ -139,8 +137,18 @@ agentList.each { agent ->
 	[distTar, distZip].each { it.dependsOn += "verifyAgent${agent.platform}" }
 }
 
+import org.redline_rpm.header.Flags
 
 task buildDeb(type: Deb, dependsOn: assembleDist) {
+	/* https://github.com/jgitver/jgitver/blob/master/src/main/java/fr/brouillard/oss/jgitver/metadata/Metadatas.java#L25 */
+	if(Integer.valueOf(project.commit_distance) > 0) {
+		packageName = 'nimrod-dev'
+		conflicts('nimrod')
+	} else {
+		packageName = 'nimrod'
+		conflicts('nimrod-dev')
+	}
+
 	summary				project.packageSummary
 	packageDescription	project.packageDescription
 
@@ -149,9 +157,9 @@ task buildDeb(type: Deb, dependsOn: assembleDist) {
 	arch				'all'
 	url					project.packageUrl
 
-	requires			'openjdk-11-jre-headless'
-	recommends			'postgresql-10'
-	recommends			'rabbitmq-server'
+	requires			'default-jre', '1.10', Flags.GREATER | Flags.EQUAL
+	suggests			'postgresql', '10', Flags.GREATER | Flags.EQUAL
+	suggests			'rabbitmq-server', '3.5.7', Flags.GREATER | Flags.EQUAL
 
 	user				'root'
 	permissionGroup		'root'

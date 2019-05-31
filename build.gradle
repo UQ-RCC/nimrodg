@@ -9,12 +9,13 @@ buildscript {
 }
 
 plugins {
-	id 'fr.brouillard.oss.gradle.jgitver' version '0.5.0'
+	id 'fr.brouillard.oss.gradle.jgitver' version '0.8.0'
 }
 
 jgitver {
 	useDistance true
 	useGitCommitID true
+	useDirty true
 }
 
 apply plugin: 'base'
