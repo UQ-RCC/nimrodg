@@ -21,6 +21,7 @@ package au.edu.uq.rcc.nimrodg.cli;
 
 import au.edu.uq.rcc.nimrodg.setup.SetupConfig;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
@@ -92,13 +93,8 @@ public final class IniSetupConfig implements SetupConfig {
 
 		Section _tx = IniUserConfig.requireSection(ini, "transfer");
 		_tx.putAll(envMap);
-		{
-			String uri = IniUserConfig.requireValue(_tx, "uri");
-			if(!uri.endsWith("/")) {
-				uri += "/";
-			}
-			this.txUri = URI.create(uri);
-		}
+
+		this.txUri = getTransferUri(IniUserConfig.requireValue(_tx, "uri"));
 		this.txCertPath = IniUserConfig.requireValue(_tx, "cert");
 		this.txNoVerifyPeer = Boolean.parseBoolean(IniUserConfig.requireValue(_tx, "no_verify_peer"));
 		this.txNoVerifyHost = Boolean.parseBoolean(IniUserConfig.requireValue(_tx, "no_verify_host"));
@@ -176,6 +172,25 @@ public final class IniSetupConfig implements SetupConfig {
 				return txNoVerifyHost;
 			}
 		};
+	}
+
+	private static URI getTransferUri(String uri) {
+		URI txUri = URI.create(uri);
+		String path = txUri.getPath();
+		if(path.endsWith("/")) {
+			return txUri;
+		}
+
+		try {
+			return new URI(
+					txUri.getScheme(), txUri.getUserInfo(),
+					txUri.getHost(), txUri.getPort(),
+					txUri.getPath() + "/",
+					txUri.getQuery(), txUri.getFragment()
+			);
+		} catch(URISyntaxException e) {
+			throw new IllegalArgumentException(e);
+		}
 	}
 
 	@Override
