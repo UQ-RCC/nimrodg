@@ -36,7 +36,7 @@ import au.edu.uq.rcc.nimrodg.api.Task;
 import au.edu.uq.rcc.nimrodg.api.utils.MsgUtils;
 import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledRun;
 import au.edu.uq.rcc.nimrodg.api.utils.run.RunBuilder;
-import au.edu.uq.rcc.nimrodg.master.AMQProcessor;
+import au.edu.uq.rcc.nimrodg.master.AMQProcessorImpl;
 import au.edu.uq.rcc.nimrodg.master.MessageQueueListener;
 import au.edu.uq.rcc.nimrodg.parsing.ANTLR4ParseAPIImpl;
 import java.awt.Color;
@@ -62,7 +62,7 @@ public class Controller {
 
 	private final AgentGUI m_View;
 
-	private AMQProcessor m_AMQP;
+	private AMQProcessorImpl m_AMQP;
 
 	private ReferenceAgent m_Agent;
 	private final _AgentListener m_AgentListener;
@@ -128,7 +128,7 @@ public class Controller {
 
 		SwingUtilities.invokeLater(() -> {
 			try {
-				m_AMQP = new AMQProcessor(new URI(uri), new Certificate[0], "TLSv1.2", m_View.getRoutingKey(), true, true, m_MessageBackend, new _MessageQueueListener(), ForkJoinPool.commonPool());
+				m_AMQP = new AMQProcessorImpl(new URI(uri), new Certificate[0], "TLSv1.2", m_View.getRoutingKey(), true, true, m_MessageBackend, new _MessageQueueListener(), ForkJoinPool.commonPool());
 				m_Logger.log(ILogger.Level.INFO, "Connected to %s", uri);
 
 				m_View.setConnectProgress(1.0f);

@@ -44,6 +44,10 @@ subprojects {
 		options.compilerArgs << '-Xlint:unchecked'
 		options.deprecation = true
 	}
+
+	test {
+		testLogging.showStandardStreams = true
+	}
 }
 
 allprojects {
