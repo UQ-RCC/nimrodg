@@ -291,6 +291,11 @@ public class DefaultAgentScheduler implements AgentScheduler {
 		List<Experiment> unassigned = new ArrayList<>();
 		filterCapable(ops, expMap, capMap, incapMap, unassigned);
 
+		if(capMap.isEmpty() && incapMap.isEmpty()) {
+			LOGGER.info("No resources assigned, cannot continue...");
+			return false;
+		}
+
 		/* For incapable resources, try to make them capable. */
 		{
 			/* We have an optimised list of what to actually do. Now do it. */
