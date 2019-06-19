@@ -62,6 +62,11 @@ import java.util.stream.Collectors;
 import javax.json.JsonValue;
 import org.junit.Test;
 import au.edu.uq.rcc.nimrodg.api.Resource;
+import au.edu.uq.rcc.nimrodg.master.AMQProcessorImpl;
+import au.edu.uq.rcc.nimrodg.master.Master;
+import au.edu.uq.rcc.nimrodg.master.sched.DefaultAgentScheduler;
+import au.edu.uq.rcc.nimrodg.master.sched.DefaultJobScheduler;
+import au.edu.uq.rcc.nimrodg.master.sched.JobScheduler;
 import java.util.AbstractMap;
 import java.util.HashSet;
 import java.util.Optional;
@@ -607,5 +612,26 @@ public abstract class APITests {
 		NimrodAPI api = getNimrod();
 		/* This will trigger postgres to batch jobs. */
 		Experiment exp = api.addExperiment("exp1", TestUtils.get250000Run());
+	}
+
+	@Test
+	public void masterTest() throws IOException, RunBuilder.RunfileBuildException, SubstitutionException, PlanfileParseException {
+		NimrodAPI api = getNimrod();
+
+		if(!api.getAPICaps().master) {
+			System.out.println("Implementation doesn't have master capabilities, skipping test...");
+			return;
+		}
+
+		Experiment exp = api.addExperiment("exp1", TestUtils.getSimpleSampleExperiment());
+
+		DummyAMQPProcessor amqp = new DummyAMQPProcessor("amq.queuename", "amqp.direct");
+		try(Master m = new Master((NimrodMasterAPI)api, exp, DefaultJobScheduler.FACTORY, DefaultAgentScheduler.FACTORY)) {
+			m.setAMQP(amqp);
+
+			while(m.tick()) {
+				;
+			}
+		}
 	}
 }
