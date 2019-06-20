@@ -623,10 +623,19 @@ public abstract class APITests {
 			return;
 		}
 
+		NimrodMasterAPI nimrod = (NimrodMasterAPI)api;
+
 		Experiment exp = api.addExperiment("exp1", TestUtils.getSimpleSampleExperiment());
 
+		TestUtils.createSampleResources(nimrod);
+
+		Resource res = nimrod.getResource("root");
+		Assert.assertNotNull(res);
+
+		nimrod.assignResource(res, exp);
+		
 		DummyAMQPProcessor amqp = new DummyAMQPProcessor("amq.queuename", "amqp.direct");
-		try(Master m = new Master((NimrodMasterAPI)api, exp, DefaultJobScheduler.FACTORY, DefaultAgentScheduler.FACTORY)) {
+		try(Master m = new Master(nimrod, exp, DefaultJobScheduler.FACTORY, DefaultAgentScheduler.FACTORY)) {
 			m.setAMQP(amqp);
 
 			while(m.tick()) {
