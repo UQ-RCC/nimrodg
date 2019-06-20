@@ -22,12 +22,14 @@ package au.edu.uq.rcc.nimrodg.impl.base.db;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import java.io.StringReader;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.Optional;
 import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
@@ -202,5 +204,34 @@ public class DBUtils {
 		}
 
 		return ((JsonString)v).getString();
+	}
+
+	public static Optional<NimrodURI> getAssignmentStateUri(ResultSet rs) throws SQLException {
+		NimrodURI nuri = DBUtils.getPrefixedNimrodUri(rs, "tx_");
+		if(nuri == null) {
+			return Optional.empty();
+		}
+
+		String workDir = rs.getString("work_dir");
+		if(workDir != null) {
+			URI uri;
+			try {
+				uri = new URI(
+						nuri.uri.getScheme(),
+						nuri.uri.getUserInfo(),
+						nuri.uri.getHost(),
+						nuri.uri.getPort(),
+						nuri.uri.getPath() + workDir,
+						nuri.uri.getQuery(),
+						null
+				);
+			} catch(URISyntaxException e) {
+				throw new RuntimeException(e);
+			}
+
+			return Optional.of(NimrodURI.create(uri, nuri.certPath, nuri.noVerifyPeer, nuri.noVerifyHost));
+		} else {
+			return Optional.of(nuri);
+		}
 	}
 }

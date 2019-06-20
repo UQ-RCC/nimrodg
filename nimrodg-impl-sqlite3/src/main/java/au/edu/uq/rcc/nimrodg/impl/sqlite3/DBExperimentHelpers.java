@@ -350,6 +350,10 @@ public class DBExperimentHelpers extends DBBaseHelper {
 				reservedVars.stream()
 		).toArray(String[]::new);
 
+		if(!workDir.endsWith("/")) {
+			workDir = workDir + "/";
+		}
+
 		long expId = addExperiment(name, workDir, fileToken);
 
 		/* Add the variables and build a lookup table. */

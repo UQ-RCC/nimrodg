@@ -181,6 +181,11 @@ BEGIN
 		_file_token := _generate_random_token(32);
 	END IF;
 
+	/* Ensure work_dir is a directory. */
+	iF _work_dir NOT LIKE '%/' THEN
+		_work_dir := _work_dir || '/';
+	END IF;
+
 	/* Add the experiments */
 	INSERT INTO nimrod_experiments(name, work_dir, file_token, path)
 	VALUES(_name, _work_dir, _file_token, _name)

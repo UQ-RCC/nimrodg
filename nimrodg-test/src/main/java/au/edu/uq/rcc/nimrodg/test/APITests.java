@@ -523,6 +523,9 @@ public abstract class APITests {
 
 		Experiment exp1 = api.addExperiment("exp1", TestUtils.getSimpleSampleExperiment());
 
+		/* Ensure we're a directory. */
+		Assert.assertTrue(exp1.getWorkingDirectory().endsWith("/"));
+
 		Resource res = api.addResource("test1", "dummy", JsonValue.EMPTY_JSON_OBJECT, null,
 				NimrodURI.create(URI.create("file:///path/to/storage/root/"), null, null, null)
 		);
@@ -572,6 +575,32 @@ public abstract class APITests {
 			Assert.assertEquals(expUri, txUri.uri.normalize());
 
 			api.unassignResource(res2, exp1);
+		}
+
+		Resource res3 = api.addResource("test3", "dummy", JsonValue.EMPTY_JSON_OBJECT, null,
+				NimrodURI.create(URI.create("file:///path/to/storage/root/?key1=val1&key2=val2"), null, null, null)
+		);
+
+		/* Test assignment with query, with no  custom mapping */
+		{
+			api.assignResource(res3, exp1);
+			Optional<NimrodURI> uri = api.getAssignmentStatus(res3, exp1);
+
+			Assert.assertTrue(uri.isPresent());
+			Assert.assertEquals(URI.create("file:/path/to/storage/root/exp1/?key1=val1&key2=val2"), uri.get().uri);
+		}
+
+		Resource res4 = api.addResource("test4", "dummy", JsonValue.EMPTY_JSON_OBJECT, null,
+				NimrodURI.create(URI.create("file:///path/to/storage/root/?key1=val1&key2=val2"), null, null, null)
+		);
+
+		{
+			URI assUri = URI.create("file:///some/other/path/to/root/?with_parameters=1&more_parameters=yes");
+			api.assignResource(res4, exp1, Optional.ofNullable(NimrodURI.create(assUri, null, null, null)));
+			Optional<NimrodURI> uri = api.getAssignmentStatus(res4, exp1);
+
+			Assert.assertTrue(uri.isPresent());
+			Assert.assertEquals(assUri, uri.get().uri);
 		}
 	}
 
