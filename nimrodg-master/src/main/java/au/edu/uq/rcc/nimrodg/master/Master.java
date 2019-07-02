@@ -374,11 +374,9 @@ public class Master implements MessageQueueListener, AutoCloseable {
 				EnumSet.of(JobAttempt.Status.NOT_RUN, JobAttempt.Status.RUNNING)
 		);
 
-		activeAttempts.entrySet().forEach(je -> je.getValue().forEach(att -> {
-			if(runningJobs.containsKey(att.getUUID())) {
-				return;
-			}
-
+		activeAttempts.entrySet().stream().forEach(je -> je.getValue().stream()
+				.filter(att -> att.getStatus() == JobAttempt.Status.RUNNING && !runningJobs.containsKey(att.getAgentUUID()))
+				.forEach(att -> {
 			AgentInfo ai = allAgents.get(att.getAgentUUID());
 			/* If there's no agent associated, something screwy's going on. Fail the attempt and let it reschedule. */
 			if(ai == null) {
