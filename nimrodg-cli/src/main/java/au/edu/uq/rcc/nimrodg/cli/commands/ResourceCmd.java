@@ -121,7 +121,6 @@ public class ResourceCmd extends NimrodCLICommand {
 		}
 
 		api.addResource(name, type, cfg, getUri(args, "amqp_"), getUri(args, "tx_"));
-		out.printf("Successfully added resource '%s'.\n", name);
 		return 0;
 	}
 
@@ -136,7 +135,6 @@ public class ResourceCmd extends NimrodCLICommand {
 		}
 
 		api.deleteResource(node);
-		out.printf("Resource '%s' removed successfully.", path);
 		return 0;
 	}
 

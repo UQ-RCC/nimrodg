@@ -42,15 +42,11 @@ public class DelExp  extends NimrodCLICommand  {
 		String expName = args.getString("exp_name");
 
 		Experiment exp = nimrod.getExperiment(expName);
-		if(exp == null) {
-			out.printf("No such experiment '%s'.\n", expName);
-		} else {
+		if(exp != null) {
 			nimrod.deleteExperiment(exp);
-			out.printf("Experiment '%s' deleted.\n", expName);
 		}
 
 		return 0;
-
 	}
 
 	public static final CommandEntry DEFINITION = new CommandEntry(new DelExp(), "Delete an experiment and all associated data from the database.") {

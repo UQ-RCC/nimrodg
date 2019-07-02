@@ -72,9 +72,6 @@ public class AddExp extends NimrodCLICommand {
 			throw new NimrodAPIException(e);
 		}
 
-		out.printf("Successfully compiled planfile:\n");
-		out.printf("  %d variables, %d jobs, %d tasks\n", rf.numVariables, rf.numJobs, rf.numTasks);
-
 		/* Now add it */
 		Experiment exp = nimrod.getExperiment(expName);
 		if(exp != null) {
@@ -82,12 +79,7 @@ public class AddExp extends NimrodCLICommand {
 			return 1;
 		}
 
-		exp = nimrod.addExperiment(expName, rf);
-		out.printf(
-				"Added experiment '%s'. Please place any files into %s.\n",
-				exp.getName(),
-				Paths.get(nimrod.getConfig().getRootStore()).resolve(exp.getWorkingDirectory())
-		);
+		nimrod.addExperiment(expName, rf);
 		return 0;
 	}
 
