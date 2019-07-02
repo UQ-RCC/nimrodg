@@ -36,7 +36,9 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.json.Json;
 import javax.json.JsonObject;
@@ -63,10 +65,10 @@ public class OpenSSHClient implements RemoteShell {
 	private final String[] closeArgs;
 
 	public OpenSSHClient(URI uri, Path workDir) throws IOException {
-		this(uri, workDir, DEFAULT_PRIVATE_KEY, DEFAULT_EXECUTABLE);
+		this(uri, workDir, DEFAULT_PRIVATE_KEY, DEFAULT_EXECUTABLE, Map.of());
 	}
 
-	public OpenSSHClient(URI uri, Path workDir, Optional<Path> privateKey, Optional<Path> executable) throws IOException {
+	public OpenSSHClient(URI uri, Path workDir, Optional<Path> privateKey, Optional<Path> executable, Map<String, String> opts) throws IOException {
 		this.uri = uri;
 		this.privateKey = privateKey;
 
@@ -74,14 +76,24 @@ public class OpenSSHClient implements RemoteShell {
 
 		Path socketPath = workDir.resolve(String.format("ssh-control-%d", (long)uri.hashCode() & 0xFFFFFFFFL));
 
-		List<String> commonArgs = List.of(
+		if(opts.keySet().stream().anyMatch(k -> !k.matches("^[a-zA-Z0-9]+$"))) {
+			throw new IllegalArgumentException("invalid custom option key");
+		}
+
+		if(opts.values().stream().anyMatch(v -> !v.matches("^[a-zA-Z0-9.-_@/]+$"))) {
+			throw new IllegalArgumentException("invalid custom option value");
+		}
+
+		/* Option order always takes precedence, so use ours first. */
+		List<String> commonArgs = Stream.concat(Stream.of(
 				"-q",
-				"-o", "PasswordAuthentication=no",
-				"-o", "StrictHostKeyChecking=no",
-				"-o", "ControlMaster=auto",
-				"-o", "ControlPersist=yes",
-				"-o", String.format("ControlPath=%s", socketPath)
-		);
+				"-oPasswordAuthentication=no",
+				"-oBatchMode=yes",
+				"-oControlMaster=auto",
+				"-oControlPersist=yes",
+				String.format("-oControlPath=%s", socketPath)
+		), opts.entrySet().stream().map(e -> String.format("-o%s=%s", e.getKey(), e.getValue())))
+				.collect(Collectors.toList());
 
 		ArrayList<String> ssh = new ArrayList<>();
 		ssh.add(this.executable.toString());
@@ -249,7 +261,7 @@ public class OpenSSHClient implements RemoteShell {
 				throw new IOException("No URI provided.");
 			}
 
-			return new OpenSSHClient(cfg.uri.get(), workDir, cfg.privateKey, cfg.executablePath);
+			return new OpenSSHClient(cfg.uri.get(), workDir, cfg.privateKey, cfg.executablePath, Map.of());
 		}
 
 		@Override

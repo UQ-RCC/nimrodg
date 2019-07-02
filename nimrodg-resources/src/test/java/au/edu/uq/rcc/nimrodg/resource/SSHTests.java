@@ -44,6 +44,7 @@ import java.security.KeyPair;
 import java.security.PublicKey;
 import java.time.Instant;
 import java.util.EnumSet;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.junit.Assert;
@@ -90,7 +91,7 @@ public class SSHTests {
 			return;
 		}
 
-		try(OpenSSHClient client = new OpenSSHClient(uri, tmpDir.getRoot().toPath(), Optional.of(keyPath), Optional.of(openSsh))) {
+		try(OpenSSHClient client = new OpenSSHClient(uri, tmpDir.getRoot().toPath(), Optional.of(keyPath), Optional.of(openSsh), Map.of("StrictHostKeyChecking", "no"))) {
 			testClient(client);
 		}
 	}
