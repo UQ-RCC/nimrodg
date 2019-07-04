@@ -895,7 +895,7 @@ public class DBExperimentHelpers extends DBBaseHelper {
 	public List<TempJobAttempt> filterJobAttemptsByExperiment(long expId, EnumSet<JobAttempt.Status> status) throws SQLException {
 		qFilterJobAttemptsByExperiment.setLong(1, expId);
 		List<TempJobAttempt> atts = new ArrayList<>();
-		try(ResultSet rs = qGetJobAttempts.executeQuery()) {
+		try(ResultSet rs = qFilterJobAttemptsByExperiment.executeQuery()) {
 			while(rs.next()) {
 				TempJobAttempt att = attemptFromRow(rs);
 				if(status.contains(att.status)) {
