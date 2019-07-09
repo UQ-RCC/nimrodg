@@ -22,12 +22,14 @@ package au.edu.uq.rcc.nimrodg.rest;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPIFactory;
 import au.edu.uq.rcc.nimrodg.setup.UserConfig;
+import au.edu.uq.rcc.nimrodg.swagger.api.SwApplication;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import javax.inject.Singleton;
 import javax.ws.rs.core.GenericType;
 import org.apache.catalina.Context;
@@ -131,6 +133,15 @@ public class RESTService implements AutoCloseable {
 			m_Context.addServletMappingDecoded("/dav/*", "nimrodg-dav");
 		}
 
+		{
+			//Wrapper swagw = new Tomcat.ExistingStandardWrapper(new RestApplication().getClasses());
+			Set<Class<?>> classes = new SwApplication().getClasses();
+			classes.add(MOXYContextResolver.class);
+			Wrapper swagw = new Tomcat.ExistingStandardWrapper(new ServletContainer(new ResourceConfig(classes)));
+			swagw.setName("nimrodg-swagger");
+			m_Context.addChild(swagw);
+			m_Context.addServletMappingDecoded("/v1/*", "nimrodg-swagger");
+		}
 		m_Context.setResources(new NimrodResourceRoot("", nimrodHome.resolve("experiments")));
 
 		m_Connector = new Connector("HTTP/1.1");

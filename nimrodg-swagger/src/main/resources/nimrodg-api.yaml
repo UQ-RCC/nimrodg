@@ -1,0 +1,419 @@
+openapi: "3.0.0"
+info:
+  description: "This is a sample server Petstore server.  You can find out more about     Swagger at [http://swagger.io](http://swagger.io) or on [irc.freenode.net, #swagger](http://swagger.io/irc/).      For this sample, you can use the api key `special-key` to test the authorization     filters."
+  version: "1.0.0"
+  title: "Nimrod/G Client API"
+  license:
+    name: "Apache 2.0"
+    url: "http://www.apache.org/licenses/LICENSE-2.0.html"
+tags: []
+paths:
+  /agent:
+    get:
+      summary: "Lookup all available agent definitions"
+      operationId: "lookupAgents"
+      responses:
+        200:
+          description: "successful operation"
+          content:
+            application/json:
+              schema:
+                type: "object"
+                additionalProperties:
+                  $ref: "#/components/schemas/AgentInfo"
+  /agent/platform/{platform}:
+    get:
+      summary: "Lookup an agent by its platform"
+      operationId: "lookupAgentByPlatform"
+      parameters:
+      - in: "path"
+        name: "platform"
+        description: "The agent's platform string"
+        required: true
+        schema:
+          type: "string"
+      responses:
+        200:
+          description: "successful operation"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentInfo"
+        404:
+          description: "unknown platform"
+  /agent/posix/{system}/{machine}:
+    get:
+      summary: "Lookup an agent by its POSIX (system, machine) tuple"
+      operationId: "lookupAgentByPosix"
+      parameters:
+      - in: "path"
+        name: "system"
+        description: "The system (uname -s)"
+        required: true
+        schema:
+          type: "string"
+      - in: "path"
+        name: "machine"
+        description: "The machine (uname -m)"
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: "successful operation"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentInfo"
+        404:
+          description: "unknown tuple"
+  /config:
+    get:
+      summary: ""
+      operationId: "getConfig"
+      responses:
+        200:
+          description: "successful operation"
+          content:
+            application/json:
+              schema:
+                  $ref: "#/components/schemas/NimrodConfig"
+    # NB: Not using PATCH as the Nimrod API doesn't support updating single components
+    put:
+      summary: ""
+      operationId: "updateConfig"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NimrodConfig"
+      responses:
+        204:
+          description: "successful operation"
+        405:
+          description: "Invalid input"
+  /experiments:
+    get:
+      summary: "Get all experiments"
+      operationId: getExperiments
+      responses:
+        200:
+          description: "successful operation"
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  $ref: "#/components/schemas/Experiment"
+    post:
+      summary: "Create an experiment"
+      operationId: addExperiment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Experiment"
+      responses:
+        201:
+          description: "experiment was created successfully"
+          links:
+            getExperiment:
+              operationId: getExperiment
+              parameters:
+                name: "$request.body#/name"
+        404:
+          description: "experiment not found"
+        409:
+          description: "an experiment with that name already exists"
+  /experiments/{name}:
+    get:
+      summary: "Get an experiment"
+      operationId: getExperiment
+      parameters:
+        - in: path
+          name: name
+          description: The experiment name
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: "experiment was retrieved successfuly"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Experiment"
+        404:
+          description: "experiment does not exist"
+    delete:
+      summary: "Delete an experiment"
+      operationId: deleteExperiment
+      parameters:
+        - in: path
+          name: name
+          description: The experiment name
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: "experiment deleted successfully"
+        404:
+          description: "experiment not found"
+    post:
+      summary: "Create an experiment"
+      operationId: addSpecificExperiment
+      parameters:
+        - in: path
+          name: name
+          description: The experiment name
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Experiment"
+      responses:
+        201:
+          description: "experiment was created successfully"
+          links:
+            getExperiment:
+              operationId: getExperiment
+              parameters:
+                name: "$request.path.name"
+        409:
+          description: "an experiment with that name already exists"
+components:
+  schemas:
+    Identifier:
+      type: string
+      pattern: '^[a-zA-Z0-9_]+$'
+    VariableIdentifier:
+      type: string
+      pattern: '^[a-zA-Z_](?:[a-zA-Z0-9_])*$'
+    AgentInfo:
+      type: object
+      properties:
+        platform_string:
+          type: string
+        path:
+          type: string
+        posix_mappings:
+          type: array
+          items:
+            type: object
+            properties:
+              system:
+                type: string
+              machine:
+                type: string
+            required:
+              - system
+              - machine
+      required:
+        - platform_string
+        - path
+        - posix_mappings
+    NimrodURI:
+      type: object
+      properties:
+        uri:
+          type: string
+          format: uri
+        cert_path:
+          type: string
+        no_verify_peer:
+          type: boolean
+        no_verify_host:
+          type: boolean
+      required:
+        - uri
+        - cert_path
+        - no_verify_peer
+        - no_verify_host
+    NimrodConfig:
+      type: object
+      properties:
+        work_dir:
+          type: string
+        store_dir:
+          type: string
+        amqp:
+          $ref: "#/components/schemas/NimrodURI"
+        tx:
+          $ref: "#/components/schemas/NimrodURI"
+      required:
+        - work_dir
+        - store_dir
+        - amqp
+        - tx
+
+    ##### FROM compiled.run.json
+    Substitution:
+      type: object
+      properties:
+        name:
+          $ref: "#/components/schemas/VariableIdentifier"
+        start:
+          type: integer
+          minimum: 0
+        end:
+          type: integer
+          minimum: 0
+        relative:
+          type: integer
+          minimum: 0
+      required:
+        - name
+        - start
+        - end
+        - relative
+    Argument:
+      type: object
+      properties:
+        text:
+          type: string
+        substitutions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Substitution"
+      required:
+        - text
+        - substitutions
+    NormalisedCommand:
+      type: object
+      properties:
+        type:
+          enum: [onerror, copy, exec]
+        arguments:
+          type: array
+          items:
+            $ref: "#/components/schemas/Argument"
+          minItems: 1
+      required:
+        - type
+        - arguments
+    OnerrorCommand:
+      type: object
+      properties:
+        type:
+          enum: [onerror]
+        action:
+          enum: [fail, ignore]
+      required:
+        - type
+        - action
+    CopyContext:
+      enum: [root, node]
+    CopyCommand:
+      type: object
+      properties:
+        type:
+          enum: [copy]
+        source_context:
+          $ref: "#/components/schemas/CopyContext"
+        source_path:
+          $ref: "#/components/schemas/Argument"
+        destination_context:
+          $ref: "#/components/schemas/CopyContext"
+        destination_path:
+          $ref: "#/components/schemas/Argument"
+      required:
+        - type
+        - source_context
+        - source_path
+        - destination_context
+        - destination_path
+    ExecCommand:
+      type: object
+      properties:
+        type:
+          enum: [exec]
+        program:
+          type: string
+        search_path:
+          type: boolean
+        arguments:
+          type: array
+          items:
+            $ref: "#/components/schemas/Argument"
+          minItems: 1
+      required:
+        - program
+        - search_path
+        - type
+        - arguments
+    Command:
+      oneOf:
+        #- $ref: "#/components/schemas/NormalisedCommand"
+        - $ref: "#/components/schemas/OnerrorCommand"
+        - $ref: "#/components/schemas/CopyCommand"
+        - $ref: "#/components/schemas/ExecCommand"
+    Task:
+      type: array
+      items:
+        $ref: "#/components/schemas/Command"
+      minItems: 1
+    ##### END compiled.run.json
+
+
+    Experiment:
+      type: object
+      properties:
+        name:
+          $ref: "#/components/schemas/Identifier"
+        state:
+          type: string
+          enum: [STOPPED, STARTED, PERSISTENT]
+          readOnly: true
+        working_directory:
+          type: string
+          readOnly: true
+        creation_time:
+          type: string
+          format: date-time
+          readOnly: true
+        variables:
+          type: array
+          items:
+             $ref: "#/components/schemas/VariableIdentifier"
+          uniqueItems: true
+        tasks:
+          type: object
+          properties:
+            nodestart:
+              $ref: "#/components/schemas/Task"
+            main:
+              $ref: "#/components/schemas/Task"
+          required:
+            - main
+        token:
+          type: string
+          readOnly: true
+        is_persistent:
+          type: boolean
+          readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+      required:
+        - name
+        - state
+        - working_directory
+        - creation_time
+        - variables
+        - token
+        - is_persistent
+        - is_active
+    PropertyList:
+      type: "object"
+      additionalProperties:
+        type: string
+externalDocs:
+  description: "Find out more about Swagger"
+  url: "http://swagger.io"
