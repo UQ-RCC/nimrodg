@@ -21,7 +21,7 @@ package au.edu.uq.rcc.nimrodg.resource.cluster.slurm;
 
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.resource.ssh.SSHClient;
-import au.edu.uq.rcc.nimrodg.resource.cluster.BatchedClusterResourceType.BatchedClusterConfig;
+import au.edu.uq.rcc.nimrodg.resource.cluster.ClusterResourceType.BatchedClusterConfig;
 import au.edu.uq.rcc.nimrodg.resource.ssh.RemoteShell;
 import java.io.IOException;
 import java.security.cert.Certificate;
@@ -31,9 +31,9 @@ import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import au.edu.uq.rcc.nimrodg.api.Resource;
-import au.edu.uq.rcc.nimrodg.resource.cluster.BatchedClusterActuator;
+import au.edu.uq.rcc.nimrodg.resource.cluster.ClusterActuator;
 
-public class SLURMActuator extends BatchedClusterActuator<BatchedClusterConfig> {
+public class SLURMActuator extends ClusterActuator<BatchedClusterConfig> {
 
 	private static final Logger LOGGER = LogManager.getLogger(SLURMActuator.class);
 

@@ -23,7 +23,7 @@ import au.edu.uq.rcc.nimrodg.api.Actuator;
 import java.io.IOException;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.resource.cluster.BatchDialect;
-import au.edu.uq.rcc.nimrodg.resource.cluster.BatchedClusterResourceType;
+import au.edu.uq.rcc.nimrodg.resource.cluster.ClusterResourceType;
 import java.security.cert.Certificate;
 import java.util.Arrays;
 import java.util.List;
@@ -31,7 +31,7 @@ import javax.json.JsonArray;
 import javax.json.JsonString;
 import au.edu.uq.rcc.nimrodg.api.Resource;
 
-public class PBSResourceType extends BatchedClusterResourceType {
+public class PBSResourceType extends ClusterResourceType {
 
 	protected PBSResourceType(String name, String displayName, BatchDialect dialect) {
 		super(name, displayName, "pbsargs", dialect);

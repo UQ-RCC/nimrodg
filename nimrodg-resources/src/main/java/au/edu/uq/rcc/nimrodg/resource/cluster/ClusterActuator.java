@@ -24,7 +24,7 @@ import au.edu.uq.rcc.nimrodg.agent.AgentState;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.api.ResourceFullException;
 import au.edu.uq.rcc.nimrodg.resource.act.ActuatorUtils;
-import au.edu.uq.rcc.nimrodg.resource.cluster.BatchedClusterResourceType.BatchedClusterConfig;
+import au.edu.uq.rcc.nimrodg.resource.cluster.ClusterResourceType.BatchedClusterConfig;
 import au.edu.uq.rcc.nimrodg.resource.ssh.RemoteShell;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -44,7 +44,7 @@ import javax.json.JsonNumber;
 import javax.json.JsonObject;
 import javax.json.JsonString;
 
-public abstract class BatchedClusterActuator<C extends BatchedClusterConfig> extends POSIXActuator<C> {
+public abstract class ClusterActuator<C extends BatchedClusterConfig> extends POSIXActuator<C> {
 
 	protected static class TempBatch {
 
@@ -84,7 +84,7 @@ public abstract class BatchedClusterActuator<C extends BatchedClusterConfig> ext
 
 	protected final ConcurrentHashMap<UUID, Batch> jobNames;
 
-	public BatchedClusterActuator(Operations ops, Resource node, NimrodURI amqpUri, Certificate[] certs, C cfg) throws IOException {
+	public ClusterActuator(Operations ops, Resource node, NimrodURI amqpUri, Certificate[] certs, C cfg) throws IOException {
 		super(ops, node, amqpUri, certs, cfg);
 		this.jobNames = new ConcurrentHashMap<>();
 	}

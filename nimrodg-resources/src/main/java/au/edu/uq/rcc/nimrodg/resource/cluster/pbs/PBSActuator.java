@@ -22,8 +22,8 @@ package au.edu.uq.rcc.nimrodg.resource.cluster.pbs;
 import java.io.IOException;
 import java.security.cert.Certificate;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
-import au.edu.uq.rcc.nimrodg.resource.cluster.BatchedClusterActuator;
-import au.edu.uq.rcc.nimrodg.resource.cluster.BatchedClusterResourceType.BatchedClusterConfig;
+import au.edu.uq.rcc.nimrodg.resource.cluster.ClusterActuator;
+import au.edu.uq.rcc.nimrodg.resource.cluster.ClusterResourceType.BatchedClusterConfig;
 import au.edu.uq.rcc.nimrodg.resource.ssh.RemoteShell;
 import java.util.UUID;
 import org.apache.logging.log4j.LogManager;
@@ -31,7 +31,7 @@ import org.apache.logging.log4j.Logger;
 import au.edu.uq.rcc.nimrodg.api.Resource;
 import au.edu.uq.rcc.nimrodg.resource.ssh.SSHClient;
 
-public class PBSActuator extends BatchedClusterActuator<BatchedClusterConfig> {
+public class PBSActuator extends ClusterActuator<BatchedClusterConfig> {
 
 	private static final Logger LOGGER = LogManager.getLogger(PBSActuator.class);
 

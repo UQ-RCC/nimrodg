@@ -22,7 +22,7 @@ package au.edu.uq.rcc.nimrodg.resource;
 import au.edu.uq.rcc.nimrodg.api.Actuator;
 import java.io.IOException;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
-import au.edu.uq.rcc.nimrodg.resource.cluster.BatchedClusterResourceType;
+import au.edu.uq.rcc.nimrodg.resource.cluster.ClusterResourceType;
 import java.security.cert.Certificate;
 import java.util.Arrays;
 import java.util.List;
@@ -32,7 +32,7 @@ import au.edu.uq.rcc.nimrodg.api.Resource;
 import au.edu.uq.rcc.nimrodg.resource.cluster.slurm.SLURMActuator;
 import au.edu.uq.rcc.nimrodg.resource.cluster.slurm.SLURMDialect;
 
-public final class SLURMResourceType extends BatchedClusterResourceType {
+public final class SLURMResourceType extends ClusterResourceType {
 
 	public SLURMResourceType() {
 		super("slurm", "SLURM", "slurmargs", new SLURMDialect());

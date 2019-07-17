@@ -43,14 +43,14 @@ import javax.json.JsonArray;
 import javax.json.JsonString;
 import javax.json.JsonStructure;
 
-public abstract class BatchedClusterResourceType extends SSHResourceType {
+public abstract class ClusterResourceType extends SSHResourceType {
 
 	protected static final Pattern BATCH_RESOURCE_PATTERN = Pattern.compile("^([\\w-]+):(.+)$");
 
 	public final String argsName;
 	protected final BatchDialect dialect;
 
-	public BatchedClusterResourceType(String name, String displayName, String argsName, BatchDialect dialect) {
+	public ClusterResourceType(String name, String displayName, String argsName, BatchDialect dialect) {
 		super(name, displayName);
 		this.argsName = argsName;
 		this.dialect = dialect;
