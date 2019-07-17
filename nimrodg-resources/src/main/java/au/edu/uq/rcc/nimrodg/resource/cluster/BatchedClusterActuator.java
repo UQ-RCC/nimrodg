@@ -38,12 +38,13 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import au.edu.uq.rcc.nimrodg.api.Resource;
+import au.edu.uq.rcc.nimrodg.resource.act.POSIXActuator;
 import javax.json.Json;
 import javax.json.JsonNumber;
 import javax.json.JsonObject;
 import javax.json.JsonString;
 
-public abstract class BatchedClusterActuator<C extends BatchedClusterConfig> extends ClusterActuator<C> {
+public abstract class BatchedClusterActuator<C extends BatchedClusterConfig> extends POSIXActuator<C> {
 
 	protected static class TempBatch {
 
@@ -88,6 +89,12 @@ public abstract class BatchedClusterActuator<C extends BatchedClusterConfig> ext
 		this.jobNames = new ConcurrentHashMap<>();
 	}
 
+	/**
+	 * Apply the submission arguments to the job script.
+	 *
+	 * @param sb The submission script. This is just after the crunchbang.
+	 * @param uuids The list of UUIDs being submitted.
+	 */
 	private void applySubmissionArguments(StringBuilder sb, UUID[] uuids) {
 		String[] args = config.dialect.buildSubmissionArguments(uuids.length, config.batchConfig, config.submissionArgs);
 		applyBatchedSubmissionArguments(sb, uuids, args);

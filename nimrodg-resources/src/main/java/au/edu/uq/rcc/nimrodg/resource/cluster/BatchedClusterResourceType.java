@@ -38,43 +38,82 @@ import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.Namespace;
 import au.edu.uq.rcc.nimrodg.api.Resource;
+import au.edu.uq.rcc.nimrodg.resource.SSHResourceType;
+import javax.json.JsonArray;
+import javax.json.JsonString;
+import javax.json.JsonStructure;
 
-public abstract class BatchedClusterResourceType extends ClusterResourceType {
+public abstract class BatchedClusterResourceType extends SSHResourceType {
 
 	protected static final Pattern BATCH_RESOURCE_PATTERN = Pattern.compile("^([\\w-]+):(.+)$");
 
+	public final String argsName;
 	protected final BatchDialect dialect;
 
 	public BatchedClusterResourceType(String name, String displayName, String argsName, BatchDialect dialect) {
-		super(name, displayName, argsName);
+		super(name, displayName);
+		this.argsName = argsName;
 		this.dialect = dialect;
 	}
 
+	protected boolean validateSubmissionArgs(JsonArray ja, List<String> errors) {
+		return true;
+	}
+
 	@Override
-	protected void buildParserBeforeSubmissionArgs(ArgumentParser argparser) {
-		super.buildParserBeforeSubmissionArgs(argparser);
-		argparser.addArgument("--max-batch-size")
+	protected boolean validateConfiguration(AgentProvider ap, JsonStructure _cfg, List<String> errors) {
+		boolean valid = super.validateConfiguration(ap, _cfg, errors);
+		return validateSubmissionArgs(_cfg.asJsonObject().getJsonArray(argsName), errors) && valid;
+	}
+
+	@Override
+	protected void addArguments(ArgumentParser parser) {
+		super.addArguments(parser);
+
+		parser.addArgument("--limit")
+				.type(Integer.class)
+				.help("The node's agent limit.")
+				.required(true);
+
+		parser.addArgument("--tmpvar")
+				.type(String.class)
+				.help("The environment variable that contains the working directory of the job.")
+				.setDefault("TMPDIR");
+
+		parser.addArgument("--max-batch-size")
 				.dest("max_batch_size")
 				.type(Integer.class)
 				.help("The maximum size of a batch of agents.")
 				.setDefault(10);
 
-		argparser.addArgument("--add-batch-res-static")
+		parser.addArgument("--add-batch-res-static")
 				.dest("batch_resource_static")
 				.type(String.class)
 				.action(Arguments.append())
 				.help("Add a static batch resource.");
 
-		argparser.addArgument("--add-batch-res-scale")
+		parser.addArgument("--add-batch-res-scale")
 				.dest("batch_resource_scale")
 				.type(String.class)
 				.action(Arguments.append())
 				.help("Add a scalable batch resource.");
+
+		parser.addArgument(argsName)
+				.help(String.format("%s submission arguments.", displayName))
+				.nargs("*");
 	}
 
 	@Override
 	protected boolean parseArguments(AgentProvider ap, Namespace ns, PrintStream out, PrintStream err, JsonObjectBuilder jb) {
 		boolean valid = super.parseArguments(ap, ns, out, err, jb);
+
+		jb.add("tmpvar", ns.getString("tmpvar"));
+		jb.add(argsName, Json.createArrayBuilder(ns.getList(argsName)).build());
+
+		Integer limit = ns.getInt("limit");
+		if(limit != null) {
+			jb.add("limit", limit);
+		}
 
 		jb.add("max_batch_size", ns.getInt("max_batch_size"));
 
@@ -124,10 +163,16 @@ public abstract class BatchedClusterResourceType extends ClusterResourceType {
 	}
 
 	@Override
-	protected final Actuator createActuator(Actuator.Operations ops, Resource node, NimrodURI amqpUri, Certificate[] certs, ClusterConfig ccfg) throws IOException {
+	protected Actuator createActuator(Actuator.Operations ops, Resource node, NimrodURI amqpUri, Certificate[] certs, SSHConfig sshCfg) throws IOException {
 		JsonObject cfg = node.getConfig().asJsonObject();
+		JsonString _tmpVar = cfg.getJsonString("tmpvar");
+		String tmpVar = _tmpVar == null ? "TMPDIR" : _tmpVar.getString();
+
 		return createActuator(ops, node, amqpUri, certs, new BatchedClusterConfig(
-				ccfg,
+				sshCfg,
+				cfg.getInt("limit"),
+				tmpVar,
+				cfg.getJsonArray(argsName).stream().map(a -> ((JsonString)a).getString()).toArray(String[]::new),
 				cfg.getInt("max_batch_size"),
 				dialect,
 				cfg.getJsonArray("batch_config").stream().map(v -> v.asJsonObject()).toArray(JsonObject[]::new)
@@ -136,21 +181,27 @@ public abstract class BatchedClusterResourceType extends ClusterResourceType {
 
 	protected abstract Actuator createActuator(Actuator.Operations ops, Resource node, NimrodURI amqpUri, Certificate[] certs, BatchedClusterConfig ccfg) throws IOException;
 
-	public static class BatchedClusterConfig extends ClusterConfig {
+	public static class BatchedClusterConfig extends SSHConfig {
 
+		public final int limit;
+		public final String tmpVar;
+		public final String[] submissionArgs;
 		public final int maxBatchSize;
 		public final BatchDialect dialect;
 		public final JsonObject[] batchConfig;
 
-		public BatchedClusterConfig(ClusterConfig cfg, int maxBatchSize, BatchDialect dialect, JsonObject[] batchConfig) {
-			super(cfg);
+		public BatchedClusterConfig(SSHConfig ssh, int limit, String tmpVar, String[] submissionArgs, int maxBatchSize, BatchDialect dialect, JsonObject[] batchConfig) {
+			super(ssh);
+			this.limit = limit;
+			this.tmpVar = tmpVar;
+			this.submissionArgs = Arrays.copyOf(submissionArgs, submissionArgs.length);
 			this.maxBatchSize = maxBatchSize;
 			this.dialect = dialect;
 			this.batchConfig = Arrays.copyOf(batchConfig, batchConfig.length);
 		}
 
 		public BatchedClusterConfig(BatchedClusterConfig cfg) {
-			this(cfg, cfg.maxBatchSize, cfg.dialect, cfg.batchConfig);
+			this(cfg, cfg.limit, cfg.tmpVar, cfg.submissionArgs, cfg.maxBatchSize, cfg.dialect, cfg.batchConfig);
 		}
 	}
 }
