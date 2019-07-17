@@ -88,8 +88,7 @@ public abstract class BatchedClusterActuator<C extends BatchedClusterConfig> ext
 		this.jobNames = new ConcurrentHashMap<>();
 	}
 
-	@Override
-	protected final void applySubmissionArguments(StringBuilder sb, UUID[] uuids) {
+	private void applySubmissionArguments(StringBuilder sb, UUID[] uuids) {
 		String[] args = config.dialect.buildSubmissionArguments(uuids.length, config.batchConfig, config.submissionArgs);
 		applyBatchedSubmissionArguments(sb, uuids, args);
 	}
@@ -294,5 +293,10 @@ public abstract class BatchedClusterActuator<C extends BatchedClusterConfig> ext
 		jobNames.putIfAbsent(state.getUUID(), batch);
 
 		return true;
+	}
+
+	@Override
+	public final boolean canSpawnAgents(int num) throws IllegalArgumentException {
+		return nimrod.getResourceAgents(node).stream().count() + num <= config.limit;
 	}
 }

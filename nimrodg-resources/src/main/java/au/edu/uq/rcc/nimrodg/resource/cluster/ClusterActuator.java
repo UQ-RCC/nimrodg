@@ -33,18 +33,4 @@ abstract class ClusterActuator<C extends ClusterConfig> extends POSIXActuator<C>
 	protected ClusterActuator(Operations ops, Resource node, NimrodURI amqpUri, Certificate[] certs, C cfg) throws IOException {
 		super(ops, node, amqpUri, certs, cfg);
 	}
-
-	/**
-	 * Apply the submission arguments to the job script.
-	 *
-	 * @param sb The submission script. This is just after the crunchbang.
-	 * @param uuids The list of UUIDs being submitted.
-	 */
-	protected abstract void applySubmissionArguments(StringBuilder sb, UUID[] uuids);
-
-	@Override
-	public boolean canSpawnAgents(int num) throws IllegalArgumentException {
-		Collection<? extends AgentState> agents = nimrod.getResourceAgents(node);
-		return (agents.size() + num) <= config.limit;
-	}
 }
