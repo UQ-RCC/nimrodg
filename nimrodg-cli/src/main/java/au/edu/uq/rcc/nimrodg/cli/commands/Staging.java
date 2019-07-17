@@ -49,6 +49,9 @@ import javax.json.JsonObjectBuilder;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
 import au.edu.uq.rcc.nimrodg.api.Resource;
+import au.edu.uq.rcc.nimrodg.setup.NimrodSetupAPI;
+import java.security.cert.Certificate;
+import javax.json.JsonValue;
 
 public class Staging extends DefaultCLICommand {
 
@@ -204,6 +207,34 @@ public class Staging extends DefaultCLICommand {
 //		}
 	}
 
+	public void pbsTest(UserConfig config, PrintStream out, PrintStream err, String[] args) throws Exception {
+		NimrodSetupAPI sapi = NimrodCLICommand.createFactory(config).getSetupAPI(config);
+		try {
+			sapi.addResourceType("pbspro2", au.edu.uq.rcc.nimrodg.resource.cluster.TemplateClusterActuatorResourceType.class);
+		} catch(NimrodSetupAPI.SetupException e) {
+
+		}
+
+		try(NimrodMasterAPI nimrod = (NimrodMasterAPI)NimrodCLICommand.createFactory(config).createNimrod(config)) {
+			Resource res = nimrod.getResource("pbspro2");
+			if(res != null) {
+				nimrod.deleteResource(res);
+			}
+
+			JsonObjectBuilder stor = createBaseRCCConfig("tinaroo.rcc.uq.edu.au", "");
+			res = nimrod.addResource("pbspro2", "pbspro2", stor.build(), null, null);
+
+			UUID[] uuids = new UUID[10];
+			for(int i = 0; i < uuids.length; ++i) {
+				uuids[i] = UUID.randomUUID();
+			}
+			try(Actuator act = nimrod.createActuator(new NullOps(nimrod), res, new Certificate[0])) {
+				Actuator.LaunchResult lrs[] = act.launchAgents(uuids);
+				int x = 0;
+			}
+		}
+	}
+
 	private class NullOps implements Actuator.Operations {
 
 		public final NimrodMasterAPI nimrod;
@@ -214,7 +245,7 @@ public class Staging extends DefaultCLICommand {
 
 		@Override
 		public void reportAgentFailure(Actuator act, UUID uuid, AgentShutdown.Reason reason, int signal) throws IllegalArgumentException {
-
+			int x = 0;
 		}
 
 		@Override
@@ -225,7 +256,8 @@ public class Staging extends DefaultCLICommand {
 	}
 
 	public static void main(String[] args) throws Exception, Exception {
-		System.exit(NimrodCLI.cliMain(new String[]{"-d", "staging", "nAgentSleep", "6", "60"}));
+		//System.exit(NimrodCLI.cliMain(new String[]{"-d", "staging", "nAgentSleep", "6", "60"}));
+		System.exit(NimrodCLI.cliMain(new String[]{"-d", "staging", "pbsTest"}));
 	}
 
 	private static final Path RCC_CLUSTER_KEY_PATH = Paths.get("/home/zane/.ssh/uqzvanim-tinaroo");

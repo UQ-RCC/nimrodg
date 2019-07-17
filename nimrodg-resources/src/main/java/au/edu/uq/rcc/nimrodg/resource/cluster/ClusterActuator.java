@@ -151,17 +151,7 @@ public abstract class ClusterActuator<C extends BatchedClusterConfig> extends PO
 			UUID[] batchUuids = Arrays.copyOfRange(uuids, launchIndex, launchIndex + batchSize);
 
 			UUID batchUuid = UUID.randomUUID();
-			String pbsScript = ActuatorUtils.posixBuildSubmissionScriptMulti(
-					batchUuids,
-					String.format("$%s", config.tmpVar),
-					uri,
-					routingKey,
-					this.remoteAgentPath,
-					this.remoteCertPath,
-					false,
-					true,
-					this::applySubmissionArguments
-			);
+			String pbsScript = buildSubmissionScript(batchUuids);
 			String pbsPath = ActuatorUtils.posixJoinPaths(this.nimrodHomeDir, batchUuid.toString());
 			String stdout = ActuatorUtils.posixJoinPaths(this.nimrodHomeDir, String.format("batch-%s.stdout.txt", batchUuid));
 			String stderr = ActuatorUtils.posixJoinPaths(this.nimrodHomeDir, String.format("batch-%s.stderr.txt", batchUuid));
@@ -169,6 +159,20 @@ public abstract class ClusterActuator<C extends BatchedClusterConfig> extends PO
 			launchIndex = batches[i].to;
 		}
 		return batches;
+	}
+
+	protected String buildSubmissionScript(UUID[] batchUuids) {
+		return ActuatorUtils.posixBuildSubmissionScriptMulti(
+				batchUuids,
+				String.format("$%s", config.tmpVar),
+				uri,
+				routingKey,
+				this.remoteAgentPath,
+				this.remoteCertPath,
+				false,
+				true,
+				this::applySubmissionArguments
+		);
 	}
 
 	@Override
