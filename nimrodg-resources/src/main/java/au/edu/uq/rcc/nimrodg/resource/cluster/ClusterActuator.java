@@ -89,26 +89,6 @@ public abstract class ClusterActuator<C extends ClusterConfig> extends POSIXActu
 		this.jobNames = new ConcurrentHashMap<>();
 	}
 
-	/**
-	 * Apply the submission arguments to the job script.
-	 *
-	 * @param sb The submission script. This is just after the crunchbang.
-	 * @param uuids The list of UUIDs being submitted.
-	 */
-	private void applySubmissionArguments(StringBuilder sb, UUID[] uuids) {
-		String[] args = config.dialect.buildSubmissionArguments(uuids.length, config.batchConfig, config.submissionArgs);
-		applyBatchedSubmissionArguments(sb, uuids, args);
-	}
-
-	/**
-	 * Apply the processed submission arguments to the job script.
-	 *
-	 * @param sb The submission script. This is just after the crunchbang.
-	 * @param uuids The list of UUIDs being submitted.
-	 * @param processedArgs The submission arguments after being processed by the dialect.
-	 */
-	protected abstract void applyBatchedSubmissionArguments(StringBuilder sb, UUID[] uuids, String[] processedArgs);
-
 	protected abstract String submitBatch(RemoteShell shell, TempBatch batch) throws IOException;
 
 	/**
@@ -161,19 +141,7 @@ public abstract class ClusterActuator<C extends ClusterConfig> extends POSIXActu
 		return batches;
 	}
 
-	protected String buildSubmissionScript(UUID[] batchUuids) {
-		return ActuatorUtils.posixBuildSubmissionScriptMulti(
-				batchUuids,
-				String.format("$%s", config.tmpVar),
-				uri,
-				routingKey,
-				this.remoteAgentPath,
-				this.remoteCertPath,
-				false,
-				true,
-				this::applySubmissionArguments
-		);
-	}
+	protected abstract String buildSubmissionScript(UUID[] batchUuids);
 
 	@Override
 	public LaunchResult[] launchAgents(RemoteShell shell, UUID[] uuids) throws IOException {
@@ -237,9 +205,7 @@ public abstract class ClusterActuator<C extends ClusterConfig> extends POSIXActu
 
 	@Override
 	public void notifyAgentConnection(AgentState state) {
-		/* Set the walltime. */
-		config.dialect.getWalltime(config.batchConfig)
-				.ifPresent(l -> state.setExpiryTime(state.getConnectionTime().plusSeconds(l)));
+
 	}
 
 	@Override

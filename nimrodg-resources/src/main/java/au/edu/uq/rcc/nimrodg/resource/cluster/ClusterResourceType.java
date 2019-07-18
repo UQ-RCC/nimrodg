@@ -25,16 +25,11 @@ import au.edu.uq.rcc.nimrodg.api.AgentProvider;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.security.cert.Certificate;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import javax.json.Json;
-import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
-import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.Namespace;
 import au.edu.uq.rcc.nimrodg.api.Resource;
@@ -45,15 +40,11 @@ import javax.json.JsonStructure;
 
 public abstract class ClusterResourceType extends SSHResourceType {
 
-	protected static final Pattern BATCH_RESOURCE_PATTERN = Pattern.compile("^([\\w-]+):(.+)$");
-
 	public final String argsName;
-	protected final BatchDialect dialect;
 
-	public ClusterResourceType(String name, String displayName, String argsName, BatchDialect dialect) {
+	public ClusterResourceType(String name, String displayName, String argsName) {
 		super(name, displayName);
 		this.argsName = argsName;
-		this.dialect = dialect;
 	}
 
 	protected boolean validateSubmissionArgs(JsonArray ja, List<String> errors) {
@@ -66,39 +57,33 @@ public abstract class ClusterResourceType extends SSHResourceType {
 		return validateSubmissionArgs(_cfg.asJsonObject().getJsonArray(argsName), errors) && valid;
 	}
 
-	@Override
-	protected void addArguments(ArgumentParser parser) {
-		super.addArguments(parser);
+	protected void buildParserBeforeSubmissionArgs(ArgumentParser argparser) {
 
-		parser.addArgument("--limit")
+	}
+
+	@Override
+	protected void addArguments(ArgumentParser argparser) {
+		super.addArguments(argparser);
+
+		argparser.addArgument("--limit")
 				.type(Integer.class)
 				.help("The node's agent limit.")
 				.required(true);
 
-		parser.addArgument("--tmpvar")
+		argparser.addArgument("--tmpvar")
 				.type(String.class)
 				.help("The environment variable that contains the working directory of the job.")
 				.setDefault("TMPDIR");
 
-		parser.addArgument("--max-batch-size")
+		argparser.addArgument("--max-batch-size")
 				.dest("max_batch_size")
 				.type(Integer.class)
 				.help("The maximum size of a batch of agents.")
 				.setDefault(10);
 
-		parser.addArgument("--add-batch-res-static")
-				.dest("batch_resource_static")
-				.type(String.class)
-				.action(Arguments.append())
-				.help("Add a static batch resource.");
+		this.buildParserBeforeSubmissionArgs(argparser);
 
-		parser.addArgument("--add-batch-res-scale")
-				.dest("batch_resource_scale")
-				.type(String.class)
-				.action(Arguments.append())
-				.help("Add a scalable batch resource.");
-
-		parser.addArgument(argsName)
+		argparser.addArgument(argsName)
 				.help(String.format("%s submission arguments.", displayName))
 				.nargs("*");
 	}
@@ -116,50 +101,12 @@ public abstract class ClusterResourceType extends SSHResourceType {
 		}
 
 		jb.add("max_batch_size", ns.getInt("max_batch_size"));
-
-		List<BatchDialect.Resource> staticResources = new ArrayList<>();
-		List<String> resList = ns.getList("batch_resource_static");
-		if(resList != null) {
-			for(String s : resList) {
-				valid = parseBatchResource(s, err, staticResources) && valid;
-			}
-		}
-
-		List<BatchDialect.Resource> scaleResources = new ArrayList<>();
-		resList = ns.getList("batch_resource_scale");
-		if(resList != null) {
-			for(String s : resList) {
-				valid = parseBatchResource(s, err, scaleResources) && valid;
-			}
-		}
-
-		JsonArrayBuilder jao = Json.createArrayBuilder();
-		valid = dialect.parseResources(
-				scaleResources.stream().toArray(BatchDialect.Resource[]::new),
-				staticResources.stream().toArray(BatchDialect.Resource[]::new),
-				out,
-				err,
-				jao
-		) && valid;
-
-		jb.add("batch_config", jao);
 		return valid;
-	}
-
-	private static boolean parseBatchResource(String s, PrintStream err, List<BatchDialect.Resource> res) {
-		Matcher m = BATCH_RESOURCE_PATTERN.matcher(s);
-		if(!m.matches()) {
-			err.printf("Malformed batch static resource specification. Must match pattern %s\n", BATCH_RESOURCE_PATTERN.pattern());
-			return false;
-		}
-
-		res.add(new BatchDialect.Resource(m.group(1), m.group(2)));
-		return true;
 	}
 
 	@Override
 	protected String getConfigSchema() {
-		return "resource_cluster_batched.json";
+		return "resource_cluster.json";
 	}
 
 	@Override
@@ -173,9 +120,7 @@ public abstract class ClusterResourceType extends SSHResourceType {
 				cfg.getInt("limit"),
 				tmpVar,
 				cfg.getJsonArray(argsName).stream().map(a -> ((JsonString)a).getString()).toArray(String[]::new),
-				cfg.getInt("max_batch_size"),
-				dialect,
-				cfg.getJsonArray("batch_config").stream().map(v -> v.asJsonObject()).toArray(JsonObject[]::new)
+				cfg.getInt("max_batch_size")
 		));
 	}
 
@@ -187,21 +132,17 @@ public abstract class ClusterResourceType extends SSHResourceType {
 		public final String tmpVar;
 		public final String[] submissionArgs;
 		public final int maxBatchSize;
-		public final BatchDialect dialect;
-		public final JsonObject[] batchConfig;
 
-		public ClusterConfig(SSHConfig ssh, int limit, String tmpVar, String[] submissionArgs, int maxBatchSize, BatchDialect dialect, JsonObject[] batchConfig) {
+		public ClusterConfig(SSHConfig ssh, int limit, String tmpVar, String[] submissionArgs, int maxBatchSize) {
 			super(ssh);
 			this.limit = limit;
 			this.tmpVar = tmpVar;
 			this.submissionArgs = Arrays.copyOf(submissionArgs, submissionArgs.length);
 			this.maxBatchSize = maxBatchSize;
-			this.dialect = dialect;
-			this.batchConfig = Arrays.copyOf(batchConfig, batchConfig.length);
 		}
 
 		public ClusterConfig(ClusterConfig cfg) {
-			this(cfg, cfg.limit, cfg.tmpVar, cfg.submissionArgs, cfg.maxBatchSize, cfg.dialect, cfg.batchConfig);
+			this(cfg, cfg.limit, cfg.tmpVar, cfg.submissionArgs, cfg.maxBatchSize);
 		}
 	}
 }

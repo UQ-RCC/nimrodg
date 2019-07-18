@@ -22,17 +22,17 @@ package au.edu.uq.rcc.nimrodg.resource;
 import au.edu.uq.rcc.nimrodg.api.Actuator;
 import java.io.IOException;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
-import au.edu.uq.rcc.nimrodg.resource.cluster.ClusterResourceType;
 import java.security.cert.Certificate;
 import java.util.Arrays;
 import java.util.List;
 import javax.json.JsonArray;
 import javax.json.JsonString;
 import au.edu.uq.rcc.nimrodg.api.Resource;
+import au.edu.uq.rcc.nimrodg.resource.cluster.LegacyClusterResourceType;
 import au.edu.uq.rcc.nimrodg.resource.cluster.slurm.SLURMActuator;
 import au.edu.uq.rcc.nimrodg.resource.cluster.slurm.SLURMDialect;
 
-public final class SLURMResourceType extends ClusterResourceType {
+public final class SLURMResourceType extends LegacyClusterResourceType {
 
 	public SLURMResourceType() {
 		super("slurm", "SLURM", "slurmargs", new SLURMDialect());
@@ -56,7 +56,7 @@ public final class SLURMResourceType extends ClusterResourceType {
 	}
 
 	@Override
-	public Actuator createActuator(Actuator.Operations ops, Resource node, NimrodURI amqpUri, Certificate[] certs, ClusterConfig cfg) throws IOException {
+	public Actuator createActuator(Actuator.Operations ops, Resource node, NimrodURI amqpUri, Certificate[] certs, DialectConfig cfg) throws IOException {
 		return new SLURMActuator(ops, node, amqpUri, certs, cfg);
 	}
 }

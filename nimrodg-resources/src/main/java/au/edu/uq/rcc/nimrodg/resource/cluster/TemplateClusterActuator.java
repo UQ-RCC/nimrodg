@@ -5,7 +5,7 @@ import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.api.Resource;
 import au.edu.uq.rcc.nimrodg.resource.act.ActuatorUtils;
 import au.edu.uq.rcc.nimrodg.resource.cluster.ClusterResourceType.ClusterConfig;
-import au.edu.uq.rcc.nimrodg.resource.cluster.pbs.PBSActuator;
+import au.edu.uq.rcc.nimrodg.resource.ssh.RemoteShell;
 import com.hubspot.jinjava.Jinjava;
 import com.hubspot.jinjava.interpret.JinjavaInterpreter;
 import com.hubspot.jinjava.lib.filter.Filter;
@@ -18,7 +18,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-public class TemplateClusterActuator extends PBSActuator /* for now */ {
+public class TemplateClusterActuator extends ClusterActuator<ClusterConfig> {
 
 	private final Jinjava jj;
 	private final String template;
@@ -61,7 +61,7 @@ public class TemplateClusterActuator extends PBSActuator /* for now */ {
 
 		Map<String, Object> vars = Map.of(
 				"batch_size", batchUuids.length,
-				"walltime", config.dialect.getWalltime(config.batchConfig).orElse(86400L), // FIXME:
+				"walltime", 86400, // FIXME:
 				"agent_binary", this.remoteAgentPath,
 				"agent_uuids", batchUuids,
 				"agent_args", agentVars
@@ -73,6 +73,16 @@ public class TemplateClusterActuator extends PBSActuator /* for now */ {
 	@Override
 	public void notifyAgentConnection(AgentState state) {
 		/* Set the walltime. */
-		state.setExpiryTime(state.getConnectionTime().plusSeconds(config.dialect.getWalltime(config.batchConfig).orElse(86400L)));
+		state.setExpiryTime(state.getConnectionTime().plusSeconds(86400L));
+	}
+
+	@Override
+	protected String submitBatch(RemoteShell shell, TempBatch batch) throws IOException {
+		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+	}
+
+	@Override
+	protected boolean killJob(RemoteShell shell, String jobId) {
+		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
 	}
 }

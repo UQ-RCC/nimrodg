@@ -22,20 +22,20 @@ package au.edu.uq.rcc.nimrodg.resource.cluster.pbs;
 import java.io.IOException;
 import java.security.cert.Certificate;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
-import au.edu.uq.rcc.nimrodg.resource.cluster.ClusterActuator;
-import au.edu.uq.rcc.nimrodg.resource.cluster.ClusterResourceType.ClusterConfig;
 import au.edu.uq.rcc.nimrodg.resource.ssh.RemoteShell;
 import java.util.UUID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import au.edu.uq.rcc.nimrodg.api.Resource;
+import au.edu.uq.rcc.nimrodg.resource.cluster.LegacyClusterActuator;
+import au.edu.uq.rcc.nimrodg.resource.cluster.LegacyClusterResourceType.DialectConfig;
 import au.edu.uq.rcc.nimrodg.resource.ssh.SSHClient;
 
-public class PBSActuator extends ClusterActuator<ClusterConfig> {
+public class PBSActuator extends LegacyClusterActuator {
 
 	private static final Logger LOGGER = LogManager.getLogger(PBSActuator.class);
 
-	public PBSActuator(Operations ops, Resource node, NimrodURI amqpUri, Certificate[] certs, ClusterConfig cfg) throws IOException {
+	public PBSActuator(Operations ops, Resource node, NimrodURI amqpUri, Certificate[] certs, DialectConfig cfg) throws IOException {
 		super(ops, node, amqpUri, certs, cfg);
 	}
 

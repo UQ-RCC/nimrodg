@@ -210,7 +210,7 @@ public class Staging extends DefaultCLICommand {
 	public void pbsTest(UserConfig config, PrintStream out, PrintStream err, String[] args) throws Exception {
 		NimrodSetupAPI sapi = NimrodCLICommand.createFactory(config).getSetupAPI(config);
 		try {
-			sapi.addResourceType("pbspro2", au.edu.uq.rcc.nimrodg.resource.cluster.TemplateClusterActuatorResourceType.class);
+			sapi.addResourceType("pbspro2", au.edu.uq.rcc.nimrodg.resource.cluster.TemplateClusterResourceType.class);
 		} catch(NimrodSetupAPI.SetupException e) {
 
 		}

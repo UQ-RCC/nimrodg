@@ -1,7 +1,7 @@
 {
 	"$schema": "http://json-schema.org/draft-04/schema#",
 	"allOf": [
-		{ "$ref": "resource_base.json#/definitions/batched_cluster_resource" },
+		{ "$ref": "resource_base.json#/definitions/legacy_cluster_resource" },
 		{
 			"type": "object",
 			"properties": {

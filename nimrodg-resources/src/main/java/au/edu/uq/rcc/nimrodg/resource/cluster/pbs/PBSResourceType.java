@@ -23,15 +23,15 @@ import au.edu.uq.rcc.nimrodg.api.Actuator;
 import java.io.IOException;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.resource.cluster.BatchDialect;
-import au.edu.uq.rcc.nimrodg.resource.cluster.ClusterResourceType;
 import java.security.cert.Certificate;
 import java.util.Arrays;
 import java.util.List;
 import javax.json.JsonArray;
 import javax.json.JsonString;
 import au.edu.uq.rcc.nimrodg.api.Resource;
+import au.edu.uq.rcc.nimrodg.resource.cluster.LegacyClusterResourceType;
 
-public class PBSResourceType extends ClusterResourceType {
+public class PBSResourceType extends LegacyClusterResourceType {
 
 	protected PBSResourceType(String name, String displayName, BatchDialect dialect) {
 		super(name, displayName, "pbsargs", dialect);
@@ -53,7 +53,7 @@ public class PBSResourceType extends ClusterResourceType {
 	}
 
 	@Override
-	public Actuator createActuator(Actuator.Operations ops, Resource node, NimrodURI amqpUri, Certificate[] certs, ClusterConfig cfg) throws IOException {
+	public Actuator createActuator(Actuator.Operations ops, Resource node, NimrodURI amqpUri, Certificate[] certs, DialectConfig cfg) throws IOException {
 		return new PBSActuator(ops, node, amqpUri, certs, cfg);
 	}
 }

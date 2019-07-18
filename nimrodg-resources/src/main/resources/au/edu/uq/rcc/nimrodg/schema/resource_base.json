@@ -58,19 +58,19 @@
 						"tmpvar": {
 							"type": "string",
 							"pattern": "^([A-Z_][A-Z0-9+]*)$"
-						}
+						},
+						"max_batch_size": { "type": "integer", "minimum": 1 }
 					},
-					"required": ["limit", "tmpvar"]
+					"required": ["limit", "tmpvar", "max_batch_size"]
 				}
 			]
 		},
-		"batched_cluster_resource": {
+		"legacy_cluster_resource": {
 			"allOf": [
 				{ "$ref": "#/definitions/cluster_resource" },
 				{
 					"type": "object",
 					"properties": {
-						"max_batch_size": { "type": "integer", "minimum": 1 },
 						"batch_config": {
 							"type": "array",
 							"minItems": 0,
@@ -89,10 +89,7 @@
 							}
 						}
 					},
-					"required": [
-						"max_batch_size",
-						"batch_config"
-					]
+					"required": ["batch_config"]
 				}
 			]
 		}
