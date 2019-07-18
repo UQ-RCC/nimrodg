@@ -15,7 +15,7 @@ public class TemplateClusterActuatorResourceType extends PBSResourceType {
 	}
 
 	@Override
-	public Actuator createActuator(Actuator.Operations ops, Resource node, NimrodURI amqpUri, Certificate[] certs, BatchedClusterConfig cfg) throws IOException {
+	public Actuator createActuator(Actuator.Operations ops, Resource node, NimrodURI amqpUri, Certificate[] certs, ClusterConfig cfg) throws IOException {
 		return new TemplateClusterActuator(ops, node, amqpUri, certs, cfg);
 	}
 }

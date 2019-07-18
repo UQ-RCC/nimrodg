@@ -21,7 +21,7 @@ package au.edu.uq.rcc.nimrodg.resource.cluster.slurm;
 
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.resource.ssh.SSHClient;
-import au.edu.uq.rcc.nimrodg.resource.cluster.ClusterResourceType.BatchedClusterConfig;
+import au.edu.uq.rcc.nimrodg.resource.cluster.ClusterResourceType.ClusterConfig;
 import au.edu.uq.rcc.nimrodg.resource.ssh.RemoteShell;
 import java.io.IOException;
 import java.security.cert.Certificate;
@@ -33,13 +33,13 @@ import org.apache.logging.log4j.Logger;
 import au.edu.uq.rcc.nimrodg.api.Resource;
 import au.edu.uq.rcc.nimrodg.resource.cluster.ClusterActuator;
 
-public class SLURMActuator extends ClusterActuator<BatchedClusterConfig> {
+public class SLURMActuator extends ClusterActuator<ClusterConfig> {
 
 	private static final Logger LOGGER = LogManager.getLogger(SLURMActuator.class);
 
 	private static final Pattern SBATCH_PATTERN = Pattern.compile("^.*?(\\d+).*$");
 
-	public SLURMActuator(Operations ops, Resource node, NimrodURI amqpUri, Certificate[] certs, BatchedClusterConfig cfg) throws IOException {
+	public SLURMActuator(Operations ops, Resource node, NimrodURI amqpUri, Certificate[] certs, ClusterConfig cfg) throws IOException {
 		super(ops, node, amqpUri, certs, cfg);
 	}
 

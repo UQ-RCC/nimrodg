@@ -24,7 +24,7 @@ import au.edu.uq.rcc.nimrodg.agent.AgentState;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.api.ResourceFullException;
 import au.edu.uq.rcc.nimrodg.resource.act.ActuatorUtils;
-import au.edu.uq.rcc.nimrodg.resource.cluster.ClusterResourceType.BatchedClusterConfig;
+import au.edu.uq.rcc.nimrodg.resource.cluster.ClusterResourceType.ClusterConfig;
 import au.edu.uq.rcc.nimrodg.resource.ssh.RemoteShell;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -44,7 +44,7 @@ import javax.json.JsonNumber;
 import javax.json.JsonObject;
 import javax.json.JsonString;
 
-public abstract class ClusterActuator<C extends BatchedClusterConfig> extends POSIXActuator<C> {
+public abstract class ClusterActuator<C extends ClusterConfig> extends POSIXActuator<C> {
 
 	protected static class TempBatch {
 

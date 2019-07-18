@@ -168,7 +168,7 @@ public abstract class ClusterResourceType extends SSHResourceType {
 		JsonString _tmpVar = cfg.getJsonString("tmpvar");
 		String tmpVar = _tmpVar == null ? "TMPDIR" : _tmpVar.getString();
 
-		return createActuator(ops, node, amqpUri, certs, new BatchedClusterConfig(
+		return createActuator(ops, node, amqpUri, certs, new ClusterConfig(
 				sshCfg,
 				cfg.getInt("limit"),
 				tmpVar,
@@ -179,9 +179,9 @@ public abstract class ClusterResourceType extends SSHResourceType {
 		));
 	}
 
-	protected abstract Actuator createActuator(Actuator.Operations ops, Resource node, NimrodURI amqpUri, Certificate[] certs, BatchedClusterConfig ccfg) throws IOException;
+	protected abstract Actuator createActuator(Actuator.Operations ops, Resource node, NimrodURI amqpUri, Certificate[] certs, ClusterConfig ccfg) throws IOException;
 
-	public static class BatchedClusterConfig extends SSHConfig {
+	public static class ClusterConfig extends SSHConfig {
 
 		public final int limit;
 		public final String tmpVar;
@@ -190,7 +190,7 @@ public abstract class ClusterResourceType extends SSHResourceType {
 		public final BatchDialect dialect;
 		public final JsonObject[] batchConfig;
 
-		public BatchedClusterConfig(SSHConfig ssh, int limit, String tmpVar, String[] submissionArgs, int maxBatchSize, BatchDialect dialect, JsonObject[] batchConfig) {
+		public ClusterConfig(SSHConfig ssh, int limit, String tmpVar, String[] submissionArgs, int maxBatchSize, BatchDialect dialect, JsonObject[] batchConfig) {
 			super(ssh);
 			this.limit = limit;
 			this.tmpVar = tmpVar;
@@ -200,7 +200,7 @@ public abstract class ClusterResourceType extends SSHResourceType {
 			this.batchConfig = Arrays.copyOf(batchConfig, batchConfig.length);
 		}
 
-		public BatchedClusterConfig(BatchedClusterConfig cfg) {
+		public ClusterConfig(ClusterConfig cfg) {
 			this(cfg, cfg.limit, cfg.tmpVar, cfg.submissionArgs, cfg.maxBatchSize, cfg.dialect, cfg.batchConfig);
 		}
 	}

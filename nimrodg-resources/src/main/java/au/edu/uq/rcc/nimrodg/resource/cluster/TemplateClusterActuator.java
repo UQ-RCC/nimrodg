@@ -4,7 +4,7 @@ import au.edu.uq.rcc.nimrodg.agent.AgentState;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.api.Resource;
 import au.edu.uq.rcc.nimrodg.resource.act.ActuatorUtils;
-import au.edu.uq.rcc.nimrodg.resource.cluster.ClusterResourceType.BatchedClusterConfig;
+import au.edu.uq.rcc.nimrodg.resource.cluster.ClusterResourceType.ClusterConfig;
 import au.edu.uq.rcc.nimrodg.resource.cluster.pbs.PBSActuator;
 import com.hubspot.jinjava.Jinjava;
 import com.hubspot.jinjava.interpret.JinjavaInterpreter;
@@ -23,7 +23,7 @@ public class TemplateClusterActuator extends PBSActuator /* for now */ {
 	private final Jinjava jj;
 	private final String template;
 
-	public TemplateClusterActuator(Operations ops, Resource node, NimrodURI amqpUri, Certificate[] certs, BatchedClusterConfig cfg) throws IOException {
+	public TemplateClusterActuator(Operations ops, Resource node, NimrodURI amqpUri, Certificate[] certs, ClusterConfig cfg) throws IOException {
 		super(ops, node, amqpUri, certs, cfg);
 		jj = new Jinjava();
 		jj.getGlobalContext().registerFilter(new Filter() {
