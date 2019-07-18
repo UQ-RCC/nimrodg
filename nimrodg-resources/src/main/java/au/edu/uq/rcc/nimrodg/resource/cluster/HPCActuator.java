@@ -3,45 +3,25 @@ package au.edu.uq.rcc.nimrodg.resource.cluster;
 import au.edu.uq.rcc.nimrodg.agent.AgentState;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.api.Resource;
+import au.edu.uq.rcc.nimrodg.resource.HPCResourceType.HPCConfig;
 import au.edu.uq.rcc.nimrodg.resource.act.ActuatorUtils;
-import au.edu.uq.rcc.nimrodg.resource.cluster.ClusterResourceType.ClusterConfig;
 import au.edu.uq.rcc.nimrodg.resource.ssh.RemoteShell;
 import com.hubspot.jinjava.Jinjava;
 import com.hubspot.jinjava.interpret.JinjavaInterpreter;
 import com.hubspot.jinjava.lib.filter.Filter;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.security.cert.Certificate;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-public class TemplateClusterActuator extends ClusterActuator<ClusterConfig> {
+public class HPCActuator extends ClusterActuator<HPCConfig> {
 
 	private final Jinjava jj;
-	private final String template;
 
-	public TemplateClusterActuator(Operations ops, Resource node, NimrodURI amqpUri, Certificate[] certs, ClusterConfig cfg) throws IOException {
+	public HPCActuator(Operations ops, Resource node, NimrodURI amqpUri, Certificate[] certs, HPCConfig cfg) throws IOException {
 		super(ops, node, amqpUri, certs, cfg);
-		jj = new Jinjava();
-		jj.getGlobalContext().registerFilter(new Filter() {
-			@Override
-			public Object filter(Object o, JinjavaInterpreter ji, String... strings) {
-				if(o == null) {
-					return null;
-				}
-				return ActuatorUtils.posixQuoteArgument(o.toString());
-			}
-
-			@Override
-			public String getName() {
-				return "quote";
-			}
-		});
-
-		this.template = new String(Files.readAllBytes(Paths.get("/home/zane/Desktop/staging/tt/tinaroo.j2")), StandardCharsets.UTF_8);
+		this.jj = createTemplateEngine();
 	}
 
 	@Override
@@ -67,13 +47,13 @@ public class TemplateClusterActuator extends ClusterActuator<ClusterConfig> {
 				"agent_args", agentVars
 		);
 
-		return jj.render(template, vars);
+		return jj.render(config.template, vars);
 	}
 
 	@Override
 	public void notifyAgentConnection(AgentState state) {
 		/* Set the walltime. */
-		state.setExpiryTime(state.getConnectionTime().plusSeconds(86400L));
+		state.setExpiryTime(state.getConnectionTime().plusSeconds(86400L)); // FIXME:
 	}
 
 	@Override
@@ -84,5 +64,24 @@ public class TemplateClusterActuator extends ClusterActuator<ClusterConfig> {
 	@Override
 	protected boolean killJob(RemoteShell shell, String jobId) {
 		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+	}
+
+	public static Jinjava createTemplateEngine() {
+		Jinjava jj = new Jinjava();
+		jj.getGlobalContext().registerFilter(new Filter() {
+			@Override
+			public Object filter(Object o, JinjavaInterpreter ji, String... strings) {
+				if(o == null) {
+					return null;
+				}
+				return ActuatorUtils.posixQuoteArgument(o.toString());
+			}
+
+			@Override
+			public String getName() {
+				return "quote";
+			}
+		});
+		return jj;
 	}
 }

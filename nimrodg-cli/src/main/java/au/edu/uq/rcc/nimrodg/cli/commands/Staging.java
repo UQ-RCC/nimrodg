@@ -210,7 +210,7 @@ public class Staging extends DefaultCLICommand {
 	public void pbsTest(UserConfig config, PrintStream out, PrintStream err, String[] args) throws Exception {
 		NimrodSetupAPI sapi = NimrodCLICommand.createFactory(config).getSetupAPI(config);
 		try {
-			sapi.addResourceType("pbspro2", au.edu.uq.rcc.nimrodg.resource.cluster.TemplateClusterResourceType.class);
+			sapi.addResourceType("pbspro2", au.edu.uq.rcc.nimrodg.resource.HPCResourceType.class);
 		} catch(NimrodSetupAPI.SetupException e) {
 
 		}
@@ -222,7 +222,7 @@ public class Staging extends DefaultCLICommand {
 			}
 
 			JsonObjectBuilder stor = createBaseRCCConfig("tinaroo.rcc.uq.edu.au", "");
-			res = nimrod.addResource("pbspro2", "pbspro2", stor.build(), null, null);
+			res = nimrod.addResource("pbspro2", "hpc", stor.build(), null, null);
 
 			UUID[] uuids = new UUID[10];
 			for(int i = 0; i < uuids.length; ++i) {

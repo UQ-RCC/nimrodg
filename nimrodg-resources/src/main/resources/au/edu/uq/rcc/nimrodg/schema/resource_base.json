@@ -92,6 +92,28 @@
 					"required": ["batch_config"]
 				}
 			]
+		},
+		"hpc_cluster_resource": {
+			"allOf": [
+				{ "$ref": "#/definitions/cluster_resource" },
+				{
+					"type": "object",
+					"properties": {
+						"template": { "type": "string" },
+						"submit_command": {
+							"type": "array",
+							"items": { "type": "string" },
+							"minItems": 1
+						},
+						"delete_command": {
+							"type": "array",
+							"items": { "type": "string" },
+							"minItems": 1
+						}
+					},
+					"required": ["template"]
+				}
+			]
 		}
 	}
 }
