@@ -38,9 +38,9 @@ public abstract class LegacyClusterActuator extends ClusterActuator<DialectConfi
 	}
 
 	@Override
-	protected String buildSubmissionScript(UUID[] batchUuids, String out, String err) {
+	protected String buildSubmissionScript(UUID batchUuid, UUID[] agentUuids, String out, String err) {
 		return ActuatorUtils.posixBuildSubmissionScriptMulti(
-				batchUuids,
+				agentUuids,
 				out,
 				err,
 				String.format("$%s", config.tmpVar),
