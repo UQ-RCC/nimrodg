@@ -58,8 +58,9 @@ public class HPCResourceType extends ClusterResourceType {
 
 		/* Do a dummy render to see if the user's messed up. */
 		Jinjava jj = HPCActuator.createTemplateEngine();
+		Map<String, Object> vars = HPCActuator.createSampleVars();
 		try {
-			jj.render(template, Map.of());
+			jj.render(template, vars);
 		} catch(RuntimeException e) {
 			err.printf("Malformed template.\n");
 			e.printStackTrace(err);
