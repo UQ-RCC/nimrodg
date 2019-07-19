@@ -23,6 +23,7 @@ import au.edu.uq.rcc.nimrodg.api.Actuator;
 import au.edu.uq.rcc.nimrodg.api.AgentProvider;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.api.Resource;
+import au.edu.uq.rcc.nimrodg.api.utils.StringUtils;
 import au.edu.uq.rcc.nimrodg.resource.cluster.ClusterResourceType;
 import au.edu.uq.rcc.nimrodg.resource.cluster.HPCActuator;
 import com.hubspot.jinjava.Jinjava;
@@ -33,6 +34,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.cert.Certificate;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
 import javax.json.JsonObject;
@@ -49,6 +51,24 @@ public class HPCResourceType extends ClusterResourceType {
 	@Override
 	protected void buildParserBeforeSubmissionArgs(ArgumentParser argparser) {
 		super.buildParserBeforeSubmissionArgs(argparser);
+
+		argparser.addArgument("--ncpus")
+				.dest("ncpus")
+				.type(Long.class)
+				.required(true)
+				.help("Number of CPUs (cores) used by an individual job");
+
+		argparser.addArgument("--mem")
+				.dest("mem")
+				.type(String.class)
+				.required(true)
+				.help("Amount of memory used by an individual job (supports {KMGTPE}[i]{B,b} suffixes)");
+
+		argparser.addArgument("--walltime")
+				.dest("walltime")
+				.type(String.class)
+				.required(true)
+				.help("Walltime used by an individual job (supports HH[:MM[:SS]] and [Hh][Mm][Ss])");
 
 		argparser.addArgument("--template")
 				.dest("template")
@@ -91,6 +111,19 @@ public class HPCResourceType extends ClusterResourceType {
 	protected boolean parseArguments(AgentProvider ap, Namespace ns, PrintStream out, PrintStream err, JsonObjectBuilder jb) {
 		boolean valid = super.parseArguments(ap, ns, out, err, jb);
 
+		long ncpus = ns.getLong("ncpus");
+		long mem = StringUtils.parseMemory(ns.getString("mem"));
+		long walltime = StringUtils.parseWalltime(ns.getString("walltime"));
+
+		if(ncpus < 1 || mem < 1 || walltime < 1) {
+			err.printf("ncpus, mem, and walltime cannot be < 0.\n");
+			valid = false;
+		} else {
+			jb.add("ncpus", ncpus);
+			jb.add("mem", mem);
+			jb.add("walltime", walltime);
+		}
+
 		Optional<String> template = loadAndValidateTemplate(Paths.get(ns.getString("template")), out, err);
 		valid = template.isPresent() && valid;
 		template.ifPresent(t -> jb.add("template", t));
@@ -103,20 +136,61 @@ public class HPCResourceType extends ClusterResourceType {
 		JsonObject ccfg = node.getConfig().asJsonObject();
 		return new HPCActuator(ops, node, amqpUri, certs, new HPCConfig(
 				cfg,
+				ccfg.getJsonNumber("ncpus").longValue(),
+				ccfg.getJsonNumber("mem").longValue(),
+				ccfg.getJsonNumber("walltime").longValue(),
+				// FIXME:
+				new String[]{"qsub"},
+				new String[]{"qdel"},
+				new String[]{"qdel", "-W", "force"},
 				ccfg.getString("template")
 		));
 	}
 
 	public static class HPCConfig extends ClusterConfig {
+
+		public final long ncpus;
+		public final long mem;
+		public final long walltime;
+		public final String[] submit;
+		public final String[] delete;
+		public final String[] forceDelete;
 		public final String template;
 
-		public HPCConfig(ClusterConfig cfg, String template) {
+		public HPCConfig(ClusterConfig cfg, long ncpus, long mem, long walltime, String[] submit, String[] delete, String[] forceDelete, String template) {
 			super(cfg);
+			this.ncpus = ncpus;
+			this.mem = mem;
+			this.walltime = walltime;
+			this.submit = Arrays.copyOf(submit, submit.length);
+			this.delete = Arrays.copyOf(delete, delete.length);
+			this.forceDelete = Arrays.copyOf(forceDelete, forceDelete.length);
 			this.template = template;
 		}
 
 		public HPCConfig(HPCConfig cfg) {
-			this(cfg, cfg.template);
+			this(cfg, cfg.ncpus, cfg.mem, cfg.walltime, cfg.submit, cfg.delete, cfg.forceDelete, cfg.template);
 		}
 	}
+
+	public static class HPCDefinition {
+
+		public final String name;
+		public final String[] submit;
+		public final String[] delete;
+		public final String[] deleteForce;
+		public final String regex;
+
+		public HPCDefinition(String name, String[] submit, String[] delete, String[] deleteForce, String regex) {
+			this.name = name;
+			this.submit = submit;
+			this.delete = delete;
+			this.deleteForce = deleteForce;
+			this.regex = regex;
+		}
+	}
+
+	public static final Map<String, HPCDefinition> asdfasdf = Map.of(
+			"pbspro", new HPCDefinition("pbspro", new String[]{"qsub"}, new String[]{"qdel"}, new String[]{"qdel", "-W", "force"}, "^(.+)$")
+	);
 }

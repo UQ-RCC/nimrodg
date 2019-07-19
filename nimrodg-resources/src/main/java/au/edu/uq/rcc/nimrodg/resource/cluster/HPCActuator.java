@@ -30,9 +30,11 @@ import com.hubspot.jinjava.interpret.JinjavaInterpreter;
 import com.hubspot.jinjava.lib.filter.Filter;
 import java.io.IOException;
 import java.security.cert.Certificate;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -66,7 +68,9 @@ public class HPCActuator extends ClusterActuator<HPCConfig> {
 				"batch_size", agentUuids.length,
 				"output_path", out,
 				"error_path", err,
-				"walltime", 86400, // FIXME:
+				"job_ncpus", config.ncpus,
+				"job_mem", config.mem,
+				"job_walltime", config.walltime,
 				"agent_binary", this.remoteAgentPath,
 				"agent_uuids", agentUuids,
 				"agent_args", agentVars
@@ -76,7 +80,7 @@ public class HPCActuator extends ClusterActuator<HPCConfig> {
 	@Override
 	public void notifyAgentConnection(AgentState state) {
 		/* Set the walltime. */
-		state.setExpiryTime(state.getConnectionTime().plusSeconds(86400L)); // FIXME:
+		state.setExpiryTime(state.getConnectionTime().plusSeconds(config.walltime));
 	}
 
 	@Override
@@ -86,7 +90,15 @@ public class HPCActuator extends ClusterActuator<HPCConfig> {
 
 	@Override
 	protected boolean killJob(RemoteShell shell, String jobId) {
-		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+		String[] args = Stream.concat(Arrays.stream(config.forceDelete), Stream.of(jobId)).toArray(String[]::new);
+		try {
+			shell.runCommand(args);
+		} catch(IOException ex) {
+			LOGGER.warn("Unable to kill job '{}'", jobId);
+			LOGGER.catching(ex);
+			return false;
+		}
+		return true;
 	}
 
 	public static Jinjava createTemplateEngine() {
@@ -125,7 +137,9 @@ public class HPCActuator extends ClusterActuator<HPCConfig> {
 				"batch_size", uuids.length,
 				"output_path", "/remote/path/to/stdout.txt",
 				"error_path", "/remote/path/to/stderr.txt",
-				"walltime", "86400",
+				"job_ncpus", 12,
+				"job_mem", 4294967296L,
+				"job_walltime", 86400,
 				"agent_binary", "/remote/path/to/agent/binary",
 				"agent_uuids", uuids,
 				"agent_args", Map.of(

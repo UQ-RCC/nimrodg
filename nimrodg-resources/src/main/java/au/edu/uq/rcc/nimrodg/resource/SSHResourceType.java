@@ -211,7 +211,7 @@ public abstract class SSHResourceType extends BaseResourceType {
 				.dest("uri")
 				.type(String.class)
 				.help("SSH URI")
-				.required(false);
+				.required(true);
 
 		parser.addArgument("--key")
 				.dest("key")
