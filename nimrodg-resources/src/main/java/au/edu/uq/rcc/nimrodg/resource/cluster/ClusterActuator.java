@@ -131,17 +131,17 @@ public abstract class ClusterActuator<C extends ClusterConfig> extends POSIXActu
 			UUID[] batchUuids = Arrays.copyOfRange(uuids, launchIndex, launchIndex + batchSize);
 
 			UUID batchUuid = UUID.randomUUID();
-			String pbsScript = buildSubmissionScript(batchUuids);
-			String pbsPath = ActuatorUtils.posixJoinPaths(this.nimrodHomeDir, batchUuid.toString());
 			String stdout = ActuatorUtils.posixJoinPaths(this.nimrodHomeDir, String.format("batch-%s.stdout.txt", batchUuid));
 			String stderr = ActuatorUtils.posixJoinPaths(this.nimrodHomeDir, String.format("batch-%s.stderr.txt", batchUuid));
+			String pbsPath = ActuatorUtils.posixJoinPaths(this.nimrodHomeDir, batchUuid.toString());
+			String pbsScript = buildSubmissionScript(batchUuids, stdout, stderr);
 			batches[i] = new TempBatch(batchUuid, pbsPath, pbsScript, stdout, stderr, launchIndex, launchIndex + batchSize, batchUuids);
 			launchIndex = batches[i].to;
 		}
 		return batches;
 	}
 
-	protected abstract String buildSubmissionScript(UUID[] batchUuids);
+	protected abstract String buildSubmissionScript(UUID[] batchUuids, String out, String err);
 
 	@Override
 	public LaunchResult[] launchAgents(RemoteShell shell, UUID[] uuids) throws IOException {

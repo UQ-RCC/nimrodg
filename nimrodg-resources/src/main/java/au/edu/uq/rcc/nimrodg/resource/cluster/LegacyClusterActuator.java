@@ -21,8 +21,10 @@ public abstract class LegacyClusterActuator extends ClusterActuator<DialectConfi
 	 * @param sb The submission script. This is just after the crunchbang.
 	 * @param uuids The list of UUIDs being submitted.
 	 * @param processedArgs The submission arguments after being processed by the dialect.
+	 * @param out The output file path, (-o)
+	 * @param err The error file path, (-e)
 	 */
-	protected abstract void applyBatchedSubmissionArguments(StringBuilder sb, UUID[] uuids, String[] processedArgs);
+	protected abstract void applyBatchedSubmissionArguments(StringBuilder sb, UUID[] uuids, String[] processedArgs, String out, String err);
 
 	/**
 	 * Apply the submission arguments to the job script.
@@ -30,15 +32,17 @@ public abstract class LegacyClusterActuator extends ClusterActuator<DialectConfi
 	 * @param sb The submission script. This is just after the crunchbang.
 	 * @param uuids The list of UUIDs being submitted.
 	 */
-	private void applySubmissionArguments(StringBuilder sb, UUID[] uuids) {
+	private void applySubmissionArguments(StringBuilder sb, UUID[] uuids, String out, String err) {
 		String[] args = config.dialect.buildSubmissionArguments(uuids.length, config.batchConfig, config.submissionArgs);
-		applyBatchedSubmissionArguments(sb, uuids, args);
+		applyBatchedSubmissionArguments(sb, uuids, args, out ,err);
 	}
 
 	@Override
-	protected String buildSubmissionScript(UUID[] batchUuids) {
+	protected String buildSubmissionScript(UUID[] batchUuids, String out, String err) {
 		return ActuatorUtils.posixBuildSubmissionScriptMulti(
 				batchUuids,
+				out,
+				err,
 				String.format("$%s", config.tmpVar),
 				uri,
 				routingKey,

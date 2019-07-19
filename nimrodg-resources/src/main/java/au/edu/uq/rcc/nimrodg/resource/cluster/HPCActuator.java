@@ -25,7 +25,7 @@ public class HPCActuator extends ClusterActuator<HPCConfig> {
 	}
 
 	@Override
-	protected String buildSubmissionScript(UUID[] batchUuids) {
+	protected String buildSubmissionScript(UUID[] batchUuids, String out, String err) {
 		Map<String, Object> agentVars = new HashMap<>();
 		agentVars.put("amqp_uri", uri.uri);
 		agentVars.put("amqp_routing_key", routingKey);
@@ -41,6 +41,8 @@ public class HPCActuator extends ClusterActuator<HPCConfig> {
 
 		return jj.render(config.template, Map.of(
 				"batch_size", batchUuids.length,
+				"output_path", out,
+				"error_path", err,
 				"walltime", 86400, // FIXME:
 				"agent_binary", this.remoteAgentPath,
 				"agent_uuids", batchUuids,
@@ -98,6 +100,8 @@ public class HPCActuator extends ClusterActuator<HPCConfig> {
 		};
 		return Map.of(
 				"batch_size", uuids.length,
+				"output_path", "/remote/path/to/stdout.txt",
+				"error_path", "/remote/path/to/stderr.txt",
 				"walltime", "86400",
 				"agent_binary", "/remote/path/to/agent/binary",
 				"agent_uuids", uuids,
