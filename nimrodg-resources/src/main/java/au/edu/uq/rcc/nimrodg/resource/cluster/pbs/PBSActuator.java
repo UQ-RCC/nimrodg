@@ -54,7 +54,7 @@ public class PBSActuator extends LegacyClusterActuator {
 			throw new IOException("qsub command failed.");
 		}
 
-		/* Get the job ID. This will be the first line of stdout. It may also be empty.*/
+		/* Get the job ID. This will be the first line of stdout. It may also be empty. */
 		String[] lines = qsub.stdout.split("[\r\n]", 2);
 		String jobName = null;
 		if(lines.length >= 1) {

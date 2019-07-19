@@ -46,7 +46,7 @@ public class SLURMActuator extends LegacyClusterActuator {
 
 	@Override
 	protected void applyBatchedSubmissionArguments(StringBuilder sb, UUID[] uuids, String[] processedArgs, String out, String err) {
-		sb.append(String.format("#SBATCH %s\n\n", String.join(" ", processedArgs)));
+		sb.append(String.format("#SBATCH %s\n", String.join(" ", processedArgs)));
 		sb.append(String.format("#SBATCH --output %s\n", ActuatorUtils.posixQuoteArgument(out)));
 		sb.append(String.format("#SBATCH --error %s\n\n", ActuatorUtils.posixQuoteArgument(err)));
 	}
@@ -58,7 +58,7 @@ public class SLURMActuator extends LegacyClusterActuator {
 			throw new IOException("sbatch command failed.");
 		}
 
-		/* Get the job ID. This will be the first line of stdout. It may also be empty.*/
+		/* Get the job ID. This will be the first line of stdout. It may also be empty. */
 		String[] lines = sbatch.stdout.split("[\r\n]", 2);
 		String jobLine;
 		if(lines.length >= 1) {
