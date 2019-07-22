@@ -120,6 +120,6 @@ public abstract class BaseResourceType implements MasterResourceType {
 	protected abstract String getConfigSchema();
 
 	protected InputStream getSchemaByPath(String path) {
-		return BaseResourceType.class.getResourceAsStream("/au/edu/uq/rcc/nimrodg/schema/" + path);
+		return BaseResourceType.class.getResourceAsStream("/au/edu/uq/rcc/nimrodg/resource/" + path);
 	}
 }

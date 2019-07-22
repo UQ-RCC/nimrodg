@@ -24,33 +24,58 @@ import au.edu.uq.rcc.nimrodg.api.AgentProvider;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.api.Resource;
 import au.edu.uq.rcc.nimrodg.api.utils.StringUtils;
+import au.edu.uq.rcc.nimrodg.resource.act.ActuatorUtils;
 import au.edu.uq.rcc.nimrodg.resource.cluster.ClusterResourceType;
 import au.edu.uq.rcc.nimrodg.resource.cluster.HPCActuator;
 import com.hubspot.jinjava.Jinjava;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintStream;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.cert.Certificate;
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
+import javax.json.JsonString;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.Namespace;
 
 public class HPCResourceType extends ClusterResourceType {
 
+	private Map<String, HPCDefinition> hpcDefs;
+
 	public HPCResourceType() {
 		super("hpc", "HPC", "hpcargs");
+		this.hpcDefs = null;
 	}
 
 	@Override
 	protected void buildParserBeforeSubmissionArgs(ArgumentParser argparser) {
 		super.buildParserBeforeSubmissionArgs(argparser);
+
+		if(hpcDefs == null) {
+			try {
+				hpcDefs = loadConfig(new ArrayList<>());
+			} catch(IOException e) {
+				throw new UncheckedIOException(e);
+			}
+		}
+
+		argparser.addArgument("--type")
+				.dest("type")
+				.type(String.class)
+				.required(true)
+				.choices(hpcDefs.keySet())
+				.help("The type of the cluster");
 
 		argparser.addArgument("--ncpus")
 				.dest("ncpus")
@@ -69,12 +94,6 @@ public class HPCResourceType extends ClusterResourceType {
 				.type(String.class)
 				.required(true)
 				.help("Walltime used by an individual job (supports HH[:MM[:SS]] and [Hh][Mm][Ss])");
-
-		argparser.addArgument("--template")
-				.dest("template")
-				.type(String.class)
-				.required(true)
-				.help("Submission Template File");
 	}
 
 	@Override
@@ -82,18 +101,7 @@ public class HPCResourceType extends ClusterResourceType {
 		return "resource_cluster_hpc.json";
 	}
 
-	private static Optional<String> loadAndValidateTemplate(Path path, PrintStream out, PrintStream err) {
-		byte[] raw;
-		try {
-			raw = Files.readAllBytes(path);
-		} catch(IOException e) {
-			err.printf("Unable to load submission template.\n");
-			e.printStackTrace(err);
-			return Optional.empty();
-		}
-
-		String template = new String(raw, StandardCharsets.UTF_8);
-
+	private static boolean validateTemplate(String template, PrintStream out, PrintStream err) {
 		/* Do a dummy render to see if the user's messed up. */
 		Jinjava jj = HPCActuator.createTemplateEngine();
 		Map<String, Object> vars = HPCActuator.createSampleVars();
@@ -102,14 +110,35 @@ public class HPCResourceType extends ClusterResourceType {
 		} catch(RuntimeException e) {
 			err.printf("Malformed template.\n");
 			e.printStackTrace(err);
-			return Optional.empty();
+			return false;
 		}
-		return Optional.of(template);
+
+		return true;
 	}
 
 	@Override
 	protected boolean parseArguments(AgentProvider ap, Namespace ns, PrintStream out, PrintStream err, JsonObjectBuilder jb) {
 		boolean valid = super.parseArguments(ap, ns, out, err, jb);
+
+		assert hpcDefs != null;
+		HPCDefinition hpc = hpcDefs.get(ns.getString("type"));
+		assert hpc != null;
+
+		valid = hpc.template.map(t -> validateTemplate(t, out, err)).orElse(false) && valid;
+		if(!hpc.template.isPresent()) {
+			err.printf("No template in HPC definition.");
+			valid = false;
+		}
+
+		hpc.template.ifPresentOrElse(t -> {
+			jb.add("definition", Json.createObjectBuilder()
+					.add("submit", Json.createArrayBuilder(List.of(hpc.submit)))
+					.add("delete", Json.createArrayBuilder(List.of(hpc.delete)))
+					.add("delete_force", Json.createArrayBuilder(List.of(hpc.deleteForce)))
+					.add("regex", hpc.regex)
+					.add("template", t)
+			);
+		}, () -> err.printf("No template in HPC definition.\n"));
 
 		long ncpus = ns.getLong("ncpus");
 		long mem = StringUtils.parseMemory(ns.getString("mem"));
@@ -124,10 +153,19 @@ public class HPCResourceType extends ClusterResourceType {
 			jb.add("walltime", walltime);
 		}
 
-		Optional<String> template = loadAndValidateTemplate(Paths.get(ns.getString("template")), out, err);
-		valid = template.isPresent() && valid;
-		template.ifPresent(t -> jb.add("template", t));
-
+//		Optional<String> template;
+//		String templatePath = ns.getString("template");
+//		try {
+//			if(templatePath != null) {
+//				template = Optional.of(new String(Files.readAllBytes(Paths.get(templatePath)), StandardCharsets.UTF_8));;
+//			} else {
+//				template = hpc.template;
+//			}
+//		} catch(IOException e) {
+//			err.printf("Malformed template.\n");
+//			e.printStackTrace(err);
+//			template = Optional.empty();
+//		}
 		return valid;
 	}
 
@@ -139,11 +177,7 @@ public class HPCResourceType extends ClusterResourceType {
 				ccfg.getJsonNumber("ncpus").longValue(),
 				ccfg.getJsonNumber("mem").longValue(),
 				ccfg.getJsonNumber("walltime").longValue(),
-				// FIXME:
-				new String[]{"qsub"},
-				new String[]{"qdel"},
-				new String[]{"qdel", "-W", "force"},
-				ccfg.getString("template")
+				parseHpcDef("", ccfg.getJsonObject("definition"), true)
 		));
 	}
 
@@ -152,24 +186,18 @@ public class HPCResourceType extends ClusterResourceType {
 		public final long ncpus;
 		public final long mem;
 		public final long walltime;
-		public final String[] submit;
-		public final String[] delete;
-		public final String[] forceDelete;
-		public final String template;
+		public final HPCDefinition hpc;
 
-		public HPCConfig(ClusterConfig cfg, long ncpus, long mem, long walltime, String[] submit, String[] delete, String[] forceDelete, String template) {
+		public HPCConfig(ClusterConfig cfg, long ncpus, long mem, long walltime, HPCDefinition hpc) {
 			super(cfg);
 			this.ncpus = ncpus;
 			this.mem = mem;
 			this.walltime = walltime;
-			this.submit = Arrays.copyOf(submit, submit.length);
-			this.delete = Arrays.copyOf(delete, delete.length);
-			this.forceDelete = Arrays.copyOf(forceDelete, forceDelete.length);
-			this.template = template;
+			this.hpc = hpc;
 		}
 
 		public HPCConfig(HPCConfig cfg) {
-			this(cfg, cfg.ncpus, cfg.mem, cfg.walltime, cfg.submit, cfg.delete, cfg.forceDelete, cfg.template);
+			this(cfg, cfg.ncpus, cfg.mem, cfg.walltime, cfg.hpc);
 		}
 	}
 
@@ -180,17 +208,87 @@ public class HPCResourceType extends ClusterResourceType {
 		public final String[] delete;
 		public final String[] deleteForce;
 		public final String regex;
+		public final Optional<String> template;
 
 		public HPCDefinition(String name, String[] submit, String[] delete, String[] deleteForce, String regex) {
+			this(name, submit, delete, deleteForce, regex, Optional.empty());
+		}
+
+		public HPCDefinition(String name, String[] submit, String[] delete, String[] deleteForce, String regex, Optional<String> template) {
 			this.name = name;
 			this.submit = submit;
 			this.delete = delete;
 			this.deleteForce = deleteForce;
 			this.regex = regex;
+			this.template = template;
 		}
 	}
 
-	public static final Map<String, HPCDefinition> asdfasdf = Map.of(
-			"pbspro", new HPCDefinition("pbspro", new String[]{"qsub"}, new String[]{"qdel"}, new String[]{"qdel", "-W", "force"}, "^(.+)$")
-	);
+	private static JsonObject SCHEMA_HPC_DEFINITION;
+
+	static {
+		try(InputStream is = HPCActuator.class.getResourceAsStream("hpc_definition.json")) {
+			if(is == null) {
+				throw new IOException("Internal schema doesn't exist. This is a bug.");
+			}
+			SCHEMA_HPC_DEFINITION = Json.createReader(is).readObject();
+		} catch(IOException e) {
+			throw new RuntimeException("Unable to load hpc_definition.json, this is a bug.");
+		}
+	}
+
+	private static HPCDefinition parseHpcDef(String name, JsonObject jo, boolean validate) throws IOException {
+		String template;
+		if(jo.containsKey("template")) {
+			template = jo.getString("template");
+		} else if(jo.containsKey("template_file")) {
+			template = new String(Files.readAllBytes(Paths.get(jo.getString("template_file"))), StandardCharsets.UTF_8);
+		} else {
+			try(InputStream is = HPCActuator.class.getResourceAsStream(String.format("hpc.%s.j2", name))) {
+				template = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+			}
+		}
+
+		String _regex = jo.getString("regex");
+		/* Do a dummy render and attempt to compile the regex. */
+		if(validate) {
+			Jinjava jj = HPCActuator.createTemplateEngine();
+			Map<String, Object> vars = HPCActuator.createSampleVars();
+			jj.render(template, vars);
+
+			Pattern.compile(_regex);
+		}
+
+		return new HPCDefinition(
+				name,
+				jo.getJsonArray("submit").stream().map(jv -> ((JsonString)jv).getString()).toArray(String[]::new),
+				jo.getJsonArray("delete").stream().map(jv -> ((JsonString)jv).getString()).toArray(String[]::new),
+				jo.getJsonArray("delete_force").stream().map(jv -> ((JsonString)jv).getString()).toArray(String[]::new),
+				_regex,
+				Optional.ofNullable(template)
+		);
+	}
+
+	public static Map<String, HPCDefinition> loadConfig(List<String> errors) throws IOException {
+		JsonObject internalConfig;
+		try(InputStream is = HPCActuator.class.getResourceAsStream("hpc.json")) {
+			internalConfig = Json.createReader(is).readObject();
+		}
+
+		if(!ActuatorUtils.validateAgainstSchemaStandalone(SCHEMA_HPC_DEFINITION, internalConfig, errors)) {
+			throw new RuntimeException("Invalid internal HPC configuration, this is a bug.");
+		}
+
+		// TODO: Load sysadmin and user config
+		return internalConfig.entrySet().stream().collect(Collectors.toMap(
+				e -> e.getKey(),
+				e -> {
+					try {
+						return parseHpcDef(e.getKey(), e.getValue().asJsonObject(), true);
+					} catch(IOException ee) {
+						throw new UncheckedIOException(ee);
+					}
+				}
+		));
+	}
 }

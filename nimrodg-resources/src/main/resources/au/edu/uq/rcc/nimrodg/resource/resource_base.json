@@ -99,19 +99,12 @@
 				{
 					"type": "object",
 					"properties": {
-						"template": { "type": "string" },
-						"submit_command": {
-							"type": "array",
-							"items": { "type": "string" },
-							"minItems": 1
-						},
-						"delete_command": {
-							"type": "array",
-							"items": { "type": "string" },
-							"minItems": 1
-						}
+                        "definition": { "$ref": "cluster/hpc_definition.json#/definitions/hpc_definition" },
+                        "ncpus": { "type": "integer", "minimum": 1},
+                        "mem": { "type": "integer", "minimum": 1},
+                        "walltime": { "type": "integer", "minimum": 1}
 					},
-					"required": ["template"]
+					"required": ["definition", "ncpus", "mem", "walltime"]
 				}
 			]
 		}

@@ -63,7 +63,7 @@ public class HPCActuator extends ClusterActuator<HPCConfig> {
 		agentVars.put("output", "workroot");
 		agentVars.put("batch", false);
 
-		return jj.render(config.template, Map.of(
+		return jj.render(config.hpc.template.get(), Map.of(
 				"batch_uuid", batchUuid,
 				"batch_size", agentUuids.length,
 				"output_path", out,
@@ -90,7 +90,7 @@ public class HPCActuator extends ClusterActuator<HPCConfig> {
 
 	@Override
 	protected boolean killJob(RemoteShell shell, String jobId) {
-		String[] args = Stream.concat(Arrays.stream(config.forceDelete), Stream.of(jobId)).toArray(String[]::new);
+		String[] args = Stream.concat(Arrays.stream(config.hpc.deleteForce), Stream.of(jobId)).toArray(String[]::new);
 		try {
 			shell.runCommand(args);
 		} catch(IOException ex) {
