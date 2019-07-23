@@ -162,26 +162,9 @@ public class ResourceCmd extends NimrodCLICommand {
 			return 0;
 		}
 
-		/*
-		 * Handle the case where we don't know about the resource type.
-		 * We should still be able to print it.
-		 */
-		String typename;
-		try {
-			typename = n.getType().getName();
-		} catch(NimrodAPIException e) {
-			e.printStackTrace(err);
-			Throwable t = e.getCause();
-			if(t instanceof ClassNotFoundException) {
-				typename = String.format("<unknown> (%s)", ((ClassNotFoundException)t).getMessage());
-			} else {
-				typename = "<unknown>";
-			}
-		}
-
 		out.printf("Resource Information:\n");
 		out.printf("  Name:   %s\n", n.getName());
-		out.printf("  Type:   %s\n", typename);
+		out.printf("  Type:   %s\n", n.getTypeName());
 
 		out.printf("Config:");
 		prettyPrint(n.getConfig(), out);

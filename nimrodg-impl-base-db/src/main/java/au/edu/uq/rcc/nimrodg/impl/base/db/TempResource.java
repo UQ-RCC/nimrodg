@@ -72,6 +72,11 @@ public class TempResource {
 		}
 
 		@Override
+		public String getTypeName() {
+			return typeName;
+		}
+
+		@Override
 		public ResourceType getType() {
 			try {
 				return ResourceUtils.createType(typeClass);
