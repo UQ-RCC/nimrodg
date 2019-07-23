@@ -125,16 +125,11 @@ public class ResourceCmd extends NimrodCLICommand {
 	}
 
 	private int executeRemove(NimrodAPI api, Namespace args, PrintStream out, PrintStream err) throws IOException, NimrodAPIException {
-
-		String path = args.getString("resource_name");
-
-		Resource node = api.getResource(path);
-		if(node == null) {
-			err.printf("No such resource '%s'.\n", path);
-			return 1;
-		}
-
-		api.deleteResource(node);
+		args.getList("resource_name").stream()
+				.distinct()
+				.map(r -> api.getResource((String)r))
+				.filter(r -> r != null)
+				.forEach(r -> api.deleteResource(r));
 		return 0;
 	}
 
@@ -169,7 +164,7 @@ public class ResourceCmd extends NimrodCLICommand {
 
 		out.printf("Resource Information:\n");
 		out.printf("  Name:   %s\n", n.getName());
-		out.printf("  Type:   %s\n", n.getType().getName());
+		out.printf("  Type:   %s\n", n.getTypeName());
 
 		out.printf("Config:");
 		prettyPrint(n.getConfig(), out);
@@ -220,19 +215,13 @@ public class ResourceCmd extends NimrodCLICommand {
 			return 1;
 		}
 
-		boolean failed = false;
-		List<String> ress = args.getList("resource_name");
-		for(String path : ress) {
-			Resource node = api.getResource(path);
-			if(node == null) {
-				err.printf("No such resource '%s'.\n", path);
-				failed = true;
-				continue;
-			}
+		args.getList("resource_name").stream()
+				.distinct()
+				.map(r -> api.getResource((String)r))
+				.filter(r -> r != null)
+				.forEach(r -> api.unassignResource(r, exp));
 
-			api.unassignResource(node, exp);
-		}
-		return failed ? 1 : 0;
+		return 0;
 	}
 
 	private static void addNameArgument(Subparser sp) {
@@ -282,10 +271,10 @@ public class ResourceCmd extends NimrodCLICommand {
 
 			{
 				Subparser sp = subs.addParser("remove")
-						.help("Remove a resource node.")
-						.description("Remove a resource node and all its children.");
+						.help("Remove resources.")
+						.description("Remove one or more resources.");
 
-				addNameArgument(sp);
+				addNameArgumentMultiple(sp);
 			}
 
 			{

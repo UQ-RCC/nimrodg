@@ -25,6 +25,8 @@ public interface Resource extends NimrodEntity {
 
 	String getName();
 
+	String getTypeName();
+
 	ResourceType getType();
 
 	JsonStructure getConfig();
