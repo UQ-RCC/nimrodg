@@ -25,6 +25,7 @@ import au.edu.uq.rcc.nimrodg.api.Resource;
 import au.edu.uq.rcc.nimrodg.resource.HPCResourceType.HPCConfig;
 import au.edu.uq.rcc.nimrodg.resource.act.ActuatorUtils;
 import au.edu.uq.rcc.nimrodg.resource.ssh.RemoteShell;
+import au.edu.uq.rcc.nimrodg.resource.ssh.SSHClient;
 import com.hubspot.jinjava.Jinjava;
 import com.hubspot.jinjava.interpret.JinjavaInterpreter;
 import com.hubspot.jinjava.lib.filter.Filter;
@@ -34,6 +35,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -42,10 +45,12 @@ public class HPCActuator extends ClusterActuator<HPCConfig> {
 
 	private static final Logger LOGGER = LogManager.getLogger(HPCActuator.class);
 	private final Jinjava jj;
+	private final Pattern jobRegex;
 
 	public HPCActuator(Operations ops, Resource node, NimrodURI amqpUri, Certificate[] certs, HPCConfig cfg) throws IOException {
 		super(ops, node, amqpUri, certs, cfg);
 		this.jj = createTemplateEngine();
+		this.jobRegex = Pattern.compile(cfg.hpc.regex);
 	}
 
 	@Override
@@ -86,7 +91,32 @@ public class HPCActuator extends ClusterActuator<HPCConfig> {
 
 	@Override
 	protected String submitBatch(RemoteShell shell, TempBatch batch) throws IOException {
-		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+		String[] args = Stream.concat(Arrays.stream(config.hpc.submit), Stream.of(batch.scriptPath)).toArray(String[]::new);
+		SSHClient.CommandResult qsub = shell.runCommand(args);
+		if(qsub.status != 0) {
+			throw new IOException("submission command failed");
+		}
+
+		/* Get the job ID. This will be the first line of stdout. It may also be empty. */
+		String[] lines = qsub.stdout.split("[\r\n]", 2);
+		String jobLine;
+		if(lines.length >= 1) {
+			jobLine = lines[0];
+		} else {
+			jobLine = "";
+		}
+
+		Matcher m = jobRegex.matcher(jobLine);
+		if(!m.matches()) {
+			throw new IOException("submission returned invalid or no job name");
+		}
+
+		if(!qsub.stderr.isEmpty()) {
+			LOGGER.warn("Remote stderr not empty:");
+			LOGGER.warn(qsub.stderr.trim());
+		}
+
+		return m.group(1);
 	}
 
 	@Override
