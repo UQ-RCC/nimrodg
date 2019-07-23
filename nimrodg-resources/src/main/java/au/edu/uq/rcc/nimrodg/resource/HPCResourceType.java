@@ -39,6 +39,7 @@ import java.security.cert.Certificate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.json.Json;
@@ -93,6 +94,12 @@ public class HPCResourceType extends ClusterResourceType {
 				.type(String.class)
 				.required(true)
 				.help("Walltime used by an individual job (supports HH[:MM[:SS]] and [Hh][Mm][Ss])");
+
+		argparser.addArgument("--account")
+				.dest("account")
+				.type(String.class)
+				.required(false)
+				.help("Account String");
 	}
 
 	@Override
@@ -142,19 +149,11 @@ public class HPCResourceType extends ClusterResourceType {
 			jb.add("walltime", walltime);
 		}
 
-//		Optional<String> template;
-//		String templatePath = ns.getString("template");
-//		try {
-//			if(templatePath != null) {
-//				template = Optional.of(new String(Files.readAllBytes(Paths.get(templatePath)), StandardCharsets.UTF_8));;
-//			} else {
-//				template = hpc.template;
-//			}
-//		} catch(IOException e) {
-//			err.printf("Malformed template.\n");
-//			e.printStackTrace(err);
-//			template = Optional.empty();
-//		}
+		String account = ns.getString("account");
+		if(account != null) {
+			jb.add("account", account);
+		}
+
 		return valid;
 	}
 
@@ -166,6 +165,7 @@ public class HPCResourceType extends ClusterResourceType {
 				ccfg.getJsonNumber("ncpus").longValue(),
 				ccfg.getJsonNumber("mem").longValue(),
 				ccfg.getJsonNumber("walltime").longValue(),
+				Optional.ofNullable(ccfg.get("account")).map(jv -> ((JsonString)jv).getString()),
 				parseHpcDef("", ccfg.getJsonObject("definition"), true)
 		));
 	}
@@ -175,18 +175,20 @@ public class HPCResourceType extends ClusterResourceType {
 		public final long ncpus;
 		public final long mem;
 		public final long walltime;
+		public final Optional<String> account;
 		public final HPCDefinition hpc;
 
-		public HPCConfig(ClusterConfig cfg, long ncpus, long mem, long walltime, HPCDefinition hpc) {
+		public HPCConfig(ClusterConfig cfg, long ncpus, long mem, long walltime, Optional<String> account, HPCDefinition hpc) {
 			super(cfg);
 			this.ncpus = ncpus;
 			this.mem = mem;
 			this.walltime = walltime;
+			this.account = account;
 			this.hpc = hpc;
 		}
 
 		public HPCConfig(HPCConfig cfg) {
-			this(cfg, cfg.ncpus, cfg.mem, cfg.walltime, cfg.hpc);
+			this(cfg, cfg.ncpus, cfg.mem, cfg.walltime, cfg.account, cfg.hpc);
 		}
 	}
 

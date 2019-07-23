@@ -6,6 +6,7 @@
 #SBATCH --mem-per-cpu={{ (job_mem / job_ncpus / 1024)|round(0, 'ceil') }}K
 #SBATCH --output {{ output_path|quote }}
 #SBATCH --error {{ error_path|quote }}
+{% if job_account is defined %}#SBATCH --account {{ job_account|quote }}{% endif %}
 
 ##
 # Nimrod/G Batch Submission Script

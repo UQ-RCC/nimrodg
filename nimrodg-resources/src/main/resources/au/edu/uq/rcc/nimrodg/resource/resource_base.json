@@ -102,7 +102,8 @@
                         "definition": { "$ref": "cluster/hpc_definition.json#/definitions/hpc_definition" },
                         "ncpus": { "type": "integer", "minimum": 1},
                         "mem": { "type": "integer", "minimum": 1},
-                        "walltime": { "type": "integer", "minimum": 1}
+						"walltime": { "type": "integer", "minimum": 1},
+						"account": { "type": "string" }
 					},
 					"required": ["definition", "ncpus", "mem", "walltime"]
 				}

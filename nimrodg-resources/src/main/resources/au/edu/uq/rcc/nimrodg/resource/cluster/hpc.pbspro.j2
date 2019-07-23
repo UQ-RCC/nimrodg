@@ -4,6 +4,7 @@
 #PBS -l select=1:ncpus={{ job_ncpus * batch_size }}:mem={{ job_mem }}b
 #PBS -o {{ output_path|quote }}
 #PBS -e {{ error_path|quote }}
+{% if job_account is defined %}#PBS -A {{ job_account|quote }}{% endif %}
 
 ##
 # Nimrod/G Batch Submission Script

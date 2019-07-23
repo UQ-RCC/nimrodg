@@ -63,18 +63,19 @@ public class HPCActuator extends ClusterActuator<HPCConfig> {
 		agentVars.put("output", "workroot");
 		agentVars.put("batch", false);
 
-		return jj.render(config.hpc.template, Map.of(
-				"batch_uuid", batchUuid,
-				"batch_size", agentUuids.length,
-				"output_path", out,
-				"error_path", err,
-				"job_ncpus", config.ncpus,
-				"job_mem", config.mem,
-				"job_walltime", config.walltime,
-				"agent_binary", this.remoteAgentPath,
-				"agent_uuids", agentUuids,
-				"agent_args", agentVars
-		));
+		Map<String, Object> vars = new HashMap<>();
+		vars.put("batch_uuid", batchUuid);
+		vars.put("batch_size", agentUuids.length);
+		vars.put("output_path", out);
+		vars.put("error_path", err);
+		config.account.ifPresent(acc -> vars.put("job_account", acc));
+		vars.put("job_ncpus", config.ncpus);
+		vars.put("job_mem", config.mem);
+		vars.put("job_walltime", config.walltime);
+		vars.put("agent_binary", this.remoteAgentPath);
+		vars.put("agent_uuids", agentUuids);
+		vars.put("agent_args", agentVars);
+		return jj.render(config.hpc.template, vars);
 	}
 
 	@Override
@@ -137,6 +138,7 @@ public class HPCActuator extends ClusterActuator<HPCConfig> {
 				"batch_size", uuids.length,
 				"output_path", "/remote/path/to/stdout.txt",
 				"error_path", "/remote/path/to/stderr.txt",
+				"job_account", "account",
 				"job_ncpus", 12,
 				"job_mem", 4294967296L,
 				"job_walltime", 86400,
