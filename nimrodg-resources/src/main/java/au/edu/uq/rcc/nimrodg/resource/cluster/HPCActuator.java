@@ -63,7 +63,7 @@ public class HPCActuator extends ClusterActuator<HPCConfig> {
 		agentVars.put("output", "workroot");
 		agentVars.put("batch", false);
 
-		return jj.render(config.hpc.template.get(), Map.of(
+		return jj.render(config.hpc.template, Map.of(
 				"batch_uuid", batchUuid,
 				"batch_size", agentUuids.length,
 				"output_path", out,

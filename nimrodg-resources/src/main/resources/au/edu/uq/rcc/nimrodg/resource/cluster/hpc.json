@@ -3,19 +3,21 @@
     "submit": ["qsub"],
     "delete": ["qdel"],
     "delete_force": ["qdel", "-W", "force"],
-    "regex": "^(.+)$"
+    "regex": "^(.+)$",
+    "template_classpath": "au/edu/uq/rcc/nimrodg/resource/cluster/hpc.pbspro.j2"
   },
   "slurm": {
     "submit": ["sbatch"],
     "delete": ["scancel", "-b"],
     "delete_force": ["scancel", "-f", "-s", "KILL"],
-    "regex": "^.*?(\\d+).*$"
+    "regex": "^.*?(\\d+).*$",
+    "template_classpath": "au/edu/uq/rcc/nimrodg/resource/cluster/hpc.slurm.j2"
   },
   "lsf": {
     "submit": ["bsub", "-f"],
     "delete": ["bkill"],
     "delete_force": ["bkill", "-s", "KILL"],
-    "regex": "^Job\\s+<([^>]+)>.*$"
+    "regex": "^Job\\s+<([^>]+)>.*$",
+    "template_classpath": "au/edu/uq/rcc/nimrodg/resource/cluster/hpc.lsf.j2"
   }
 }
-

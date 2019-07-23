@@ -41,6 +41,13 @@
                 "template_file": { "type": "string" }
               },
               "required": ["template_file"]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "template_file": { "type": "string" }
+              },
+              "required": ["template_classpath"]
             }
           ]
         }
@@ -50,5 +57,6 @@
       "type": "object",
       "additionalProperties": { "$ref": "#/definitions/hpc_definition" }
     }
-  }
+  },
+  "$ref": "#/definitions/hpc_definition_file"
 }

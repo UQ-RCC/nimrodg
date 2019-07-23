@@ -39,7 +39,6 @@ import java.security.cert.Certificate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.json.Json;
@@ -124,21 +123,11 @@ public class HPCResourceType extends ClusterResourceType {
 		HPCDefinition hpc = hpcDefs.get(ns.getString("type"));
 		assert hpc != null;
 
-		valid = hpc.template.map(t -> validateTemplate(t, out, err)).orElse(false) && valid;
-		if(!hpc.template.isPresent()) {
-			err.printf("No template in HPC definition.");
-			valid = false;
-		}
+		valid = validateTemplate(hpc.template, out, err) && valid;
 
-		hpc.template.ifPresentOrElse(t -> {
-			jb.add("definition", Json.createObjectBuilder()
-					.add("submit", Json.createArrayBuilder(List.of(hpc.submit)))
-					.add("delete", Json.createArrayBuilder(List.of(hpc.delete)))
-					.add("delete_force", Json.createArrayBuilder(List.of(hpc.deleteForce)))
-					.add("regex", hpc.regex)
-					.add("template", t)
-			);
-		}, () -> err.printf("No template in HPC definition.\n"));
+		if(valid) {
+			jb.add("definition", hpc.toJson());
+		}
 
 		long ncpus = ns.getLong("ncpus");
 		long mem = StringUtils.parseMemory(ns.getString("mem"));
@@ -208,19 +197,25 @@ public class HPCResourceType extends ClusterResourceType {
 		public final String[] delete;
 		public final String[] deleteForce;
 		public final String regex;
-		public final Optional<String> template;
+		public final String template;
 
-		public HPCDefinition(String name, String[] submit, String[] delete, String[] deleteForce, String regex) {
-			this(name, submit, delete, deleteForce, regex, Optional.empty());
-		}
-
-		public HPCDefinition(String name, String[] submit, String[] delete, String[] deleteForce, String regex, Optional<String> template) {
+		public HPCDefinition(String name, String[] submit, String[] delete, String[] deleteForce, String regex, String template) {
 			this.name = name;
 			this.submit = submit;
 			this.delete = delete;
 			this.deleteForce = deleteForce;
 			this.regex = regex;
 			this.template = template;
+		}
+
+		public JsonObject toJson() {
+			return Json.createObjectBuilder()
+					.add("submit", Json.createArrayBuilder(List.of(submit)))
+					.add("delete", Json.createArrayBuilder(List.of(delete)))
+					.add("delete_force", Json.createArrayBuilder(List.of(deleteForce)))
+					.add("regex", regex)
+					.add("template", template)
+					.build();
 		}
 	}
 
@@ -243,11 +238,19 @@ public class HPCResourceType extends ClusterResourceType {
 			template = jo.getString("template");
 		} else if(jo.containsKey("template_file")) {
 			template = new String(Files.readAllBytes(Paths.get(jo.getString("template_file"))), StandardCharsets.UTF_8);
-		} else {
-			try(InputStream is = HPCActuator.class.getResourceAsStream(String.format("hpc.%s.j2", name))) {
+		} else if(jo.containsKey("template_classpath")) {
+			try(InputStream is = HPCResourceType.class.getClassLoader().getResourceAsStream(jo.getString("template_classpath"))) {
+				if(is == null) {
+					throw new IOException("No such template in classpath");
+				}
 				template = new String(is.readAllBytes(), StandardCharsets.UTF_8);
 			}
+		} else {
+			/* Should never get here. */
+			throw new IllegalStateException();
 		}
+
+		assert template != null;
 
 		String _regex = jo.getString("regex");
 		/* Do a dummy render and attempt to compile the regex. */
@@ -265,7 +268,7 @@ public class HPCResourceType extends ClusterResourceType {
 				jo.getJsonArray("delete").stream().map(jv -> ((JsonString)jv).getString()).toArray(String[]::new),
 				jo.getJsonArray("delete_force").stream().map(jv -> ((JsonString)jv).getString()).toArray(String[]::new),
 				_regex,
-				Optional.ofNullable(template)
+				template
 		);
 	}
 
