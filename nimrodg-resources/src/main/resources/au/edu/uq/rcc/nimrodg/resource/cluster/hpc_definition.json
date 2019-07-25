@@ -45,7 +45,7 @@
             {
               "type": "object",
               "properties": {
-                "template_file": { "type": "string" }
+                "template_classpath": { "type": "string" }
               },
               "required": ["template_classpath"]
             }
