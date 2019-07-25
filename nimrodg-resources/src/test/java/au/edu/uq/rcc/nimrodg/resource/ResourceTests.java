@@ -318,7 +318,7 @@ public class ResourceTests {
 	@Test
 	public void pbsProBatchArgsTest() {
 		JsonObject expected;
-		try(JsonReader p = Json.createReader(new StringReader("{\"agent_platform\":\"x86_64-pc-linux-musl\",\"transport\":{\"name\":\"sshd\",\"uri\":\"ssh://user@pbscluster.com\",\"keyfile\":\"/path/to/key\",\"hostkeys\":[\"ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQDMIAQc5QFZfdjImP2T9FNGe9r6l89binb5uH/vxzlnhAtHxesD8B7WXFBN/GxOplb3ih/vadT9gWliXUayvMn+ZMO7iBScnZwdmcMeKP3K80Czlrio+eI3jU77RQPYXBtcD8CBRT94r7nd29I+lMWxOD1U+LBA43kxAbyXqkQ0PQ==\"]},\"tmpvar\":\"TMPDIR\",\"pbsargs\":[\"-A\",\"ACCOUNTSTRING\"],\"limit\":100,\"max_batch_size\":10,\"batch_config\":[{\"name\":\"walltime\",\"value\":864000,\"scale\":false},{\"name\":\"pmem\",\"value\":2000000000000,\"scale\":false},{\"name\":\"pvmem\",\"value\":1000000000000,\"scale\":false},{\"name\":\"ncpus\",\"value\":1,\"scale\":true},{\"name\":\"mem\",\"value\":1073741824,\"scale\":true},{\"name\":\"vmem\",\"value\":536870912000,\"scale\":true},{\"name\":\"mpiprocs\",\"value\":1,\"scale\":true},{\"name\":\"ompthreads\",\"value\":1,\"scale\":true}]}"))) {
+		try(JsonReader p = Json.createReader(new StringReader("{\"agent_platform\":\"x86_64-pc-linux-musl\",\"transport\":{\"name\":\"sshd\",\"uri\":\"ssh://user@pbscluster.com\",\"keyfile\":\"/path/to/key\",\"hostkeys\":[\"ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQDMIAQc5QFZfdjImP2T9FNGe9r6l89binb5uH/vxzlnhAtHxesD8B7WXFBN/GxOplb3ih/vadT9gWliXUayvMn+ZMO7iBScnZwdmcMeKP3K80Czlrio+eI3jU77RQPYXBtcD8CBRT94r7nd29I+lMWxOD1U+LBA43kxAbyXqkQ0PQ==\"]},\"tmpvar\":\"TMPDIR\",\"pbsargs\":[\"-A\",\"ACCOUNTSTRING\"],\"limit\":100,\"max_batch_size\":10,\"batch_config\":[{\"name\":\"walltime\",\"value\":36000,\"scale\":false},{\"name\":\"pmem\",\"value\":2000000000000,\"scale\":false},{\"name\":\"pvmem\",\"value\":1000000000000,\"scale\":false},{\"name\":\"ncpus\",\"value\":1,\"scale\":true},{\"name\":\"mem\",\"value\":1073741824,\"scale\":true},{\"name\":\"vmem\",\"value\":536870912000,\"scale\":true},{\"name\":\"mpiprocs\",\"value\":1,\"scale\":true},{\"name\":\"ompthreads\",\"value\":1,\"scale\":true}]}"))) {
 			expected = p.readObject();
 		}
 
@@ -358,7 +358,7 @@ public class ResourceTests {
 		String[] subArgs = d.buildSubmissionArguments(5, js.getJsonArray("batch_config").stream().map(j -> (JsonObject)j).toArray(JsonObject[]::new), pbsargs);
 		String[] expectedArgs = new String[]{
 			"-A", "ACCOUNTSTRING",
-			"-l", "walltime=864000",
+			"-l", "walltime=36000",
 			"-l", "pmem=2000000000000b",
 			"-l", "pvmem=1000000000000b",
 			"-l", "select=1:ncpus=5:mem=5368709120b:vmem=2684354560000b:mpiprocs=5:ompthreads=5"

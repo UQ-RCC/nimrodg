@@ -29,9 +29,9 @@ import java.util.regex.Pattern;
 
 public class StringUtils {
 
-	/* HH[:MM[:SS]] */
-	private static final Pattern WALLTIME_PATTERN1 = Pattern.compile("^(\\d+)(?::(\\d+)(?::(\\d+)(?::(\\d+))?)?)?$");
-	/* [Hh][Mm][Ss]*/
+	/* [[HH:]MM:]SS */
+	private static final Pattern WALLTIME_PATTERN1 = Pattern.compile("^(\\d+)(?::(\\d+)(?::(\\d+)?)?)?$");
+	/* [Dd][Hh][Mm][Ss] */
 	private static final Pattern WALLTIME_PATTERN2 = Pattern.compile("^(?:(\\d+)d)?(?:(\\d+)h)?(?:(\\d+)m)?(?:(\\d+)s)?$");
 
 	private static final Pattern MEMORY_PATTERN = Pattern.compile("^(\\d+)([EPTGMK](?:i?[bB])?|[bB])?$");
@@ -410,6 +410,36 @@ public class StringUtils {
 	}
 
 	private static long processWalltimeMatcher(Matcher m) {
+		String hour = null, minute = null, second;
+
+		if(m.group(2) == null) {
+			second = m.group(1);
+		} else if(m.group(3) == null) {
+			minute = m.group(1);
+			second = m.group(2);
+		} else {
+			hour = m.group(1);
+			minute = m.group(2);
+			second = m.group(3);
+		}
+
+		long seconds = 0;
+
+		if(hour != null) {
+			seconds += Long.parseUnsignedLong(hour) * 3600L;
+		}
+
+		if(minute != null) {
+			seconds += Long.parseUnsignedLong(minute) * 60L;
+		}
+
+		if(second != null) {
+			seconds += Long.parseUnsignedLong(second);
+		}
+		return seconds;
+	}
+
+	private static long processWalltimeMatcher2(Matcher m) {
 		String day = m.group(1);
 		String hour = m.group(2);
 		String minute = m.group(3);
@@ -447,7 +477,7 @@ public class StringUtils {
 
 		m = WALLTIME_PATTERN2.matcher(s);
 		if(m.matches()) {
-			return processWalltimeMatcher(m);
+			return processWalltimeMatcher2(m);
 		}
 
 		throw new IllegalArgumentException();
