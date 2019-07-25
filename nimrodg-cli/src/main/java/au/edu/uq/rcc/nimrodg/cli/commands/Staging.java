@@ -34,6 +34,7 @@ import au.edu.uq.rcc.nimrodg.cli.DefaultCLICommand;
 import au.edu.uq.rcc.nimrodg.cli.NimrodCLI;
 import au.edu.uq.rcc.nimrodg.cli.NimrodCLICommand;
 import au.edu.uq.rcc.nimrodg.parsing.ANTLR4ParseAPIImpl;
+import au.edu.uq.rcc.nimrodg.resource.HPCResourceType;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.reflect.InvocationTargetException;
@@ -49,9 +50,6 @@ import javax.json.JsonObjectBuilder;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
 import au.edu.uq.rcc.nimrodg.api.Resource;
-import au.edu.uq.rcc.nimrodg.setup.NimrodSetupAPI;
-import java.security.cert.Certificate;
-import javax.json.JsonValue;
 
 public class Staging extends DefaultCLICommand {
 
@@ -181,7 +179,7 @@ public class Staging extends DefaultCLICommand {
 		}
 
 		CompiledRun cr = PARSE_API.parseRunToBuilder(
-				String.format("parameter x integer range from 0 to 10 step 1\n"
+				String.format("parameter x integer range from 0 to 10000 step 1\n"
 						+ "task main\n"
 						+ "    onerror fail\n"
 						+ "    shexec \"sleep %d\"\n"
@@ -197,42 +195,57 @@ public class Staging extends DefaultCLICommand {
 //		Resource flashlite = createFlashlite(nimrod, "flashlite");
 //		nimrod.assignResource(flashlite, exp1);
 
-		Resource local = createLocal(nimrod, "local", "x86_64-pc-linux-musl", nAgents);
-		nimrod.assignResource(local, exp1);
+//		Resource local = createLocal(nimrod, "local", "x86_64-pc-linux-musl", nAgents);
+//		nimrod.assignResource(local, exp1);
 //
 //		Resource[] slaves = createSlaves(nimrod);
 //
 //		for(int i = 0; i < slaves.length; ++i) {
 //			nimrod.assignResource(slaves[i], exp1);
 //		}
-	}
-
-	public void pbsTest(UserConfig config, PrintStream out, PrintStream err, String[] args) throws Exception {
-		NimrodSetupAPI sapi = NimrodCLICommand.createFactory(config).getSetupAPI(config);
-		try {
-			sapi.addResourceType("pbspro2", au.edu.uq.rcc.nimrodg.resource.HPCResourceType.class);
-		} catch(NimrodSetupAPI.SetupException e) {
-
+		HPCResourceType hpcr = new HPCResourceType();
+		Resource tinaroo = nimrod.getResource("tinaroo");
+		if(tinaroo != null) {
+			nimrod.deleteResource(tinaroo);
 		}
 
-		try(NimrodMasterAPI nimrod = (NimrodMasterAPI)NimrodCLICommand.createFactory(config).createNimrod(config)) {
-			Resource res = nimrod.getResource("pbspro2");
-			if(res != null) {
-				nimrod.deleteResource(res);
-			}
+		JsonObject cfg = hpcr.parseCommandArguments(nimrod, new String[]{
+			"--platform", "x86_64-pc-linux-musl",
+			"--transport", "openssh",
+			"--uri", "ssh://tinaroo1",
+			"--limit", "10",
+			"--tmpvar", "TMPDIR",
+			"--max-batch-size", "10",
+			"--type", "pbspro",
+			"--ncpus", "1",
+			"--mem", "1GiB",
+			"--walltime", "24:00:00",
+			"--account", "UQ-RCC"
+		}, out, err).asJsonObject();
 
-			JsonObjectBuilder stor = createBaseRCCConfig("tinaroo.rcc.uq.edu.au", "");
-			res = nimrod.addResource("pbspro2", "hpc", stor.build(), null, null);
+		tinaroo = nimrod.addResource("tinaroo", "hpc", cfg, null, null);
+		nimrod.assignResource(tinaroo, exp1);
 
-			UUID[] uuids = new UUID[10];
-			for(int i = 0; i < uuids.length; ++i) {
-				uuids[i] = UUID.randomUUID();
-			}
-			try(Actuator act = nimrod.createActuator(new NullOps(nimrod), res, new Certificate[0])) {
-				Actuator.LaunchResult lrs[] = act.launchAgents(uuids);
-				int x = 0;
-			}
+		Resource wiener = nimrod.getResource("wiener");
+		if(wiener != null) {
+			nimrod.deleteResource(wiener);
 		}
+
+		JsonObject wcfg = hpcr.parseCommandArguments(nimrod, new String[]{
+			"--platform", "x86_64-pc-linux-musl",
+			"--transport", "openssh",
+			"--uri", "ssh://wiener",
+			"--limit", "10",
+			"--tmpvar", "TMPDIR",
+			"--max-batch-size", "10",
+			"--type", "slurm",
+			"--ncpus", "1",
+			"--mem", "1GiB",
+			"--walltime", "24:00:00"
+		}, out, err).asJsonObject();
+
+		wiener = nimrod.addResource("wiener", "hpc", wcfg, null, null);
+		nimrod.assignResource(wiener, exp1);
 	}
 
 	private class NullOps implements Actuator.Operations {
@@ -256,8 +269,7 @@ public class Staging extends DefaultCLICommand {
 	}
 
 	public static void main(String[] args) throws Exception, Exception {
-		//System.exit(NimrodCLI.cliMain(new String[]{"-d", "staging", "nAgentSleep", "6", "60"}));
-		System.exit(NimrodCLI.cliMain(new String[]{"-d", "staging", "pbsTest"}));
+		System.exit(NimrodCLI.cliMain(new String[]{"-d", "staging", "nAgentSleep", "6", "60"}));
 	}
 
 	private static final Path RCC_CLUSTER_KEY_PATH = Paths.get("/home/zane/.ssh/uqzvanim-tinaroo");
