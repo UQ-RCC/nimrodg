@@ -101,6 +101,7 @@ jobs — millions if need be.
 	packageUrl = 'https://rcc.uq.edu.au/nimrod'
 
 	packageInstallDir = '/usr/share/nimrod'
+	packageConfigDir = '/etc/xdg/nimrod'
 
 	agentVersion = '1.2.0'
 	agentList = [
@@ -137,6 +138,42 @@ agentList.each { agent ->
 	[distTar, distZip].each { it.dependsOn += "verifyAgent${agent.platform}" }
 }
 
+def distContents = copySpec {
+	with distributions.main.contents
+\
+	/* Lintian gets cranky about this. */
+	exclude 'nimrod.bat'
+}
+
+def distConfigs = copySpec {
+	def nimres = project(':nimrodg-resources')
+
+	from('setup-defaults.ini')
+	from('hpc.json')
+	from(nimres.file("src/main/resources/au/edu/uq/rcc/nimrodg/resource/cluster/hpc.pbspro.j2"))
+	from(nimres.file("src/main/resources/au/edu/uq/rcc/nimrodg/resource/cluster/hpc.slurm.j2"))
+	from(nimres.file("src/main/resources/au/edu/uq/rcc/nimrodg/resource/cluster/hpc.lsf.j2"))
+
+	fileMode 0644
+
+	into packageConfigDir
+
+//	File f = new File("${destinationDir}/hpc.json")
+//	def hpc = new groovy.json.JsonSlurper().parseText(f.text)
+//
+//	/* Rewrite hpc.json to reference the external templates. */
+//	hpc.each {
+//		it.value.remove('template')
+//		it.value.remove('template_file')
+//		it.value.remove('template_classpath')
+//		it.value.template_file = "${packageConfigDir}/hpc.${it.key}.j2"
+//	}
+//
+//	f.text = groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(hpc))
+//
+//	from(f)
+}
+
 import org.redline_rpm.header.Flags
 
 task buildDeb(type: Deb, dependsOn: assembleDist) {
@@ -167,20 +204,10 @@ task buildDeb(type: Deb, dependsOn: assembleDist) {
 
 	into project.packageInstallDir
 
-	def distContents = copySpec {
-		with distributions.main.contents
-
-		/* Lintian gets cranky about this. */
-		exclude 'nimrod.bat'
-	}
 	with distContents
 
-	from('setup-defaults.ini') {
-		into '/etc/xdg/nimrod'
-		fileMode 0644
-	}
-
-	configurationFile('/etc/xdg/nimrod/setup-defaults.ini')
+	with distConfigs
+	distConfigs.eachFile { configurationFile("/${it.path}") }
 
 	link('/usr/bin/nimrod', "${project.packageInstallDir}/bin/nimrod")
 }
@@ -205,18 +232,11 @@ task buildRpm(type: Rpm, dependsOn: assembleDist) {
 
 	into project.packageInstallDir
 
-	def distContents = copySpec {
-		with distributions.main.contents
-
-		/* Lintian gets cranky about this. */
-		exclude 'nimrod.bat'
-	}
-
 	with distContents
 
-	from('setup-defaults.ini') {
-		into '/etc/xdg/nimrod'
-		fileMode 0644
+	with distConfigs
+	/* FIXME: This doesn't work. */
+	distConfigs.eachFile {
 		fileType CONFIG
 	}
 
