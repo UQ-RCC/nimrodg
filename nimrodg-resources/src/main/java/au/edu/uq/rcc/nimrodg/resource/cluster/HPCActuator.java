@@ -30,6 +30,7 @@ import com.hubspot.jinjava.Jinjava;
 import com.hubspot.jinjava.interpret.JinjavaInterpreter;
 import com.hubspot.jinjava.lib.filter.Filter;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.security.cert.Certificate;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -184,5 +185,14 @@ public class HPCActuator extends ClusterActuator<HPCConfig> {
 						"no_ca_delete", true
 				)
 		);
+	}
+
+	public static void main(String[] args) throws IOException {
+		Jinjava jj = createTemplateEngine();
+		Map<String, Object> vars = createSampleVars();
+
+		String template = new String(HPCActuator.class.getResourceAsStream("hpc.pbspro.j2").readAllBytes(), StandardCharsets.UTF_8);
+		String renderedTemplate = jj.render(template, vars);
+		System.out.printf("%s", renderedTemplate);
 	}
 }

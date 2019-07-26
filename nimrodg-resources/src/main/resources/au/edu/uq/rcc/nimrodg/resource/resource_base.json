@@ -99,7 +99,7 @@
 				{
 					"type": "object",
 					"properties": {
-                        "definition": { "$ref": "cluster/hpc_definition.json#/definitions/hpc_definition" },
+                        "definition": { "$ref": "cluster/hpc_definition.json#/definitions/hpc_definition_config" },
                         "ncpus": { "type": "integer", "minimum": 1},
                         "mem": { "type": "integer", "minimum": 1},
 						"walltime": { "type": "integer", "minimum": 1},

@@ -56,6 +56,18 @@
     "hpc_definition_file": {
       "type": "object",
       "additionalProperties": { "$ref": "#/definitions/hpc_definition" }
+    },
+    "hpc_definition_config": {
+      "allOf": [
+        { "$ref": "#/definitions/hpc_definition_base" },
+        {
+          "type": "object",
+          "properties": {
+            "template": { "type": "string" }
+          },
+          "required": ["template"]
+        }
+      ]
     }
   },
   "$ref": "#/definitions/hpc_definition_file"
