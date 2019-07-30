@@ -40,12 +40,15 @@ import org.junit.Assert;
 import org.junit.Test;
 import au.edu.uq.rcc.nimrodg.api.Resource;
 import au.edu.uq.rcc.nimrodg.resource.act.ActuatorUtils;
+import au.edu.uq.rcc.nimrodg.resource.cluster.HPCActuator;
 import au.edu.uq.rcc.nimrodg.resource.cluster.pbs.PBSProDialect;
 import au.edu.uq.rcc.nimrodg.resource.cluster.slurm.SLURMDialect;
 import au.edu.uq.rcc.nimrodg.resource.ssh.OpenSSHClient;
 import au.edu.uq.rcc.nimrodg.resource.ssh.SSHClient;
 import au.edu.uq.rcc.nimrodg.resource.ssh.TransportFactory;
 import au.edu.uq.rcc.nimrodg.test.TestUtils;
+import java.io.InputStream;
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -458,6 +461,60 @@ public class ResourceTests {
 
 		Certificate[] cert = ActuatorUtils.readX509Certificates(x509Path);
 		Assert.assertArrayEquals(new Certificate[]{x509}, cert);
+	}
+
+	@Test
+	public void hpcJsonTest() throws IOException {
+		HPCResourceType hpc = new HPCResourceType();
+
+//		JsonObject internalConfig;
+//		try(InputStream is = HPCActuator.class.getResourceAsStream("hpc.json")) {
+//			internalConfig = Json.createReader(is).readObject();
+//		}
+		JsonObject userCfg = Json.createObjectBuilder().add("asdfa", Json.createObjectBuilder()
+				.add("submit", Json.createArrayBuilder(List.of("alfalfa")))
+				.add("delete", Json.createArrayBuilder(List.of("por", "que", "no", "los", "dos")))
+				.add("delete_force", Json.createArrayBuilder(List.of("sudo", "por", "que", "no", "los", "dos")))
+				.add("regex", "^(.+)$")
+				.add("template_classpath", "au/edu/uq/rcc/nimrodg/resource/cluster/hpc.pbspro.j2")
+		).build();
+
+		Path p = tmpDir.newFile("hpc.json").toPath();
+		Files.write(p, userCfg.toString().getBytes(StandardCharsets.UTF_8));
+
+		String args[] = new String[]{
+			"--platform", "x86_64-pc-linux-musl",
+			"--transport", "openssh",
+			"--uri", "ssh://nowhere",
+			"--limit", "10",
+			"--max-batch-size", "10",
+			"--type", "asdfa",
+			"--ncpus", "1",
+			"--walltime", "24:00:00",
+			"--mem", "1GiB"
+		};
+
+		JsonStructure _cfg = hpc.parseCommandArguments(_AgentProvider.INSTANCE, args, System.out, System.err, new Path[]{tmpDir.getRoot().toPath()});
+		Assert.assertNotNull(_cfg);
+
+		_cfg = hpc.parseCommandArguments(_AgentProvider.INSTANCE, args, System.out, System.err, new Path[0]);
+		Assert.assertNull(_cfg);
+
+		/* Now test with an invalid hpc.json */
+		JsonObject badUserCfg = Json.createObjectBuilder().add("not your friend", Json.createObjectBuilder()
+				.add("submit2", Json.createArrayBuilder(List.of("alfalfa")))
+		).build();
+
+		Path badDir = tmpDir.newFolder().toPath();
+		Files.write(badDir.resolve("hpc.json"), badUserCfg.toString().getBytes(StandardCharsets.UTF_8));
+
+		Throwable t = null;
+		try {
+			hpc.parseCommandArguments(_AgentProvider.INSTANCE, args, System.out, System.err, new Path[]{badDir});
+		} catch(Throwable e) {
+			t = e;
+		}
+		Assert.assertNotNull(t);
 	}
 
 }

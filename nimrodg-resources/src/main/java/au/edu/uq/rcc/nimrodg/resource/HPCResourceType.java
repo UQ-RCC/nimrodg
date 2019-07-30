@@ -54,11 +54,8 @@ import net.sourceforge.argparse4j.inf.Namespace;
 
 public class HPCResourceType extends ClusterResourceType {
 
-	private Map<String, HPCDefinition> hpcDefs;
-
 	public HPCResourceType() {
 		super("hpc", "HPC", "hpcargs");
-		this.hpcDefs = null;
 	}
 
 	@Override
@@ -120,12 +117,12 @@ public class HPCResourceType extends ClusterResourceType {
 	protected boolean parseArguments(AgentProvider ap, Namespace ns, PrintStream out, PrintStream err, Path[] configDirs, JsonObjectBuilder jb) {
 		boolean valid = super.parseArguments(ap, ns, out, err, configDirs, jb);
 
-		if(hpcDefs == null) {
-			try {
-				hpcDefs = loadConfig(configDirs, new ArrayList<>());
-			} catch(IOException e) {
-				throw new UncheckedIOException(e);
-			}
+		Map<String, HPCDefinition> hpcDefs;
+
+		try {
+			hpcDefs = loadConfig(configDirs, new ArrayList<>());
+		} catch(IOException e) {
+			throw new UncheckedIOException(e);
 		}
 
 		HPCDefinition hpc = hpcDefs.get(ns.getString("type"));
