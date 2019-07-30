@@ -6,6 +6,7 @@ import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.api.Resource;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.file.Path;
 import java.security.cert.Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -58,8 +59,8 @@ public abstract class LegacyClusterResourceType extends ClusterResourceType {
 	}
 
 	@Override
-	protected boolean parseArguments(AgentProvider ap, Namespace ns, PrintStream out, PrintStream err, JsonObjectBuilder jb) {
-		boolean valid = super.parseArguments(ap, ns, out, err, jb);
+	protected boolean parseArguments(AgentProvider ap, Namespace ns, PrintStream out, PrintStream err, Path[] configDirs, JsonObjectBuilder jb) {
+		boolean valid = super.parseArguments(ap, ns, out, err, configDirs, jb);
 
 		List<BatchDialect.Resource> staticResources = new ArrayList<>();
 		List<String> resList = ns.getList("batch_resource_static");

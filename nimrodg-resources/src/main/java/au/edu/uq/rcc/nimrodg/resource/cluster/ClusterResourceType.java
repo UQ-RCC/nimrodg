@@ -34,6 +34,7 @@ import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.Namespace;
 import au.edu.uq.rcc.nimrodg.api.Resource;
 import au.edu.uq.rcc.nimrodg.resource.SSHResourceType;
+import java.nio.file.Path;
 import javax.json.JsonArray;
 import javax.json.JsonString;
 import javax.json.JsonStructure;
@@ -89,8 +90,8 @@ public abstract class ClusterResourceType extends SSHResourceType {
 	}
 
 	@Override
-	protected boolean parseArguments(AgentProvider ap, Namespace ns, PrintStream out, PrintStream err, JsonObjectBuilder jb) {
-		boolean valid = super.parseArguments(ap, ns, out, err, jb);
+	protected boolean parseArguments(AgentProvider ap, Namespace ns, PrintStream out, PrintStream err, Path[] configDirs, JsonObjectBuilder jb) {
+		boolean valid = super.parseArguments(ap, ns, out, err, configDirs, jb);
 
 		jb.add("tmpvar", ns.getString("tmpvar"));
 		jb.add(argsName, Json.createArrayBuilder(ns.getList(argsName)).build());

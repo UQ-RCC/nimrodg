@@ -97,10 +97,10 @@ public class Staging extends DefaultCLICommand {
 		try {
 			if(hasNimrodParameter) {
 				try(NimrodAPI nimrod = NimrodCLICommand.createFactory(config).createNimrod(config)) {
-					m.invoke(this, config, nimrod, out, err, args.getList("args").toArray(new String[args.getList("args").size()]));
+					m.invoke(this, config, nimrod, out, err, configDirs, args.getList("args").toArray(new String[args.getList("args").size()]));
 				}
 			} else {
-				m.invoke(this, config, out, err, args.getList("args").toArray(new String[args.getList("args").size()]));
+				m.invoke(this, config, out, err, configDirs, args.getList("args").toArray(new String[args.getList("args").size()]));
 			}
 
 		} catch(IllegalAccessException | IllegalArgumentException e) {
@@ -221,7 +221,7 @@ public class Staging extends DefaultCLICommand {
 			"--mem", "1GiB",
 			"--walltime", "24:00:00",
 			"--account", "UQ-RCC"
-		}, out, err, new Path[0]).asJsonObject();
+		}, out, err, configDirs).asJsonObject();
 
 		tinaroo = nimrod.addResource("tinaroo", "hpc", cfg, null, null);
 		nimrod.assignResource(tinaroo, exp1);
@@ -242,7 +242,7 @@ public class Staging extends DefaultCLICommand {
 			"--ncpus", "1",
 			"--mem", "1GiB",
 			"--walltime", "24:00:00"
-		}, out, err, new Path[0]).asJsonObject();
+		}, out, err, configDirs).asJsonObject();
 
 		wiener = nimrod.addResource("wiener", "hpc", wcfg, null, null);
 		nimrod.assignResource(wiener, exp1);

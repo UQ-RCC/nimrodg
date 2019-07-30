@@ -238,7 +238,7 @@ public class ResourceTests {
 				"--transport", "sshd"
 			};
 
-			JsonStructure js = ssh.parseCommandArguments(_AgentProvider.INSTANCE, sshdArgs, System.out, System.err);
+			JsonStructure js = ssh.parseCommandArguments(_AgentProvider.INSTANCE, sshdArgs, System.out, System.err, new Path[0]);
 			Assert.assertNotNull(js);
 
 			JsonObject cfg = js.asJsonObject();
@@ -271,7 +271,7 @@ public class ResourceTests {
 				"--openssh-executable", "/path/to/ssh"
 			};
 
-			JsonStructure js = ssh.parseCommandArguments(_AgentProvider.INSTANCE, openSshArgs, System.out, System.err);
+			JsonStructure js = ssh.parseCommandArguments(_AgentProvider.INSTANCE, openSshArgs, System.out, System.err, new Path[0]);
 			Assert.assertNotNull(js);
 
 			JsonObject cfg = js.asJsonObject();
@@ -310,7 +310,7 @@ public class ResourceTests {
 			"--uri", "ssh://username:pass@hostname:22",
 			"--key", "",
 			"--hostkey", "none"
-		}, System.out, System.err);
+		}, System.out, System.err, new Path[0]);
 
 		Assert.assertNull(js);
 	}
@@ -351,7 +351,7 @@ public class ResourceTests {
 				Stream.of(pbsargs)
 		).toArray(String[]::new);
 
-		JsonObject js = (JsonObject)pbs.parseCommandArguments(_AgentProvider.INSTANCE, args, System.out, System.err);
+		JsonObject js = (JsonObject)pbs.parseCommandArguments(_AgentProvider.INSTANCE, args, System.out, System.err, new Path[0]);
 		Assert.assertEquals(expected, js);
 
 		PBSProDialect d = new PBSProDialect();
@@ -400,7 +400,7 @@ public class ResourceTests {
 				Stream.of(slurmargs)
 		).toArray(String[]::new);
 
-		JsonObject js = (JsonObject)slurm.parseCommandArguments(_AgentProvider.INSTANCE, args, System.out, System.err);
+		JsonObject js = (JsonObject)slurm.parseCommandArguments(_AgentProvider.INSTANCE, args, System.out, System.err, new Path[0]);
 		Assert.assertEquals(expected, js);
 
 		SLURMDialect sd = new SLURMDialect();
@@ -446,7 +446,7 @@ public class ResourceTests {
 				), Arrays.stream(pbsargs)
 		).toArray(String[]::new);
 
-		JsonStructure js = pbs.parseCommandArguments(_AgentProvider.INSTANCE, args, System.out, System.err);
+		JsonStructure js = pbs.parseCommandArguments(_AgentProvider.INSTANCE, args, System.out, System.err, new Path[0]);
 		Assert.assertEquals(expected, js);
 	}
 

@@ -80,8 +80,8 @@ public abstract class SSHResourceType extends BaseResourceType {
 	}
 
 	@Override
-	protected boolean parseArguments(AgentProvider ap, Namespace ns, PrintStream out, PrintStream err, JsonObjectBuilder jb) {
-		boolean valid = super.parseArguments(ap, ns, out, err, jb);
+	protected boolean parseArguments(AgentProvider ap, Namespace ns, PrintStream out, PrintStream err, Path[] configDirs, JsonObjectBuilder jb) {
+		boolean valid = super.parseArguments(ap, ns, out, err, configDirs, jb);
 
 		boolean noValidatePrivateKey = ns.getBoolean("no_validate_private_key");
 

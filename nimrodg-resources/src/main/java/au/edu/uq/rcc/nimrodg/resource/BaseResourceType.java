@@ -55,7 +55,7 @@ public abstract class BaseResourceType implements MasterResourceType {
 		}
 
 		JsonObjectBuilder cfg = Json.createObjectBuilder();
-		boolean valid = parseArguments(ap, ns, out, err, cfg);
+		boolean valid = parseArguments(ap, ns, out, err, configDirs, cfg);
 		if(!valid) {
 			return null;
 		}
@@ -88,10 +88,11 @@ public abstract class BaseResourceType implements MasterResourceType {
 	 * @param ns The argument namespace.
 	 * @param out Output Stream.
 	 * @param err Error Stream.
+	 * @param configDirs Directories to search for configuration files.
 	 * @param jb The JSON object to add arguments to.
 	 * @return If the arguments were parsed successfully, return true. Otherwise false.
 	 */
-	protected boolean parseArguments(AgentProvider ap, Namespace ns, PrintStream out, PrintStream err, JsonObjectBuilder jb) {
+	protected boolean parseArguments(AgentProvider ap, Namespace ns, PrintStream out, PrintStream err, Path[] configDirs, JsonObjectBuilder jb) {
 		return true;
 	}
 

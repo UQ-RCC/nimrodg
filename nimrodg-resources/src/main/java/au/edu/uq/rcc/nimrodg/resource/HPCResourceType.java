@@ -34,9 +34,12 @@ import java.io.PrintStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.cert.Certificate;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -62,19 +65,10 @@ public class HPCResourceType extends ClusterResourceType {
 	protected void buildParserBeforeSubmissionArgs(ArgumentParser argparser) {
 		super.buildParserBeforeSubmissionArgs(argparser);
 
-		if(hpcDefs == null) {
-			try {
-				hpcDefs = loadConfig(new ArrayList<>());
-			} catch(IOException e) {
-				throw new UncheckedIOException(e);
-			}
-		}
-
 		argparser.addArgument("--type")
 				.dest("type")
 				.type(String.class)
 				.required(true)
-				.choices(hpcDefs.keySet())
 				.help("The type of the cluster");
 
 		argparser.addArgument("--ncpus")
@@ -123,12 +117,22 @@ public class HPCResourceType extends ClusterResourceType {
 	}
 
 	@Override
-	protected boolean parseArguments(AgentProvider ap, Namespace ns, PrintStream out, PrintStream err, JsonObjectBuilder jb) {
-		boolean valid = super.parseArguments(ap, ns, out, err, jb);
+	protected boolean parseArguments(AgentProvider ap, Namespace ns, PrintStream out, PrintStream err, Path[] configDirs, JsonObjectBuilder jb) {
+		boolean valid = super.parseArguments(ap, ns, out, err, configDirs, jb);
 
-		assert hpcDefs != null;
+		if(hpcDefs == null) {
+			try {
+				hpcDefs = loadConfig(configDirs, new ArrayList<>());
+			} catch(IOException e) {
+				throw new UncheckedIOException(e);
+			}
+		}
+
 		HPCDefinition hpc = hpcDefs.get(ns.getString("type"));
-		assert hpc != null;
+		if(hpc == null) {
+			err.printf("Unknown type, valid options are: [%s]", String.join(", ", hpcDefs.keySet()));
+			return false;
+		}
 
 		valid = validateTemplate(hpc.template, out, err) && valid;
 
@@ -274,18 +278,42 @@ public class HPCResourceType extends ClusterResourceType {
 		);
 	}
 
-	public static Map<String, HPCDefinition> loadConfig(List<String> errors) throws IOException {
+	public static Map<String, HPCDefinition> loadConfig(Path[] configDirs, List<String> errors) throws IOException {
 		JsonObject internalConfig;
 		try(InputStream is = HPCActuator.class.getResourceAsStream("hpc.json")) {
 			internalConfig = Json.createReader(is).readObject();
 		}
 
 		if(!ActuatorUtils.validateAgainstSchemaStandalone(SCHEMA_HPC_DEFINITION, internalConfig, errors)) {
-			throw new RuntimeException("Invalid internal HPC configuration, this is a bug.");
+			throw new RuntimeException("Invalid internal HPC configuration, this is a bug");
 		}
 
-		// TODO: Load sysadmin and user config
-		return internalConfig.entrySet().stream().collect(Collectors.toMap(
+		JsonObjectBuilder job = Json.createObjectBuilder(internalConfig);
+
+		{
+			List<Path> confDirs = new ArrayList<>();
+			confDirs.addAll(Arrays.asList(configDirs));
+			Collections.reverse(confDirs);
+
+			for(Path p : confDirs) {
+				p = p.resolve("hpc.json");
+				if(!Files.exists(p)) {
+					continue;
+				}
+
+				JsonObject jo;
+				try(InputStream is = Files.newInputStream(p)) {
+					jo = Json.createReader(is).readObject();
+				}
+
+				if(!ActuatorUtils.validateAgainstSchemaStandalone(SCHEMA_HPC_DEFINITION, jo, errors)) {
+					throw new IOException(String.format("File %s is malformed", p));
+				}
+				job.addAll(Json.createObjectBuilder(jo));
+			}
+		}
+
+		return job.build().entrySet().stream().collect(Collectors.toMap(
 				e -> e.getKey(),
 				e -> {
 					try {

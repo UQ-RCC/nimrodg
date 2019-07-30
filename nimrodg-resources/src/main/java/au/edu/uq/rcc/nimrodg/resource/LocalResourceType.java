@@ -38,6 +38,7 @@ import javax.json.JsonStructure;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.Namespace;
 import au.edu.uq.rcc.nimrodg.api.Resource;
+import java.nio.file.Path;
 
 public class LocalResourceType extends BaseResourceType {
 
@@ -79,7 +80,7 @@ public class LocalResourceType extends BaseResourceType {
 	}
 
 	@Override
-	protected boolean parseArguments(AgentProvider ap, Namespace ns, PrintStream out, PrintStream err, JsonObjectBuilder jb) {
+	protected boolean parseArguments(AgentProvider ap, Namespace ns, PrintStream out, PrintStream err, Path[] configDirs, JsonObjectBuilder jb) {
 		int para = ns.getInt("parallelism");
 
 		if(para == 0) {
