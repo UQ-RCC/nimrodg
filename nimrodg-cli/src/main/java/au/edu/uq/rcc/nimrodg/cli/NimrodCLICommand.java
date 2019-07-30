@@ -25,6 +25,7 @@ import au.edu.uq.rcc.nimrodg.api.NimrodAPIFactory;
 import au.edu.uq.rcc.nimrodg.setup.UserConfig;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.file.Path;
 import net.sourceforge.argparse4j.inf.Namespace;
 
 /**
@@ -37,13 +38,13 @@ public abstract class NimrodCLICommand extends DefaultCLICommand {
 	public abstract String getCommand();
 
 	@Override
-	public final int execute(Namespace args, UserConfig config, PrintStream out, PrintStream err) throws Exception {
+	public final int execute(Namespace args, UserConfig config, PrintStream out, PrintStream err, Path[] configDirs) throws Exception {
 		try(NimrodAPI napi = createFactory(config).createNimrod(config)) {
-			return execute(args, config, napi, out, err);
+			return execute(args, config, napi, out, err, configDirs);
 		}
 	}
 
-	public abstract int execute(Namespace args, UserConfig config, NimrodAPI nimrod, PrintStream out, PrintStream err) throws IOException, NimrodAPIException;
+	public abstract int execute(Namespace args, UserConfig config, NimrodAPI nimrod, PrintStream out, PrintStream err, Path[] configDirs) throws IOException, NimrodAPIException;
 
 	public static NimrodAPIFactory createFactory(UserConfig config) throws ReflectiveOperationException {
 		return createFactory(config.factory());

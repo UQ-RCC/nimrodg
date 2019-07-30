@@ -32,11 +32,11 @@ import org.ini4j.Ini;
 public abstract class DefaultCLICommand implements CLICommand {
 
 	@Override
-	public int execute(Namespace args, PrintStream out, PrintStream err) throws Exception {
-		return execute(args, loadConfigFile(Paths.get(args.getString("config"))), out, err);
+	public int execute(Namespace args, PrintStream out, PrintStream err, Path[] configDirs) throws Exception {
+		return execute(args, loadConfigFile(Paths.get(args.getString("config"))), out, err, configDirs);
 	}
 
-	public abstract int execute(Namespace args, UserConfig cfg, PrintStream out, PrintStream err) throws Exception;
+	public abstract int execute(Namespace args, UserConfig cfg, PrintStream out, PrintStream err, Path[] configDirs) throws Exception;
 
 	public static IniUserConfig loadConfigFile(Path configFile) throws IOException {
 		/* Load the configuration */

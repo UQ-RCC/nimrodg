@@ -32,6 +32,7 @@ import au.edu.uq.rcc.nimrodg.cli.NimrodCLICommand;
 import au.edu.uq.rcc.nimrodg.parsing.ANTLR4ParseAPIImpl;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
@@ -46,7 +47,7 @@ public class AddExp extends NimrodCLICommand {
 	}
 
 	@Override
-	public int execute(Namespace args, UserConfig config, NimrodAPI nimrod, PrintStream out, PrintStream err) throws IOException, NimrodAPIException {
+	public int execute(Namespace args, UserConfig config, NimrodAPI nimrod, PrintStream out, PrintStream err, Path[] configDirs) throws IOException, NimrodAPIException {
 		String expName = args.getString("exp_name");
 		String runFile = args.getString("planfile");
 

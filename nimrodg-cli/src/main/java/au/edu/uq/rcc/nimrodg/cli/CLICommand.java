@@ -20,6 +20,7 @@
 package au.edu.uq.rcc.nimrodg.cli;
 
 import java.io.PrintStream;
+import java.nio.file.Path;
 import net.sourceforge.argparse4j.inf.Namespace;
 
 /**
@@ -41,9 +42,10 @@ public interface CLICommand {
 	 * @param args The parsed arguments.
 	 * @param out The {@link PrintStream} where all "standard output" should go.
 	 * @param err The {@link PrintStream} where all "standard error" should go.
+	 * @param configDirs Directories to search for configuration files, in order of precedence.
 	 * @return The execution status.
 	 * @throws Exception
 	 */
-	int execute(Namespace args, PrintStream out, PrintStream err) throws Exception;
+	int execute(Namespace args, PrintStream out, PrintStream err, Path[] configDirs) throws Exception;
 
 }

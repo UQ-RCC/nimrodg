@@ -42,7 +42,7 @@ public class GenConfig implements CLICommand {
 	}
 
 	@Override
-	public int execute(Namespace args, PrintStream out, PrintStream err) throws IOException, NimrodAPIException {
+	public int execute(Namespace args, PrintStream out, PrintStream err, Path[] configDirs) throws IOException, NimrodAPIException {
 		Path config = Paths.get(args.getString("config"));
 
 		byte[] rawCfg;

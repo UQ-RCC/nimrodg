@@ -43,6 +43,7 @@ import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
 import net.sourceforge.argparse4j.inf.Subparsers;
 import au.edu.uq.rcc.nimrodg.api.Resource;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 
@@ -64,12 +65,12 @@ public class ResourceCmd extends NimrodCLICommand {
 	}
 
 	@Override
-	public int execute(Namespace args, UserConfig config, NimrodAPI nimrod, PrintStream out, PrintStream err) throws IOException, NimrodAPIException {
+	public int execute(Namespace args, UserConfig config, NimrodAPI nimrod, PrintStream out, PrintStream err, Path[] configDirs) throws IOException, NimrodAPIException {
 
 		/* NB: add-root and add-child are separate because they might use separate parsers. */
 		switch(args.getString("operation")) {
 			case "add":
-				return executeAdd(nimrod, args, out, err);
+				return executeAdd(nimrod, args, out, err, configDirs);
 			case "remove":
 				return executeRemove(nimrod, args, out, err);
 			case "list":
@@ -85,7 +86,7 @@ public class ResourceCmd extends NimrodCLICommand {
 
 	}
 
-	private int executeAdd(NimrodAPI api, Namespace args, PrintStream out, PrintStream err) throws IOException, NimrodAPIException {
+	private int executeAdd(NimrodAPI api, Namespace args, PrintStream out, PrintStream err, Path[] configDirs) throws IOException, NimrodAPIException {
 		String name = args.getString("resource_name");
 
 		Resource node = api.getResource(name);
@@ -115,7 +116,7 @@ public class ResourceCmd extends NimrodCLICommand {
 
 		String[] resArgs = args.getList("args").toArray(new String[args.getList("args").size()]);
 
-		JsonStructure cfg = rt.parseCommandArguments(api, resArgs, out, err);
+		JsonStructure cfg = rt.parseCommandArguments(api, resArgs, out, err, configDirs);
 		if(cfg == null) {
 			return 1;
 		}

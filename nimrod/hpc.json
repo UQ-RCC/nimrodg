@@ -1,0 +1,23 @@
+{
+  "pbspro": {
+    "submit": ["qsub"],
+    "delete": ["qdel"],
+    "delete_force": ["qdel", "-W", "force"],
+    "regex": "^(.+)$",
+    "template_file": "/etc/xdg/nimrod/hpc.pbspro.j2"
+  },
+  "slurm": {
+    "submit": ["sbatch"],
+    "delete": ["scancel", "-b"],
+    "delete_force": ["scancel", "-f", "-s", "KILL"],
+    "regex": "^.*?(\\d+).*$",
+    "template_file": "/etc/xdg/nimrod/hpc.slurm.j2"
+  },
+  "lsf": {
+    "submit": ["bsub", "-f"],
+    "delete": ["bkill"],
+    "delete_force": ["bkill", "-s", "KILL"],
+    "regex": "^Job\\s+<([^>]+)>.*$",
+    "template_file": "/etc/xdg/nimrod/hpc.lsf.j2"
+  }
+}

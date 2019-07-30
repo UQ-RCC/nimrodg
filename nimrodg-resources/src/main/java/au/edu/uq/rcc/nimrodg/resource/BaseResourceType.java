@@ -24,6 +24,7 @@ import au.edu.uq.rcc.nimrodg.api.MasterResourceType;
 import au.edu.uq.rcc.nimrodg.resource.act.ActuatorUtils;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import javax.json.Json;
@@ -41,7 +42,7 @@ import net.sourceforge.argparse4j.inf.Namespace;
 public abstract class BaseResourceType implements MasterResourceType {
 
 	@Override
-	public final JsonStructure parseCommandArguments(AgentProvider ap, String[] args, PrintStream out, PrintStream err) {
+	public final JsonStructure parseCommandArguments(AgentProvider ap, String[] args, PrintStream out, PrintStream err, Path[] configDirs) {
 		ArgumentParser parser = createParseHeader();
 		addArguments(parser);
 

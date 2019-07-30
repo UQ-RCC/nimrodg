@@ -39,6 +39,7 @@ import au.edu.uq.rcc.nimrodg.resource.act.ActuatorUtils;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.URISyntaxException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
 import java.security.cert.Certificate;
@@ -67,7 +68,7 @@ public class MasterCmd extends NimrodCLICommand {
 	}
 
 	@Override
-	public int execute(Namespace args, UserConfig config, NimrodAPI nimrod, PrintStream out, PrintStream err) throws IOException, NimrodAPIException {
+	public int execute(Namespace args, UserConfig config, NimrodAPI nimrod, PrintStream out, PrintStream err, Path[] configDirs) throws IOException, NimrodAPIException {
 		String expName = args.getString("exp_name");
 		Experiment exp = nimrod.getExperiment(expName);
 		if(exp == null) {

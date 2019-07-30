@@ -34,9 +34,9 @@ import au.edu.uq.rcc.nimrodg.cli.commands.Setup;
 import au.edu.uq.rcc.nimrodg.cli.commands.Staging;
 import java.net.URL;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Stream;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
@@ -121,7 +121,12 @@ public class NimrodCLI {
 
 		//LOGGER.trace(ns);
 		try {
-			return commands.get(ns.getString("command")).execute(ns, System.out, System.err);
+			return commands.get(ns.getString("command")).execute(
+					ns,
+					System.out,
+					System.err,
+					Stream.concat(XDGDirs.INSTANCE.configDirs.stream(), XDGDirs.INSTANCE.configDirs.stream()).toArray(Path[]::new)
+			);
 		} catch(Throwable t) {
 			t.printStackTrace(System.err);
 			return 1;

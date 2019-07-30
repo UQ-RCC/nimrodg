@@ -56,6 +56,7 @@ import net.sourceforge.argparse4j.inf.Subparser;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import au.edu.uq.rcc.nimrodg.api.Resource;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public class PortalAPI extends NimrodCLICommand {
@@ -75,7 +76,7 @@ public class PortalAPI extends NimrodCLICommand {
 	}
 
 	@Override
-	public int execute(Namespace args, UserConfig config, NimrodAPI nimrod, PrintStream out, PrintStream err) throws IOException, NimrodAPIException {
+	public int execute(Namespace args, UserConfig config, NimrodAPI nimrod, PrintStream out, PrintStream err, Path[] configDirs) throws IOException, NimrodAPIException {
 		List<String> aargs = args.getList("args");
 		if(aargs.isEmpty()) {
 			return 2;

@@ -62,7 +62,7 @@ public class Staging extends DefaultCLICommand {
 
 	private Method lookupNimrodMethod(String name) {
 		try {
-			return this.getClass().getDeclaredMethod(name, UserConfig.class, NimrodAPI.class, PrintStream.class, PrintStream.class, String[].class);
+			return this.getClass().getDeclaredMethod(name, UserConfig.class, NimrodAPI.class, PrintStream.class, PrintStream.class, Path[].class, String[].class);
 		} catch(NoSuchMethodException | SecurityException e) {
 
 		}
@@ -71,7 +71,7 @@ public class Staging extends DefaultCLICommand {
 
 	private Method lookupNonNimrodMethod(String name) {
 		try {
-			return this.getClass().getDeclaredMethod(name, UserConfig.class, PrintStream.class, PrintStream.class, String[].class);
+			return this.getClass().getDeclaredMethod(name, UserConfig.class, PrintStream.class, PrintStream.class, Path[].class, String[].class);
 		} catch(NoSuchMethodException | SecurityException e) {
 
 		}
@@ -79,7 +79,7 @@ public class Staging extends DefaultCLICommand {
 	}
 
 	@Override
-	public int execute(Namespace args, UserConfig config, PrintStream out, PrintStream err) throws Exception {
+	public int execute(Namespace args, UserConfig config, PrintStream out, PrintStream err, Path[] configDirs) throws Exception {
 		String scommand = args.getString("scommand");
 
 		boolean hasNimrodParameter = true;
@@ -122,7 +122,7 @@ public class Staging extends DefaultCLICommand {
 		return 0;
 	}
 
-	public void goodTest(UserConfig config, NimrodAPI nimrod, PrintStream out, PrintStream err, String[] args) throws Exception {
+	public void goodTest(UserConfig config, NimrodAPI nimrod, PrintStream out, PrintStream err, Path[] configDirs, String[] args) throws Exception {
 		CompiledRun cr = PARSE_API.parseRunToBuilder(
 				"parameter x integer range from 1 to 1000 step 1\n"
 				+ "\n"
@@ -144,11 +144,11 @@ public class Staging extends DefaultCLICommand {
 		nimrod.assignResource(local, exp1);
 	}
 
-	public void singleAgentSleep(UserConfig config, NimrodAPI nimrod, PrintStream out, PrintStream err, String[] args) throws Exception {
-		nAgentSleep(config, nimrod, out, err, new String[]{"1", "100"});
+	public void singleAgentSleep(UserConfig config, NimrodAPI nimrod, PrintStream out, PrintStream err, Path[] configDirs, String[] args) throws Exception {
+		nAgentSleep(config, nimrod, out, err, configDirs, new String[]{"1", "100"});
 	}
 
-	public void nAgentSleep(UserConfig config, NimrodAPI nimrod, PrintStream out, PrintStream err, String[] args) throws Exception {
+	public void nAgentSleep(UserConfig config, NimrodAPI nimrod, PrintStream out, PrintStream err, Path[] configDirs, String[] args) throws Exception {
 
 		if(args.length > 2) {
 			err.printf("Invalid arguments\n");
@@ -221,7 +221,7 @@ public class Staging extends DefaultCLICommand {
 			"--mem", "1GiB",
 			"--walltime", "24:00:00",
 			"--account", "UQ-RCC"
-		}, out, err).asJsonObject();
+		}, out, err, new Path[0]).asJsonObject();
 
 		tinaroo = nimrod.addResource("tinaroo", "hpc", cfg, null, null);
 		nimrod.assignResource(tinaroo, exp1);
@@ -242,7 +242,7 @@ public class Staging extends DefaultCLICommand {
 			"--ncpus", "1",
 			"--mem", "1GiB",
 			"--walltime", "24:00:00"
-		}, out, err).asJsonObject();
+		}, out, err, new Path[0]).asJsonObject();
 
 		wiener = nimrod.addResource("wiener", "hpc", wcfg, null, null);
 		nimrod.assignResource(wiener, exp1);
