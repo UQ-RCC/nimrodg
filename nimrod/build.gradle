@@ -81,6 +81,20 @@ task generateNimrodKModule(type: Copy, dependsOn: [buildNimrodKFatJar, configura
 
 ext {
 	/* TODO: Move all of this to a separate file builddef.gradle or something. */
+
+	/* https://github.com/jgitver/jgitver/blob/master/src/main/java/fr/brouillard/oss/jgitver/metadata/Metadatas.java#L25 */
+	isDevBuild = Integer.valueOf(project.commit_distance) > 0
+	if(isDevBuild) {
+		packageName = 'nimrod-dev'
+	} else {
+		packageName = 'nimrod'
+	}
+
+	/* The version number. */
+	packageVersion = "${project.base_version}"
+	/* Everything after the version number. */
+	packageRelease = "${(project.version =~ /^\d+\.\d+\.\d+-(.+)$/)[0][1]}"
+
 	packageSummary = 'A specialised parametric modelling system.'
 	packageDescription = '''It uses a simple declarative parametric modelling language to express
 a parametric experiment.
@@ -97,7 +111,9 @@ Nimrod helps researchers run computations remotely on the cloud. It can
 turn your laptop into a supercomputer. With Nimrod you can run many
 jobs — millions if need be.
 '''
-	packageMaintainer = 'Research Computing Centre <rcc-admin@uq.edu.au>'
+	packageVendor = 'Research Computing Centre'
+	packageMaintainer = "${packageVendor} <rcc-admin@uq.edu.au>"
+
 	packageUrl = 'https://rcc.uq.edu.au/nimrod'
 
 	packageInstallDir = '/usr/share/nimrod'
@@ -177,14 +193,7 @@ def distConfigs = copySpec {
 import org.redline_rpm.header.Flags
 
 task buildDeb(type: Deb, dependsOn: assembleDist) {
-	/* https://github.com/jgitver/jgitver/blob/master/src/main/java/fr/brouillard/oss/jgitver/metadata/Metadatas.java#L25 */
-	if(Integer.valueOf(project.commit_distance) > 0) {
-		packageName = 'nimrod-dev'
-		conflicts('nimrod')
-	} else {
-		packageName = 'nimrod'
-		conflicts('nimrod-dev')
-	}
+	packageName			project.packageName
 
 	summary				project.packageSummary
 	packageDescription	project.packageDescription
@@ -212,25 +221,21 @@ task buildDeb(type: Deb, dependsOn: assembleDist) {
 	link('/usr/bin/nimrod', "${project.packageInstallDir}/bin/nimrod")
 }
 
-task buildRpm(type: Rpm, dependsOn: assembleDist) {
-        /* https://github.com/jgitver/jgitver/blob/master/src/main/java/fr/brouillard/oss/jgitver/metadata/Metadatas.java#L25 */
-        if(Integer.valueOf(project.commit_distance) > 0) {
-                packageName = 'nimrod-dev'
-        } else {
-                packageName = 'nimrod'
-        }
+task buildRpmCentOS76(type: Rpm, dependsOn: assembleDist) {
+	packageName			project.packageName
 
 	summary				project.packageSummary
 	packageDescription	project.packageDescription
 
 	license				'ASL 2.0'
-	release				'1'
+	version				project.packageVersion
+	release				"${project.packageRelease.replace('-', '~')}.el7_6"
 	arch				NOARCH
 	os					LINUX
 	type				BINARY
 	packager			project.packageMaintainer
 	url					project.packageUrl
-	vendor				'Research Computing Centre'
+	vendor				project.packageVendor
 
 	requires			'java-11-openjdk-headless'
 
@@ -250,6 +255,40 @@ task buildRpm(type: Rpm, dependsOn: assembleDist) {
 	link('/usr/bin/nimrod', "${project.packageInstallDir}/bin/nimrod")
 }
 
-task(generateArtifacts, dependsOn:[assembleDist, buildDeb, buildRpm]) {
+task buildRpmCentOS74(type: Rpm, dependsOn: assembleDist) {
+	packageName			project.packageName
+
+	summary				project.packageSummary
+	packageDescription	project.packageDescription
+
+	license				'ASL 2.0'
+	version				project.packageVersion
+	release				"${project.packageRelease.replace('-', '~')}.el7_4"
+	arch				NOARCH
+	os					LINUX
+	type				BINARY
+	packager			project.packageMaintainer
+	url					project.packageUrl
+	vendor				project.packageVendor
+
+	requires			'adoptopenjdk-11-hotspot-jre'
+
+	user				'root'
+	permissionGroup		'root'
+
+	into project.packageInstallDir
+
+	with distContents
+
+	with distConfigs
+	/* FIXME: This doesn't work. */
+	distConfigs.eachFile {
+		fileType CONFIG
+	}
+
+	link('/usr/bin/nimrod', "${project.packageInstallDir}/bin/nimrod")
+}
+
+task(generateArtifacts, dependsOn:[assembleDist, buildDeb, buildRpmCentOS74, buildRpmCentOS76]) {
 }
 

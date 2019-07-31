@@ -16,6 +16,8 @@ jgitver {
 	useDistance true
 	useGitCommitID true
 	useDirty true
+	/* To play nice with literally everything else. */
+	autoIncrementPatch false
 }
 
 apply plugin: 'base'
