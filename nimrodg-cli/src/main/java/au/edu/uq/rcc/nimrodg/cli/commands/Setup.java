@@ -28,7 +28,6 @@ import au.edu.uq.rcc.nimrodg.cli.DefaultCLICommand;
 import au.edu.uq.rcc.nimrodg.cli.IniSetupConfig;
 import au.edu.uq.rcc.nimrodg.cli.NimrodCLI;
 import au.edu.uq.rcc.nimrodg.cli.NimrodCLICommand;
-import au.edu.uq.rcc.nimrodg.cli.XDGDirs;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
@@ -175,7 +174,7 @@ public class Setup extends DefaultCLICommand {
 			confDirs.addAll(Arrays.asList(configDirs));
 			Collections.reverse(confDirs);
 			sysInis = confDirs.stream()
-					.map(p -> p.resolve("nimrod/setup-defaults.ini"))
+					.map(p -> p.resolve("setup-defaults.ini"))
 					.filter(p -> Files.exists(p))
 					.map(p -> {
 						try(InputStream is = Files.newInputStream(p)) {
