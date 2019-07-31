@@ -140,7 +140,7 @@ agentList.each { agent ->
 
 def distContents = copySpec {
 	with distributions.main.contents
-\
+
 	/* Lintian gets cranky about this. */
 	exclude 'nimrod.bat'
 }
@@ -213,6 +213,13 @@ task buildDeb(type: Deb, dependsOn: assembleDist) {
 }
 
 task buildRpm(type: Rpm, dependsOn: assembleDist) {
+        /* https://github.com/jgitver/jgitver/blob/master/src/main/java/fr/brouillard/oss/jgitver/metadata/Metadatas.java#L25 */
+        if(Integer.valueOf(project.commit_distance) > 0) {
+                packageName = 'nimrod-dev'
+        } else {
+                packageName = 'nimrod'
+        }
+
 	summary				project.packageSummary
 	packageDescription	project.packageDescription
 
