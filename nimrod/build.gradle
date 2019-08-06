@@ -93,7 +93,9 @@ ext {
 	/* The version number. */
 	packageVersion = "${project.base_version}"
 	/* Everything after the version number. */
-	packageRelease = "${(project.version =~ /^\d+\.\d+\.\d+-(.+)$/)[0][1]}"
+	def matcher = project.version =~ /^\d+\.\d+\.\d+(?:-(.+)$)?/
+	matcher.find()
+	packageRelease = matcher.group(1) ?: '1'
 
 	packageSummary = 'A specialised parametric modelling system.'
 	packageDescription = '''It uses a simple declarative parametric modelling language to express
