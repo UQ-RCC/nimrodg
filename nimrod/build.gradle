@@ -255,40 +255,6 @@ task buildRpmCentOS76(type: Rpm, dependsOn: assembleDist) {
 	link('/usr/bin/nimrod', "${project.packageInstallDir}/bin/nimrod")
 }
 
-task buildRpmCentOS74(type: Rpm, dependsOn: assembleDist) {
-	packageName			project.packageName
-
-	summary				project.packageSummary
-	packageDescription	project.packageDescription
-
-	license				'ASL 2.0'
-	version				project.packageVersion
-	release				"${project.packageRelease.replace('-', '~')}.el7_4"
-	arch				NOARCH
-	os					LINUX
-	type				BINARY
-	packager			project.packageMaintainer
-	url					project.packageUrl
-	vendor				project.packageVendor
-
-	requires			'adoptopenjdk-11-hotspot-jre'
-
-	user				'root'
-	permissionGroup		'root'
-
-	into project.packageInstallDir
-
-	with distContents
-
-	with distConfigs
-	/* FIXME: This doesn't work. */
-	distConfigs.eachFile {
-		fileType CONFIG
-	}
-
-	link('/usr/bin/nimrod', "${project.packageInstallDir}/bin/nimrod")
-}
-
-task(generateArtifacts, dependsOn:[assembleDist, buildDeb, buildRpmCentOS74, buildRpmCentOS76]) {
+task(generateArtifacts, dependsOn:[assembleDist, buildDeb, buildRpmCentOS76]) {
 }
 
