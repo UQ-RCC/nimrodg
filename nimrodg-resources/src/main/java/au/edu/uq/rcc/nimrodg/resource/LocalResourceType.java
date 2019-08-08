@@ -39,6 +39,7 @@ import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.Namespace;
 import au.edu.uq.rcc.nimrodg.api.Resource;
 import java.nio.file.Path;
+import java.util.Map;
 
 public class LocalResourceType extends BaseResourceType {
 
@@ -91,7 +92,7 @@ public class LocalResourceType extends BaseResourceType {
 
 		String plat = ns.get("platform");
 		if(plat == null) {
-			plat = detectPlatform(ap);
+			plat = detectPlatformString(ap);
 		}
 
 		if(plat == null) {
@@ -119,20 +120,20 @@ public class LocalResourceType extends BaseResourceType {
 		return true;
 	}
 
-	private enum OS {
+	public enum OS {
 		Unknown,
 		Windows,
 		Mac,
-		Linux
+		Unix
 	}
 
-	private enum Arch {
+	public enum Arch {
 		Unknown,
 		x86,
 		x86_64
 	}
 
-	private static OS detectOSFromProperties() {
+	public static OS detectOSFromProperties() {
 		String osname = System.getProperty("os.name");
 		if(osname == null) {
 			return OS.Unknown;
@@ -144,13 +145,13 @@ public class LocalResourceType extends BaseResourceType {
 		} else if(osname.contains("mac")) {
 			return OS.Mac;
 		} else if(osname.contains("nix") || osname.contains("nux") || osname.contains("aix") || osname.endsWith("ix") || osname.endsWith("ux")) {
-			return OS.Linux;
+			return OS.Unix;
 		}
 
 		return OS.Unknown;
 	}
 
-	private static Arch detectArchFromProperties() {
+	public static Arch detectArchFromProperties() {
 		String osarch = System.getProperty("os.arch");
 		if(osarch == null) {
 			return Arch.Unknown;
@@ -223,7 +224,7 @@ public class LocalResourceType extends BaseResourceType {
 					"x86_64-pc-windows-msvc"
 				};
 			}
-		} else if(os == OS.Linux) {
+		} else if(os == OS.Unix) {
 			/* Favour musl over glibc ones as they're more likely to work. */
 			if(arch == Arch.x86) {
 				ss = new String[]{
@@ -253,7 +254,7 @@ public class LocalResourceType extends BaseResourceType {
 		return null;
 	}
 
-	private static String detectPlatform(AgentProvider ap) {
+	public static Map.Entry<OS, Arch> detectPlatform() {
 		OS propsOS = detectOSFromProperties();
 		Arch propsArch = detectArchFromProperties();
 
@@ -288,23 +289,32 @@ public class LocalResourceType extends BaseResourceType {
 
 			/* This is pretty-much a guarantee it's Windows. */
 			if(win64Count > 0) {
-				return mapToPlat(OS.Windows, Arch.x86_64, ap);
+				return Map.entry(OS.Windows, Arch.x86_64);
 			} else {
-				return mapToPlat(OS.Windows, Arch.x86, ap);
+				return Map.entry(OS.Windows, Arch.x86);
 			}
 		} else if(xdll.equals("libx.so")) {
-			/* We're some sort of Unix-like system.  Try uname */
+			/* It's a UNIX system! */
+			propsOS = OS.Unix;
+		}
+
+		/* Fall back to our os.* properties. */
+		return Map.entry(propsOS, propsArch);
+	}
+
+	private static String detectPlatformString(AgentProvider ap) {
+		Map.Entry<OS, Arch> plat = detectPlatform();
+
+		if(plat.getKey() == OS.Unix) {
 			String unameSystem = spawnProcessAndReadSingleTrimmedLine("uname", "-s");
 			String unameMachine = spawnProcessAndReadSingleTrimmedLine("uname", "-m");
 			AgentInfo ai = ap.lookupAgentByPosix(unameSystem, unameMachine);
 			if(ai != null) {
 				return ai.getPlatformString();
 			}
-
 		}
 
-		/* Fall back to our os.* properties. */
-		return mapToPlat(propsOS, propsArch, ap);
+		return mapToPlat(plat.getKey(), plat.getValue(), ap);
 	}
 
 	@Override

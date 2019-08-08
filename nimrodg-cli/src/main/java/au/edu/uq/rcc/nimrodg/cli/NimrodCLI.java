@@ -97,7 +97,7 @@ public class NimrodCLI {
 	public static int cliMain(String[] args) throws Exception {
 		System.setProperty("java.util.logging.manager", "org.apache.logging.log4j.jul.LogManager");
 
-		Path userHome = XDGDirs.INSTANCE.configHome.resolve("nimrod");
+		Path userHome = AppDirs.INSTANCE.configHome;
 		Map<String, CLICommand> commands = new HashMap<>();
 		ArgumentParser parser = buildParser(commands, userHome.resolve("nimrod.ini"));
 		Namespace ns;
@@ -126,7 +126,7 @@ public class NimrodCLI {
 					ns,
 					System.out,
 					System.err,
-					Stream.concat(Stream.of(userHome), XDGDirs.INSTANCE.configDirs.stream().map(p -> p.resolve("nimrod"))).toArray(Path[]::new)
+					Stream.concat(Stream.of(userHome), AppDirs.INSTANCE.configDirs.stream()).toArray(Path[]::new)
 			);
 		} catch(Throwable t) {
 			t.printStackTrace(System.err);
