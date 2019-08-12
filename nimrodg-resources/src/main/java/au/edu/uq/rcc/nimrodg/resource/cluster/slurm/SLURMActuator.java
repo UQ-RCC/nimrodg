@@ -21,7 +21,6 @@ package au.edu.uq.rcc.nimrodg.resource.cluster.slurm;
 
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.resource.ssh.SSHClient;
-import au.edu.uq.rcc.nimrodg.resource.cluster.BatchedClusterResourceType.BatchedClusterConfig;
 import au.edu.uq.rcc.nimrodg.resource.ssh.RemoteShell;
 import java.io.IOException;
 import java.security.cert.Certificate;
@@ -31,31 +30,35 @@ import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import au.edu.uq.rcc.nimrodg.api.Resource;
-import au.edu.uq.rcc.nimrodg.resource.cluster.BatchedClusterActuator;
+import au.edu.uq.rcc.nimrodg.resource.act.ActuatorUtils;
+import au.edu.uq.rcc.nimrodg.resource.cluster.LegacyClusterActuator;
+import au.edu.uq.rcc.nimrodg.resource.cluster.LegacyClusterResourceType.DialectConfig;
 
-public class SLURMActuator extends BatchedClusterActuator<BatchedClusterConfig> {
+public class SLURMActuator extends LegacyClusterActuator {
 
 	private static final Logger LOGGER = LogManager.getLogger(SLURMActuator.class);
 
 	private static final Pattern SBATCH_PATTERN = Pattern.compile("^.*?(\\d+).*$");
 
-	public SLURMActuator(Operations ops, Resource node, NimrodURI amqpUri, Certificate[] certs, BatchedClusterConfig cfg) throws IOException {
+	public SLURMActuator(Operations ops, Resource node, NimrodURI amqpUri, Certificate[] certs, DialectConfig cfg) throws IOException {
 		super(ops, node, amqpUri, certs, cfg);
 	}
 
 	@Override
-	protected void applyBatchedSubmissionArguments(StringBuilder sb, UUID[] uuids, String[] processedArgs) {
-		sb.append(String.format("#SBATCH %s\n\n", String.join(" ", processedArgs)));
+	protected void applyBatchedSubmissionArguments(StringBuilder sb, UUID[] uuids, String[] processedArgs, String out, String err) {
+		sb.append(String.format("#SBATCH %s\n", String.join(" ", processedArgs)));
+		sb.append(String.format("#SBATCH --output %s\n", ActuatorUtils.posixQuoteArgument(out)));
+		sb.append(String.format("#SBATCH --error %s\n\n", ActuatorUtils.posixQuoteArgument(err)));
 	}
 
 	@Override
 	protected String submitBatch(RemoteShell shell, TempBatch batch) throws IOException {
-		SSHClient.CommandResult sbatch = shell.runCommand("sbatch", "--output", batch.stdoutPath, "--error", batch.stderrPath, batch.scriptPath);
+		SSHClient.CommandResult sbatch = shell.runCommand("sbatch", batch.scriptPath);
 		if(sbatch.status != 0) {
 			throw new IOException("sbatch command failed.");
 		}
 
-		/* Get the job ID. This will be the first line of stdout. It may also be empty.*/
+		/* Get the job ID. This will be the first line of stdout. It may also be empty. */
 		String[] lines = sbatch.stdout.split("[\r\n]", 2);
 		String jobLine;
 		if(lines.length >= 1) {

@@ -22,7 +22,6 @@ package au.edu.uq.rcc.nimrodg.resource.cluster.pbs;
 import au.edu.uq.rcc.nimrodg.resource.cluster.BaseDialect;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -33,19 +32,16 @@ import javax.json.JsonValue;
 
 public class PBSProDialect extends BaseDialect {
 
-	private static final Map<String, BatchResource> PBS_RESOURCES;
-
-	static {
-		PBS_RESOURCES = new HashMap<>();
-		PBS_RESOURCES.put("mem", new BatchResource("mem", true, "b", BaseDialect::parseMemory, BaseDialect::validatePositiveInteger));
-		PBS_RESOURCES.put("vmem", new BatchResource("vmem", true, "b", BaseDialect::parseMemory, BaseDialect::validatePositiveInteger));
-		PBS_RESOURCES.put("mpiprocs", new BatchResource("mpiprocs", true, "", BaseDialect::parseUnsignedLong, BaseDialect::validatePositiveInteger));
-		PBS_RESOURCES.put("ompthreads", new BatchResource("ompthreads", true, "", BaseDialect::parseUnsignedLong, BaseDialect::validatePositiveInteger));
-		PBS_RESOURCES.put("ncpus", new BatchResource("ncpus", true, "", BaseDialect::parseUnsignedLong, BaseDialect::validatePositiveInteger));
-		PBS_RESOURCES.put("walltime", new BatchResource("walltime", false, "", BaseDialect::parseWalltime, BaseDialect::validatePositiveInteger));
-		PBS_RESOURCES.put("pmem", new BatchResource("pmem", false, "b", BaseDialect::parseMemory, BaseDialect::validatePositiveInteger));
-		PBS_RESOURCES.put("pvmem", new BatchResource("pvmem", false, "b", BaseDialect::parseMemory, BaseDialect::validatePositiveInteger));
-	}
+	private static final Map<String, BatchResource> PBS_RESOURCES = Map.of(
+			"mem", new BatchResource("mem", true, "b", BaseDialect::parseMemory, BaseDialect::validatePositiveInteger),
+			"vmem", new BatchResource("vmem", true, "b", BaseDialect::parseMemory, BaseDialect::validatePositiveInteger),
+			"mpiprocs", new BatchResource("mpiprocs", true, "", BaseDialect::parseUnsignedLong, BaseDialect::validatePositiveInteger),
+			"ompthreads", new BatchResource("ompthreads", true, "", BaseDialect::parseUnsignedLong, BaseDialect::validatePositiveInteger),
+			"ncpus", new BatchResource("ncpus", true, "", BaseDialect::parseUnsignedLong, BaseDialect::validatePositiveInteger),
+			"walltime", new BatchResource("walltime", false, "", BaseDialect::parseWalltime, BaseDialect::validatePositiveInteger),
+			"pmem", new BatchResource("pmem", false, "b", BaseDialect::parseMemory, BaseDialect::validatePositiveInteger),
+			"pvmem", new BatchResource("pvmem", false, "b", BaseDialect::parseMemory, BaseDialect::validatePositiveInteger)
+	);
 
 	@Override
 	protected Map<String, BatchResource> getBatchResources() {

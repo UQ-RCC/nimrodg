@@ -26,6 +26,7 @@ import au.edu.uq.rcc.nimrodg.api.Resource;
 import au.edu.uq.rcc.nimrodg.resource.act.RemoteActuator;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.file.Path;
 import java.security.cert.Certificate;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
@@ -39,8 +40,8 @@ public class RemoteResourceType extends SSHResourceType {
 	}
 
 	@Override
-	protected boolean parseArguments(AgentProvider ap, Namespace ns, PrintStream out, PrintStream err, JsonObjectBuilder jb) {
-		boolean valid = super.parseArguments(ap, ns, out, err, jb);
+	protected boolean parseArguments(AgentProvider ap, Namespace ns, PrintStream out, PrintStream err, Path[] configDirs, JsonObjectBuilder jb) {
+		boolean valid = super.parseArguments(ap, ns, out, err, configDirs, jb);
 		jb.add("limit", ns.getInt("limit"));
 		jb.add("tmpdir", ns.getString("tmpdir"));
 		return valid;

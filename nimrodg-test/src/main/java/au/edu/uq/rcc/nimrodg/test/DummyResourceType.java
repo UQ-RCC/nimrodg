@@ -27,6 +27,7 @@ import au.edu.uq.rcc.nimrodg.api.AgentProvider;
 import au.edu.uq.rcc.nimrodg.api.MasterResourceType;
 import java.security.cert.Certificate;
 import au.edu.uq.rcc.nimrodg.api.Resource;
+import java.nio.file.Path;
 
 public class DummyResourceType implements MasterResourceType {
 
@@ -36,7 +37,7 @@ public class DummyResourceType implements MasterResourceType {
 	}
 
 	@Override
-	public JsonStructure parseCommandArguments(AgentProvider ap, String[] args, PrintStream out, PrintStream err) {
+	public JsonStructure parseCommandArguments(AgentProvider ap, String[] args, PrintStream out, PrintStream err, Path[] configDirs) {
 		return JsonStructure.EMPTY_JSON_OBJECT;
 	}
 

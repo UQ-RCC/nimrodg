@@ -27,7 +27,7 @@ CREATE TABLE nimrod_resource_types(
 DROP TABLE IF EXISTS nimrod_resources;
 CREATE TABLE nimrod_resources(
 	id						INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-	name					TEXT NOT NULL,
+	name					TEXT NOT NULL UNIQUE,
 	type_id					INTEGER NOT NULL REFERENCES nimrod_resource_types(id) ON DELETE RESTRICT,
 	config					TEXT NOT NULL,
 	amqp_uri				TEXT,

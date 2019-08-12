@@ -24,6 +24,7 @@ import au.edu.uq.rcc.nimrodg.api.MasterResourceType;
 import au.edu.uq.rcc.nimrodg.resource.act.ActuatorUtils;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import javax.json.Json;
@@ -41,7 +42,7 @@ import net.sourceforge.argparse4j.inf.Namespace;
 public abstract class BaseResourceType implements MasterResourceType {
 
 	@Override
-	public final JsonStructure parseCommandArguments(AgentProvider ap, String[] args, PrintStream out, PrintStream err) {
+	public final JsonStructure parseCommandArguments(AgentProvider ap, String[] args, PrintStream out, PrintStream err, Path[] configDirs) {
 		ArgumentParser parser = createParseHeader();
 		addArguments(parser);
 
@@ -54,7 +55,7 @@ public abstract class BaseResourceType implements MasterResourceType {
 		}
 
 		JsonObjectBuilder cfg = Json.createObjectBuilder();
-		boolean valid = parseArguments(ap, ns, out, err, cfg);
+		boolean valid = parseArguments(ap, ns, out, err, configDirs, cfg);
 		if(!valid) {
 			return null;
 		}
@@ -87,10 +88,11 @@ public abstract class BaseResourceType implements MasterResourceType {
 	 * @param ns The argument namespace.
 	 * @param out Output Stream.
 	 * @param err Error Stream.
+	 * @param configDirs Directories to search for configuration files.
 	 * @param jb The JSON object to add arguments to.
 	 * @return If the arguments were parsed successfully, return true. Otherwise false.
 	 */
-	protected boolean parseArguments(AgentProvider ap, Namespace ns, PrintStream out, PrintStream err, JsonObjectBuilder jb) {
+	protected boolean parseArguments(AgentProvider ap, Namespace ns, PrintStream out, PrintStream err, Path[] configDirs, JsonObjectBuilder jb) {
 		return true;
 	}
 
@@ -120,6 +122,6 @@ public abstract class BaseResourceType implements MasterResourceType {
 	protected abstract String getConfigSchema();
 
 	protected InputStream getSchemaByPath(String path) {
-		return BaseResourceType.class.getResourceAsStream("/au/edu/uq/rcc/nimrodg/schema/" + path);
+		return BaseResourceType.class.getResourceAsStream("/au/edu/uq/rcc/nimrodg/resource/" + path);
 	}
 }

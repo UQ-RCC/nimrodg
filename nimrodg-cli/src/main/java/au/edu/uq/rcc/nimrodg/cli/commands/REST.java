@@ -27,6 +27,7 @@ import au.edu.uq.rcc.nimrodg.cli.NimrodCLI;
 import au.edu.uq.rcc.nimrodg.cli.NimrodCLICommand;
 import au.edu.uq.rcc.nimrodg.rest.RESTService;
 import java.io.PrintStream;
+import java.nio.file.Path;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
 
@@ -42,7 +43,7 @@ public class REST extends DefaultCLICommand {
 	}
 
 	@Override
-	public int execute(Namespace args, UserConfig config, PrintStream out, PrintStream err) throws Exception {
+	public int execute(Namespace args, UserConfig config, PrintStream out, PrintStream err, Path[] configDirs) throws Exception {
 		NimrodAPIFactory fact = NimrodCLICommand.createFactory(config);
 
 		try(RESTService rs = new RESTService(args.getString("context_path"), args.getString("hostname"), args.getInt("port"), fact, config)) {

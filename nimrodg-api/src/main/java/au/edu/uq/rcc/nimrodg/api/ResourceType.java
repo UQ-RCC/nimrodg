@@ -20,6 +20,7 @@
 package au.edu.uq.rcc.nimrodg.api;
 
 import java.io.PrintStream;
+import java.nio.file.Path;
 import javax.json.JsonStructure;
 
 /**
@@ -27,7 +28,7 @@ import javax.json.JsonStructure;
  */
 public interface ResourceType {
 
-	public String getName();
+	String getName();
 
 	/**
 	 * Parse a sequence of command-line arguments into a resource-specific configuration valid for this resource type.
@@ -36,7 +37,8 @@ public interface ResourceType {
 	 * @param args A list of command-line arguments.
 	 * @param out stdout
 	 * @param err stderr
+	 * @param configDirs Directories to search for configuration files
 	 * @return A resource-specific configuration structure, or null if parsing fails.
 	 */
-	public JsonStructure parseCommandArguments(AgentProvider ap, String[] args, PrintStream out, PrintStream err);
+	JsonStructure parseCommandArguments(AgentProvider ap, String[] args, PrintStream out, PrintStream err, Path[] configDirs);
 }

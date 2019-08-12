@@ -81,6 +81,22 @@ task generateNimrodKModule(type: Copy, dependsOn: [buildNimrodKFatJar, configura
 
 ext {
 	/* TODO: Move all of this to a separate file builddef.gradle or something. */
+
+	/* https://github.com/jgitver/jgitver/blob/master/src/main/java/fr/brouillard/oss/jgitver/metadata/Metadatas.java#L25 */
+	isDevBuild = Integer.valueOf(project.commit_distance) > 0
+	if(isDevBuild) {
+		packageName = 'nimrod-dev'
+	} else {
+		packageName = 'nimrod'
+	}
+
+	/* The version number. */
+	packageVersion = "${project.base_version}"
+	/* Everything after the version number. */
+	def matcher = project.version =~ /^\d+\.\d+\.\d+(?:-(.+)$)?/
+	matcher.find()
+	packageRelease = matcher.group(1) ?: '1'
+
 	packageSummary = 'A specialised parametric modelling system.'
 	packageDescription = '''It uses a simple declarative parametric modelling language to express
 a parametric experiment.
@@ -97,10 +113,13 @@ Nimrod helps researchers run computations remotely on the cloud. It can
 turn your laptop into a supercomputer. With Nimrod you can run many
 jobs — millions if need be.
 '''
-	packageMaintainer = 'Research Computing Centre <rcc-admin@uq.edu.au>'
+	packageVendor = 'Research Computing Centre'
+	packageMaintainer = "${packageVendor} <rcc-admin@uq.edu.au>"
+
 	packageUrl = 'https://rcc.uq.edu.au/nimrod'
 
 	packageInstallDir = '/usr/share/nimrod'
+	packageConfigDir = '/etc/xdg/nimrod'
 
 	agentVersion = '1.2.0'
 	agentList = [
@@ -137,17 +156,46 @@ agentList.each { agent ->
 	[distTar, distZip].each { it.dependsOn += "verifyAgent${agent.platform}" }
 }
 
+def distContents = copySpec {
+	with distributions.main.contents
+
+	/* Lintian gets cranky about this. */
+	exclude 'nimrod.bat'
+}
+
+def distConfigs = copySpec {
+	def nimres = project(':nimrodg-resources')
+
+	from('setup-defaults.ini')
+	from('hpc.json')
+	from(nimres.file("src/main/resources/au/edu/uq/rcc/nimrodg/resource/cluster/hpc.pbspro.j2"))
+	from(nimres.file("src/main/resources/au/edu/uq/rcc/nimrodg/resource/cluster/hpc.slurm.j2"))
+	from(nimres.file("src/main/resources/au/edu/uq/rcc/nimrodg/resource/cluster/hpc.lsf.j2"))
+
+	fileMode 0644
+
+	into packageConfigDir
+
+//	File f = new File("${destinationDir}/hpc.json")
+//	def hpc = new groovy.json.JsonSlurper().parseText(f.text)
+//
+//	/* Rewrite hpc.json to reference the external templates. */
+//	hpc.each {
+//		it.value.remove('template')
+//		it.value.remove('template_file')
+//		it.value.remove('template_classpath')
+//		it.value.template_file = "${packageConfigDir}/hpc.${it.key}.j2"
+//	}
+//
+//	f.text = groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(hpc))
+//
+//	from(f)
+}
+
 import org.redline_rpm.header.Flags
 
 task buildDeb(type: Deb, dependsOn: assembleDist) {
-	/* https://github.com/jgitver/jgitver/blob/master/src/main/java/fr/brouillard/oss/jgitver/metadata/Metadatas.java#L25 */
-	if(Integer.valueOf(project.commit_distance) > 0) {
-		packageName = 'nimrod-dev'
-		conflicts('nimrod')
-	} else {
-		packageName = 'nimrod'
-		conflicts('nimrod-dev')
-	}
+	packageName			project.packageName
 
 	summary				project.packageSummary
 	packageDescription	project.packageDescription
@@ -167,36 +215,29 @@ task buildDeb(type: Deb, dependsOn: assembleDist) {
 
 	into project.packageInstallDir
 
-	def distContents = copySpec {
-		with distributions.main.contents
-
-		/* Lintian gets cranky about this. */
-		exclude 'nimrod.bat'
-	}
 	with distContents
 
-	from('setup-defaults.ini') {
-		into '/etc/xdg/nimrod'
-		fileMode 0644
-	}
-
-	configurationFile('/etc/xdg/nimrod/setup-defaults.ini')
+	with distConfigs
+	distConfigs.eachFile { configurationFile("/${it.path}") }
 
 	link('/usr/bin/nimrod', "${project.packageInstallDir}/bin/nimrod")
 }
 
-task buildRpm(type: Rpm, dependsOn: assembleDist) {
+task buildRpmCentOS76(type: Rpm, dependsOn: assembleDist) {
+	packageName			project.packageName
+
 	summary				project.packageSummary
 	packageDescription	project.packageDescription
 
 	license				'ASL 2.0'
-	release				'1'
+	version				project.packageVersion
+	release				"${project.packageRelease.replace('-', '~')}.el7_6"
 	arch				NOARCH
 	os					LINUX
 	type				BINARY
 	packager			project.packageMaintainer
 	url					project.packageUrl
-	vendor				'Research Computing Centre'
+	vendor				project.packageVendor
 
 	requires			'java-11-openjdk-headless'
 
@@ -205,24 +246,17 @@ task buildRpm(type: Rpm, dependsOn: assembleDist) {
 
 	into project.packageInstallDir
 
-	def distContents = copySpec {
-		with distributions.main.contents
-
-		/* Lintian gets cranky about this. */
-		exclude 'nimrod.bat'
-	}
-
 	with distContents
 
-	from('setup-defaults.ini') {
-		into '/etc/xdg/nimrod'
-		fileMode 0644
+	with distConfigs
+	/* FIXME: This doesn't work. */
+	distConfigs.eachFile {
 		fileType CONFIG
 	}
 
 	link('/usr/bin/nimrod', "${project.packageInstallDir}/bin/nimrod")
 }
 
-task(generateArtifacts, dependsOn:[assembleDist, buildDeb, buildRpm]) {
+task(generateArtifacts, dependsOn:[assembleDist, buildDeb, buildRpmCentOS76]) {
 }
 

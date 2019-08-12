@@ -40,12 +40,15 @@ import org.junit.Assert;
 import org.junit.Test;
 import au.edu.uq.rcc.nimrodg.api.Resource;
 import au.edu.uq.rcc.nimrodg.resource.act.ActuatorUtils;
+import au.edu.uq.rcc.nimrodg.resource.cluster.HPCActuator;
 import au.edu.uq.rcc.nimrodg.resource.cluster.pbs.PBSProDialect;
 import au.edu.uq.rcc.nimrodg.resource.cluster.slurm.SLURMDialect;
 import au.edu.uq.rcc.nimrodg.resource.ssh.OpenSSHClient;
 import au.edu.uq.rcc.nimrodg.resource.ssh.SSHClient;
 import au.edu.uq.rcc.nimrodg.resource.ssh.TransportFactory;
 import au.edu.uq.rcc.nimrodg.test.TestUtils;
+import java.io.InputStream;
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -238,7 +241,7 @@ public class ResourceTests {
 				"--transport", "sshd"
 			};
 
-			JsonStructure js = ssh.parseCommandArguments(_AgentProvider.INSTANCE, sshdArgs, System.out, System.err);
+			JsonStructure js = ssh.parseCommandArguments(_AgentProvider.INSTANCE, sshdArgs, System.out, System.err, new Path[0]);
 			Assert.assertNotNull(js);
 
 			JsonObject cfg = js.asJsonObject();
@@ -271,7 +274,7 @@ public class ResourceTests {
 				"--openssh-executable", "/path/to/ssh"
 			};
 
-			JsonStructure js = ssh.parseCommandArguments(_AgentProvider.INSTANCE, openSshArgs, System.out, System.err);
+			JsonStructure js = ssh.parseCommandArguments(_AgentProvider.INSTANCE, openSshArgs, System.out, System.err, new Path[0]);
 			Assert.assertNotNull(js);
 
 			JsonObject cfg = js.asJsonObject();
@@ -310,7 +313,7 @@ public class ResourceTests {
 			"--uri", "ssh://username:pass@hostname:22",
 			"--key", "",
 			"--hostkey", "none"
-		}, System.out, System.err);
+		}, System.out, System.err, new Path[0]);
 
 		Assert.assertNull(js);
 	}
@@ -318,7 +321,7 @@ public class ResourceTests {
 	@Test
 	public void pbsProBatchArgsTest() {
 		JsonObject expected;
-		try(JsonReader p = Json.createReader(new StringReader("{\"agent_platform\":\"x86_64-pc-linux-musl\",\"transport\":{\"name\":\"sshd\",\"uri\":\"ssh://user@pbscluster.com\",\"keyfile\":\"/path/to/key\",\"hostkeys\":[\"ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQDMIAQc5QFZfdjImP2T9FNGe9r6l89binb5uH/vxzlnhAtHxesD8B7WXFBN/GxOplb3ih/vadT9gWliXUayvMn+ZMO7iBScnZwdmcMeKP3K80Czlrio+eI3jU77RQPYXBtcD8CBRT94r7nd29I+lMWxOD1U+LBA43kxAbyXqkQ0PQ==\"]},\"tmpvar\":\"TMPDIR\",\"pbsargs\":[\"-A\",\"ACCOUNTSTRING\"],\"limit\":100,\"max_batch_size\":10,\"batch_config\":[{\"name\":\"walltime\",\"value\":864000,\"scale\":false},{\"name\":\"pmem\",\"value\":2000000000000,\"scale\":false},{\"name\":\"pvmem\",\"value\":1000000000000,\"scale\":false},{\"name\":\"ncpus\",\"value\":1,\"scale\":true},{\"name\":\"mem\",\"value\":1073741824,\"scale\":true},{\"name\":\"vmem\",\"value\":536870912000,\"scale\":true},{\"name\":\"mpiprocs\",\"value\":1,\"scale\":true},{\"name\":\"ompthreads\",\"value\":1,\"scale\":true}]}"))) {
+		try(JsonReader p = Json.createReader(new StringReader("{\"agent_platform\":\"x86_64-pc-linux-musl\",\"transport\":{\"name\":\"sshd\",\"uri\":\"ssh://user@pbscluster.com\",\"keyfile\":\"/path/to/key\",\"hostkeys\":[\"ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQDMIAQc5QFZfdjImP2T9FNGe9r6l89binb5uH/vxzlnhAtHxesD8B7WXFBN/GxOplb3ih/vadT9gWliXUayvMn+ZMO7iBScnZwdmcMeKP3K80Czlrio+eI3jU77RQPYXBtcD8CBRT94r7nd29I+lMWxOD1U+LBA43kxAbyXqkQ0PQ==\"]},\"tmpvar\":\"TMPDIR\",\"pbsargs\":[\"-A\",\"ACCOUNTSTRING\"],\"limit\":100,\"max_batch_size\":10,\"batch_config\":[{\"name\":\"walltime\",\"value\":36000,\"scale\":false},{\"name\":\"pmem\",\"value\":2000000000000,\"scale\":false},{\"name\":\"pvmem\",\"value\":1000000000000,\"scale\":false},{\"name\":\"ncpus\",\"value\":1,\"scale\":true},{\"name\":\"mem\",\"value\":1073741824,\"scale\":true},{\"name\":\"vmem\",\"value\":536870912000,\"scale\":true},{\"name\":\"mpiprocs\",\"value\":1,\"scale\":true},{\"name\":\"ompthreads\",\"value\":1,\"scale\":true}]}"))) {
 			expected = p.readObject();
 		}
 
@@ -351,14 +354,14 @@ public class ResourceTests {
 				Stream.of(pbsargs)
 		).toArray(String[]::new);
 
-		JsonObject js = (JsonObject)pbs.parseCommandArguments(_AgentProvider.INSTANCE, args, System.out, System.err);
+		JsonObject js = (JsonObject)pbs.parseCommandArguments(_AgentProvider.INSTANCE, args, System.out, System.err, new Path[0]);
 		Assert.assertEquals(expected, js);
 
 		PBSProDialect d = new PBSProDialect();
 		String[] subArgs = d.buildSubmissionArguments(5, js.getJsonArray("batch_config").stream().map(j -> (JsonObject)j).toArray(JsonObject[]::new), pbsargs);
 		String[] expectedArgs = new String[]{
 			"-A", "ACCOUNTSTRING",
-			"-l", "walltime=864000",
+			"-l", "walltime=36000",
 			"-l", "pmem=2000000000000b",
 			"-l", "pvmem=1000000000000b",
 			"-l", "select=1:ncpus=5:mem=5368709120b:vmem=2684354560000b:mpiprocs=5:ompthreads=5"
@@ -400,7 +403,7 @@ public class ResourceTests {
 				Stream.of(slurmargs)
 		).toArray(String[]::new);
 
-		JsonObject js = (JsonObject)slurm.parseCommandArguments(_AgentProvider.INSTANCE, args, System.out, System.err);
+		JsonObject js = (JsonObject)slurm.parseCommandArguments(_AgentProvider.INSTANCE, args, System.out, System.err, new Path[0]);
 		Assert.assertEquals(expected, js);
 
 		SLURMDialect sd = new SLURMDialect();
@@ -446,7 +449,7 @@ public class ResourceTests {
 				), Arrays.stream(pbsargs)
 		).toArray(String[]::new);
 
-		JsonStructure js = pbs.parseCommandArguments(_AgentProvider.INSTANCE, args, System.out, System.err);
+		JsonStructure js = pbs.parseCommandArguments(_AgentProvider.INSTANCE, args, System.out, System.err, new Path[0]);
 		Assert.assertEquals(expected, js);
 	}
 
@@ -458,6 +461,60 @@ public class ResourceTests {
 
 		Certificate[] cert = ActuatorUtils.readX509Certificates(x509Path);
 		Assert.assertArrayEquals(new Certificate[]{x509}, cert);
+	}
+
+	@Test
+	public void hpcJsonTest() throws IOException {
+		HPCResourceType hpc = new HPCResourceType();
+
+//		JsonObject internalConfig;
+//		try(InputStream is = HPCActuator.class.getResourceAsStream("hpc.json")) {
+//			internalConfig = Json.createReader(is).readObject();
+//		}
+		JsonObject userCfg = Json.createObjectBuilder().add("asdfa", Json.createObjectBuilder()
+				.add("submit", Json.createArrayBuilder(List.of("alfalfa")))
+				.add("delete", Json.createArrayBuilder(List.of("por", "que", "no", "los", "dos")))
+				.add("delete_force", Json.createArrayBuilder(List.of("sudo", "por", "que", "no", "los", "dos")))
+				.add("regex", "^(.+)$")
+				.add("template_classpath", "au/edu/uq/rcc/nimrodg/resource/cluster/hpc.pbspro.j2")
+		).build();
+
+		Path p = tmpDir.newFile("hpc.json").toPath();
+		Files.write(p, userCfg.toString().getBytes(StandardCharsets.UTF_8));
+
+		String args[] = new String[]{
+			"--platform", "x86_64-pc-linux-musl",
+			"--transport", "openssh",
+			"--uri", "ssh://nowhere",
+			"--limit", "10",
+			"--max-batch-size", "10",
+			"--type", "asdfa",
+			"--ncpus", "1",
+			"--walltime", "24:00:00",
+			"--mem", "1GiB"
+		};
+
+		JsonStructure _cfg = hpc.parseCommandArguments(_AgentProvider.INSTANCE, args, System.out, System.err, new Path[]{tmpDir.getRoot().toPath()});
+		Assert.assertNotNull(_cfg);
+
+		_cfg = hpc.parseCommandArguments(_AgentProvider.INSTANCE, args, System.out, System.err, new Path[0]);
+		Assert.assertNull(_cfg);
+
+		/* Now test with an invalid hpc.json */
+		JsonObject badUserCfg = Json.createObjectBuilder().add("not your friend", Json.createObjectBuilder()
+				.add("submit2", Json.createArrayBuilder(List.of("alfalfa")))
+		).build();
+
+		Path badDir = tmpDir.newFolder().toPath();
+		Files.write(badDir.resolve("hpc.json"), badUserCfg.toString().getBytes(StandardCharsets.UTF_8));
+
+		Throwable t = null;
+		try {
+			hpc.parseCommandArguments(_AgentProvider.INSTANCE, args, System.out, System.err, new Path[]{badDir});
+		} catch(Throwable e) {
+			t = e;
+		}
+		Assert.assertNotNull(t);
 	}
 
 }

@@ -58,19 +58,19 @@
 						"tmpvar": {
 							"type": "string",
 							"pattern": "^([A-Z_][A-Z0-9+]*)$"
-						}
+						},
+						"max_batch_size": { "type": "integer", "minimum": 1 }
 					},
-					"required": ["limit", "tmpvar"]
+					"required": ["limit", "tmpvar", "max_batch_size"]
 				}
 			]
 		},
-		"batched_cluster_resource": {
+		"legacy_cluster_resource": {
 			"allOf": [
 				{ "$ref": "#/definitions/cluster_resource" },
 				{
 					"type": "object",
 					"properties": {
-						"max_batch_size": { "type": "integer", "minimum": 1 },
 						"batch_config": {
 							"type": "array",
 							"minItems": 0,
@@ -89,10 +89,23 @@
 							}
 						}
 					},
-					"required": [
-						"max_batch_size",
-						"batch_config"
-					]
+					"required": ["batch_config"]
+				}
+			]
+		},
+		"hpc_cluster_resource": {
+			"allOf": [
+				{ "$ref": "#/definitions/cluster_resource" },
+				{
+					"type": "object",
+					"properties": {
+                        "definition": { "$ref": "cluster/hpc_definition.json#/definitions/hpc_definition_config" },
+                        "ncpus": { "type": "integer", "minimum": 1},
+                        "mem": { "type": "integer", "minimum": 1},
+						"walltime": { "type": "integer", "minimum": 1},
+						"account": { "type": "string" }
+					},
+					"required": ["definition", "ncpus", "mem", "walltime"]
 				}
 			]
 		}

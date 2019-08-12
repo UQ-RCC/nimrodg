@@ -1,0 +1,13 @@
+{
+	"$schema": "http://json-schema.org/draft-04/schema#",
+	"type": "object",
+	"properties": {
+		"parallelism": { "type": "integer", "minimum": 1 },
+		"platform": { "type": "string" },
+		"capture_mode": {
+			"enum": ["off", "stream", "copy", "inherit"]
+		}
+	},
+	"required": ["parallelism", "platform", "capture_mode"],
+	"additionalProperties": false
+}

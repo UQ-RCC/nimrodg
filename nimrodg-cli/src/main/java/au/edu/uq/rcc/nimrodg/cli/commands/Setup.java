@@ -28,7 +28,6 @@ import au.edu.uq.rcc.nimrodg.cli.DefaultCLICommand;
 import au.edu.uq.rcc.nimrodg.cli.IniSetupConfig;
 import au.edu.uq.rcc.nimrodg.cli.NimrodCLI;
 import au.edu.uq.rcc.nimrodg.cli.NimrodCLICommand;
-import au.edu.uq.rcc.nimrodg.cli.XDGDirs;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
@@ -38,6 +37,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -60,7 +60,7 @@ public class Setup extends DefaultCLICommand {
 	}
 
 	@Override
-	public int execute(Namespace args, UserConfig config, PrintStream out, PrintStream err) throws Exception {
+	public int execute(Namespace args, UserConfig config, PrintStream out, PrintStream err, Path[] configDirs) throws Exception {
 		NimrodAPIFactory fact = NimrodCLICommand.createFactory(config);
 
 		switch(args.getString("operation")) {
@@ -94,7 +94,7 @@ public class Setup extends DefaultCLICommand {
 			}
 			case "init": {
 				Ini ini = resolveSetupConfiguration(
-						XDGDirs.INSTANCE,
+						configDirs,
 						Optional.ofNullable(args.getString("setupini")),
 						false,
 						args.getBoolean("skip_system")
@@ -156,7 +156,7 @@ public class Setup extends DefaultCLICommand {
 		return 0;
 	}
 
-	private static Ini resolveSetupConfiguration(XDGDirs xdg, Optional<String> userPath, boolean skipInternal, boolean skipSystem) {
+	private static Ini resolveSetupConfiguration(Path[] configDirs, Optional<String> userPath, boolean skipInternal, boolean skipSystem) {
 		Ini internalDefaults = new Ini();
 		if(!skipInternal) {
 			/* Load our internal defaults. */
@@ -169,11 +169,12 @@ public class Setup extends DefaultCLICommand {
 
 		Stream<Ini> sysInis = Stream.empty();
 		if(!skipSystem) {
-			/* Load system-wide configuration from each XDG_CONFIG_DIRS. */
-			List<Path> xdgDirs = new ArrayList<>(xdg.configDirs);
-			Collections.reverse(xdgDirs);
-			sysInis = xdgDirs.stream()
-					.map(p -> p.resolve("nimrod/setup-defaults.ini"))
+			/* Load system-wide configuration from each of the configuration dirs. */
+			List<Path> confDirs = new ArrayList<>();
+			confDirs.addAll(Arrays.asList(configDirs));
+			Collections.reverse(confDirs);
+			sysInis = confDirs.stream()
+					.map(p -> p.resolve("setup-defaults.ini"))
 					.filter(p -> Files.exists(p))
 					.map(p -> {
 						try(InputStream is = Files.newInputStream(p)) {

@@ -1,0 +1,6 @@
+{
+	"$schema": "http://json-schema.org/draft-04/schema#",
+	"oneOf": [
+        { "$ref": "resource_base.json#/definitions/legacy_cluster_resource" }
+    ]
+}

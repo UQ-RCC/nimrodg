@@ -27,6 +27,7 @@ import au.edu.uq.rcc.nimrodg.cli.CommandEntry;
 import au.edu.uq.rcc.nimrodg.cli.NimrodCLICommand;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.file.Path;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
 
@@ -38,7 +39,7 @@ public class DelExp  extends NimrodCLICommand  {
 	}
 
 	@Override
-	public int execute(Namespace args, UserConfig config, NimrodAPI nimrod, PrintStream out, PrintStream err) throws IOException, NimrodAPIException {
+	public int execute(Namespace args, UserConfig config, NimrodAPI nimrod, PrintStream out, PrintStream err, Path[] configDirs) throws IOException, NimrodAPIException {
 		String expName = args.getString("exp_name");
 
 		Experiment exp = nimrod.getExperiment(expName);

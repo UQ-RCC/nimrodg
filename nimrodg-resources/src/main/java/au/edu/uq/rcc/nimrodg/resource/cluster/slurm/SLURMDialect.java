@@ -22,7 +22,6 @@ package au.edu.uq.rcc.nimrodg.resource.cluster.slurm;
 import au.edu.uq.rcc.nimrodg.resource.cluster.BaseDialect;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -33,19 +32,15 @@ import javax.json.JsonValue;
 
 public class SLURMDialect extends BaseDialect {
 
-	private static final Map<String, BatchResource> SLURM_RESOURCES;
-
-	static {
-		SLURM_RESOURCES = new HashMap<>();
-		SLURM_RESOURCES.put("cpus-per-task", new BatchResource("cpus-per-task", false, "", BaseDialect::parseUnsignedLong, BaseDialect::validatePositiveInteger));
-		SLURM_RESOURCES.put("nodes", new BatchResource("nodes", false, "", BaseDialect::parseUnsignedLong, BaseDialect::validatePositiveInteger));
-		SLURM_RESOURCES.put("ntasks", new BatchResource("ntasks", true, "", BaseDialect::parseUnsignedLong, BaseDialect::validatePositiveInteger));
-		SLURM_RESOURCES.put("ntasks-per-node", new BatchResource("ntasks-per-node", false, "", BaseDialect::parseUnsignedLong, BaseDialect::validatePositiveInteger));
-
-		/* These guys need to be converted into kilobytes. */
-		SLURM_RESOURCES.put("mem-per-cpu", new BatchResource("mem-per-cpu", false, "K", BaseDialect::parseMemory, BaseDialect::validatePositiveInteger));
-		SLURM_RESOURCES.put("mem", new BatchResource("mem", false, "K", BaseDialect::parseMemory, BaseDialect::validatePositiveInteger));
-	}
+	private static final Map<String, BatchResource> SLURM_RESOURCES = Map.of(
+			"cpus-per-task", new BatchResource("cpus-per-task", false, "", BaseDialect::parseUnsignedLong, BaseDialect::validatePositiveInteger),
+			"nodes", new BatchResource("nodes", false, "", BaseDialect::parseUnsignedLong, BaseDialect::validatePositiveInteger),
+			"ntasks", new BatchResource("ntasks", true, "", BaseDialect::parseUnsignedLong, BaseDialect::validatePositiveInteger),
+			"ntasks-per-node", new BatchResource("ntasks-per-node", false, "", BaseDialect::parseUnsignedLong, BaseDialect::validatePositiveInteger),
+			/* These guys need to be converted into kilobytes. */
+			"mem-per-cpu", new BatchResource("mem-per-cpu", false, "K", BaseDialect::parseMemory, BaseDialect::validatePositiveInteger),
+			"mem", new BatchResource("mem", false, "K", BaseDialect::parseMemory, BaseDialect::validatePositiveInteger)
+	);
 
 	@Override
 	protected Map<String, BatchResource> getBatchResources() {

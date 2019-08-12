@@ -126,16 +126,13 @@ public class StringTests {
 
 	@Test
 	public void walltimeParseTest() {
-		Assert.assertEquals(12 * 86400, StringUtils.parseWalltime("12"));
+		Assert.assertEquals(12, StringUtils.parseWalltime("12"));
+		Assert.assertEquals(12 * 60 + 34, StringUtils.parseWalltime("12:34"));
+		Assert.assertEquals(12 * 3600 + 34 * 60 + 56, StringUtils.parseWalltime("12:34:56"));
+
 		Assert.assertEquals(12 * 86400, StringUtils.parseWalltime("12d"));
-
-		Assert.assertEquals(12 * 86400 + 34 * 3600, StringUtils.parseWalltime("12:34"));
 		Assert.assertEquals(12 * 86400 + 34 * 3600, StringUtils.parseWalltime("12d34h"));
-
-		Assert.assertEquals(12 * 86400 + 34 * 3600 + 56 * 60, StringUtils.parseWalltime("12:34:56"));
 		Assert.assertEquals(12 * 86400 + 34 * 3600 + 56 * 60, StringUtils.parseWalltime("12d34h56m"));
-
-		Assert.assertEquals(12 * 86400 + 34 * 3600 + 56 * 60 + 78, StringUtils.parseWalltime("12:34:56:78"));
 		Assert.assertEquals(12 * 86400 + 34 * 3600 + 56 * 60 + 78, StringUtils.parseWalltime("12d34h56m78s"));
 
 		Assert.assertEquals(34 * 3600, StringUtils.parseWalltime("34h"));

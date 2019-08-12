@@ -34,6 +34,7 @@ import au.edu.uq.rcc.nimrodg.cli.DefaultCLICommand;
 import au.edu.uq.rcc.nimrodg.cli.NimrodCLI;
 import au.edu.uq.rcc.nimrodg.cli.NimrodCLICommand;
 import au.edu.uq.rcc.nimrodg.parsing.ANTLR4ParseAPIImpl;
+import au.edu.uq.rcc.nimrodg.resource.HPCResourceType;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.reflect.InvocationTargetException;
@@ -61,7 +62,7 @@ public class Staging extends DefaultCLICommand {
 
 	private Method lookupNimrodMethod(String name) {
 		try {
-			return this.getClass().getDeclaredMethod(name, UserConfig.class, NimrodAPI.class, PrintStream.class, PrintStream.class, String[].class);
+			return this.getClass().getDeclaredMethod(name, UserConfig.class, NimrodAPI.class, PrintStream.class, PrintStream.class, Path[].class, String[].class);
 		} catch(NoSuchMethodException | SecurityException e) {
 
 		}
@@ -70,7 +71,7 @@ public class Staging extends DefaultCLICommand {
 
 	private Method lookupNonNimrodMethod(String name) {
 		try {
-			return this.getClass().getDeclaredMethod(name, UserConfig.class, PrintStream.class, PrintStream.class, String[].class);
+			return this.getClass().getDeclaredMethod(name, UserConfig.class, PrintStream.class, PrintStream.class, Path[].class, String[].class);
 		} catch(NoSuchMethodException | SecurityException e) {
 
 		}
@@ -78,7 +79,7 @@ public class Staging extends DefaultCLICommand {
 	}
 
 	@Override
-	public int execute(Namespace args, UserConfig config, PrintStream out, PrintStream err) throws Exception {
+	public int execute(Namespace args, UserConfig config, PrintStream out, PrintStream err, Path[] configDirs) throws Exception {
 		String scommand = args.getString("scommand");
 
 		boolean hasNimrodParameter = true;
@@ -96,10 +97,10 @@ public class Staging extends DefaultCLICommand {
 		try {
 			if(hasNimrodParameter) {
 				try(NimrodAPI nimrod = NimrodCLICommand.createFactory(config).createNimrod(config)) {
-					m.invoke(this, config, nimrod, out, err, args.getList("args").toArray(new String[args.getList("args").size()]));
+					m.invoke(this, config, nimrod, out, err, configDirs, args.getList("args").toArray(new String[args.getList("args").size()]));
 				}
 			} else {
-				m.invoke(this, config, out, err, args.getList("args").toArray(new String[args.getList("args").size()]));
+				m.invoke(this, config, out, err, configDirs, args.getList("args").toArray(new String[args.getList("args").size()]));
 			}
 
 		} catch(IllegalAccessException | IllegalArgumentException e) {
@@ -121,7 +122,7 @@ public class Staging extends DefaultCLICommand {
 		return 0;
 	}
 
-	public void goodTest(UserConfig config, NimrodAPI nimrod, PrintStream out, PrintStream err, String[] args) throws Exception {
+	public void goodTest(UserConfig config, NimrodAPI nimrod, PrintStream out, PrintStream err, Path[] configDirs, String[] args) throws Exception {
 		CompiledRun cr = PARSE_API.parseRunToBuilder(
 				"parameter x integer range from 1 to 1000 step 1\n"
 				+ "\n"
@@ -143,11 +144,11 @@ public class Staging extends DefaultCLICommand {
 		nimrod.assignResource(local, exp1);
 	}
 
-	public void singleAgentSleep(UserConfig config, NimrodAPI nimrod, PrintStream out, PrintStream err, String[] args) throws Exception {
-		nAgentSleep(config, nimrod, out, err, new String[]{"1", "100"});
+	public void singleAgentSleep(UserConfig config, NimrodAPI nimrod, PrintStream out, PrintStream err, Path[] configDirs, String[] args) throws Exception {
+		nAgentSleep(config, nimrod, out, err, configDirs, new String[]{"1", "100"});
 	}
 
-	public void nAgentSleep(UserConfig config, NimrodAPI nimrod, PrintStream out, PrintStream err, String[] args) throws Exception {
+	public void nAgentSleep(UserConfig config, NimrodAPI nimrod, PrintStream out, PrintStream err, Path[] configDirs, String[] args) throws Exception {
 
 		if(args.length > 2) {
 			err.printf("Invalid arguments\n");
@@ -178,7 +179,7 @@ public class Staging extends DefaultCLICommand {
 		}
 
 		CompiledRun cr = PARSE_API.parseRunToBuilder(
-				String.format("parameter x integer range from 0 to 10 step 1\n"
+				String.format("parameter x integer range from 0 to 10000 step 1\n"
 						+ "task main\n"
 						+ "    onerror fail\n"
 						+ "    shexec \"sleep %d\"\n"
@@ -194,14 +195,57 @@ public class Staging extends DefaultCLICommand {
 //		Resource flashlite = createFlashlite(nimrod, "flashlite");
 //		nimrod.assignResource(flashlite, exp1);
 
-		Resource local = createLocal(nimrod, "local", "x86_64-pc-linux-musl", nAgents);
-		nimrod.assignResource(local, exp1);
+//		Resource local = createLocal(nimrod, "local", "x86_64-pc-linux-musl", nAgents);
+//		nimrod.assignResource(local, exp1);
 //
 //		Resource[] slaves = createSlaves(nimrod);
 //
 //		for(int i = 0; i < slaves.length; ++i) {
 //			nimrod.assignResource(slaves[i], exp1);
 //		}
+		HPCResourceType hpcr = new HPCResourceType();
+		Resource tinaroo = nimrod.getResource("tinaroo");
+		if(tinaroo != null) {
+			nimrod.deleteResource(tinaroo);
+		}
+
+		JsonObject cfg = hpcr.parseCommandArguments(nimrod, new String[]{
+			"--platform", "x86_64-pc-linux-musl",
+			"--transport", "openssh",
+			"--uri", "ssh://tinaroo1",
+			"--limit", "10",
+			"--tmpvar", "TMPDIR",
+			"--max-batch-size", "10",
+			"--type", "pbspro",
+			"--ncpus", "1",
+			"--mem", "1GiB",
+			"--walltime", "24:00:00",
+			"--account", "UQ-RCC"
+		}, out, err, configDirs).asJsonObject();
+
+		tinaroo = nimrod.addResource("tinaroo", "hpc", cfg, null, null);
+		nimrod.assignResource(tinaroo, exp1);
+
+		Resource wiener = nimrod.getResource("wiener");
+		if(wiener != null) {
+			nimrod.deleteResource(wiener);
+		}
+
+		JsonObject wcfg = hpcr.parseCommandArguments(nimrod, new String[]{
+			"--platform", "x86_64-pc-linux-musl",
+			"--transport", "openssh",
+			"--uri", "ssh://wiener",
+			"--limit", "10",
+			"--tmpvar", "TMPDIR",
+			"--max-batch-size", "10",
+			"--type", "slurm",
+			"--ncpus", "1",
+			"--mem", "1GiB",
+			"--walltime", "24:00:00"
+		}, out, err, configDirs).asJsonObject();
+
+		wiener = nimrod.addResource("wiener", "hpc", wcfg, null, null);
+		nimrod.assignResource(wiener, exp1);
 	}
 
 	private class NullOps implements Actuator.Operations {
@@ -214,7 +258,7 @@ public class Staging extends DefaultCLICommand {
 
 		@Override
 		public void reportAgentFailure(Actuator act, UUID uuid, AgentShutdown.Reason reason, int signal) throws IllegalArgumentException {
-
+			int x = 0;
 		}
 
 		@Override

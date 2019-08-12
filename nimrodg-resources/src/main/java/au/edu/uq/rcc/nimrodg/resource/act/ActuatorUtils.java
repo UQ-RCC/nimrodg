@@ -58,9 +58,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.UUID;
-import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import javax.json.JsonObject;
 import javax.json.JsonStructure;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.logging.log4j.Logger;
@@ -171,6 +171,20 @@ public class ActuatorUtils {
 		} catch(IOException e) {
 			errors.add(e.getMessage());
 			return false;
+		} catch(ValidationException e) {
+			errors.addAll(e.getAllMessages());
+			return false;
+		}
+		return true;
+	}
+
+	public static boolean validateAgainstSchemaStandalone(JsonObject schema, JsonStructure json, List<String> errors) {
+		Schema _schema = SchemaLoader.load(new JSONObject(schema.toString()), s -> {
+			throw new UnsupportedOperationException();
+		});
+
+		try {
+			_schema.validate(new JSONObject(json.toString()));
 		} catch(ValidationException e) {
 			errors.addAll(e.getAllMessages());
 			return false;
@@ -301,12 +315,18 @@ public class ActuatorUtils {
 		return args;
 	}
 
-	public static String posixBuildSubmissionScriptMulti(UUID[] uuids, String workRoot, NimrodURI uri, String routingKey, String agentPath, Optional<String> certPath, boolean b64certs, boolean keepCerts, BiConsumer<StringBuilder, UUID[]> argProc) {
+	@FunctionalInterface
+	public interface ArgGenerator {
+
+		void accept(StringBuilder sb, UUID[] uuids, String out, String err);
+	}
+
+	public static String posixBuildSubmissionScriptMulti(UUID[] uuids, String out, String err, String workRoot, NimrodURI uri, String routingKey, String agentPath, Optional<String> certPath, boolean b64certs, boolean keepCerts, ArgGenerator argProc) {
 		StringBuilder script = new StringBuilder();
 		script.append("#!/bin/sh\n");
 		/* Apply the submission arguments */
 		if(argProc != null) {
-			argProc.accept(script, uuids);
+			argProc.accept(script, uuids, out, err);
 		}
 		script.append("\nPIDS=\"\"\ntrap 'kill -15 $PIDS; wait' INT HUP QUIT TERM\n\n");
 

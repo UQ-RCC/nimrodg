@@ -35,7 +35,7 @@ CREATE TABLE nimrod_resource_types(
 DROP TABLE IF EXISTS nimrod_resources CASCADE;
 CREATE TABLE nimrod_resources (
 	id						BIGSERIAL NOT NULL PRIMARY KEY,
-	name					nimrod_identifier NOT NULL,
+	name					nimrod_identifier NOT NULL UNIQUE,
 	type_id					BIGINT NOT NULL REFERENCES nimrod_resource_types(id) ON DELETE RESTRICT,
 	config					JSONB NOT NULL,
 	/* I'm not using nimrod_uri to keep SELECTion and INSERTion code simple. */

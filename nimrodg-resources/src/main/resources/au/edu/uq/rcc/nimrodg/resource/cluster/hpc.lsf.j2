@@ -1,0 +1,46 @@
+#!/bin/sh
+#BSUB -J nimrod-hpc-{{ batch_uuid }}
+#BSUB -W {{ (job_walltime / 60)|round(0, 'ceil') }}
+#BSUB -n {{ job_ncpus * batch_size }}
+#BSUB -M {{ (job_mem * job_ncpus * batch_size / 1024)|round(0, 'ceil') }}KB
+#BSUB -o {{ output_path|quote }}
+#BSUB -e {{ error_path|quote }}
+
+##
+# Nimrod/G Batch Submission Script
+# UUID: {{ batch_uuid }}, {{ batch_size }} agents
+##
+
+PIDS=""
+
+{%- for i in range(batch_size) %}
+##
+# Agent {{ i }}, UUID: {{ agent_uuids[i] }}
+##
+{{ agent_binary|quote }} \
+	--uuid {{ agent_uuids[i]|quote }} \
+	--amqp-uri {{ agent_args.amqp_uri|quote }} \
+	--amqp-routing-key {{ agent_args.amqp_routing_key|quote }} \
+	{% if agent_args.amqp_no_verify_peer|default(false) -%}
+	--no-verify-peer \
+	{% endif -%}
+	{% if agent_args.amqp_no_verify_host|default(false) -%}
+	--no-verify-host \
+	{% endif -%}
+	{% if agent_args.cacert is defined -%}
+	--cacert {{ agent_args.cacert|quote }} \
+	{% endif -%}
+	{% if agent_args.caenc is defined -%}
+	--caenc {{ agent_args.caenc|quote }} \
+	{% endif -%}
+	{%- if agent_args.no_ca_delete|default(false) -%}
+	--no-ca-delete \
+	{% endif -%}
+	--work-root ${TMPDIR} \
+	--output workroot &
+PIDS="$PIDS $!"
+{% endfor %}
+
+trap 'kill -15 $PIDS; wait' INT HUP QUIT TERM USR USR2
+
+wait
