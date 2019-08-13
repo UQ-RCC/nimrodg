@@ -137,8 +137,8 @@ public abstract class TempNimrodAPIImpl implements NimrodAPI, NimrodMasterAPI, N
 	}
 
 	@Override
-	public String getProperty(String key) {
-		return db.runSQL(() -> db.getProperty(key));
+	public Optional<String> getProperty(String key) {
+		return Optional.ofNullable(db.runSQL(() -> db.getProperty(key)));
 	}
 
 	@Override

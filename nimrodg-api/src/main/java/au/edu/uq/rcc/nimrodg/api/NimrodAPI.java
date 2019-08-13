@@ -84,15 +84,7 @@ public interface NimrodAPI extends AgentProvider, AutoCloseable {
 	 * @param key The key.
 	 * @return The property value, or null if none exists.
 	 */
-	String getProperty(String key);
-
-	default String getPropertyOrDefault(String key, String defaultValue) {
-		String val = this.getProperty(key);
-		if(val == null) {
-			return defaultValue;
-		}
-		return val;
-	}
+	Optional<String> getProperty(String key);
 
 	/**
 	 * Set a property value.
