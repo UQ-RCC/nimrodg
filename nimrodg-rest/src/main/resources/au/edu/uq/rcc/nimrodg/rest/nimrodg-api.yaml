@@ -7,6 +7,8 @@ info:
     name: "Apache 2.0"
     url: "http://www.apache.org/licenses/LICENSE-2.0.html"
 tags: []
+servers:
+  - url: http://127.0.0.1:8080/api
 paths:
   /agent:
     get:
@@ -89,10 +91,60 @@ paths:
             schema:
               $ref: "#/components/schemas/NimrodConfig"
       responses:
-        204:
+        200:
           description: "successful operation"
+          content:
+            application/json:
+              schema:
+                  $ref: "#/components/schemas/NimrodConfig"
         405:
           description: "Invalid input"
+
+  /properties:
+    get:
+      summary: ""
+      operationId: getProperties
+      responses:
+        200:
+          description: "successful operation"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PropertyList"
+  /properties/{property}:
+    get:
+      summary: ""
+      operationId: getProperty
+      parameters:
+        - in: path
+          name: property
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: "successful operation"
+          content:
+            application/json:
+              schema:
+                type: string
+        404:
+          description: "property not found"
+    put:
+      summary: ""
+      operationId: setProperty
+      parameters:
+        - in: path
+          name: property
+          required: true
+          schema:
+            type: string
+      responses:
+        201:
+          description: "property was created successfully"
+        204:
+          description: "successful operation"
+          
   /experiments:
     get:
       summary: "Get all experiments"

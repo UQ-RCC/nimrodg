@@ -35,6 +35,8 @@ public class ApplicationConfig extends Application {
 	private void addRestResourceClasses(Set<Class<?>> resources) {
 		resources.add(MOXYContextResolver.class);
 
+		resources.add(JsonWriter.class);
+
 		resources.add(NimrodREST.class);
 		resources.add(Staging.class);
 	}

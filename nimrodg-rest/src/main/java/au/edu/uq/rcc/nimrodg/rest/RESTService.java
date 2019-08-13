@@ -22,7 +22,6 @@ package au.edu.uq.rcc.nimrodg.rest;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPIFactory;
 import au.edu.uq.rcc.nimrodg.setup.UserConfig;
-import au.edu.uq.rcc.nimrodg.swagger.api.SwApplication;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -47,6 +46,8 @@ import org.apache.catalina.core.StandardHost;
 import org.apache.catalina.core.StandardServer;
 import org.apache.catalina.core.StandardService;
 import org.apache.catalina.startup.Tomcat;
+import org.apache.tomcat.util.descriptor.web.FilterDef;
+import org.apache.tomcat.util.descriptor.web.FilterMap;
 import org.glassfish.hk2.api.InjectionResolver;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.glassfish.jersey.process.internal.RequestScoped;
@@ -115,6 +116,18 @@ public class RESTService implements AutoCloseable {
 		Wrapper sw = new Tomcat.ExistingStandardWrapper(resourceConfig());
 		sw.setName("nimrodg-rest");
 		m_Context.addChild(sw);
+		{
+			String filterName = CorsFilter.class.getCanonicalName();
+			FilterDef fd = new FilterDef();
+			fd.setFilterName(filterName);
+			fd.setFilterClass(filterName);
+			m_Context.addFilterDef(fd);
+
+			FilterMap fm = new FilterMap();
+			fm.setFilterName(CorsFilter.class.getCanonicalName());
+			fm.addURLPattern("/api/*");
+			m_Context.addFilterMap(fm);
+		}
 
 		m_Context.addServletMappingDecoded("/api/*", "nimrodg-rest");
 
@@ -132,16 +145,16 @@ public class RESTService implements AutoCloseable {
 			m_Context.addChild(dw);
 			m_Context.addServletMappingDecoded("/dav/*", "nimrodg-dav");
 		}
-
-		{
-			//Wrapper swagw = new Tomcat.ExistingStandardWrapper(new RestApplication().getClasses());
-			Set<Class<?>> classes = new SwApplication().getClasses();
-			classes.add(MOXYContextResolver.class);
-			Wrapper swagw = new Tomcat.ExistingStandardWrapper(new ServletContainer(new ResourceConfig(classes)));
-			swagw.setName("nimrodg-swagger");
-			m_Context.addChild(swagw);
-			m_Context.addServletMappingDecoded("/v1/*", "nimrodg-swagger");
-		}
+//
+//		{
+//			//Wrapper swagw = new Tomcat.ExistingStandardWrapper(new RestApplication().getClasses());
+//			Set<Class<?>> classes = new SwApplication().getClasses();
+//			classes.add(MOXYContextResolver.class);
+//			Wrapper swagw = new Tomcat.ExistingStandardWrapper(new ServletContainer(new ResourceConfig(classes)));
+//			swagw.setName("nimrodg-swagger");
+//			m_Context.addChild(swagw);
+//			m_Context.addServletMappingDecoded("/v1/*", "nimrodg-swagger");
+//		}
 		m_Context.setResources(new NimrodResourceRoot("", nimrodHome.resolve("experiments")));
 
 		m_Connector = new Connector("HTTP/1.1");

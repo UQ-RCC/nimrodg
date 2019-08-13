@@ -19,6 +19,5 @@ include 'nimrodg-master'
 include 'nimrodg-debugger-agent'
 
 include 'nimrodg-rest'
-include 'nimrodg-swagger'
 
 include 'nimrod'

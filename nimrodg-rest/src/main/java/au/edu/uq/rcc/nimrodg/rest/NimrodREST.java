@@ -19,22 +19,36 @@
  */
 package au.edu.uq.rcc.nimrodg.rest;
 
+import au.edu.uq.rcc.nimrodg.api.AgentInfo;
 import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
+import au.edu.uq.rcc.nimrodg.api.NimrodConfig;
+import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
+import java.util.Map;
+import javax.json.Json;
+import javax.json.JsonArrayBuilder;
+import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
+import javax.json.JsonString;
+import javax.json.JsonValue;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.GET;
+import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilderException;
 
 @Path("")
@@ -53,6 +67,115 @@ public class NimrodREST {
 
 	@Context
 	private HttpServletRequest request;
+
+	@GET
+	@Path("/agent")
+	@Produces("application/json")
+	public Response lookupAgents() {
+		return Response.serverError().build();
+	}
+
+	public static JsonObject toJson(AgentInfo ai) {
+		JsonArrayBuilder ja = Json.createArrayBuilder();
+
+		ai.posixMappings().stream().map(e -> Json.createObjectBuilder()
+				.add("system", e.getKey())
+				.add("machine", e.getValue())
+				.build()).forEach(e -> ja.add(e));
+
+		return Json.createObjectBuilder()
+				.add("platform_string", ai.getPlatformString())
+				.add("path", ai.getPath())
+				.add("posix_mappings", ja).build();
+	}
+
+	public static JsonObject toJson(NimrodURI nuri) {
+		return Json.createObjectBuilder()
+				.add("uri", nuri.toString())
+				.add("cert_path", nuri.certPath)
+				.add("no_verify_peer", nuri.noVerifyPeer)
+				.add("no_verify_host", nuri.noVerifyHost)
+				.build();
+	}
+
+	public static JsonObject toJson(NimrodConfig cfg) {
+		return Json.createObjectBuilder()
+				.add("work_dir", cfg.getWorkDir())
+				.add("store_dir", cfg.getRootStore())
+				.add("amqp", toJson(cfg.getAmqpUri()))
+				.add("tx", toJson(cfg.getTransferUri()))
+				.build();
+	}
+
+	public static JsonObject toJson(Map<String, String> sm) {
+		JsonObjectBuilder jo = Json.createObjectBuilder();
+		sm.entrySet().forEach(e -> jo.add(e.getKey(), e.getValue()));
+		return jo.build();
+	}
+
+	public static JsonValue toJson(String s) {
+		return Json.createArrayBuilder().add(s).build().get(0);
+	}
+
+	@GET
+	@Path("/agent/platform/{platform}")
+	@Produces("application/json")
+	public Response lookupAgentByPlatform(@PathParam("platform") String platform) {
+		AgentInfo ai = nimrod.lookupAgentByPlatform(platform);
+		if(ai == null) {
+			return Response.status(Response.Status.NOT_FOUND).entity("").build();
+		}
+
+		return Response.ok()
+				.entity(toJson(ai))
+				.build();
+	}
+
+	@GET
+	@Path("/agent/posix/{system}/{machine}")
+	@Produces("application/json")
+	public Response lookupAgentByPosix(@PathParam("system") String system, @PathParam("machine") String machine) {
+		AgentInfo ai = nimrod.lookupAgentByPosix(system, machine);
+		if(ai == null) {
+			return Response.status(Response.Status.NOT_FOUND).entity("").build();
+		}
+
+		return Response.ok()
+				.entity(toJson(ai))
+				.build();
+	}
+
+	@GET
+	@Path("/config")
+	@Produces("application/json")
+	public Response getConfig() {
+		return Response.ok()
+				.entity(toJson(nimrod.getConfig()))
+				.build();
+	}
+
+	@GET
+	@Path("/properties")
+	@Produces("application/json")
+	public Response getProperties() {
+		return Response.ok()
+				.entity(toJson(nimrod.getProperties()))
+				.build();
+	}
+
+	@GET
+	@Path("properties/{property}")
+	@Produces("application/json")
+	public Response getProperty(@PathParam("property") String prop) {
+		String val = nimrod.getProperty(prop);
+		if(val == null) {
+			return Response.status(Response.Status.NOT_FOUND).entity("").build();
+		}
+
+		return Response.ok()
+				.entity(toJson(val))
+				.build();
+	}
 
 //	@GET
 //	@Path(PP_EXP)
@@ -87,7 +210,6 @@ public class NimrodREST {
 //		request.getServletContext().getReq
 //		return Response.status(Response.Status.FORBIDDEN).build();
 //	}
-
 //	@Path(PP_EXP_RUN + "/storage{path:/?.*}")
 //	public Object handleStorage() {
 //		return new Object() {
@@ -104,7 +226,6 @@ public class NimrodREST {
 //			}
 //		};
 //	}
-
 	//@GET
 	//@Path(PP_EXP_RUN + "/storage{path:/?.*}")
 	public void getStorage(
@@ -124,7 +245,6 @@ public class NimrodREST {
 //			response.sendError(HttpServletResponse.SC_FORBIDDEN);
 //			return;
 //		}
-
 		Experiment exp = nimrod.getExperiment(expName);
 		if(exp == null) {
 			response.sendError(HttpServletResponse.SC_NOT_FOUND);
@@ -142,7 +262,6 @@ public class NimrodREST {
 //		} else {
 //			// Is a attempt token
 //		}
-
 		java.nio.file.Path expDir = Paths.get(nimrod.getConfig().getRootStore()).resolve(exp.getWorkingDirectory());
 
 		try {
