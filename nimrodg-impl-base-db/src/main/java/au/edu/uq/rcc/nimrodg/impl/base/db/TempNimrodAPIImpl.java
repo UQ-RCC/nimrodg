@@ -227,6 +227,11 @@ public abstract class TempNimrodAPIImpl implements NimrodAPI, NimrodMasterAPI, N
 	}
 
 	@Override
+	public Map<String, AgentInfo> lookupAgents() {
+		return db.runSQL(() -> Collections.unmodifiableMap(db.lookupAgents()));
+	}
+
+	@Override
 	public AgentInfo lookupAgentByPlatform(String platString) {
 		return db.runSQL(() -> db.lookupAgentByPlatform(platString).orElse(null));
 	}

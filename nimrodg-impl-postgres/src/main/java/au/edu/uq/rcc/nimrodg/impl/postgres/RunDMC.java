@@ -54,7 +54,6 @@ import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -87,7 +86,7 @@ public class RunDMC extends SQLUUUUU<NimrodSQLException> implements NimrodDBAPI,
 
 		/* Configuration */
 		this.qGetConfig = conn.prepareStatement("SELECT * FROM get_config()");
-		this.qUpdateConfig = conn.prepareStatement("SELECT * FROM update_config(?, make_uri(?, ?, ?, ?), ?, make_uri(?, ?, ?, ?))");
+		this.qUpdateConfig = conn.prepareStatement("SELECT * FROM update_config(?, ?, make_uri(?, ?, ?, ?), ?, make_uri(?, ?, ?, ?))");
 		this.qGetProperty = conn.prepareStatement("SELECT get_property(?) AS value");
 		this.qSetProperty = conn.prepareStatement("SELECT set_property(?, ?) AS value");
 		this.qGetProperties = conn.prepareStatement("SELECT * FROM get_properties()");
@@ -117,7 +116,7 @@ public class RunDMC extends SQLUUUUU<NimrodSQLException> implements NimrodDBAPI,
 	@Override
 	public synchronized NimrodConfig updateConfig(String workDir, String storeDir, NimrodURI amqpUri, String amqpRoutingKey, NimrodURI txUri) throws SQLException {
 		qUpdateConfig.setString(1, workDir);
-		qUpdateConfig.setString(2, workDir);
+		qUpdateConfig.setString(2, storeDir);
 		DBUtils.setNimrodUri(qUpdateConfig, 3, amqpUri);
 		qUpdateConfig.setString(7, amqpRoutingKey);
 		DBUtils.setNimrodUri(qUpdateConfig, 8, txUri);
@@ -143,6 +142,11 @@ public class RunDMC extends SQLUUUUU<NimrodSQLException> implements NimrodDBAPI,
 	@Override
 	public synchronized Map<String, String> getProperties() throws SQLException {
 		return DBHelpers.getProperties(qGetProperties);
+	}
+
+	@Override
+	public synchronized Map<String, TempAgentInfo.Impl> lookupAgents() throws SQLException {
+		return agentHelpers.lookupAgents();
 	}
 
 	@Override

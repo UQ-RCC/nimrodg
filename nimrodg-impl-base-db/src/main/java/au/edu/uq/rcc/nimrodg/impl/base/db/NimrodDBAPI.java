@@ -48,6 +48,8 @@ public interface NimrodDBAPI extends ResourceFunctions<TempResource.Impl, TempEx
 
 	Map<String, String> getProperties() throws SQLException;
 
+	Map<String, TempAgentInfo.Impl> lookupAgents() throws SQLException;
+
 	Optional<TempAgentInfo.Impl> lookupAgentByPlatform(String platform) throws SQLException;
 
 	Optional<TempAgentInfo.Impl> lookupAgentByPOSIX(String system, String machine) throws SQLException;

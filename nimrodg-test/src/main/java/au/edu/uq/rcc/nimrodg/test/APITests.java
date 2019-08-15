@@ -40,6 +40,7 @@ import au.edu.uq.rcc.nimrodg.api.events.NimrodMasterEvent;
 import au.edu.uq.rcc.nimrodg.api.Actuator;
 import au.edu.uq.rcc.nimrodg.api.AgentInfo;
 import au.edu.uq.rcc.nimrodg.api.CommandResult;
+import au.edu.uq.rcc.nimrodg.api.NimrodConfig;
 import au.edu.uq.rcc.nimrodg.api.NimrodEntity;
 import au.edu.uq.rcc.nimrodg.api.NimrodServeAPI;
 import au.edu.uq.rcc.nimrodg.api.utils.MsgUtils;
@@ -636,5 +637,26 @@ public abstract class APITests {
 		NimrodAPI api = getNimrod();
 		/* This will trigger postgres to batch jobs. */
 		Experiment exp = api.addExperiment("exp1", TestUtils.get250000Run());
+	}
+
+	@Test
+	public void updateConfigTest() {
+		NimrodAPI api = getNimrod();
+
+		NimrodURI nuri = NimrodURI.create(URI.create("string"), "string", true, true);
+		api.updateConfig(
+				"string",
+				"string",
+				nuri,
+				"string",
+				nuri
+		);
+
+		NimrodConfig cfg = api.getConfig();
+		Assert.assertEquals("string", cfg.getWorkDir());
+		Assert.assertEquals("string", cfg.getRootStore());
+		Assert.assertEquals(nuri, cfg.getAmqpUri());
+		Assert.assertEquals(nuri, cfg.getTransferUri());
+		Assert.assertEquals("string", cfg.getAmqpRoutingKey());
 	}
 }

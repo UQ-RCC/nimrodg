@@ -107,6 +107,11 @@ public class ResourceTests {
 		public static AgentProvider INSTANCE = new _AgentProvider();
 
 		@Override
+		public Map<String, AgentInfo> lookupAgents() {
+			return Map.of(DEFAULT_AGENT, lookupAgentByPlatform(DEFAULT_AGENT));
+		}
+
+		@Override
 		public AgentInfo lookupAgentByPlatform(String platString) {
 			return new AgentInfo() {
 				@Override

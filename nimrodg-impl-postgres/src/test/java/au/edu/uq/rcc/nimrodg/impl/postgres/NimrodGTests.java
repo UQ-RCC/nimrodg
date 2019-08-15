@@ -25,7 +25,6 @@ import au.edu.uq.rcc.nimrodg.setup.UserConfig;
 import au.edu.uq.rcc.nimrodg.test.APITests;
 import au.edu.uq.rcc.nimrodg.test.TestConfig;
 import java.nio.file.Path;
-import java.util.HashMap;
 import java.util.Map;
 import org.junit.After;
 import org.junit.Before;
@@ -60,24 +59,15 @@ public class NimrodGTests extends APITests {
 
 			@Override
 			public Map<String, Map<String, String>> config() {
-				return new HashMap<String, Map<String, String>>() {
-					{
-						put("config", new HashMap<String, String>() {
-							{
-								put("factory", NimrodAPIFactoryImpl.class.getCanonicalName());
-							}
-						});
-
-						put("postgres", new HashMap<String, String>() {
-							{
-								put("driver", "org.postgresql.Driver");
-								put("url", String.format("jdbc:postgresql://%s/%s", pghost, pgdatabase));
-								put("username", pguser);
-								put("password", pgpassword);
-							}
-						});
-					}
-				};
+				return Map.of(
+						"config", Map.of("factory", NimrodAPIFactoryImpl.class.getCanonicalName()),
+						"postgres", Map.of(
+								"driver", "org.postgresql.Driver",
+								"url", String.format("jdbc:postgresql://%s/%s", pghost, pgdatabase),
+								"username", pguser,
+								"password", pgpassword
+						)
+				);
 			}
 		};
 
