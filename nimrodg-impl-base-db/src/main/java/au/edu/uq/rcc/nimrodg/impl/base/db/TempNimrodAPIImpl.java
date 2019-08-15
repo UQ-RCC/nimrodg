@@ -53,6 +53,7 @@ import java.util.ArrayList;
 import java.util.List;
 import au.edu.uq.rcc.nimrodg.api.Resource;
 import java.io.UncheckedIOException;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -73,8 +74,8 @@ public abstract class TempNimrodAPIImpl implements NimrodAPI, NimrodMasterAPI, N
 	}
 
 	@Override
-	public Collection<TempExperiment.Impl> getExperiments() {
-		return db.runSQL(() -> db.listExperiments());
+	public Collection<Experiment> getExperiments() {
+		return db.runSQL(() -> Collections.unmodifiableList(db.listExperiments()));
 	}
 
 	@Override
@@ -122,8 +123,8 @@ public abstract class TempNimrodAPIImpl implements NimrodAPI, NimrodMasterAPI, N
 	}
 
 	@Override
-	public List<? extends Job> addJobs(Experiment exp, Collection<Map<String, String>> jobs) {
-		return db.runSQLTransaction(() -> db.addJobs(validateExperiment(exp), jobs));
+	public List<Job> addJobs(Experiment exp, Collection<Map<String, String>> jobs) {
+		return db.runSQLTransaction(() -> Collections.unmodifiableList(db.addJobs(validateExperiment(exp), jobs)));
 	}
 
 	@Override
@@ -171,13 +172,13 @@ public abstract class TempNimrodAPIImpl implements NimrodAPI, NimrodMasterAPI, N
 	}
 
 	@Override
-	public Collection<? extends Resource> getResources() {
-		return db.runSQLTransaction(() -> db.getResources());
+	public Collection<Resource> getResources() {
+		return db.runSQLTransaction(() -> Collections.unmodifiableCollection(db.getResources()));
 	}
 
 	@Override
-	public Collection<TempResource.Impl> getAssignedResources(Experiment _exp) {
-		return db.runSQL(() -> db.getAssignedResources(validateExperiment(_exp)));
+	public Collection<Resource> getAssignedResources(Experiment _exp) {
+		return db.runSQL(() -> Collections.unmodifiableCollection(db.getAssignedResources(validateExperiment(_exp))));
 	}
 
 	@Override
@@ -196,7 +197,7 @@ public abstract class TempNimrodAPIImpl implements NimrodAPI, NimrodMasterAPI, N
 	}
 
 	@Override
-	public Collection<? extends ResourceType> getResourceTypeInfo() {
+	public Collection<ResourceType> getResourceTypeInfo() {
 		Collection<Map.Entry<String, String>> types = db.runSQL(() -> db.getResourceTypeInfo());
 
 		List<ResourceType> tl = new ArrayList<>();
@@ -310,8 +311,8 @@ public abstract class TempNimrodAPIImpl implements NimrodAPI, NimrodMasterAPI, N
 	}
 
 	@Override
-	public Collection<TempAgent.Impl> getResourceAgents(Resource node) {
-		return db.runSQL(() -> db.getResourceAgentInformation(validateResource(node)));
+	public Collection<AgentState> getResourceAgents(Resource node) {
+		return db.runSQL(() -> Collections.unmodifiableCollection(db.getResourceAgentInformation(validateResource(node))));
 	}
 
 	@Override
@@ -351,10 +352,10 @@ public abstract class TempNimrodAPIImpl implements NimrodAPI, NimrodMasterAPI, N
 	}
 
 	@Override
-	public Map<? extends Job, Collection<? extends JobAttempt>> filterJobAttempts(Experiment _exp, EnumSet<JobAttempt.Status> status) {
+	public Map<Job, Collection<JobAttempt>> filterJobAttempts(Experiment _exp, EnumSet<JobAttempt.Status> status) {
 		return db.runSQLTransaction(() -> db.filterJobAttempts(validateExperiment(_exp), status))
 				.entrySet().stream()
-				.collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
+				.collect(Collectors.toMap(e -> e.getKey(), e -> Collections.unmodifiableCollection(e.getValue())));
 	}
 
 	@Override

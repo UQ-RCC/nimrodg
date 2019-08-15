@@ -62,7 +62,7 @@ public interface NimrodMasterAPI extends NimrodAPI {
 
 	Resource getAgentResource(UUID uuid);
 
-	Collection<? extends AgentState> getResourceAgents(Resource node);
+	Collection<AgentState> getResourceAgents(Resource node);
 
 	void addAgent(Resource node, AgentState agent);
 
@@ -78,7 +78,7 @@ public interface NimrodMasterAPI extends NimrodAPI {
 
 	String getJobAttemptToken(JobAttempt att);
 
-	Map<? extends Job, Collection<? extends JobAttempt>> filterJobAttempts(Experiment exp, EnumSet<JobAttempt.Status> status);
+	Map<Job, Collection<JobAttempt>> filterJobAttempts(Experiment exp, EnumSet<JobAttempt.Status> status);
 
 	/**
 	 * Add a command result.

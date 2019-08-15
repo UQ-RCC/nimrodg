@@ -55,7 +55,7 @@ public interface NimrodAPI extends AgentProvider, AutoCloseable {
 	 */
 	APICaps getAPICaps();
 
-	Collection<? extends Experiment> getExperiments();
+	Collection<Experiment> getExperiments();
 
 	Experiment getExperiment(String name);
 
@@ -72,7 +72,7 @@ public interface NimrodAPI extends AgentProvider, AutoCloseable {
 
 	Job addSingleJob(Experiment exp, Map<String, String> values);
 
-	Collection<? extends Job> addJobs(Experiment exp, Collection<Map<String, String>> values);
+	Collection<Job> addJobs(Experiment exp, Collection<Map<String, String>> values);
 
 	NimrodConfig getConfig();
 
@@ -121,7 +121,7 @@ public interface NimrodAPI extends AgentProvider, AutoCloseable {
 
 	void deleteResource(Resource resource);
 
-	Collection<? extends Resource> getResources();
+	Collection<Resource> getResources();
 
 	/**
 	 * Get all the resource nodes that are assigned to the given experiment.
@@ -132,7 +132,7 @@ public interface NimrodAPI extends AgentProvider, AutoCloseable {
 	 * @param exp The experiment.
 	 * @return The list of resource nodes assigned to the given experiment.
 	 */
-	Collection<? extends Resource> getAssignedResources(Experiment exp);
+	Collection<Resource> getAssignedResources(Experiment exp);
 
 	default void assignResource(Resource res, Experiment exp) {
 		assignResource(res, exp, Optional.empty());
@@ -148,7 +148,7 @@ public interface NimrodAPI extends AgentProvider, AutoCloseable {
 
 	Optional<NimrodURI> getAssignmentStatus(Resource res, Experiment exp);
 
-	Collection<? extends ResourceType> getResourceTypeInfo();
+	Collection<ResourceType> getResourceTypeInfo();
 
 	ResourceType getResourceTypeInfo(String name);
 }
