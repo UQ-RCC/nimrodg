@@ -370,7 +370,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 		 * NB: This should be idempotent if possible.
 		 * Get all active attempts we don't already know about.
 		 */
-		Map<? extends Job, Collection<? extends JobAttempt>> activeAttempts = nimrod.filterJobAttempts(experiment,
+		Map<Job, Collection<JobAttempt>> activeAttempts = nimrod.filterJobAttempts(experiment,
 				EnumSet.of(JobAttempt.Status.NOT_RUN, JobAttempt.Status.RUNNING)
 		);
 

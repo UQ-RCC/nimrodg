@@ -27,6 +27,7 @@ import au.edu.uq.rcc.nimrodg.cli.NimrodCLICommand;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Path;
+import java.util.Optional;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
 
@@ -41,9 +42,8 @@ public class GetProp extends NimrodCLICommand {
 	public int execute(Namespace args, UserConfig config, NimrodAPI nimrod, PrintStream out, PrintStream err, Path[] configDirs) throws IOException, NimrodAPIException {
 		String key = args.getString("key");
 
-		String val = nimrod.getProperty(key);
-
-		if(val == null) {
+		Optional<String> val = nimrod.getProperty(key);
+		if(!val.isPresent()) {
 			err.printf("No such property '%s'\n", key);
 			return 1;
 		}
