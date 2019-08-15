@@ -97,7 +97,7 @@ CREATE OR REPLACE FUNCTION update_config(_work_dir TEXT, _store_dir TEXT, _amqp_
 	ON CONFLICT(id) DO UPDATE
 		SET
 			work_dir            = COALESCE(EXCLUDED.work_dir, nimrod_config.work_dir),
-			store_dir          = COALESCE(EXCLUDED.work_dir, nimrod_config.work_dir),
+			store_dir           = COALESCE(EXCLUDED.store_dir, nimrod_config.store_dir),
 			amqp_uri            = COALESCE(EXCLUDED.amqp_uri, nimrod_config.amqp_uri),
 			amqp_cert_path      = COALESCE(EXCLUDED.amqp_cert_path, nimrod_config.amqp_cert_path, ''),
 			amqp_no_verify_peer = COALESCE(EXCLUDED.amqp_no_verify_peer, nimrod_config.amqp_no_verify_peer, FALSE),
