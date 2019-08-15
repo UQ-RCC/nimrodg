@@ -19,7 +19,11 @@
  */
 package au.edu.uq.rcc.nimrodg.api;
 
+import java.util.Map;
+
 public interface AgentProvider {
+
+	Map<String, AgentInfo> lookupAgents();
 
 	AgentInfo lookupAgentByPlatform(String platString);
 

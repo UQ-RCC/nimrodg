@@ -79,6 +79,7 @@ public class SQLite3DB extends SQLUUUUU<NimrodSQLException> implements NimrodDBA
 	private final PreparedStatement qInsertProperty;
 	private final PreparedStatement qDeleteProperty;
 	private final PreparedStatement qGetProperties;
+	private final PreparedStatement qGetAgentInfo;
 	private final PreparedStatement qGetAgentInfoByPlatform;
 	private final PreparedStatement qGetAgentInfoByPOSIX;
 
@@ -119,6 +120,7 @@ public class SQLite3DB extends SQLUUUUU<NimrodSQLException> implements NimrodDBA
 			this.qGetProperties = prepareStatement("SELECT key, value FROM nimrod_kv_config");
 		}
 
+		this.qGetAgentInfo = prepareStatement("SELECT * FROM nimrod_agentinfo_by_platform");
 		this.qGetAgentInfoByPlatform = prepareStatement("SELECT * FROM nimrod_agentinfo_by_platform WHERE platform_string = ?");
 		this.qGetAgentInfoByPOSIX = prepareStatement("SELECT * FROM nimrod_agentinfo_by_posix WHERE system = ? AND machine = ?");
 
@@ -257,6 +259,18 @@ public class SQLite3DB extends SQLUUUUU<NimrodSQLException> implements NimrodDBA
 			return null;
 		}
 		return new TempAgentInfo(id, plat, path, mappings).create();
+	}
+
+	@Override
+	public synchronized Map<String, TempAgentInfo.Impl> lookupAgents() throws SQLException {
+		Map<String, TempAgentInfo.Impl> a = new HashMap<>();
+		try(ResultSet rs = qGetAgentInfo.executeQuery()) {
+			while(rs.next()) {
+				TempAgentInfo.Impl tai = tempAgentInfoFromResultSet(rs);
+				a.put(tai.getPlatformString(), tai);
+			}
+		}
+		return a;
 	}
 
 	@Override
