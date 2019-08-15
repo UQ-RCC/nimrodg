@@ -151,9 +151,9 @@ public class DBUtils {
 		return new TempConfig(
 				coalesce(newCfg.workDir, oldCfg.workDir),
 				coalesce(newCfg.storeDir, oldCfg.storeDir),
-				mergeNimrodURI(newCfg.amqpUri, oldCfg.amqpUri),
+				mergeNimrodURI(oldCfg.amqpUri, newCfg.amqpUri),
 				coalesce(newCfg.amqpRoutingKey, oldCfg.amqpRoutingKey),
-				mergeNimrodURI(newCfg.txUri, oldCfg.txUri)
+				mergeNimrodURI(oldCfg.txUri, newCfg.txUri)
 		);
 	}
 
