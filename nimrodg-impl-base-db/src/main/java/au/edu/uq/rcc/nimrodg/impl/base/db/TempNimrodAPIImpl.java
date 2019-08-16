@@ -143,8 +143,8 @@ public abstract class TempNimrodAPIImpl implements NimrodAPI, NimrodMasterAPI, N
 	}
 
 	@Override
-	public String setProperty(String key, String value) {
-		return db.runSQLTransaction(() -> db.setProperty(key, value));
+	public Optional<String> setProperty(String key, String value) {
+		return Optional.ofNullable(db.runSQLTransaction(() -> db.setProperty(key, value)));
 	}
 
 	@Override

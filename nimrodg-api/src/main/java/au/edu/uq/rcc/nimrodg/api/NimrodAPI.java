@@ -93,7 +93,7 @@ public interface NimrodAPI extends AgentProvider, AutoCloseable {
 	 * @param value The value. If null or "", delete the property.
 	 * @return The old value of the property, if any.
 	 */
-	String setProperty(String key, String value);
+	Optional<String> setProperty(String key, String value);
 
 	Map<String, String> getProperties();
 
