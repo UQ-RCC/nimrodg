@@ -26,5 +26,5 @@ public interface ExecCommand extends Command {
 
 	public CommandArgument getProgram();
 
-	public List<? extends CommandArgument> getArguments();
+	public List<CommandArgument> getArguments();
 }

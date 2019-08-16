@@ -22,9 +22,9 @@ package au.edu.uq.rcc.nimrodg.impl.base.db;
 import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.Job;
 import au.edu.uq.rcc.nimrodg.api.JobAttempt;
-import java.sql.SQLException;
 import java.time.Instant;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Map;
 
@@ -83,8 +83,8 @@ public class TempJob {
 		}
 
 		@Override
-		public Collection<? extends JobAttempt> filterAttempts(EnumSet<JobAttempt.Status> status) {
-			return m_DB.runSQL(() -> m_DB.filterJobAttempts(this, status));
+		public Collection<JobAttempt> filterAttempts(EnumSet<JobAttempt.Status> status) {
+			return m_DB.runSQL(() -> Collections.unmodifiableCollection(m_DB.filterJobAttempts(this, status)));
 		}
 
 		@Override

@@ -21,8 +21,10 @@ package au.edu.uq.rcc.nimrodg.impl.base.db;
 
 import au.edu.uq.rcc.nimrodg.api.Command;
 import au.edu.uq.rcc.nimrodg.api.CommandArgument;
+import au.edu.uq.rcc.nimrodg.api.Substitution;
 import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledArgument;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class CommandArgumentImpl implements CommandArgument {
@@ -65,8 +67,8 @@ public class CommandArgumentImpl implements CommandArgument {
 	}
 
 	@Override
-	public List<SubstitutionImpl> getSubstitutions() {
-		return substitutions;
+	public List<Substitution> getSubstitutions() {
+		return Collections.unmodifiableList(substitutions);
 	}
 
 	@Override

@@ -101,7 +101,7 @@ public abstract class APITests {
 
 		Assert.assertEquals(exp, exp2);
 
-		Collection<? extends Task> tasks = exp.getTasks();
+		Collection<Task> tasks = exp.getTasks();
 
 		Job newJob = api.addSingleJob(exp, Map.of("x", "xxx", "y", "yyy"));
 		Assert.assertEquals(Map.of(
@@ -111,7 +111,7 @@ public abstract class APITests {
 				"jobname", "3"
 		), newJob.getVariables());
 
-		List<? extends Job> jobs = new ArrayList<>(exp.filterJobs(EnumSet.allOf(JobAttempt.Status.class), 0, 0));
+		List<Job> jobs = new ArrayList<>(exp.filterJobs(EnumSet.allOf(JobAttempt.Status.class), 0, 0));
 
 		Assert.assertEquals(newJob, jobs.get(2));
 
@@ -356,7 +356,7 @@ public abstract class APITests {
 
 		api.assignResource(flashlite, exp1);
 
-		Collection<? extends Resource> roots = api.getResources();
+		Collection<Resource> roots = api.getResources();
 		Assert.assertEquals(5, roots.size());
 		Assert.assertTrue(roots.contains(root));
 		Assert.assertTrue(roots.contains(tinaroo));
@@ -365,18 +365,18 @@ public abstract class APITests {
 		Assert.assertTrue(roots.contains(nectar));
 
 		{
-			Collection<? extends Resource> res = api.getAssignedResources(exp1);
+			Collection<Resource> res = api.getAssignedResources(exp1);
 			Assert.assertTrue(res.contains(root));
 			Assert.assertTrue(res.contains(flashlite));
 		}
 
 		{
-			Collection<? extends Resource> res = api.getAssignedResources(exp2);
+			Collection<Resource> res = api.getAssignedResources(exp2);
 			Assert.assertTrue(res.contains(root));
 		}
 
 		{
-			Collection<? extends Resource> res = api.getAssignedResources(exp3);
+			Collection<Resource> res = api.getAssignedResources(exp3);
 			Assert.assertTrue(res.contains(root));
 		}
 	}
@@ -611,7 +611,7 @@ public abstract class APITests {
 
 		Experiment exp = api.addExperiment("exp1", TestUtils.getSimpleSampleEmptyExperiment());
 
-		List<? extends Job> jobs = new ArrayList<>(exp.filterJobs(EnumSet.allOf(JobAttempt.Status.class), 0, 0));
+		List<Job> jobs = new ArrayList<>(exp.filterJobs(EnumSet.allOf(JobAttempt.Status.class), 0, 0));
 		Assert.assertEquals(0, jobs.size());
 
 		List<Map<String, String>> newJobs = new ArrayList<>();

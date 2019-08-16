@@ -42,9 +42,9 @@ public interface Job extends NimrodEntity {
 	 * @param status The statuses of the attempts.
 	 * @return An immutable list of jobs that satisfy the given criteria.
 	 */
-	Collection<? extends JobAttempt> filterAttempts(EnumSet<JobAttempt.Status> status);
+	Collection<JobAttempt> filterAttempts(EnumSet<JobAttempt.Status> status);
 
-	default Collection<? extends JobAttempt> filterAttempts() {
+	default Collection<JobAttempt> filterAttempts() {
 		return filterAttempts(EnumSet.allOf(JobAttempt.Status.class));
 	}
 

@@ -32,7 +32,7 @@ public interface Task {
 
 	public Name getName();
 
-	public List<? extends Command> getCommands();
+	public List<Command> getCommands();
 
 	public static String taskNameToString(Task.Name name) {
 		switch(name) {

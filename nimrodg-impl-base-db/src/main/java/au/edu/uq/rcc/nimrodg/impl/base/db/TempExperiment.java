@@ -20,6 +20,7 @@
 package au.edu.uq.rcc.nimrodg.impl.base.db;
 
 import au.edu.uq.rcc.nimrodg.api.Experiment;
+import au.edu.uq.rcc.nimrodg.api.Job;
 import au.edu.uq.rcc.nimrodg.api.JobAttempt;
 import au.edu.uq.rcc.nimrodg.api.Task;
 import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledTask;
@@ -102,12 +103,12 @@ public final class TempExperiment {
 		}
 
 		@Override
-		public Collection<TempJob.Impl> filterJobs(EnumSet<JobAttempt.Status> status, long start, int limit) {
-			return db.runSQL(() -> db.filterJobs(this, status, start, limit));
+		public Collection<Job> filterJobs(EnumSet<JobAttempt.Status> status, long start, int limit) {
+			return db.runSQL(() -> Collections.unmodifiableCollection(db.filterJobs(this, status, start, limit)));
 		}
 
 		@Override
-		public Collection<TaskImpl> getTasks() {
+		public Collection<Task> getTasks() {
 			return Collections.unmodifiableCollection(tasks.values());
 		}
 

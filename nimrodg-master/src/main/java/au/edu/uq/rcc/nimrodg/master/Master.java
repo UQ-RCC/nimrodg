@@ -328,7 +328,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 	}
 
 	private void checkOrphanage() {
-		Map<Resource, Collection<? extends AgentState>> agentMap = nimrod.getAssignedResources(experiment).stream()
+		Map<Resource, Collection<AgentState>> agentMap = nimrod.getAssignedResources(experiment).stream()
 				.collect(Collectors.toMap(
 						r -> r,
 						r -> nimrod.getResourceAgents(r)
