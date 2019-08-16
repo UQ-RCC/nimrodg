@@ -22,6 +22,7 @@ package au.edu.uq.rcc.nimrodg.api;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.EnumSet;
+import java.util.Map;
 import java.util.Set;
 
 public interface Experiment extends NimrodEntity {
@@ -52,9 +53,9 @@ public interface Experiment extends NimrodEntity {
 	 * @param limit The maximum number of jobs to return. Set to 0 for no limit.
 	 * @return An immutable list of jobs that satisfy the given criteria.
 	 */
-	Collection<? extends Job> filterJobs(EnumSet<JobAttempt.Status> status, long start, int limit);
+	Collection<Job> filterJobs(EnumSet<JobAttempt.Status> status, long start, int limit);
 
-	Collection<? extends Task> getTasks();
+	Map<Task.Name, Task> getTasks();
 
 	Task getTask(Task.Name name);
 

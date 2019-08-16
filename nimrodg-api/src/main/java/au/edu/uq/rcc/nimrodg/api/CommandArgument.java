@@ -29,5 +29,5 @@ public interface CommandArgument {
 
 	public int getIndex();
 
-	public List<? extends Substitution> getSubstitutions();
+	public List<Substitution> getSubstitutions();
 }

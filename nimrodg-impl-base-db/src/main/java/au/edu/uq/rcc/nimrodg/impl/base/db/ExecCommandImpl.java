@@ -39,7 +39,7 @@ public final class ExecCommandImpl implements ExecCommand {
 		this.task = task;
 		this.searchPath = searchPath;
 		this.program = program;
-		this.arguments = Collections.unmodifiableList(args);
+		this.arguments = args;
 	}
 
 	public CommandImpl getCommand() {
@@ -57,9 +57,8 @@ public final class ExecCommandImpl implements ExecCommand {
 	}
 
 	@Override
-	public List<CommandArgumentImpl> getArguments() {
-		/* Is already Collections.unmodifiableList()'d above */
-		return arguments;
+	public List<CommandArgument> getArguments() {
+		return Collections.unmodifiableList(arguments);
 	}
 
 	@Override

@@ -111,7 +111,7 @@ public class PortalAPI extends NimrodCLICommand {
 	}
 
 	public int getexperiments(String[] args, NimrodAPI nimrod, PrintStream out, PrintStream err) throws IOException {
-		Collection<? extends Experiment> exps = nimrod.getExperiments();
+		Collection<Experiment> exps = nimrod.getExperiments();
 		String rootDir = nimrod.getConfig().getRootStore();
 		try(CSVPrinter csv = new CSVPrinter(out, CSVFormat.RFC4180)) {
 			writeExperimentHeader(csv);
@@ -124,7 +124,7 @@ public class PortalAPI extends NimrodCLICommand {
 	}
 
 	public int getresources(String[] args, NimrodAPI nimrod, PrintStream out, PrintStream err) throws IOException {
-		Collection<? extends Resource> roots = nimrod.getResources();
+		Collection<Resource> roots = nimrod.getResources();
 
 		try(CSVPrinter csv = new CSVPrinter(out, CSVFormat.RFC4180)) {
 			writeResourceHeader(csv);
@@ -204,7 +204,7 @@ public class PortalAPI extends NimrodCLICommand {
 			return 1;
 		}
 
-		Collection<? extends Job> jobs = nimrod.addJobs(exp, jjobs);
+		Collection<Job> jobs = nimrod.addJobs(exp, jjobs);
 
 		try(CSVPrinter csv = new CSVPrinter(out, CSVFormat.RFC4180)) {
 			writeJobHeader(csv);
@@ -395,7 +395,7 @@ public class PortalAPI extends NimrodCLICommand {
 			return 1;
 		}
 
-		Collection<? extends Resource> ress = nimrod.getAssignedResources(exp);
+		Collection<Resource> ress = nimrod.getAssignedResources(exp);
 
 		try(CSVPrinter csv = new CSVPrinter(out, CSVFormat.RFC4180)) {
 			writeResourceHeader(csv);
