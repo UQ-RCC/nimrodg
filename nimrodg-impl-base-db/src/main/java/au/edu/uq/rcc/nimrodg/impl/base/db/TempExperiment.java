@@ -108,8 +108,8 @@ public final class TempExperiment {
 		}
 
 		@Override
-		public Collection<Task> getTasks() {
-			return Collections.unmodifiableCollection(tasks.values());
+		public Map<Task.Name, Task> getTasks() {
+			return Collections.unmodifiableMap(tasks);
 		}
 
 		@Override

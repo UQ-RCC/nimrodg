@@ -22,6 +22,7 @@ package au.edu.uq.rcc.nimrodg.api;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.EnumSet;
+import java.util.Map;
 import java.util.Set;
 
 public interface Experiment extends NimrodEntity {
@@ -54,7 +55,7 @@ public interface Experiment extends NimrodEntity {
 	 */
 	Collection<Job> filterJobs(EnumSet<JobAttempt.Status> status, long start, int limit);
 
-	Collection<Task> getTasks();
+	Map<Task.Name, Task> getTasks();
 
 	Task getTask(Task.Name name);
 

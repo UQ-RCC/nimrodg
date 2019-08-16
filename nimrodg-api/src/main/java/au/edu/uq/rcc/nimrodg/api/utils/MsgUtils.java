@@ -85,14 +85,7 @@ public class MsgUtils {
 	public static NetworkJob resolveJob(UUID uuid, Job job, Task.Name task, URI txuri, String token) throws IllegalArgumentException {
 		Experiment exp = job.getExperiment();
 
-		Task ct = null;
-		for(Task t : exp.getTasks()) {
-			if(t.getName() == task) {
-				ct = t;
-				break;
-			}
-		}
-
+		Task ct = exp.getTask(task);
 		if(ct == null) {
 			throw new IllegalArgumentException("Invalid task name");
 		}

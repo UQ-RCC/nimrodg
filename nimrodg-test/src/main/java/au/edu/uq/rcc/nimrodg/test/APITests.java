@@ -101,7 +101,7 @@ public abstract class APITests {
 
 		Assert.assertEquals(exp, exp2);
 
-		Collection<Task> tasks = exp.getTasks();
+		Map<Task.Name, Task> tasks = exp.getTasks();
 
 		Job newJob = api.addSingleJob(exp, Map.of("x", "xxx", "y", "yyy"));
 		Assert.assertEquals(Map.of(
@@ -459,7 +459,7 @@ public abstract class APITests {
 		NimrodAPI api = getNimrod();
 		Experiment exp1 = api.addExperiment("exp1", TestUtils.getSampleExperiment());
 
-		List<Command> allCommands = exp1.getTasks().stream()
+		List<Command> allCommands = exp1.getTasks().values().stream()
 				.flatMap(t -> t.getCommands().stream())
 				.collect(Collectors.toList());
 	}
