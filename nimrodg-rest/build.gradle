@@ -17,6 +17,8 @@ dependencies {
 
 	implementation group: 'org.glassfish.jersey.core', name: 'jersey-server', version: jerseyVersion
 
+	implementation group: 'javax.xml.bind', name: 'jaxb-api', version: '2.3.1'
+
 	implementation group: 'org.osgi', name: 'org.osgi.core', version: '6.0.0'
 
 	implementation project(':nimrodg-internal-api')

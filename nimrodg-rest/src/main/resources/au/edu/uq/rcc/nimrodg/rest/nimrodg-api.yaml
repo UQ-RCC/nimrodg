@@ -97,7 +97,7 @@ paths:
             application/json:
               schema:
                   $ref: "#/components/schemas/NimrodConfig"
-        405:
+        400:
           description: "Invalid input"
 
   /properties:
@@ -113,7 +113,7 @@ paths:
                 $ref: "#/components/schemas/PropertyList"
   /properties/{property}:
     get:
-      summary: ""
+      summary: "get a property"
       operationId: getProperty
       parameters:
         - in: path
@@ -127,11 +127,11 @@ paths:
           content:
             application/json:
               schema:
-                type: string
+                $ref: "#/components/schemas/Property"
         404:
           description: "property not found"
     put:
-      summary: ""
+      summary: "set a property"
       operationId: setProperty
       parameters:
         - in: path
@@ -139,12 +139,44 @@ paths:
           required: true
           schema:
             type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Property"
       responses:
         201:
           description: "property was created successfully"
-        204:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Property"
+        200:
           description: "successful operation"
-          
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Property"
+    delete:
+      summary: "delete a property"
+      operationId: deleteProperty
+      parameters:
+        - in: path
+          name: property
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: "successful operation"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Property"
+        204:
+          description: "property didn't exist"
+
   /experiments:
     get:
       summary: "Get all experiments"
@@ -297,12 +329,15 @@ components:
           type: string
         amqp:
           $ref: "#/components/schemas/NimrodURI"
+        amqp_routing_key:
+          type: string
         tx:
           $ref: "#/components/schemas/NimrodURI"
       required:
         - work_dir
         - store_dir
         - amqp
+        - amqp_routing_key
         - tx
 
     ##### FROM compiled.run.json
@@ -462,6 +497,14 @@ components:
         - token
         - is_persistent
         - is_active
+    Property:
+      type: "object"
+      properties:
+        key:
+          type: string
+          readOnly: true
+        value:
+          type: string
     PropertyList:
       type: "object"
       additionalProperties:

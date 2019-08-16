@@ -36,6 +36,7 @@ public class ApplicationConfig extends Application {
 		resources.add(MOXYContextResolver.class);
 
 		resources.add(JsonWriter.class);
+		resources.add(JsonReader.class);
 
 		resources.add(NimrodREST.class);
 		resources.add(Staging.class);

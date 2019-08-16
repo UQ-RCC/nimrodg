@@ -20,27 +20,33 @@
 package au.edu.uq.rcc.nimrodg.rest;
 
 import au.edu.uq.rcc.nimrodg.api.AgentInfo;
+import au.edu.uq.rcc.nimrodg.api.Command;
 import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodConfig;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
+import au.edu.uq.rcc.nimrodg.api.Task;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
 import java.util.Map;
+import java.util.Optional;
 import javax.json.Json;
+import javax.json.JsonArray;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
-import javax.json.JsonString;
+import javax.json.JsonStructure;
 import javax.json.JsonValue;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
@@ -68,13 +74,6 @@ public class NimrodREST {
 	@Context
 	private HttpServletRequest request;
 
-	@GET
-	@Path("/agent")
-	@Produces("application/json")
-	public Response lookupAgents() {
-		return Response.serverError().build();
-	}
-
 	public static JsonObject toJson(AgentInfo ai) {
 		JsonArrayBuilder ja = Json.createArrayBuilder();
 
@@ -91,7 +90,7 @@ public class NimrodREST {
 
 	public static JsonObject toJson(NimrodURI nuri) {
 		return Json.createObjectBuilder()
-				.add("uri", nuri.toString())
+				.add("uri", nuri.uri.toString())
 				.add("cert_path", nuri.certPath)
 				.add("no_verify_peer", nuri.noVerifyPeer)
 				.add("no_verify_host", nuri.noVerifyHost)
@@ -103,6 +102,7 @@ public class NimrodREST {
 				.add("work_dir", cfg.getWorkDir())
 				.add("store_dir", cfg.getRootStore())
 				.add("amqp", toJson(cfg.getAmqpUri()))
+				.add("amqp_routing_key", cfg.getAmqpRoutingKey())
 				.add("tx", toJson(cfg.getTransferUri()))
 				.build();
 	}
@@ -113,8 +113,70 @@ public class NimrodREST {
 		return jo.build();
 	}
 
-	public static JsonValue toJson(String s) {
-		return Json.createArrayBuilder().add(s).build().get(0);
+	public static JsonObject toJson(String k, String v) {
+		JsonObjectBuilder job = Json.createObjectBuilder()
+				.add("key", k);
+
+		if(v == null) {
+			job.add("value", JsonValue.NULL);
+		} else {
+			job.add("value", v);
+		}
+		return job.build();
+	}
+
+	public static JsonObject toJson(Command command) {
+		return Json.createObjectBuilder().build();
+	}
+
+	public static JsonObject toJson(Task task) {
+		JsonArrayBuilder jab = Json.createArrayBuilder();
+		task.getCommands().forEach(c -> jab.add(toJson(c)));
+		return Json.createObjectBuilder()
+				.add("name", Task.taskNameToString(task.getName()))
+				.add("commands", jab)
+				.build();
+	}
+
+	public static JsonObject toJson(Experiment exp) {
+		JsonArrayBuilder va = Json.createArrayBuilder();
+		exp.getVariables().forEach(va::add);
+
+		JsonObjectBuilder tb = Json.createObjectBuilder();
+		exp.getTasks().forEach(t -> tb.add(Task.taskNameToString(t.getName()), toJson(t)));
+
+		return Json.createObjectBuilder()
+				.add("name", exp.getName())
+				.add("state", Experiment.stateToString(exp.getState()))
+				.add("working_directory", exp.getWorkingDirectory())
+				.add("creation_time", exp.getCreationTime().toString())
+				.add("variables", va)
+				.add("tasks", tb)
+				.add("token", exp.getToken())
+				.add("is_persistent", exp.isPersistent())
+				.add("is_active", exp.isActive())
+				.build();
+	}
+
+	public static NimrodURI jsonToNimrodUri(JsonObject jo) {
+		return NimrodURI.create(
+				URI.create(jo.getString("uri")),
+				jo.getString("cert_path"),
+				jo.getBoolean("no_verify_peer"),
+				jo.getBoolean("no_verify_host")
+		);
+	}
+
+	@GET
+	@Path("/agent")
+	@Produces("application/json")
+	public Response lookupAgents() {
+		JsonObjectBuilder job = Json.createObjectBuilder();
+		nimrod.lookupAgents().forEach((p, ai) -> job.add(p, toJson(ai)));
+
+		return Response.ok()
+				.entity(job.build())
+				.build();
 	}
 
 	@GET
@@ -154,27 +216,83 @@ public class NimrodREST {
 				.build();
 	}
 
+	@PUT
+	@Path("/config")
+	@Produces("application/json")
+	@Consumes("application/json")
+	public Response updateConfig(JsonStructure j) {
+		JsonObject jo = (JsonObject)j;
+		nimrod.updateConfig(
+				jo.getString("work_dir"),
+				jo.getString("store_dir"),
+				jsonToNimrodUri(jo.getJsonObject("amqp")),
+				jo.getString("amqp_routing_key"),
+				jsonToNimrodUri(jo.getJsonObject("tx"))
+		);
+		return this.getConfig();
+	}
+
 	@GET
 	@Path("/properties")
 	@Produces("application/json")
 	public Response getProperties() {
-		return Response.ok()
-				.entity(toJson(nimrod.getProperties()))
-				.build();
+		return Response.ok().entity(toJson(nimrod.getProperties())).build();
 	}
 
 	@GET
 	@Path("properties/{property}")
 	@Produces("application/json")
 	public Response getProperty(@PathParam("property") String prop) {
-		String val = nimrod.getProperty(prop);
-		if(val == null) {
-			return Response.status(Response.Status.NOT_FOUND).entity("").build();
+		return nimrod.getProperty(prop)
+				.map(v -> Response.ok().entity(toJson(prop, v)))
+				.orElse(Response.status(Response.Status.NOT_FOUND).entity(""))
+				.build();
+	}
+
+	@PUT
+	@Path("properties/{property}")
+	public Response setProperty(@PathParam("property") String prop, JsonObject val) {
+		/* Be pedantic. */
+		if(val.containsKey("key") && !prop.equals(val.getString("key"))) {
+			return Response.status(Response.Status.BAD_REQUEST).entity("").build();
 		}
 
-		return Response.ok()
-				.entity(toJson(val))
+		/* Can't delete something via PUTting */
+		String _val = val.getString("value");
+		if(_val == null || _val.isEmpty()) {
+			return Response.status(Response.Status.BAD_REQUEST).entity("").build();
+		}
+
+		Optional<String> oldVal = nimrod.setProperty(prop, _val);
+
+		Response.Status status;
+		if(!oldVal.isPresent()) {
+			status = Response.Status.CREATED;
+		} else {
+			status = Response.Status.OK;
+		}
+
+		return Response
+				.status(status)
+				.entity(toJson(prop, oldVal.orElse(null)))
 				.build();
+	}
+
+	@DELETE
+	@Path("properties/{property}")
+	public Response deleteProperty(@PathParam("property") String prop) {
+		return nimrod.setProperty(prop, null)
+				.map(v -> Response.ok().entity(toJson(prop, v)))
+				.orElse(Response.status(Response.Status.NO_CONTENT).entity(""))
+				.build();
+	}
+
+	@GET
+	@Path("experiments/")
+	public Response getExperiments() {
+		JsonObjectBuilder job = Json.createObjectBuilder();
+		nimrod.getExperiments().forEach(e -> job.add(e.getName(), toJson(e)));
+		return Response.ok().entity(job.build()).build();
 	}
 
 //	@GET
