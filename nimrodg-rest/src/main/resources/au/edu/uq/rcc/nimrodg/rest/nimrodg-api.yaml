@@ -176,7 +176,8 @@ paths:
                 $ref: "#/components/schemas/Property"
         204:
           description: "property didn't exist"
-
+          
+          
   /experiments:
     get:
       summary: "Get all experiments"
@@ -431,16 +432,33 @@ components:
             $ref: "#/components/schemas/Argument"
           minItems: 1
       required:
+        - type
         - program
         - search_path
-        - type
         - arguments
+    RedirectCommand:
+      type: object
+      properties:
+        type:
+          enum: [redirect]
+        stream:
+          enum: [stdout, stderr]
+        append:
+          type: boolean
+        file:
+          $ref: "#/components/schemas/Argument"
+      required:
+        - type
+        - stream
+        - append
+        - file
     Command:
       oneOf:
         #- $ref: "#/components/schemas/NormalisedCommand"
         - $ref: "#/components/schemas/OnerrorCommand"
         - $ref: "#/components/schemas/CopyCommand"
         - $ref: "#/components/schemas/ExecCommand"
+        - $ref: "#/components/schemas/RedirectCommand"
     Task:
       type: array
       items:
