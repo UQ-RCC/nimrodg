@@ -21,10 +21,16 @@ package au.edu.uq.rcc.nimrodg.rest;
 
 import au.edu.uq.rcc.nimrodg.api.AgentInfo;
 import au.edu.uq.rcc.nimrodg.api.Command;
+import au.edu.uq.rcc.nimrodg.api.CommandArgument;
+import au.edu.uq.rcc.nimrodg.api.CopyCommand;
+import au.edu.uq.rcc.nimrodg.api.ExecCommand;
 import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodConfig;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
+import au.edu.uq.rcc.nimrodg.api.OnErrorCommand;
+import au.edu.uq.rcc.nimrodg.api.RedirectCommand;
+import au.edu.uq.rcc.nimrodg.api.Substitution;
 import au.edu.uq.rcc.nimrodg.api.Task;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -34,7 +40,6 @@ import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Optional;
 import javax.json.Json;
-import javax.json.JsonArray;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
@@ -125,13 +130,66 @@ public class NimrodREST {
 		return job.build();
 	}
 
-	public static JsonObject toJson(Command command) {
-		return Json.createObjectBuilder().build();
+	public static JsonObject toJson(Substitution sub) {
+		return Json.createObjectBuilder()
+				.add("name", sub.getVariable())
+				.add("start", sub.getStartIndex())
+				.add("end", sub.getEndIndex())
+				.add("relative", sub.getRelativeStartIndex())
+				.build();
+	}
+
+	public static JsonObject toJson(CommandArgument arg) {
+		JsonArrayBuilder jab = Json.createArrayBuilder();
+		arg.getSubstitutions().stream().map(s -> toJson(s)).forEach(jab::add);
+		return Json.createObjectBuilder()
+				.add("text", arg.getText())
+				.add("substitutions", jab)
+				.build();
+	}
+
+	public static JsonObject toJson(Command cmd) {
+		JsonObjectBuilder job = Json.createObjectBuilder();
+		job.add("type", Command.commandTypeToString(cmd.getType()));
+
+		switch(cmd.getType()) {
+			case Copy: {
+				CopyCommand ccmd = (CopyCommand)cmd;
+				job.add("source_context", CopyCommand.contextToString(ccmd.getSourceContext()));
+				job.add("source_path", toJson(ccmd.getSourcePath()));
+				job.add("destination_context", CopyCommand.contextToString(ccmd.getDestinationContext()));
+				job.add("destination_path", toJson(ccmd.getDestinationPath()));
+				break;
+			}
+			case Exec: {
+				ExecCommand ccmd = (ExecCommand)cmd;
+				job.add("program", toJson(ccmd.getProgram()));
+				job.add("search_path", ccmd.searchPath());
+
+				JsonArrayBuilder jab = Json.createArrayBuilder();
+				ccmd.getArguments().stream().map(a -> toJson(a)).forEach(jab::add);
+				job.add("arguments", jab);
+				break;
+			}
+			case OnError: {
+				OnErrorCommand ccmd = (OnErrorCommand)cmd;
+				job.add("action", OnErrorCommand.actionToString(ccmd.getAction()));
+				break;
+			}
+			case Redirect: {
+				RedirectCommand ccmd = (RedirectCommand)cmd;
+				job.add("stream", RedirectCommand.streamToString(ccmd.getStream()));
+				job.add("append", ccmd.getAppend());
+				job.add("file", toJson(ccmd.getFile()));
+				break;
+			}
+		}
+		return job.build();
 	}
 
 	public static JsonObject toJson(Task task) {
 		JsonArrayBuilder jab = Json.createArrayBuilder();
-		task.getCommands().forEach(c -> jab.add(toJson(c)));
+		task.getCommands().stream().map(c -> toJson(c)).forEach(jab::add);
 		return Json.createObjectBuilder()
 				.add("name", Task.taskNameToString(task.getName()))
 				.add("commands", jab)
@@ -139,11 +197,11 @@ public class NimrodREST {
 	}
 
 	public static JsonObject toJson(Experiment exp) {
-		JsonArrayBuilder va = Json.createArrayBuilder();
+		JsonArrayBuilder va  = Json.createArrayBuilder();
 		exp.getVariables().forEach(va::add);
 
 		JsonObjectBuilder tb = Json.createObjectBuilder();
-		exp.getTasks().forEach(t -> tb.add(Task.taskNameToString(t.getName()), toJson(t)));
+		exp.getTasks().forEach((n, t) -> tb.add(Task.taskNameToString(n), toJson(t)));
 
 		return Json.createObjectBuilder()
 				.add("name", exp.getName())
@@ -293,6 +351,17 @@ public class NimrodREST {
 		JsonObjectBuilder job = Json.createObjectBuilder();
 		nimrod.getExperiments().forEach(e -> job.add(e.getName(), toJson(e)));
 		return Response.ok().entity(job.build()).build();
+	}
+
+	@GET
+	@Path("experiments/{name}")
+	public Response getExperiment(@PathParam("name") String name) {
+		Experiment exp = nimrod.getExperiment(name);
+		if(exp == null) {
+			return Response.status(Response.Status.NOT_FOUND).entity("").build();
+		}
+
+		return Response.ok().entity(toJson(exp)).build();
 	}
 
 //	@GET
