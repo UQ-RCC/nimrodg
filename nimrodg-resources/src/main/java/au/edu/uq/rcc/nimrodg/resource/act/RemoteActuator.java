@@ -174,7 +174,7 @@ public class RemoteActuator extends POSIXActuator<SSHResourceType.SSHConfig> {
 		kill(shell, agents.values().stream().mapToInt(ra -> ra.pid).toArray());
 	}
 
-	private void kill(RemoteShell shell, int[] pids) {
+	public static void kill(RemoteShell shell, int[] pids) {
 		if(pids.length == 0) {
 			return;
 		}
