@@ -11,7 +11,19 @@ dependencies {
 
 	implementation group: 'com.github.everit-org.json-schema', name: 'org.everit.json.schema', version: '1.9.1'
 	
-	implementation group: 'com.hubspot.jinjava', name: 'jinjava', version: '2.5.1'
+	//implementation group: 'com.hubspot.jinjava', name: 'jinjava', version: '2.5.1'
+	/*
+	 * Jinjava has an unversioned dependency on Guava, so Gradle will use the latest which is
+	 * incompatible with jclouds. We add an explicit dependency below. */
+	implementation ('com.hubspot.jinjava:jinjava:2.5.1') {
+		exclude group: 'com.google.guava', module: 'guava'
+	}
+	implementation group: 'com.google.guava', name: 'guava', version: '21.0'
+
+	implementation group: 'org.apache.jclouds', name: 'jclouds-all', version: '2.1.2'
+	compileOnly group: 'org.apache.jclouds', name: 'jclouds-all', version: '2.1.2', classifier: 'sources'
+
+	runtimeOnly group: 'javax.xml.bind', name: 'jaxb-api', version: '2.2.11'
 
 	implementation project(':nimrodg-internal-api')
 	implementation project(':nimrodg-utils')
