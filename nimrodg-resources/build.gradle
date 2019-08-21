@@ -1,10 +1,5 @@
 apply plugin: 'java-library'
 
-repositories {
-	/* For org.everit.json.schema */
-	maven { url 'https://jitpack.io' }
-}
-
 dependencies {
 	api group: 'org.slf4j', name: 'slf4j-api', version: SLF4J_VERSION
 
