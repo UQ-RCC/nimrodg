@@ -31,6 +31,8 @@ subprojects {
 
 	repositories {
 		mavenCentral()
+		/* For org.everit.json.schema */
+		maven { url 'https://jitpack.io' }
 	}
 
 	dependencies {
