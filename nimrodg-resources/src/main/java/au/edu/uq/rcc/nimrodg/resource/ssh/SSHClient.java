@@ -22,6 +22,7 @@ package au.edu.uq.rcc.nimrodg.resource.ssh;
 import au.edu.uq.rcc.nimrodg.resource.act.ActuatorUtils;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.net.SocketAddress;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -39,6 +40,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import javax.json.Json;
 import javax.json.JsonArray;
@@ -250,11 +252,20 @@ public class SSHClient implements RemoteShell {
 	}
 
 	public static PublicKey[] resolveHostKeys(String user, String host, int port) throws IOException {
-		return resolveHostKeysWithRetry(user, host, port, 0, 0);
+		return resolveHostKeys(user, host, port, 0, 0);
+	}
+
+	public static PublicKey[] resolveHostKeys(String user, String host, int port, int retryCount, long retryMs) throws IOException {
+		try {
+			return resolveHostKeys(user, host, port, retryCount, retryMs, new AtomicBoolean(true));
+		} catch(InterruptedException e) {
+			/* Will never happen. */
+			throw new IllegalStateException();
+		}
 	}
 
 	@SuppressWarnings({"empty-statement", "SleepWhileInLoop"})
-	public static PublicKey[] resolveHostKeysWithRetry(String user, String host, int port, int retryCount, long retryMs) throws IOException {
+	public static PublicKey[] resolveHostKeys(String user, String host, int port, int retryCount, long retryMs, AtomicBoolean wantQuit) throws IOException, InterruptedException {
 		ClientBuilder cb = ClientBuilder.builder();
 
 		List<PublicKey> pubKeys = new ArrayList<>();
@@ -273,8 +284,16 @@ public class SSHClient implements RemoteShell {
 				int retries = retryCount;
 				do {
 					cf = ssh.connect(user, host, port < 0 ? 22 : port);
-					while(!cf.await())
-						;
+
+					for(boolean done = false; !done;) {
+						try {
+							done = cf.await();
+						} catch(InterruptedIOException e) {
+							if(wantQuit.get()) {
+								throw new InterruptedException();
+							}
+						}
+					}
 
 					assert cf.isDone();
 
@@ -286,6 +305,9 @@ public class SSHClient implements RemoteShell {
 						Thread.sleep(retryMs);
 					} catch(InterruptedException ex) {
 						/* nop */
+						if(wantQuit.get()) {
+							throw ex;
+						}
 					}
 
 				} while(retries-- > 0);
@@ -301,7 +323,16 @@ public class SSHClient implements RemoteShell {
 
 				try(ClientSession ses = cf.getSession()) {
 					AuthFuture af = ses.auth();
-					af.await();
+
+					for(boolean done = false; !done;) {
+						try {
+							done = af.await();
+						} catch(InterruptedIOException e) {
+							if(wantQuit.get()) {
+								throw new InterruptedException();
+							}
+						}
+					}
 				}
 			}
 		}
