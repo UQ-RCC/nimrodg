@@ -58,6 +58,7 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import javax.ws.rs.core.UriBuilder;
 import org.apache.logging.log4j.LogManager;
@@ -344,6 +345,7 @@ public class JcloudsActuator implements Actuator {
 			CompletableFuture<Void> cf = CompletableFuture.supplyAsync(() -> {
 				URI uri = ni.uris.get(0); // FIXME:
 
+				/* FIXME: Make this configurable. Currently 18 retries at 10 seconds, or 3 minutes. */
 				PublicKey[] hostKeys;
 				try {
 					hostKeys = SSHClient.resolveHostKeys(ni.username, uri.getHost(), uri.getPort(), 18, 10000);
@@ -364,8 +366,9 @@ public class JcloudsActuator implements Actuator {
 						)
 				);
 
+				RemoteActuator act;
 				try {
-					return new RemoteActuator(
+					act = new RemoteActuator(
 							subOpts,
 							node,
 							amqpUri,
@@ -377,14 +380,17 @@ public class JcloudsActuator implements Actuator {
 				} catch(IOException e) {
 					throw new UncheckedIOException(e);
 				}
+				ni.actuator.complete(act);
+				return act;
 			}).handle((act, t) -> {
 				if(act != null) {
-					try {
-						act.close();
-					} catch(IOException e) {
-						throw new UncheckedIOException(e);
-					}
-					return null;
+					ni.actuator.complete(act);
+//					try {
+//						act.close();
+//					} catch(IOException e) {
+//						throw new UncheckedIOException(e);
+//					}
+//					return null;
 				}
 				return null;
 			});
@@ -495,28 +501,44 @@ public class JcloudsActuator implements Actuator {
 //	}
 	@Override
 	public void close() throws IOException {
-		for(NodeInfo ni : nodes.values()) {
-			/* Ignore nodes that failed to set up and are still here for some reason. */
-			if(!ni.isConfigured) {
-				continue;
+		IOException ioex = new IOException();
+
+		AtomicInteger numSuppressed = new AtomicInteger(0);
+
+		CompletableFuture<Void> cf = CompletableFuture.allOf(nodes.values().stream().map(ni -> ni.actuator.thenAcceptAsync(act -> {
+			ni.agents.clear();
+
+			try {
+				act.close();
+			} catch(RuntimeException | IOException e) {
+				ioex.addSuppressed(e);
+				numSuppressed.incrementAndGet();
 			}
 
-			if(ni.agents.isEmpty()) {
-				continue;
-			}
+		})).toArray(CompletableFuture[]::new));
 
-//			try(RemoteShell rsh = makeSsh(ni)) {
-//				// TODO: Get agent PIDs 
-//				//RemoteActuator.kill(rsh, ni.agents.stream().mapToInt();
-//			}
+		while(!cf.isDone()) {
+			try {
+				cf.get();
+			} catch(ExecutionException e) {
+				ioex.addSuppressed(e);
+				numSuppressed.incrementAndGet();
+				break;
+			} catch(InterruptedException e) {
+				/* nop */
+			}
 		}
 
-		nodes.values().stream()
-				.flatMap(ni -> ni.agents.stream())
-				.forEach(u -> {
+		try {
+			compute.destroyNodesMatching(n -> groupName.equals(n.getGroup()));
+		} catch(RuntimeException e) {
+			ioex.addSuppressed(e);
+			numSuppressed.incrementAndGet();
+		}
 
-				});
-		compute.destroyNodesMatching(n -> groupName.equals(n.getGroup()));
+		if(numSuppressed.get() != 0) {
+			throw ioex;
+		}
 	}
 
 	@Override
