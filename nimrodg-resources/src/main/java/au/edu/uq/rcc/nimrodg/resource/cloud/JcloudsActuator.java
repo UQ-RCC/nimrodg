@@ -346,11 +346,9 @@ public class JcloudsActuator implements Actuator {
 
 				PublicKey[] hostKeys;
 				try {
-					hostKeys = SSHClient.resolveHostKeys(ni.username, uri.getHost(), uri.getPort(), 18, 10000, new AtomicBoolean(true));
+					hostKeys = SSHClient.resolveHostKeys(ni.username, uri.getHost(), uri.getPort(), 18, 10000);
 				} catch(IOException e) {
 					throw new UncheckedIOException(e);
-				} catch(InterruptedException e) {
-					throw new CancellationException();
 				}
 
 				SSHResourceType.SSHConfig sscfg = new SSHResourceType.SSHConfig(
