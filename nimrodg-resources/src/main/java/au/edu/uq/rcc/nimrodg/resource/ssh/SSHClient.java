@@ -59,6 +59,7 @@ import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.client.scp.ScpClient;
 import org.apache.sshd.client.scp.ScpClientCreator;
 import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.config.keys.AuthorizedKeyEntry;
 import org.apache.sshd.common.scp.ScpTimestamp;
 import org.apache.sshd.common.signature.BuiltinSignatures;
@@ -208,7 +209,8 @@ public class SSHClient implements RemoteShell {
 		);
 	}
 
-	public static PublicKey[] resolveHostKeys(String user, String host, int port) throws IOException {
+	@SuppressWarnings("empty-statement")
+	public static PublicKey[] resolveHostKeysOld(String user, String host, int port) throws IOException {
 		ClientBuilder cb = ClientBuilder.builder();
 
 		List<PublicKey> pubKeys = new ArrayList<>();
@@ -223,7 +225,72 @@ public class SSHClient implements RemoteShell {
 			for(BuiltinSignatures sig : BuiltinSignatures.VALUES) {
 				ssh.setSignatureFactories(List.of(sig));
 				ConnectFuture cf = ssh.connect(user, host, port < 0 ? 22 : port);
-				if(!cf.await()) {
+				while(!cf.await())
+					;
+
+				assert cf.isDone();
+
+				if(!cf.isConnected()) {
+					Throwable t = cf.getException();
+					if(t instanceof IOException) {
+						throw (IOException)t;
+					} else {
+						throw new IOException(t);
+					}
+				}
+
+				try(ClientSession ses = cf.getSession()) {
+					AuthFuture af = ses.auth();
+					af.await();
+				}
+			}
+		}
+
+		return pubKeys.stream().toArray(PublicKey[]::new);
+	}
+
+	public static PublicKey[] resolveHostKeys(String user, String host, int port) throws IOException {
+		return resolveHostKeysWithRetry(user, host, port, 0, 0);
+	}
+
+	@SuppressWarnings({"empty-statement", "SleepWhileInLoop"})
+	public static PublicKey[] resolveHostKeysWithRetry(String user, String host, int port, int retryCount, long retryMs) throws IOException {
+		ClientBuilder cb = ClientBuilder.builder();
+
+		List<PublicKey> pubKeys = new ArrayList<>();
+		cb.serverKeyVerifier((ClientSession sshClientSession, SocketAddress remoteAddress, PublicKey serverKey) -> {
+			pubKeys.add(serverKey);
+			return true;
+		});
+
+		try(SshClient ssh = cb.build()) {
+			ssh.start();
+
+			for(BuiltinSignatures sig : BuiltinSignatures.VALUES) {
+				ssh.setSignatureFactories(List.of(sig));
+
+				ConnectFuture cf;
+				int retries = retryCount;
+				do {
+					cf = ssh.connect(user, host, port < 0 ? 22 : port);
+					while(!cf.await())
+						;
+
+					assert cf.isDone();
+
+					if(cf.isConnected()) {
+						break;
+					}
+
+					try {
+						Thread.sleep(retryMs);
+					} catch(InterruptedException ex) {
+						/* nop */
+					}
+
+				} while(retries-- > 0);
+
+				if(!cf.isConnected()) {
 					Throwable t = cf.getException();
 					if(t instanceof IOException) {
 						throw (IOException)t;
