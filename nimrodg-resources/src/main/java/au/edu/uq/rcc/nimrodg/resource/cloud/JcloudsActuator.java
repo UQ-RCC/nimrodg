@@ -20,20 +20,31 @@
 package au.edu.uq.rcc.nimrodg.resource.cloud;
 
 import au.edu.uq.rcc.nimrodg.agent.AgentState;
+import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
 import au.edu.uq.rcc.nimrodg.api.Actuator;
+import au.edu.uq.rcc.nimrodg.api.AgentInfo;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPIException;
+import au.edu.uq.rcc.nimrodg.api.NimrodMasterAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.api.Resource;
 import au.edu.uq.rcc.nimrodg.api.ResourceFullException;
 import au.edu.uq.rcc.nimrodg.api.utils.NimrodUtils;
+import au.edu.uq.rcc.nimrodg.resource.SSHResourceType;
 import au.edu.uq.rcc.nimrodg.resource.act.ActuatorUtils;
+import au.edu.uq.rcc.nimrodg.resource.act.RemoteActuator;
+import au.edu.uq.rcc.nimrodg.resource.ssh.SSHClient;
+import au.edu.uq.rcc.nimrodg.resource.ssh.TransportFactory;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.security.KeyPair;
+import java.security.PublicKey;
 import java.security.cert.Certificate;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -43,6 +54,10 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import javax.ws.rs.core.UriBuilder;
 import org.apache.logging.log4j.LogManager;
@@ -58,6 +73,7 @@ import org.jclouds.compute.options.TemplateOptions;
 import org.jclouds.domain.LoginCredentials;
 import org.jclouds.http.Uris;
 import org.jclouds.openstack.nova.v2_0.compute.options.NovaTemplateOptions;
+import org.jclouds.ssh.SshClient;
 import org.jclouds.sshj.config.SshjSshClientModule;
 
 public class JcloudsActuator implements Actuator {
@@ -67,7 +83,7 @@ public class JcloudsActuator implements Actuator {
 	private final Operations ops;
 	private final NimrodAPI nimrod;
 	private final Resource node;
-	private final NimrodURI uri;
+	private final NimrodURI amqpUri;
 	private final Certificate[] certs;
 
 	private final int agentsPerNode;
@@ -77,11 +93,13 @@ public class JcloudsActuator implements Actuator {
 	private final Template template;
 	private final String groupName;
 	private final Map<NodeMetadata, NodeInfo> nodes;
+	private final SubOptions subOpts;
 
 	private static class NodeInfo {
 
 		public final NodeMetadata node;
 		public final Set<UUID> agents;
+		public final CompletableFuture<RemoteActuator> actuator;
 
 		private boolean isConfigured;
 		private String username;
@@ -92,6 +110,8 @@ public class JcloudsActuator implements Actuator {
 		public NodeInfo(NodeMetadata node) {
 			this.node = node;
 			this.agents = new HashSet<>();
+			this.actuator = new CompletableFuture<>();
+
 			this.isConfigured = false;
 			this.username = null;
 			this.password = Optional.empty();
@@ -150,11 +170,11 @@ public class JcloudsActuator implements Actuator {
 
 	}
 
-	public JcloudsActuator(Operations ops, NimrodAPI nimrod, Resource node, NimrodURI uri, Certificate[] certs, int agentsPerNode, CloudConfig config) {
+	public JcloudsActuator(Operations ops, NimrodAPI nimrod, Resource node, NimrodURI amqpUri, Certificate[] certs, int agentsPerNode, CloudConfig config) {
 		this.ops = ops;
 		this.nimrod = nimrod;
 		this.node = node;
-		this.uri = uri;
+		this.amqpUri = amqpUri;
 		this.certs = certs;
 		this.agentsPerNode = agentsPerNode;
 		this.config = config;
@@ -189,6 +209,7 @@ public class JcloudsActuator implements Actuator {
 
 		this.groupName = String.format("nimrodg-openstack-%d", this.hashCode());
 		this.nodes = new HashMap<>();
+		this.subOpts = new SubOptions();
 	}
 
 	private ComputeService createComputeService() {
@@ -208,7 +229,7 @@ public class JcloudsActuator implements Actuator {
 
 	@Override
 	public NimrodURI getAMQPUri() {
-		return uri;
+		return amqpUri;
 	}
 
 	@Override
@@ -230,6 +251,35 @@ public class JcloudsActuator implements Actuator {
 
 			//e.g
 			// TODO: This
+		}
+	}
+
+	static void asdfasdfasd(UUID[] uuids, Set<NodeInfo> good, Map<NodeMetadata, Throwable> bad, int agentsPerNode) {
+		//Deque<UUID> _uuids = new ArrayDeque<>(Arrays.asList(uuids));
+		Deque<NodeInfo> _good = new ArrayDeque<>(good);
+		Deque<Map.Entry<NodeMetadata, Throwable>> _bad = new ArrayDeque<>(bad.entrySet());
+
+		Map<NodeInfo, Set<UUID>> toLaunch = new HashMap<>();
+
+		int i = 0;
+		while(!_good.isEmpty()) {
+			NodeInfo ni = _good.peek();
+			if(ni.agents.size() >= agentsPerNode) {
+				_good.poll();
+				continue;
+			}
+
+			NimrodUtils.getOrAddLazy(toLaunch, ni, nii -> new HashSet<>()).add(uuids[i++]);
+
+			if(i >= uuids.length) {
+				return;
+			}
+		}
+
+		assert i < uuids.length;
+
+		while(!_bad.isEmpty()) {
+
 		}
 	}
 
@@ -266,43 +316,91 @@ public class JcloudsActuator implements Actuator {
 		 */
 		_good.forEach(n -> nodes.put(n, new NodeInfo(n)));
 
-		/* Validate the credentials for each node. */
+		/* Validate the credentials for each node, adding them to the bad list if anything failed. */
 		for(NodeMetadata n : _good) {
-			final LoginCredentials creds = n.getCredentials();
-			if(creds == null) {
-				bad.put(n, new RuntimeException("No credentials for node"));
-				continue;
-			}
-
-			if(!creds.getOptionalPassword().isPresent() && !creds.getOptionalPrivateKey().isPresent()) {
-				bad.put(n, new IllegalStateException("no password or private key"));
-				continue;
-			}
-
-			Optional<String> _privKey = Optional.ofNullable(creds.getOptionalPrivateKey().orNull());
-			Optional<KeyPair> keyPair = Optional.empty();
-			if(_privKey.isPresent()) {
-				try {
-					keyPair = Optional.of(ActuatorUtils.readPEMKey(_privKey.get()));
-				} catch(IOException e) {
-					bad.put(n, e);
-					continue;
-				}
-			}
-
 			NodeInfo ni = nodes.get(n);
-			ni.configure(
-					creds.getUser(),
-					Optional.ofNullable(creds.getOptionalPassword().orNull()),
-					keyPair
-			);
-			good.add(ni);
+			if(ni.node.getPublicAddresses().isEmpty()) {
+				bad.put(n, new RuntimeException("no public addresses"));
+				continue;
+			}
+
+			Throwable t = configureNode(ni, n.getCredentials());
+			if(t != null) {
+				bad.put(n, t);
+			} else {
+				good.add(ni);
+			}
 		}
 
 		/* FIXME: Untested */
 		bad.keySet().forEach(n -> compute.destroyNode(n.getId()));
 
-		/*
+		AgentInfo ai = ops.getNimrod().lookupAgentByPlatform("x86_64-pc-linux-musl"); // FIXME:
+
+		List<CompletableFuture> actFutures = new ArrayList<>();
+
+		good.forEach(ni -> {
+
+			CompletableFuture<Void> cf = CompletableFuture.supplyAsync(() -> {
+				URI uri = ni.uris.get(0); // FIXME:
+
+				PublicKey[] hostKeys;
+				try {
+					hostKeys = SSHClient.resolveHostKeys(ni.username, uri.getHost(), uri.getPort(), 18, 10000, new AtomicBoolean(true));
+				} catch(IOException e) {
+					throw new UncheckedIOException(e);
+				} catch(InterruptedException e) {
+					throw new CancellationException();
+				}
+
+				SSHResourceType.SSHConfig sscfg = new SSHResourceType.SSHConfig(
+						ai,
+						SSHClient.FACTORY,
+						new TransportFactory.Config(
+								Optional.of(uri),
+								Optional.of(ni.username),
+								hostKeys,
+								Optional.empty(),
+								ni.keyPair,
+								Optional.empty()
+						)
+				);
+
+				try {
+					return new RemoteActuator(
+							subOpts,
+							node,
+							amqpUri,
+							certs,
+							agentsPerNode,
+							"/tmp",// FIXME: For now
+							sscfg
+					);
+				} catch(IOException e) {
+					throw new UncheckedIOException(e);
+				}
+			}).handle((act, t) -> {
+				if(act != null) {
+					try {
+						act.close();
+					} catch(IOException e) {
+						throw new UncheckedIOException(e);
+					}
+					return null;
+				}
+				return null;
+			});
+			actFutures.add(cf);
+		});
+
+		//CompletableFuture.allOf(List.of(actFutures.stream().toArray(CompletableFuture[]::new)));
+		try {
+			CompletableFuture.allOf(actFutures.stream().toArray(CompletableFuture[]::new)).get();
+		} catch(ExecutionException | InterruptedException e) {
+			int x = 0;
+		}
+		/* Assign agents to nodes. */
+ /*
 		 * NB: `good` contains a list of nodes, sorted by the number of agents in descending order.
 		 * Any new nodes are stored in the global list now, so they can be accounted for later incase
 		 * the actual agent launches fails for some reason.
@@ -353,6 +451,38 @@ public class JcloudsActuator implements Actuator {
 ////
 ////		}
 		return results;
+	}
+
+	private static Throwable configureNode(NodeInfo ni, LoginCredentials creds) {
+		/* I feel gross returning exceptions. Also return null means success. */
+		if(creds == null) {
+			return new RuntimeException("No credentials for node");
+		}
+
+		if(!creds.getOptionalPassword().isPresent() && !creds.getOptionalPrivateKey().isPresent()) {
+			return new IllegalStateException("no password or private key");
+		}
+
+		Optional<String> _privKey = Optional.ofNullable(creds.getOptionalPrivateKey().orNull());
+		Optional<KeyPair> keyPair = Optional.empty();
+		if(_privKey.isPresent()) {
+			try {
+				keyPair = Optional.of(ActuatorUtils.readPEMKey(_privKey.get()));
+			} catch(IOException e) {
+				return e;
+			}
+		}
+
+		try {
+			ni.configure(
+					creds.getUser(),
+					Optional.ofNullable(creds.getOptionalPassword().orNull()),
+					keyPair
+			);
+		} catch(RuntimeException e) {
+			return e;
+		}
+		return null;
 	}
 
 	@Override
@@ -417,4 +547,18 @@ public class JcloudsActuator implements Actuator {
 				.findFirst()
 				.map(h -> (Hardware)h);
 	}
+
+	private class SubOptions implements Actuator.Operations {
+
+		@Override
+		public void reportAgentFailure(Actuator act, UUID uuid, AgentShutdown.Reason reason, int signal) throws IllegalArgumentException {
+			JcloudsActuator.this.ops.reportAgentFailure(JcloudsActuator.this, uuid, reason, signal);
+		}
+
+		@Override
+		public NimrodMasterAPI getNimrod() {
+			return JcloudsActuator.this.ops.getNimrod();
+		}
+	}
+
 }
