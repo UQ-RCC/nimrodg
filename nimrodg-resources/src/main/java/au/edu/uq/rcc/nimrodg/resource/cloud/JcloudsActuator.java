@@ -54,10 +54,9 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import javax.ws.rs.core.UriBuilder;
@@ -72,10 +71,7 @@ import org.jclouds.compute.domain.NodeMetadata;
 import org.jclouds.compute.domain.Template;
 import org.jclouds.compute.options.TemplateOptions;
 import org.jclouds.domain.LoginCredentials;
-import org.jclouds.http.Uris;
 import org.jclouds.openstack.nova.v2_0.compute.options.NovaTemplateOptions;
-import org.jclouds.ssh.SshClient;
-import org.jclouds.sshj.config.SshjSshClientModule;
 
 public class JcloudsActuator implements Actuator {
 
@@ -89,6 +85,9 @@ public class JcloudsActuator implements Actuator {
 
 	private final int agentsPerNode;
 	private final CloudConfig config;
+	private final AgentInfo agentInfo;
+	private final String tmpDir;
+
 	private final Set<com.google.inject.Module> modules;
 	private final ComputeService compute;
 	private final Template template;
@@ -179,15 +178,15 @@ public class JcloudsActuator implements Actuator {
 		this.certs = certs;
 		this.agentsPerNode = agentsPerNode;
 		this.config = config;
-		this.modules = Set.of(new SshjSshClientModule()); // TODO: Wrap our existing ssh functionality
+
+		// FIXME: make these configurable
+		this.agentInfo = ops.getNimrod().lookupAgentByPlatform("x86_64-pc-linux-musl");
+		this.tmpDir = "/tmp";
+
+		this.modules = Set.of();
+		/* Seems we don't need any. */
 		this.compute = createComputeService();
 
-//		TemplateOptions opts = NovaTemplateOptions.Builder.inboundPorts(22)
-//				.availabilityZone("QRIScloud")
-//				.generateKeyPair(true)
-//				.blockOnComplete(false)
-//				.blockUntilRunning(false)
-//				.networks("283e92a3-40dc-482f-bb94-9f4632c0190b");
 		TemplateOptions opts = NovaTemplateOptions.Builder
 				.availabilityZone("QRIScloud")
 				.generateKeyPair(true)
@@ -196,7 +195,6 @@ public class JcloudsActuator implements Actuator {
 						"availability_zone", config.availabilityZone,
 						"OS-EXT-AZ:availability_zone", config.availabilityZone
 				))
-				//.generateKeyPair(true)
 				.blockOnComplete(false)
 				.blockUntilRunning(false);
 		//.networks("283e92a3-40dc-482f-bb94-9f4632c0190b");
@@ -218,7 +216,7 @@ public class JcloudsActuator implements Actuator {
 				.endpoint(config.endpoint.toString())
 				.credentials(config.username, config.password)
 				.overrides(config.props)
-				.modules(Set.of(new SshjSshClientModule()))
+				.modules(modules)
 				.buildView(ComputeServiceContext.class)
 				.getComputeService();
 	}
@@ -238,56 +236,117 @@ public class JcloudsActuator implements Actuator {
 		return Arrays.copyOf(certs, certs.length);
 	}
 
-	private void destroyBadNodes(RunNodesException e) {
-		for(Map.Entry<? extends NodeMetadata, ? extends Throwable> nodeError : e.getNodeErrors().entrySet()) {
-			compute.destroyNode(nodeError.getKey().getId());
+	private static class FilterResult {
+
+		public final Map<NodeInfo, Set<UUID>> toLaunch;
+		public final Map<NodeMetadata, Set<UUID>> toFail;
+		public final Set<UUID> leftovers;
+		public final Map<UUID, Integer> indexMap;
+
+		public FilterResult(Map<NodeInfo, Set<UUID>> toLaunch, Map<NodeMetadata, Set<UUID>> toFail, Set<UUID> leftovers, Map<UUID, Integer> indexMap) {
+			this.toLaunch = toLaunch;
+			this.toFail = toFail;
+			this.leftovers = leftovers;
+			this.indexMap = indexMap;
 		}
+
 	}
 
-	private void launchNodes(int num, Set<NodeMetadata> good, Map<NodeMetadata, Throwable> bad) {
-		try {
-			good.addAll(compute.createNodesInGroup(groupName, num, template));
-		} catch(RunNodesException e) {
-			good.addAll(e.getSuccessfulNodes());
-
-			//e.g
-			// TODO: This
-		}
-	}
-
-	static void asdfasdfasd(UUID[] uuids, Set<NodeInfo> good, Map<NodeMetadata, Throwable> bad, int agentsPerNode) {
-		//Deque<UUID> _uuids = new ArrayDeque<>(Arrays.asList(uuids));
+	/**
+	 * Given a set of "good" and "bad" nodes, assign agents to them.
+	 *
+	 * @param uuids The agent UUIDs.
+	 * @param good The set of "good" nodes.
+	 * @param bad The set of "bad" nodes.
+	 * @param agentsPerNode The number of agents allowed on a node.
+	 */
+	private static FilterResult filterAgentsToNodes(UUID[] uuids, Set<NodeInfo> good, Set<NodeMetadata> bad, int agentsPerNode) {
 		Deque<NodeInfo> _good = new ArrayDeque<>(good);
-		Deque<Map.Entry<NodeMetadata, Throwable>> _bad = new ArrayDeque<>(bad.entrySet());
+		Deque<NodeMetadata> _bad = new ArrayDeque<>(bad);
 
 		Map<NodeInfo, Set<UUID>> toLaunch = new HashMap<>();
+		Map<NodeMetadata, Set<UUID>> toFail = new HashMap<>();
 
 		int i = 0;
 		while(!_good.isEmpty()) {
-			NodeInfo ni = _good.peek();
-			if(ni.agents.size() >= agentsPerNode) {
+			if(i >= uuids.length) {
+				break;
+			}
+
+			Set<UUID> agents = NimrodUtils.getOrAddLazy(toLaunch, _good.peek(), nii -> new HashSet<>());
+			if(agents.size() >= agentsPerNode) {
 				_good.poll();
 				continue;
 			}
 
-			NimrodUtils.getOrAddLazy(toLaunch, ni, nii -> new HashSet<>()).add(uuids[i++]);
-
-			if(i >= uuids.length) {
-				return;
-			}
+			agents.add(uuids[i++]);
 		}
-
-		assert i < uuids.length;
 
 		while(!_bad.isEmpty()) {
+			if(i >= uuids.length) {
+				break;
+			}
 
+			NimrodUtils.getOrAddLazy(toFail, _bad.poll(), nn -> new HashSet<>()).add(uuids[i++]);
 		}
+
+		Set<UUID> leftovers = new HashSet<>();
+		for(int j = i; j < uuids.length; ++j) {
+			leftovers.add(uuids[j]);
+		}
+
+		Map<UUID, Integer> indexMap = new HashMap<>();
+		for(i = 0; i < uuids.length; ++i) {
+			indexMap.put(uuids[i], i);
+		}
+
+		return new FilterResult(toLaunch, toFail, leftovers, indexMap);
+	}
+
+	/**
+	 * Launch a {@link RemoteActuator} on the given node.
+	 *
+	 * This is intended to be used asynchronously.
+	 *
+	 * @param ni The node.
+	 * @return The actuator instance.
+	 */
+	private RemoteActuator launchNodeActuator(NodeInfo ni) {
+		URI uri = ni.uris.get(0); // FIXME:
+
+		/* FIXME: Make this configurable. Currently 18 retries at 10 seconds, or 3 minutes. */
+		PublicKey[] hostKeys;
+		try {
+			hostKeys = SSHClient.resolveHostKeys(ni.username, uri.getHost(), uri.getPort(), 18, 10000);
+		} catch(IOException e) {
+			throw new UncheckedIOException(e);
+		}
+
+		SSHResourceType.SSHConfig sscfg = new SSHResourceType.SSHConfig(
+				agentInfo,
+				SSHClient.FACTORY,
+				new TransportFactory.Config(
+						Optional.of(uri),
+						Optional.of(ni.username),
+						hostKeys,
+						Optional.empty(),
+						ni.keyPair,
+						Optional.empty()
+				)
+		);
+
+		RemoteActuator act;
+		try {
+			act = new RemoteActuator(subOpts, node, amqpUri, certs, agentsPerNode, tmpDir, sscfg);
+		} catch(IOException e) {
+			throw new UncheckedIOException(e);
+		}
+
+		return act;
 	}
 
 	@Override
 	public LaunchResult[] launchAgents(UUID[] uuids) throws IOException {
-		LaunchResult[] results = new LaunchResult[uuids.length];
-		LaunchResult failedResult = new LaunchResult(null, new ResourceFullException(node));
 
 		/* See if there's any space left on our existing nodes. */
 		LinkedHashSet<NodeInfo> good = nodes.values().stream()
@@ -305,10 +364,16 @@ public class JcloudsActuator implements Actuator {
 				+ ((uuids.length - nLaunchable) % agentsPerNode > 0 ? 1 : 0);
 
 		// FIXME: I don't like this
-		Map<NodeMetadata, Throwable> bad = new HashMap<>();
+		ConcurrentHashMap<NodeMetadata, Throwable> bad = new ConcurrentHashMap<>();
 		Set<NodeMetadata> _good = new HashSet<>();
 		if(nLaunchable < uuids.length) {
-			launchNodes(numRequired, _good, bad);
+			try {
+				_good.addAll(compute.createNodesInGroup(groupName, numRequired, template));
+			} catch(RunNodesException e) {
+				/* The documentation is a bit unclear on this. */
+				_good.addAll(e.getSuccessfulNodes());
+				bad.putAll(e.getNodeErrors());
+			}
 		}
 
 		/*
@@ -333,127 +398,55 @@ public class JcloudsActuator implements Actuator {
 			}
 		}
 
-		/* FIXME: Untested */
-		bad.keySet().forEach(n -> compute.destroyNode(n.getId()));
+		CompletableFuture[] actFutures = good.stream()
+				.map(ni -> CompletableFuture.supplyAsync(() -> launchNodeActuator(ni))
+				.handle((act, t) -> {
+					if(act != null) {
+						ni.actuator.complete(act);
+					} else {
+						ni.actuator.completeExceptionally(t);
+						bad.put(ni.node, t);
+					}
+					return null;
+				})).toArray(CompletableFuture[]::new);
 
-		AgentInfo ai = ops.getNimrod().lookupAgentByPlatform("x86_64-pc-linux-musl"); // FIXME:
-
-		List<CompletableFuture> actFutures = new ArrayList<>();
-
-		good.forEach(ni -> {
-
-			CompletableFuture<Void> cf = CompletableFuture.supplyAsync(() -> {
-				URI uri = ni.uris.get(0); // FIXME:
-
-				/* FIXME: Make this configurable. Currently 18 retries at 10 seconds, or 3 minutes. */
-				PublicKey[] hostKeys;
-				try {
-					hostKeys = SSHClient.resolveHostKeys(ni.username, uri.getHost(), uri.getPort(), 18, 10000);
-				} catch(IOException e) {
-					throw new UncheckedIOException(e);
-				}
-
-				SSHResourceType.SSHConfig sscfg = new SSHResourceType.SSHConfig(
-						ai,
-						SSHClient.FACTORY,
-						new TransportFactory.Config(
-								Optional.of(uri),
-								Optional.of(ni.username),
-								hostKeys,
-								Optional.empty(),
-								ni.keyPair,
-								Optional.empty()
-						)
-				);
-
-				RemoteActuator act;
-				try {
-					act = new RemoteActuator(
-							subOpts,
-							node,
-							amqpUri,
-							certs,
-							agentsPerNode,
-							"/tmp",// FIXME: For now
-							sscfg
-					);
-				} catch(IOException e) {
-					throw new UncheckedIOException(e);
-				}
-				ni.actuator.complete(act);
-				return act;
-			}).handle((act, t) -> {
-				if(act != null) {
-					ni.actuator.complete(act);
-//					try {
-//						act.close();
-//					} catch(IOException e) {
-//						throw new UncheckedIOException(e);
-//					}
-//					return null;
-				}
-				return null;
-			});
-			actFutures.add(cf);
-		});
-
-		//CompletableFuture.allOf(List.of(actFutures.stream().toArray(CompletableFuture[]::new)));
 		try {
-			CompletableFuture.allOf(actFutures.stream().toArray(CompletableFuture[]::new)).get();
+			CompletableFuture.allOf(actFutures).get();
 		} catch(ExecutionException | InterruptedException e) {
-			int x = 0;
+			//int x = 0;
+			LOGGER.catching(e);
 		}
-		/* Assign agents to nodes. */
- /*
-		 * NB: `good` contains a list of nodes, sorted by the number of agents in descending order.
-		 * Any new nodes are stored in the global list now, so they can be accounted for later incase
-		 * the actual agent launches fails for some reason.
-		 */
-//
-//		{
-//			class Tmp {
-//
-//				public final NodeInfo ni;
-//				public int nleft;
-//
-//				public Tmp(NodeInfo ni, int nleft) {
-//					this.ni = ni;
-//					this.nleft = nleft;
-//				}
-//
-//			}
-//
-//			/* Assign agents to nodes. */
-//			good.stream()
-//					.map(n -> NimrodUtils.getOrAddLazy(nodes, n, nn -> new NodeInfo(nn)));
-//			Queue<NodeInfo> nqueue = good.stream()
-//					.map(n -> NimrodUtils.getOrAddLazy(nodes, n, nn -> new NodeInfo(nn)))
-//					.collect(Collectors.toCollection(() -> new ArrayDeque<>()));
-//
-//			NodeInfo[] agents = new NodeInfo[uuids.length];
-//			Map<NodeMetadata, Integer> frees = new HashMap<>();
-//			good.forEach(n -> frees.put(n, 0));
-//
-//			int i;
-//			for(i = 0; i < uuids.length; ++i) {
-//				NodeInfo ni = nqueue.peek();
-//				if(ni == null) {
-//					break;
-//				}
-//
-//				ni.agents.add(uuids[i]);
-//				if(ni.agents.size() >= agentsPerNode) {
-//					nqueue.poll();
-//				}
-//
-//				agents[i] = ni;
-//
-//			}
-//		}
-////		for(NodeMetadata n : good) {
-////			NodeInfo ni = NimrodUtils.getOrAddLazy(nodes, n, nn -> new NodeInfo(nn));
-////
-////		}
+
+		/* Destroy the bad nodes. */
+		compute.destroyNodesMatching(n -> bad.containsKey(n));
+
+		/* If an actuator launch failed, the node is now considered bad. */
+		good.removeAll(bad.keySet());
+
+		/* Now it's safe to remove them from our global list. */
+		bad.keySet().forEach(nodes::remove);
+
+		FilterResult fr = filterAgentsToNodes(uuids, good, bad.keySet(), agentsPerNode);
+
+		LaunchResult[] results = new LaunchResult[uuids.length];
+
+		/* Failed agents are low-hanging fruit, do them first. */
+		for(Map.Entry<NodeMetadata, Set<UUID>> failed : fr.toFail.entrySet()) {
+			Throwable t = bad.get(failed.getKey());
+			failed.getValue().stream()
+					.map(u -> fr.indexMap.get(u))
+					.forEach(i -> results[i] = new LaunchResult(node, t));
+		}
+
+		LaunchResult fullResult = new LaunchResult(null, new ResourceFullException(node));
+		fr.leftovers.stream()
+				.map(u -> fr.indexMap.get(u))
+				.forEach(i -> results[i] = fullResult);
+
+		for(Map.Entry<NodeInfo, Set<UUID>> succeeded : fr.toLaunch.entrySet()) {
+
+		}
+
 		return results;
 	}
 
@@ -494,11 +487,6 @@ public class JcloudsActuator implements Actuator {
 		return false;
 	}
 
-//	private RemoteShell makeSsh(NodeInfo n) throws IOException {
-//		return new SSHClient(
-//				n.uri,
-//				new PublicKey[0], n.keyPair.get());
-//	}
 	@Override
 	public void close() throws IOException {
 		IOException ioex = new IOException();
@@ -514,7 +502,6 @@ public class JcloudsActuator implements Actuator {
 				ioex.addSuppressed(e);
 				numSuppressed.incrementAndGet();
 			}
-
 		})).toArray(CompletableFuture[]::new));
 
 		while(!cf.isDone()) {
