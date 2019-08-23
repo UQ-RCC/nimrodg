@@ -42,7 +42,6 @@ import java.security.KeyPair;
 import java.security.PublicKey;
 import java.security.cert.Certificate;
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.HashMap;
@@ -59,6 +58,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import javax.json.Json;
+import javax.json.JsonArrayBuilder;
+import javax.json.JsonObjectBuilder;
+import javax.json.JsonValue;
 import javax.ws.rs.core.UriBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -76,6 +79,8 @@ import org.jclouds.openstack.nova.v2_0.compute.options.NovaTemplateOptions;
 public class JcloudsActuator implements Actuator {
 
 	private static final Logger LOGGER = LogManager.getLogger(JcloudsActuator.class);
+
+	private static final TransportFactory TRANSPORT_FACTORY = SSHClient.FACTORY;
 
 	private final Operations ops;
 	private final NimrodAPI nimrod;
@@ -100,6 +105,7 @@ public class JcloudsActuator implements Actuator {
 		public final NodeMetadata node;
 		public final Set<UUID> agents;
 		public final CompletableFuture<RemoteActuator> actuator;
+		public final CompletableFuture<TransportFactory.Config> transportConfig;
 
 		private boolean isConfigured;
 		private String username;
@@ -111,6 +117,7 @@ public class JcloudsActuator implements Actuator {
 			this.node = node;
 			this.agents = new HashSet<>();
 			this.actuator = new CompletableFuture<>();
+			this.transportConfig = new CompletableFuture<>();
 
 			this.isConfigured = false;
 			this.username = null;
@@ -335,6 +342,8 @@ public class JcloudsActuator implements Actuator {
 				)
 		);
 
+		ni.transportConfig.complete(sscfg.transportConfig);
+
 		RemoteActuator act;
 		try {
 			act = new RemoteActuator(subOpts, node, amqpUri, certs, agentsPerNode, tmpDir, sscfg);
@@ -345,7 +354,26 @@ public class JcloudsActuator implements Actuator {
 		return act;
 	}
 
+	private static void launchAgentsOnActuator(LaunchResult[] results, Actuator act, FilterResult fr, Set<UUID> uuids) {
+		final UUID[] _uuids = uuids.stream().toArray(UUID[]::new);
+
+		LaunchResult[] lrs;
+		try {
+			lrs = act.launchAgents(_uuids);
+		} catch(IOException ex) {
+			lrs = new LaunchResult[_uuids.length];
+			Arrays.fill(lrs, new LaunchResult(act.getResource(), ex));
+		}
+
+		Map<UUID, LaunchResult> m = new HashMap<>();
+		for(int i = 0; i < _uuids.length; ++i) {
+			results[fr.indexMap.get(_uuids[i])] = lrs[i];
+		}
+	}
+
 	@Override
+	@SuppressWarnings("ThrowableResultIgnored")
+	/* NetBeans really overdoes this. */
 	public LaunchResult[] launchAgents(UUID[] uuids) throws IOException {
 
 		/* See if there's any space left on our existing nodes. */
@@ -431,9 +459,9 @@ public class JcloudsActuator implements Actuator {
 		LaunchResult[] results = new LaunchResult[uuids.length];
 
 		/* Failed agents are low-hanging fruit, do them first. */
-		for(Map.Entry<NodeMetadata, Set<UUID>> failed : fr.toFail.entrySet()) {
-			Throwable t = bad.get(failed.getKey());
-			failed.getValue().stream()
+		for(Map.Entry<NodeMetadata, Set<UUID>> e : fr.toFail.entrySet()) {
+			Throwable t = bad.get(e.getKey());
+			e.getValue().stream()
 					.map(u -> fr.indexMap.get(u))
 					.forEach(i -> results[i] = new LaunchResult(node, t));
 		}
@@ -443,11 +471,67 @@ public class JcloudsActuator implements Actuator {
 				.map(u -> fr.indexMap.get(u))
 				.forEach(i -> results[i] = fullResult);
 
-		for(Map.Entry<NodeInfo, Set<UUID>> succeeded : fr.toLaunch.entrySet()) {
+		actFutures = fr.toLaunch.entrySet().stream()
+				.map(e -> e.getKey().actuator.thenAcceptAsync(act -> launchAgentsOnActuator(results, act, fr, e.getValue())))
+				.toArray(CompletableFuture[]::new);
 
+		CompletableFuture.allOf(actFutures).join();
+
+		/* This *should* never happen, but double check to be safe. */
+		for(int i = 0; i < results.length; ++i) {
+			if(results[i] == null) {
+				results[i] = fullResult;
+			}
 		}
 
+		/* Override the actuator data with ours. */
+		patchLaunchResults(uuids, results);
 		return results;
+	}
+
+	private void patchLaunchResults(UUID[] uuids, LaunchResult[] results) {
+		assert uuids.length == results.length;
+
+		/* Override the actuator data with ours. */
+		for(int i = 0; i < results.length; ++i) {
+			LaunchResult old = results[i];
+			if(old.t != null) {
+				continue;
+			}
+
+			UUID uuid = uuids[i];
+
+			JsonObjectBuilder jb = Json.createObjectBuilder()
+					.add("group_name", groupName);
+
+			NodeInfo ni = null; // FIXME:
+			if(ni != null) {
+				JsonObjectBuilder nb = Json.createObjectBuilder();
+
+				/*
+				 * Add the transport configuration.
+				 * We know it's built at this point, so the getNow() call will never fail.
+				 */
+				nb.add("transport", TRANSPORT_FACTORY.buildJsonConfiguration(ni.transportConfig.getNow(null)));
+
+				JsonArrayBuilder urib = Json.createArrayBuilder();
+				ni.uris.stream()
+						.map(u -> u.toString())
+						.forEach(urib::add);
+				nb.add("uris", urib);
+
+				jb.add("node", nb);
+			}
+
+			/* Keep a copy of the old one. */
+			if(old.actuatorData == null) {
+				jb.add("remote", JsonValue.EMPTY_JSON_OBJECT);
+			} else {
+				jb.add("remote", old.actuatorData);
+			}
+
+			results[i] = new LaunchResult(old.node, old.t, old.expiryTime, jb.build());
+		}
 	}
 
 	private static Throwable configureNode(NodeInfo ni, LoginCredentials creds) {
