@@ -21,6 +21,7 @@ package au.edu.uq.rcc.nimrodg.resource.cloud;
 
 import au.edu.uq.rcc.nimrodg.agent.Agent;
 import au.edu.uq.rcc.nimrodg.agent.AgentState;
+import au.edu.uq.rcc.nimrodg.agent.DefaultAgentState;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
 import au.edu.uq.rcc.nimrodg.api.Actuator;
 import au.edu.uq.rcc.nimrodg.api.AgentInfo;
@@ -59,6 +60,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.json.Json;
 import javax.json.JsonArrayBuilder;
@@ -75,7 +77,9 @@ import org.jclouds.compute.ComputeService;
 import org.jclouds.compute.ComputeServiceContext;
 import org.jclouds.compute.RunNodesException;
 import org.jclouds.compute.domain.Hardware;
+import org.jclouds.compute.domain.HardwareBuilder;
 import org.jclouds.compute.domain.NodeMetadata;
+import org.jclouds.compute.domain.NodeMetadataBuilder;
 import org.jclouds.compute.domain.Template;
 import org.jclouds.compute.options.TemplateOptions;
 import org.jclouds.domain.LoginCredentials;
@@ -111,11 +115,9 @@ public class JcloudsActuator implements Actuator {
 		public final NodeMetadata node;
 		public final Set<UUID> agents;
 		public final CompletableFuture<RemoteActuator> actuator;
-		public final CompletableFuture<TransportFactory.Config> transportConfig;
+		public final CompletableFuture<SSHResourceType.SSHConfig> sshConfig;
 
 		private boolean isConfigured;
-		private String username;
-		private Optional<String> password;
 		private Optional<KeyPair> keyPair;
 		private List<URI> uris;
 
@@ -123,11 +125,9 @@ public class JcloudsActuator implements Actuator {
 			this.node = node;
 			this.agents = new HashSet<>();
 			this.actuator = new CompletableFuture<>();
-			this.transportConfig = new CompletableFuture<>();
+			this.sshConfig = new CompletableFuture<>();
 
 			this.isConfigured = false;
-			this.username = null;
-			this.password = Optional.empty();
 			this.keyPair = Optional.empty();
 			this.uris = List.of();
 		}
@@ -139,8 +139,6 @@ public class JcloudsActuator implements Actuator {
 
 			String userInfo = password.map(p -> String.format("%s:%s", username, p)).orElse(username);
 
-			this.username = username;
-			this.password = password;
 			this.keyPair = keyPair;
 			this.uris = node.getPublicAddresses().stream()
 					.map(addr -> UriBuilder.fromUri("")
@@ -323,50 +321,6 @@ public class JcloudsActuator implements Actuator {
 		return new FilterResult(toLaunch, toFail, leftovers, indexMap, uuidMap);
 	}
 
-	/**
-	 * Launch a {@link RemoteActuator} on the given node.
-	 *
-	 * This is intended to be used asynchronously.
-	 *
-	 * @param ni The node.
-	 * @return The actuator instance.
-	 */
-	private RemoteActuator launchNodeActuator(NodeInfo ni) {
-		URI uri = ni.uris.get(0); // FIXME:
-
-		/* FIXME: Make this configurable. Currently 18 retries at 10 seconds, or 3 minutes. */
-		PublicKey[] hostKeys;
-		try {
-			hostKeys = SSHClient.resolveHostKeys(ni.username, uri.getHost(), uri.getPort(), 18, 10000);
-		} catch(IOException e) {
-			throw new UncheckedIOException(e);
-		}
-
-		SSHResourceType.SSHConfig sscfg = new SSHResourceType.SSHConfig(
-				agentInfo,
-				SSHClient.FACTORY,
-				new TransportFactory.Config(
-						Optional.of(uri),
-						Optional.of(ni.username),
-						hostKeys,
-						Optional.empty(),
-						ni.keyPair,
-						Optional.empty()
-				)
-		);
-
-		ni.transportConfig.complete(sscfg.transportConfig);
-
-		RemoteActuator act;
-		try {
-			act = new RemoteActuator(subOpts, node, amqpUri, certs, agentsPerNode, tmpDir, sscfg);
-		} catch(IOException e) {
-			throw new UncheckedIOException(e);
-		}
-
-		return act;
-	}
-
 	private static void launchAgentsOnActuator(LaunchResult[] results, Actuator act, FilterResult fr, Set<UUID> uuids) {
 		final UUID[] _uuids = uuids.stream().toArray(UUID[]::new);
 
@@ -438,17 +392,19 @@ public class JcloudsActuator implements Actuator {
 			}
 		}
 
-		CompletableFuture[] actFutures = good.stream()
-				.map(ni -> CompletableFuture.supplyAsync(() -> launchNodeActuator(ni))
-				.handle((act, t) -> {
-					if(act != null) {
-						ni.actuator.complete(act);
-					} else {
-						ni.actuator.completeExceptionally(t);
-						bad.put(ni.node, t);
-					}
-					return null;
-				})).toArray(CompletableFuture[]::new);
+		CompletableFuture[] actFutures = good.stream().map(ni -> CompletableFuture.supplyAsync(() -> {
+			SSHResourceType.SSHConfig sscfg = resolveTransportFromNode(ni, agentInfo);
+			ni.sshConfig.complete(sscfg);
+			return launchActuator(sscfg);
+		}).handle((act, t) -> {
+			if(act != null) {
+				ni.actuator.complete(act);
+			} else {
+				ni.actuator.completeExceptionally(t);
+				bad.put(ni.node, t);
+			}
+			return null;
+		})).toArray(CompletableFuture[]::new);
 
 		try {
 			CompletableFuture.allOf(actFutures).get();
@@ -546,8 +502,8 @@ public class JcloudsActuator implements Actuator {
 			 * We know it's built at this point, so the getNow() call will never fail.
 			 */
 			nb.add("transport",
-					Optional.ofNullable(ni.transportConfig.getNow(null))
-							.map(cfg -> TRANSPORT_FACTORY.buildJsonConfiguration(cfg))
+					Optional.ofNullable(ni.sshConfig.getNow(null))
+							.map(cfg -> TRANSPORT_FACTORY.buildJsonConfiguration(cfg.transportConfig))
 							.orElse(JsonObject.EMPTY_JSON_OBJECT)
 			);
 
@@ -713,47 +669,106 @@ public class JcloudsActuator implements Actuator {
 			return false;
 		}
 
+		SSHResourceType.SSHConfig sscfg = new SSHResourceType.SSHConfig(agentInfo, TRANSPORT_FACTORY, tcfg.get());
+
 		NodeInfo ni = nodes.values().stream()
 				.filter(n -> n.node.getId().equals(nodeId.get()))
 				.findFirst()
-				.orElseGet(() -> recoverNode(compute, nodeId.get(), tcfg.get()));
+				.or(() -> resolveNodeFromTransport(compute, nodeId.get(), sscfg))
+				.orElse(null);
+
+		if(ni == null) {
+			return false;
+		}
+
+		if(!ni.actuator.isDone()) {
+			RemoteActuator act;
+			try {
+				act = launchActuator(sscfg);
+			} catch(UncheckedIOException e) {
+				return false;
+			}
+
+			ni.actuator.complete(act);
+		}
+
+		nodes.putIfAbsent(ni.node, ni);
 
 		JsonObject ro = jo.getJsonObject("remote");
 		if(ro == null) {
 			return false;
 		}
 
-		return false;
+		AgentState as = new DefaultAgentState(state);
+		as.setActuatorData(ro);
+
+		try {
+			return ni.actuator.thenApply(act -> act.adopt(as)).get();
+		} catch(InterruptedException | ExecutionException e) {
+			LOGGER.catching(e);
+			return false;
+		}
 	}
 
-	private static NodeInfo recoverNode(ComputeService compute, String id, TransportFactory.Config tcfg) {
+	/**
+	 * Attempt to recover a node from its id and SSH configuration.
+	 *
+	 * @param compute The compute service to use.
+	 * @param id The node id.
+	 * @param sscfg The SSH configuration.
+	 * @return The "recovered" node. Will fail if {@link ComputeService#getNodeMetadata(java.lang.String)} fails, or the
+	 * SSH configuration is invalid.
+	 */
+	private static Optional<NodeInfo> resolveNodeFromTransport(ComputeService compute, String id, SSHResourceType.SSHConfig sscfg) {
 		NodeMetadata meta = compute.getNodeMetadata(id);
+		if(meta == null) {
+			return Optional.empty();
+		}
 
 		NodeInfo ni = new NodeInfo(meta);
 
-		//Optional.ofNullable(meta.getCredentials());
-		LoginCredentials.Builder cb = LoginCredentials.builder();
-		tcfg.user.ifPresent(u -> cb.user(u));
+		Optional<String[]> userInfo = sscfg.transportConfig.uri.map(u -> u.getUserInfo()).map(u -> u.split(":", 2));
 
-		tcfg.user.orElseGet(() -> null);
+		Optional<String> user = userInfo.filter(u -> u.length == 1).map(u -> u[0]);
+		Optional<String> pass = userInfo.filter(u -> u.length == 2).map(u -> u[1]);
 
-		Optional<URI> uri = tcfg.uri;
-		Optional<String[]> userInfo = uri.map(u -> u.getUserInfo()).map(u -> u.split(":", 2));
-		userInfo.ifPresent(u -> {
-			if(u.length == 1) {
-				cb.user(u[0]);
-			}
-		});
+		ni.configure(user.get(), pass, sscfg.transportConfig.keyPair);
+		ni.sshConfig.complete(sscfg);
 
-//		tcfg.uri.ifPresent(uri -> {
-//			uri.getUserInfo()
-//		});
-//		if(tcfg.keyPair.isPresent()) {
-//			KeyPair kp = tcfg.keyPair.get();
-//
-//			AuthorizedKeyEntry.toString(key)
-//		}
-		return ni;
+		return Optional.of(ni);
+	}
+
+	private static SSHResourceType.SSHConfig resolveTransportFromNode(NodeInfo ni, AgentInfo agentInfo) {
+		URI uri = ni.uris.get(0); // FIXME:
+
+		/* FIXME: Make this configurable. Currently 18 retries at 10 seconds, or 3 minutes. */
+		PublicKey[] hostKeys;
+		try {
+			hostKeys = SSHClient.resolveHostKeys(ActuatorUtils.getUriUser(uri).orElse(""), uri.getHost(), uri.getPort(), 18, 10000);
+		} catch(IOException e) {
+			throw new UncheckedIOException(e);
+		}
+
+		return new SSHResourceType.SSHConfig(
+				agentInfo,
+				TRANSPORT_FACTORY,
+				new TransportFactory.Config(
+						Optional.of(uri),
+						hostKeys,
+						Optional.empty(),
+						ni.keyPair,
+						Optional.empty()
+				)
+		);
+	}
+
+	/* Helper for use in lambdas. */
+	private RemoteActuator launchActuator(SSHResourceType.SSHConfig sscfg) {
+		try {
+			return new RemoteActuator(subOpts, node, amqpUri, certs, agentsPerNode, tmpDir, sscfg);
+		} catch(IOException e) {
+			throw new UncheckedIOException(e);
+		}
 	}
 
 	private static Optional<Hardware> resolveHardware(ComputeService compute, String name) {
