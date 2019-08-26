@@ -19,6 +19,7 @@
  */
 package au.edu.uq.rcc.nimrodg.resource.cloud;
 
+import au.edu.uq.rcc.nimrodg.agent.Agent;
 import au.edu.uq.rcc.nimrodg.agent.AgentState;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
 import au.edu.uq.rcc.nimrodg.api.Actuator;
@@ -42,6 +43,7 @@ import java.security.KeyPair;
 import java.security.PublicKey;
 import java.security.cert.Certificate;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.HashMap;
@@ -60,11 +62,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import javax.json.Json;
 import javax.json.JsonArrayBuilder;
+import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
+import javax.json.JsonString;
 import javax.json.JsonValue;
 import javax.ws.rs.core.UriBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.sshd.common.config.keys.AuthorizedKeyEntry;
 import org.jclouds.ContextBuilder;
 import org.jclouds.compute.ComputeService;
 import org.jclouds.compute.ComputeServiceContext;
@@ -98,6 +103,7 @@ public class JcloudsActuator implements Actuator {
 	private final Template template;
 	private final String groupName;
 	private final Map<NodeMetadata, NodeInfo> nodes;
+	private final Map<UUID, NodeInfo> agentMap;
 	private final SubOptions subOpts;
 
 	private static class NodeInfo {
@@ -215,6 +221,7 @@ public class JcloudsActuator implements Actuator {
 
 		this.groupName = String.format("nimrodg-openstack-%d", this.hashCode());
 		this.nodes = new HashMap<>();
+		this.agentMap = new HashMap<>();
 		this.subOpts = new SubOptions();
 	}
 
@@ -249,14 +256,15 @@ public class JcloudsActuator implements Actuator {
 		public final Map<NodeMetadata, Set<UUID>> toFail;
 		public final Set<UUID> leftovers;
 		public final Map<UUID, Integer> indexMap;
+		public final Map<UUID, NodeInfo> uuidMap;
 
-		public FilterResult(Map<NodeInfo, Set<UUID>> toLaunch, Map<NodeMetadata, Set<UUID>> toFail, Set<UUID> leftovers, Map<UUID, Integer> indexMap) {
+		public FilterResult(Map<NodeInfo, Set<UUID>> toLaunch, Map<NodeMetadata, Set<UUID>> toFail, Set<UUID> leftovers, Map<UUID, Integer> indexMap, Map<UUID, NodeInfo> uuidMap) {
 			this.toLaunch = toLaunch;
 			this.toFail = toFail;
 			this.leftovers = leftovers;
 			this.indexMap = indexMap;
+			this.uuidMap = uuidMap;
 		}
-
 	}
 
 	/**
@@ -266,13 +274,15 @@ public class JcloudsActuator implements Actuator {
 	 * @param good The set of "good" nodes.
 	 * @param bad The set of "bad" nodes.
 	 * @param agentsPerNode The number of agents allowed on a node.
+	 * @return The filtered agents.
 	 */
 	private static FilterResult filterAgentsToNodes(UUID[] uuids, Set<NodeInfo> good, Set<NodeMetadata> bad, int agentsPerNode) {
-		Deque<NodeInfo> _good = new ArrayDeque<>(good);
-		Deque<NodeMetadata> _bad = new ArrayDeque<>(bad);
+		ArrayDeque<NodeInfo> _good = new ArrayDeque<>(good);
+		ArrayDeque<NodeMetadata> _bad = new ArrayDeque<>(bad);
 
-		Map<NodeInfo, Set<UUID>> toLaunch = new HashMap<>();
-		Map<NodeMetadata, Set<UUID>> toFail = new HashMap<>();
+		Map<NodeInfo, Set<UUID>> toLaunch = new HashMap<>(good.size());
+		Map<NodeMetadata, Set<UUID>> toFail = new HashMap<>(bad.size());
+		Map<UUID, NodeInfo> uuidMap = new HashMap<>(uuids.length);
 
 		int i = 0;
 		while(!_good.isEmpty()) {
@@ -280,13 +290,16 @@ public class JcloudsActuator implements Actuator {
 				break;
 			}
 
-			Set<UUID> agents = NimrodUtils.getOrAddLazy(toLaunch, _good.peek(), nii -> new HashSet<>());
+			NodeInfo ni = _good.peek();
+			Set<UUID> agents = NimrodUtils.getOrAddLazy(toLaunch, ni, nii -> new HashSet<>(agentsPerNode));
 			if(agents.size() >= agentsPerNode) {
 				_good.poll();
 				continue;
 			}
 
-			agents.add(uuids[i++]);
+			agents.add(uuids[i]);
+			uuidMap.put(uuids[i], ni);
+			++i;
 		}
 
 		while(!_bad.isEmpty()) {
@@ -294,20 +307,20 @@ public class JcloudsActuator implements Actuator {
 				break;
 			}
 
-			NimrodUtils.getOrAddLazy(toFail, _bad.poll(), nn -> new HashSet<>()).add(uuids[i++]);
+			NimrodUtils.getOrAddLazy(toFail, _bad.poll(), nn -> new HashSet<>(agentsPerNode)).add(uuids[i++]);
 		}
 
-		Set<UUID> leftovers = new HashSet<>();
+		Set<UUID> leftovers = new HashSet<>(uuids.length - i);
 		for(int j = i; j < uuids.length; ++j) {
 			leftovers.add(uuids[j]);
 		}
 
-		Map<UUID, Integer> indexMap = new HashMap<>();
+		Map<UUID, Integer> indexMap = new HashMap<>(uuids.length);
 		for(i = 0; i < uuids.length; ++i) {
 			indexMap.put(uuids[i], i);
 		}
 
-		return new FilterResult(toLaunch, toFail, leftovers, indexMap);
+		return new FilterResult(toLaunch, toFail, leftovers, indexMap, uuidMap);
 	}
 
 	/**
@@ -365,7 +378,6 @@ public class JcloudsActuator implements Actuator {
 			Arrays.fill(lrs, new LaunchResult(act.getResource(), ex));
 		}
 
-		Map<UUID, LaunchResult> m = new HashMap<>();
 		for(int i = 0; i < _uuids.length; ++i) {
 			results[fr.indexMap.get(_uuids[i])] = lrs[i];
 		}
@@ -485,11 +497,19 @@ public class JcloudsActuator implements Actuator {
 		}
 
 		/* Override the actuator data with ours. */
-		patchLaunchResults(uuids, results);
+		patchLaunchResults(fr, uuids, results);
+
+		for(int i = 0; i < results.length; ++i) {
+			if(results[i].node != null) {
+				agentMap.put(uuids[i], fr.uuidMap.get(uuids[i]));
+			}
+		}
+
 		return results;
 	}
 
-	private void patchLaunchResults(UUID[] uuids, LaunchResult[] results) {
+	// TODO: Make static
+	private void patchLaunchResults(FilterResult fr, UUID[] uuids, LaunchResult[] results) {
 		assert uuids.length == results.length;
 
 		/* Override the actuator data with ours. */
@@ -499,29 +519,45 @@ public class JcloudsActuator implements Actuator {
 				continue;
 			}
 
-			UUID uuid = uuids[i];
+			NodeInfo ni = fr.uuidMap.get(uuids[i]);
+			if(ni == null) {
+				continue;
+			}
 
 			JsonObjectBuilder jb = Json.createObjectBuilder()
 					.add("group_name", groupName);
 
-			NodeInfo ni = null; // FIXME:
-			if(ni != null) {
-				JsonObjectBuilder nb = Json.createObjectBuilder();
+			JsonObjectBuilder nb = Json.createObjectBuilder();
 
-				/*
-				 * Add the transport configuration.
-				 * We know it's built at this point, so the getNow() call will never fail.
-				 */
-				nb.add("transport", TRANSPORT_FACTORY.buildJsonConfiguration(ni.transportConfig.getNow(null)));
+			nb.add("id", ni.node.getId());
 
-				JsonArrayBuilder urib = Json.createArrayBuilder();
-				ni.uris.stream()
-						.map(u -> u.toString())
-						.forEach(urib::add);
-				nb.add("uris", urib);
+			Optional.ofNullable(ni.node.getGroup())
+					.ifPresentOrElse(g -> nb.add("group", g), () -> nb.add("group", JsonValue.NULL));
 
-				jb.add("node", nb);
-			}
+			Optional.ofNullable(ni.node.getImageId())
+					.ifPresentOrElse(id -> nb.add("image_id", id), () -> nb.add("image_id", JsonValue.NULL));
+
+			Optional.ofNullable(ni.node.getHardware())
+					.map(h -> h.getId())
+					.ifPresentOrElse(h -> nb.add("hardware_id", h), () -> nb.add("hardware_id", JsonValue.NULL));
+
+			/*
+			 * Add the transport configuration.
+			 * We know it's built at this point, so the getNow() call will never fail.
+			 */
+			nb.add("transport",
+					Optional.ofNullable(ni.transportConfig.getNow(null))
+							.map(cfg -> TRANSPORT_FACTORY.buildJsonConfiguration(cfg))
+							.orElse(JsonObject.EMPTY_JSON_OBJECT)
+			);
+
+			JsonArrayBuilder urib = Json.createArrayBuilder();
+			ni.uris.stream()
+					.map(u -> u.toString())
+					.forEach(urib::add);
+			nb.add("uris", urib);
+
+			jb.add("node", nb);
 
 			/* Keep a copy of the old one. */
 			if(old.actuatorData == null) {
@@ -568,7 +604,21 @@ public class JcloudsActuator implements Actuator {
 
 	@Override
 	public boolean forceTerminateAgent(UUID uuid) {
-		return false;
+		NodeInfo ni = agentMap.remove(uuid);
+		if(ni == null) {
+			return false;
+		}
+
+		if(!ni.agents.remove(uuid)) {
+			return false;
+		}
+
+		try {
+			return ni.actuator.thenApply(act -> act.forceTerminateAgent(uuid)).get();
+		} catch(InterruptedException | ExecutionException e) {
+			LOGGER.catching(e);
+			return false;
+		}
 	}
 
 	@Override
@@ -614,22 +664,96 @@ public class JcloudsActuator implements Actuator {
 
 	@Override
 	public void notifyAgentConnection(AgentState state) {
-
+		/* nop */
 	}
 
 	@Override
 	public void notifyAgentDisconnection(UUID uuid) {
+		NodeInfo ni = agentMap.remove(uuid);
+		if(ni == null) {
+			return;
+		}
 
+		ni.agents.remove(uuid);
 	}
 
 	@Override
 	public boolean canSpawnAgents(int num) throws IllegalArgumentException {
+		//nodes.values().stream().map(n -> n.agents.size()).reduce(Integer::sum);
 		return true;
 	}
 
 	@Override
 	public boolean adopt(AgentState state) {
+		JsonObject jo = state.getActuatorData();
+		if(jo == null) {
+			return false;
+		}
+
+		if(state.getState() == Agent.State.SHUTDOWN) {
+			return false;
+		}
+
+		JsonObject no = jo.getJsonObject("node");
+		if(no == null) {
+			return false;
+		}
+
+		Optional<String> nodeId = Optional.ofNullable(no.getJsonString("id"))
+				.map(j -> j.getString());
+
+		if(!nodeId.isPresent()) {
+			return false;
+		}
+
+		Optional<TransportFactory.Config> tcfg = Optional.ofNullable(no.getJsonObject("transport"))
+				.flatMap(cfg -> TRANSPORT_FACTORY.validateConfiguration(cfg, new ArrayList<>()));
+
+		if(!tcfg.isPresent()) {
+			return false;
+		}
+
+		NodeInfo ni = nodes.values().stream()
+				.filter(n -> n.node.getId().equals(nodeId.get()))
+				.findFirst()
+				.orElseGet(() -> recoverNode(compute, nodeId.get(), tcfg.get()));
+
+		JsonObject ro = jo.getJsonObject("remote");
+		if(ro == null) {
+			return false;
+		}
+
 		return false;
+	}
+
+	private static NodeInfo recoverNode(ComputeService compute, String id, TransportFactory.Config tcfg) {
+		NodeMetadata meta = compute.getNodeMetadata(id);
+
+		NodeInfo ni = new NodeInfo(meta);
+
+		//Optional.ofNullable(meta.getCredentials());
+		LoginCredentials.Builder cb = LoginCredentials.builder();
+		tcfg.user.ifPresent(u -> cb.user(u));
+
+		tcfg.user.orElseGet(() -> null);
+
+		Optional<URI> uri = tcfg.uri;
+		Optional<String[]> userInfo = uri.map(u -> u.getUserInfo()).map(u -> u.split(":", 2));
+		userInfo.ifPresent(u -> {
+			if(u.length == 1) {
+				cb.user(u[0]);
+			}
+		});
+
+//		tcfg.uri.ifPresent(uri -> {
+//			uri.getUserInfo()
+//		});
+//		if(tcfg.keyPair.isPresent()) {
+//			KeyPair kp = tcfg.keyPair.get();
+//
+//			AuthorizedKeyEntry.toString(key)
+//		}
+		return ni;
 	}
 
 	private static Optional<Hardware> resolveHardware(ComputeService compute, String name) {
