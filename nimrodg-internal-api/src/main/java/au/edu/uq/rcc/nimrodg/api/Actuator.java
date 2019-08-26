@@ -116,6 +116,8 @@ public interface Actuator extends AutoCloseable {
 	 *
 	 * Cleanup should attempted, but should not necessarily be successful.
 	 *
+	 * If this is invoked, the actuator should remove any and references to it. i.e. it shouldn't
+	 * wait for it when {@link Actuator#close()} is called.
 	 *
 	 * @param uuid The list of agent UUIDs to terminate.
 	 */
