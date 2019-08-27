@@ -31,7 +31,6 @@ import au.edu.uq.rcc.nimrodg.api.NimrodMasterAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.api.Resource;
 import au.edu.uq.rcc.nimrodg.api.ResourceFullException;
-import au.edu.uq.rcc.nimrodg.api.utils.NimrodUtils;
 import au.edu.uq.rcc.nimrodg.resource.SSHResourceType;
 import au.edu.uq.rcc.nimrodg.resource.act.ActuatorUtils;
 import au.edu.uq.rcc.nimrodg.resource.act.RemoteActuator;
@@ -40,14 +39,11 @@ import au.edu.uq.rcc.nimrodg.resource.ssh.TransportFactory;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
-import java.security.KeyPair;
 import java.security.PublicKey;
 import java.security.cert.Certificate;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -61,7 +57,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.json.Json;
 import javax.json.JsonArrayBuilder;
@@ -69,21 +64,16 @@ import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonString;
 import javax.json.JsonValue;
-import javax.ws.rs.core.UriBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.sshd.common.config.keys.AuthorizedKeyEntry;
 import org.jclouds.ContextBuilder;
 import org.jclouds.compute.ComputeService;
 import org.jclouds.compute.ComputeServiceContext;
 import org.jclouds.compute.RunNodesException;
 import org.jclouds.compute.domain.Hardware;
-import org.jclouds.compute.domain.HardwareBuilder;
 import org.jclouds.compute.domain.NodeMetadata;
-import org.jclouds.compute.domain.NodeMetadataBuilder;
 import org.jclouds.compute.domain.Template;
 import org.jclouds.compute.options.TemplateOptions;
-import org.jclouds.domain.LoginCredentials;
 import org.jclouds.openstack.nova.v2_0.compute.options.NovaTemplateOptions;
 
 public class JcloudsActuator implements Actuator {
@@ -103,7 +93,6 @@ public class JcloudsActuator implements Actuator {
 	private final AgentInfo agentInfo;
 	private final String tmpDir;
 
-	private final Set<com.google.inject.Module> modules;
 	private final ComputeService compute;
 	private final Template template;
 	private final String groupName;
@@ -150,12 +139,10 @@ public class JcloudsActuator implements Actuator {
 		this.agentInfo = ops.getNimrod().lookupAgentByPlatform("x86_64-pc-linux-musl");
 		this.tmpDir = "/tmp";
 
-		this.modules = Set.of();
-		/* Seems we don't need any. */
 		this.compute = createComputeService();
 
 		TemplateOptions opts = NovaTemplateOptions.Builder
-				.availabilityZone("QRIScloud")
+				.availabilityZone(config.availabilityZone)
 				.generateKeyPair(true)
 				.inboundPorts(22)
 				.userMetadata(Map.of(
@@ -184,7 +171,6 @@ public class JcloudsActuator implements Actuator {
 				.endpoint(config.endpoint.toString())
 				.credentials(config.username, config.password)
 				.overrides(config.props)
-				.modules(modules)
 				.buildView(ComputeServiceContext.class)
 				.getComputeService();
 	}
@@ -338,7 +324,7 @@ public class JcloudsActuator implements Actuator {
 		}
 
 		/* Override the actuator data with ours. */
-		patchLaunchResults(fr, uuids, results);
+		patchLaunchResults(groupName, fr.uuidMap, uuids, results);
 
 		for(int i = 0; i < results.length; ++i) {
 			if(results[i].node != null) {
@@ -349,8 +335,7 @@ public class JcloudsActuator implements Actuator {
 		return results;
 	}
 
-	// TODO: Make static
-	private void patchLaunchResults(FilterResult fr, UUID[] uuids, LaunchResult[] results) {
+	private static void patchLaunchResults(String groupName, Map<UUID, NodeInfo> uuidMap, UUID[] uuids, LaunchResult[] results) {
 		assert uuids.length == results.length;
 
 		/* Override the actuator data with ours. */
@@ -360,7 +345,7 @@ public class JcloudsActuator implements Actuator {
 				continue;
 			}
 
-			NodeInfo ni = fr.uuidMap.get(uuids[i]);
+			NodeInfo ni = uuidMap.get(uuids[i]);
 			if(ni == null) {
 				continue;
 			}
@@ -508,8 +493,9 @@ public class JcloudsActuator implements Actuator {
 			return false;
 		}
 
-		Optional<String> nodeId = Optional.ofNullable(no.getJsonString("id"))
-				.map(j -> j.getString());
+		Optional<String> nodeId = Optional.ofNullable(no.get("id"))
+				.filter(j -> j.getValueType() == JsonValue.ValueType.STRING)
+				.map(j -> ((JsonString)j).getString());
 
 		if(!nodeId.isPresent()) {
 			return false;
