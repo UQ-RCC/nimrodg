@@ -111,51 +111,6 @@ public class JcloudsActuator implements Actuator {
 	private final Map<UUID, NodeInfo> agentMap;
 	private final SubOptions subOpts;
 
-	private static class NodeInfo {
-
-		public final NodeMetadata node;
-		public final Set<UUID> agents;
-		public final CompletableFuture<RemoteActuator> actuator;
-		public final CompletableFuture<SSHResourceType.SSHConfig> sshConfig;
-
-		private boolean isConfigured;
-		private Optional<KeyPair> keyPair;
-		private List<URI> uris;
-
-		public NodeInfo(NodeMetadata node) {
-			this.node = node;
-			this.agents = new HashSet<>();
-			this.actuator = new CompletableFuture<>();
-			this.sshConfig = new CompletableFuture<>();
-
-			this.isConfigured = false;
-			this.keyPair = Optional.empty();
-			this.uris = List.of();
-		}
-
-		void configure(String username, Optional<String> password, Optional<KeyPair> keyPair) {
-			if(isConfigured) {
-				throw new IllegalStateException();
-			}
-
-			String userInfo = password.map(p -> String.format("%s:%s", username, p)).orElse(username);
-
-			this.keyPair = keyPair;
-			this.uris = node.getPublicAddresses().stream()
-					.map(addr -> UriBuilder.fromUri("")
-					.scheme("ssh")
-					.host(addr)
-					.userInfo(userInfo)
-					.port(node.getLoginPort())
-					.build()).collect(Collectors.toList());
-			isConfigured = true;
-		}
-
-		public boolean isConfigured() {
-			return this.isConfigured;
-		}
-	}
-
 	public static class CloudConfig {
 
 		public final String contextName;
@@ -247,79 +202,6 @@ public class JcloudsActuator implements Actuator {
 	@Override
 	public Collection<Certificate> getAMQPCertificates() {
 		return List.of(certs);
-	}
-
-	private static class FilterResult {
-
-		public final Map<NodeInfo, Set<UUID>> toLaunch;
-		public final Map<NodeMetadata, Set<UUID>> toFail;
-		public final Set<UUID> leftovers;
-		public final Map<UUID, Integer> indexMap;
-		public final Map<UUID, NodeInfo> uuidMap;
-
-		public FilterResult(Map<NodeInfo, Set<UUID>> toLaunch, Map<NodeMetadata, Set<UUID>> toFail, Set<UUID> leftovers, Map<UUID, Integer> indexMap, Map<UUID, NodeInfo> uuidMap) {
-			this.toLaunch = toLaunch;
-			this.toFail = toFail;
-			this.leftovers = leftovers;
-			this.indexMap = indexMap;
-			this.uuidMap = uuidMap;
-		}
-	}
-
-	/**
-	 * Given a set of "good" and "bad" nodes, assign agents to them.
-	 *
-	 * @param uuids The agent UUIDs.
-	 * @param good The set of "good" nodes.
-	 * @param bad The set of "bad" nodes.
-	 * @param agentsPerNode The number of agents allowed on a node.
-	 * @return The filtered agents.
-	 */
-	private static FilterResult filterAgentsToNodes(UUID[] uuids, Set<NodeInfo> good, Set<NodeMetadata> bad, int agentsPerNode) {
-		ArrayDeque<NodeInfo> _good = new ArrayDeque<>(good);
-		ArrayDeque<NodeMetadata> _bad = new ArrayDeque<>(bad);
-
-		Map<NodeInfo, Set<UUID>> toLaunch = new HashMap<>(good.size());
-		Map<NodeMetadata, Set<UUID>> toFail = new HashMap<>(bad.size());
-		Map<UUID, NodeInfo> uuidMap = new HashMap<>(uuids.length);
-
-		int i = 0;
-		while(!_good.isEmpty()) {
-			if(i >= uuids.length) {
-				break;
-			}
-
-			NodeInfo ni = _good.peek();
-			Set<UUID> agents = NimrodUtils.getOrAddLazy(toLaunch, ni, nii -> new HashSet<>(agentsPerNode));
-			if(agents.size() >= agentsPerNode) {
-				_good.poll();
-				continue;
-			}
-
-			agents.add(uuids[i]);
-			uuidMap.put(uuids[i], ni);
-			++i;
-		}
-
-		while(!_bad.isEmpty()) {
-			if(i >= uuids.length) {
-				break;
-			}
-
-			NimrodUtils.getOrAddLazy(toFail, _bad.poll(), nn -> new HashSet<>(agentsPerNode)).add(uuids[i++]);
-		}
-
-		Set<UUID> leftovers = new HashSet<>(uuids.length - i);
-		for(int j = i; j < uuids.length; ++j) {
-			leftovers.add(uuids[j]);
-		}
-
-		Map<UUID, Integer> indexMap = new HashMap<>(uuids.length);
-		for(i = 0; i < uuids.length; ++i) {
-			indexMap.put(uuids[i], i);
-		}
-
-		return new FilterResult(toLaunch, toFail, leftovers, indexMap, uuidMap);
 	}
 
 	private static void launchAgentsOnActuator(LaunchResult[] results, Actuator act, FilterResult fr, Set<UUID> uuids) {
@@ -423,7 +305,7 @@ public class JcloudsActuator implements Actuator {
 		/* Now it's safe to remove them from our global list. */
 		bad.keySet().forEach(nodes::remove);
 
-		FilterResult fr = filterAgentsToNodes(uuids, good, bad.keySet(), agentsPerNode);
+		FilterResult fr = FilterResult.filterAgentsToNodes(uuids, good, bad.keySet(), agentsPerNode);
 
 		LaunchResult[] results = new LaunchResult[uuids.length];
 
