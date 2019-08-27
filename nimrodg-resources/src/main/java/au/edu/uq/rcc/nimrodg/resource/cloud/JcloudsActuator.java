@@ -46,6 +46,7 @@ import java.security.cert.Certificate;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -244,8 +245,8 @@ public class JcloudsActuator implements Actuator {
 	}
 
 	@Override
-	public Certificate[] getAMQPCertificates() {
-		return Arrays.copyOf(certs, certs.length);
+	public Collection<Certificate> getAMQPCertificates() {
+		return List.of(certs);
 	}
 
 	private static class FilterResult {
