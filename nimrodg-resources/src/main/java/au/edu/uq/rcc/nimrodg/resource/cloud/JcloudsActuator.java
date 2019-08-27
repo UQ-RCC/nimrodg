@@ -204,7 +204,8 @@ public class JcloudsActuator implements Actuator {
 		return List.of(certs);
 	}
 
-	private static void launchAgentsOnActuator(LaunchResult[] results, Actuator act, FilterResult fr, Set<UUID> uuids) {
+	/* Launch agents on a given actuator, remapping the launch results to the correct index. */
+	private static void launchAgentsOnActuator(LaunchResult[] results, Actuator act, Map<UUID, Integer> indexMap, Set<UUID> uuids) {
 		final UUID[] _uuids = uuids.stream().toArray(UUID[]::new);
 
 		LaunchResult[] lrs;
@@ -216,7 +217,7 @@ public class JcloudsActuator implements Actuator {
 		}
 
 		for(int i = 0; i < _uuids.length; ++i) {
-			results[fr.indexMap.get(_uuids[i])] = lrs[i];
+			results[indexMap.get(_uuids[i])] = lrs[i];
 		}
 	}
 
@@ -261,17 +262,18 @@ public class JcloudsActuator implements Actuator {
 
 		/* Validate the credentials for each node, adding them to the bad list if anything failed. */
 		for(NodeMetadata n : _good) {
-			NodeInfo ni = nodes.get(n);
-			if(ni.node.getPublicAddresses().isEmpty()) {
+			if(n.getPublicAddresses().isEmpty()) {
 				bad.put(n, new RuntimeException("no public addresses"));
 				continue;
 			}
 
-			Throwable t = configureNode(ni, n.getCredentials());
-			if(t != null) {
-				bad.put(n, t);
-			} else {
+			NodeInfo ni = nodes.get(n);
+
+			try {
+				ni.configureFromNode();
 				good.add(ni);
+			} catch(RuntimeException e) {
+				bad.put(n, e);
 			}
 		}
 
@@ -323,7 +325,7 @@ public class JcloudsActuator implements Actuator {
 				.forEach(i -> results[i] = fullResult);
 
 		actFutures = fr.toLaunch.entrySet().stream()
-				.map(e -> e.getKey().actuator.thenAcceptAsync(act -> launchAgentsOnActuator(results, act, fr, e.getValue())))
+				.map(e -> e.getKey().actuator.thenAcceptAsync(act -> launchAgentsOnActuator(results, act, fr.indexMap, e.getValue())))
 				.toArray(CompletableFuture[]::new);
 
 		CompletableFuture.allOf(actFutures).join();
@@ -407,38 +409,6 @@ public class JcloudsActuator implements Actuator {
 
 			results[i] = new LaunchResult(old.node, old.t, old.expiryTime, jb.build());
 		}
-	}
-
-	private static Throwable configureNode(NodeInfo ni, LoginCredentials creds) {
-		/* I feel gross returning exceptions. Also return null means success. */
-		if(creds == null) {
-			return new RuntimeException("No credentials for node");
-		}
-
-		if(!creds.getOptionalPassword().isPresent() && !creds.getOptionalPrivateKey().isPresent()) {
-			return new IllegalStateException("no password or private key");
-		}
-
-		Optional<String> _privKey = Optional.ofNullable(creds.getOptionalPrivateKey().orNull());
-		Optional<KeyPair> keyPair = Optional.empty();
-		if(_privKey.isPresent()) {
-			try {
-				keyPair = Optional.of(ActuatorUtils.readPEMKey(_privKey.get()));
-			} catch(IOException e) {
-				return e;
-			}
-		}
-
-		try {
-			ni.configure(
-					creds.getUser(),
-					Optional.ofNullable(creds.getOptionalPassword().orNull()),
-					keyPair
-			);
-		} catch(RuntimeException e) {
-			return e;
-		}
-		return null;
 	}
 
 	@Override
@@ -545,24 +515,42 @@ public class JcloudsActuator implements Actuator {
 			return false;
 		}
 
-		Optional<TransportFactory.Config> tcfg = Optional.ofNullable(no.getJsonObject("transport"))
-				.flatMap(cfg -> TRANSPORT_FACTORY.validateConfiguration(cfg, new ArrayList<>()));
+		Optional<NodeMetadata> n = nodes.keySet().stream()
+				.filter(nn -> nn.getId().equals(nodeId.get()))
+				.findFirst();
 
-		if(!tcfg.isPresent()) {
+		NodeInfo ni;
+		if(!n.isPresent()) {
+			/* We don't know about the node, try to reconstruct it. */
+			n = Optional.of(compute.getNodeMetadata(nodeId.get()));
+			if(!n.isPresent()) {
+				return false;
+			}
+
+			Optional<TransportFactory.Config> tcfg = Optional.ofNullable(no.getJsonObject("transport"))
+					.flatMap(cfg -> TRANSPORT_FACTORY.validateConfiguration(cfg, new ArrayList<>()));
+
+			if(!tcfg.isPresent()) {
+				return false;
+			}
+
+			ni = NodeInfo.recover(
+					n.get(),
+					no.getJsonArray("uris").stream()
+							.map(j -> URI.create(((JsonString)j).getString()))
+							.toArray(URI[]::new),
+					new SSHResourceType.SSHConfig(agentInfo, TRANSPORT_FACTORY, tcfg.get())
+			);
+		} else {
+			ni = nodes.get(n.get());
+		}
+
+		if(!ni.sshConfig.isDone()) {
+			/* Should never happen. */
 			return false;
 		}
 
-		SSHResourceType.SSHConfig sscfg = new SSHResourceType.SSHConfig(agentInfo, TRANSPORT_FACTORY, tcfg.get());
-
-		NodeInfo ni = nodes.values().stream()
-				.filter(n -> n.node.getId().equals(nodeId.get()))
-				.findFirst()
-				.or(() -> resolveNodeFromTransport(compute, nodeId.get(), sscfg))
-				.orElse(null);
-
-		if(ni == null) {
-			return false;
-		}
+		SSHResourceType.SSHConfig sscfg = ni.sshConfig.getNow(null);
 
 		if(!ni.actuator.isDone()) {
 			RemoteActuator act;
@@ -591,34 +579,6 @@ public class JcloudsActuator implements Actuator {
 			LOGGER.catching(e);
 			return false;
 		}
-	}
-
-	/**
-	 * Attempt to recover a node from its id and SSH configuration.
-	 *
-	 * @param compute The compute service to use.
-	 * @param id The node id.
-	 * @param sscfg The SSH configuration.
-	 * @return The "recovered" node. Will fail if {@link ComputeService#getNodeMetadata(java.lang.String)} fails, or the
-	 * SSH configuration is invalid.
-	 */
-	private static Optional<NodeInfo> resolveNodeFromTransport(ComputeService compute, String id, SSHResourceType.SSHConfig sscfg) {
-		NodeMetadata meta = compute.getNodeMetadata(id);
-		if(meta == null) {
-			return Optional.empty();
-		}
-
-		NodeInfo ni = new NodeInfo(meta);
-
-		Optional<String[]> userInfo = sscfg.transportConfig.uri.map(u -> u.getUserInfo()).map(u -> u.split(":", 2));
-
-		Optional<String> user = userInfo.filter(u -> u.length == 1).map(u -> u[0]);
-		Optional<String> pass = userInfo.filter(u -> u.length == 2).map(u -> u[1]);
-
-		ni.configure(user.get(), pass, sscfg.transportConfig.keyPair);
-		ni.sshConfig.complete(sscfg);
-
-		return Optional.of(ni);
 	}
 
 	private static SSHResourceType.SSHConfig resolveTransportFromNode(NodeInfo ni, AgentInfo agentInfo) {

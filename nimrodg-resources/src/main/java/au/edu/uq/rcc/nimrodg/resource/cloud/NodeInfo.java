@@ -1,7 +1,10 @@
 package au.edu.uq.rcc.nimrodg.resource.cloud;
 
 import au.edu.uq.rcc.nimrodg.resource.SSHResourceType;
+import au.edu.uq.rcc.nimrodg.resource.act.ActuatorUtils;
 import au.edu.uq.rcc.nimrodg.resource.act.RemoteActuator;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.security.KeyPair;
 import java.util.HashSet;
@@ -13,6 +16,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import javax.ws.rs.core.UriBuilder;
 import org.jclouds.compute.domain.NodeMetadata;
+import org.jclouds.domain.LoginCredentials;
 
 class NodeInfo {
 
@@ -21,7 +25,7 @@ class NodeInfo {
 	public final CompletableFuture<RemoteActuator> actuator;
 	public final CompletableFuture<SSHResourceType.SSHConfig> sshConfig;
 
-	boolean isConfigured;
+	private boolean isConfigured;
 	Optional<KeyPair> keyPair;
 	List<URI> uris;
 
@@ -36,14 +40,48 @@ class NodeInfo {
 		this.uris = List.of();
 	}
 
-	void configure(String username, Optional<String> password, Optional<KeyPair> keyPair) {
+	public static NodeInfo recover(NodeMetadata n, URI[] uris, SSHResourceType.SSHConfig sscfg) {
+		NodeInfo ni = new NodeInfo(n);
+		ni.sshConfig.complete(sscfg);
+		ni.keyPair = sscfg.transportConfig.keyPair;
+		ni.uris = List.of(uris);
+		ni.isConfigured = true;
+		return ni;
+	}
+
+	public void configureFromNode() {
 		if(isConfigured) {
 			throw new IllegalStateException();
 		}
 
-		String userInfo = password.map(p -> String.format("%s:%s", username, p)).orElse(username);
+		if(node.getPublicAddresses().isEmpty()) {
+			throw new IllegalStateException("no public addresses");
+		}
 
-		this.keyPair = keyPair;
+		LoginCredentials creds = node.getCredentials();
+		if(creds == null) {
+			throw new IllegalStateException("no login credentials for node");
+		}
+
+		if(!creds.getOptionalPassword().isPresent() && !creds.getOptionalPrivateKey().isPresent()) {
+			throw new IllegalStateException("no password or private key");
+		}
+
+		Optional<String> _privKey = Optional.ofNullable(creds.getOptionalPrivateKey().orNull());
+		Optional<KeyPair> _keyPair = Optional.empty();
+		if(_privKey.isPresent()) {
+			try {
+				_keyPair = Optional.of(ActuatorUtils.readPEMKey(_privKey.get()));
+			} catch(IOException e) {
+				throw new UncheckedIOException(e);
+			}
+		}
+
+		String userInfo = Optional.ofNullable(creds.getOptionalPassword().orNull())
+				.map(p -> String.format("%s:%s", creds.getUser(), p))
+				.orElse(creds.getUser());
+
+		this.keyPair = _keyPair;
 		this.uris = node.getPublicAddresses().stream()
 				.map(addr -> UriBuilder.fromUri("")
 				.scheme("ssh")
@@ -51,10 +89,6 @@ class NodeInfo {
 				.userInfo(userInfo)
 				.port(node.getLoginPort())
 				.build()).collect(Collectors.toList());
-		isConfigured = true;
-	}
-
-	public boolean isConfigured() {
-		return this.isConfigured;
+		this.isConfigured = true;
 	}
 }
