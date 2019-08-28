@@ -53,6 +53,7 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
@@ -225,6 +226,38 @@ public class JcloudsActuator implements Actuator {
 		throw new IllegalStateException();
 	}
 
+	@SuppressWarnings("ThrowableResultIgnored")
+	private static void launchNodes(ComputeService compute, int num, String groupName, Template template, AgentInfo agentInfo, Map<NodeMetadata, NodeInfo> outGood, Map<NodeMetadata, Throwable> outBad) {
+		/* These need to be mutable. */
+		Set<NodeMetadata> good = new HashSet<>(num);
+		Map<NodeMetadata, Throwable> bad = new HashMap<>(num);
+		try {
+			good.addAll(compute.createNodesInGroup(groupName, num, template));
+		} catch(RunNodesException e) {
+			/* The documentation is a bit unclear on this. */
+			good.addAll(e.getSuccessfulNodes());
+			bad.putAll(e.getNodeErrors());
+		}
+
+		Map<NodeMetadata, NodeInfo> nodes = new HashMap<>(good.size());
+		for(NodeMetadata n : good) {
+			try {
+				nodes.put(n, NodeInfo.configure(n));
+			} catch(RuntimeException e) {
+				bad.put(n, e);
+			}
+		}
+		good.removeAll(bad.keySet());
+
+		outGood.putAll(nodes);
+		outBad.putAll(bad);
+
+		/* Attempt to resolve the host keys. */
+		nodes.values().forEach(ni -> {
+			ni.sshConfig = CompletableFuture.supplyAsync(() -> resolveTransportFromNode(ni, agentInfo));
+		});
+	}
+
 	@Override
 	@SuppressWarnings("ThrowableResultIgnored")
 	/* NetBeans really overdoes this. */
@@ -245,81 +278,64 @@ public class JcloudsActuator implements Actuator {
 		int numRequired = ((uuids.length - nLaunchable) / agentsPerNode)
 				+ ((uuids.length - nLaunchable) % agentsPerNode > 0 ? 1 : 0);
 
-		// FIXME: I don't like this
 		ConcurrentHashMap<NodeMetadata, Throwable> bad = new ConcurrentHashMap<>(numRequired);
-		Set<NodeMetadata> _good = new HashSet<>(numRequired);
+
 		if(nLaunchable < uuids.length) {
-			try {
-				_good.addAll(compute.createNodesInGroup(groupName, numRequired, template));
-			} catch(RunNodesException e) {
-				/* The documentation is a bit unclear on this. */
-				_good.addAll(e.getSuccessfulNodes());
-				bad.putAll(e.getNodeErrors());
-			}
+			Map<NodeMetadata, NodeInfo> newNodes = new HashMap<>(numRequired);
+			launchNodes(compute, numRequired, groupName, template, agentInfo, newNodes, bad);
+
+			/* Launch the actuator. */
+			newNodes.values().forEach(ni -> {
+				ni.actuator = ni.sshConfig.thenApplyAsync(cfg -> launchActuator(cfg));
+			});
+
+			nodes.putAll(newNodes);
+			good.addAll(newNodes.values());
 		}
 
-		/*
-		 * Add all spawned nodes now, so we still know about them if something throws.
-		 * I'm not confident enough in the validation code below to not do this.
-		 */
-		_good.forEach(n -> nodes.put(n, new NodeInfo(n)));
-
-		/* Validate the credentials for each node, adding them to the bad list if anything failed. */
-		for(NodeMetadata n : _good) {
-			if(n.getPublicAddresses().isEmpty()) {
-				bad.put(n, new RuntimeException("no public addresses"));
-				continue;
-			}
-
-			NodeInfo ni = nodes.get(n);
-
-			try {
-				ni.configureFromNode();
-				good.add(ni);
-			} catch(RuntimeException e) {
-				bad.put(n, e);
-			}
-		}
-
-		/* Resolve host keys and launch the actuator. Do this in parallel if possible. */
-		CompletableFuture[] actFutures = good.stream().map(ni -> CompletableFuture.supplyAsync(() -> {
-			SSHResourceType.SSHConfig sscfg = resolveTransportFromNode(ni, agentInfo);
-			ni.sshConfig.complete(sscfg);
-			return launchActuator(sscfg);
-		}).handle((act, t) -> {
-			if(act != null) {
-				ni.actuator.complete(act);
-			} else {
-				ni.actuator.completeExceptionally(t);
-				bad.put(ni.node, t);
-			}
-			return null;
-		})).toArray(CompletableFuture[]::new);
+		CompletableFuture[] actFutures = good.stream()
+				.map(ni -> ni.actuator)
+				.toArray(CompletableFuture[]::new);
 
 		/*
 		 * Wait for the actuators to be created. This is uninterruptible, as each future
 		 * should fail-fast interrupted and complete this future.
-		 *
-		 * If this future fails something has REALLY gone wrong, so nuke all the nodes.
 		 */
 		waitUninterruptibly(CompletableFuture.allOf(actFutures), e -> {
-			good.stream().forEach(ni -> bad.putIfAbsent(ni.node, e));
 			return null;
 		});
 
-		/* Destroy the bad nodes. */
-		try {
-			compute.destroyNodesMatching(n -> bad.containsKey(n));
-		} catch(RuntimeException e) {
-			LOGGER.warn("Caught exception during bad node cleanup. Details follow.");
-			LOGGER.catching(e);
+		{
+			/* NB: LinkedHashSet, iteration order is consistent. */
+			int i = 0;
+			for(NodeInfo ni : good) {
+				assert actFutures[i].isDone();
+				try {
+					actFutures[i].join();
+				} catch(CompletionException e) {
+					bad.put(ni.node, e.getCause());
+				} catch(CancellationException e) {
+					bad.put(ni.node, e);
+				}
+				++i;
+			}
 		}
 
-		/* If an actuator launch failed, the node is now considered bad. */
-		good.removeAll(bad.keySet());
+		/* Destroy the bad nodes. */
+		if(!bad.isEmpty()) {
+			try {
+				compute.destroyNodesMatching(n -> bad.containsKey(n));
+			} catch(RuntimeException e) {
+				LOGGER.warn("Caught exception during bad node cleanup. Details follow.");
+				LOGGER.catching(e);
+			}
 
-		/* Now it's safe to remove them from our global list. */
-		bad.keySet().forEach(nodes::remove);
+			/* If an actuator launch failed, the node is now considered bad. */
+			good.removeAll(bad.keySet());
+
+			/* Now it's safe to remove them from our global list. */
+			bad.keySet().forEach(nodes::remove);
+		}
 
 		FilterResult fr = FilterResult.filterAgentsToNodes(uuids, good, bad.keySet(), agentsPerNode);
 
