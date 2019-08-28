@@ -41,8 +41,9 @@ class NodeInfo {
 
 	public final NodeMetadata node;
 	public final Set<UUID> agents;
-	public final CompletableFuture<RemoteActuator> actuator;
-	public final CompletableFuture<SSHResourceType.SSHConfig> sshConfig;
+
+	CompletableFuture<RemoteActuator> actuator;
+	CompletableFuture<SSHResourceType.SSHConfig> sshConfig;
 
 	private boolean isConfigured;
 	Optional<KeyPair> keyPair;
@@ -65,6 +66,12 @@ class NodeInfo {
 		ni.keyPair = sscfg.transportConfig.keyPair;
 		ni.uris = List.of(uris);
 		ni.isConfigured = true;
+		return ni;
+	}
+
+	public static NodeInfo configure(NodeMetadata n) {
+		NodeInfo ni = new NodeInfo(n);
+		ni.configureFromNode();
 		return ni;
 	}
 
