@@ -54,9 +54,12 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.json.Json;
 import javax.json.JsonArrayBuilder;
@@ -191,20 +194,35 @@ public class JcloudsActuator implements Actuator {
 	}
 
 	/* Launch agents on a given actuator, remapping the launch results to the correct index. */
+	@SuppressWarnings("UseSpecificCatch")
 	private static void launchAgentsOnActuator(LaunchResult[] results, Actuator act, Map<UUID, Integer> indexMap, Set<UUID> uuids) {
 		final UUID[] _uuids = uuids.stream().toArray(UUID[]::new);
 
 		LaunchResult[] lrs;
 		try {
 			lrs = act.launchAgents(_uuids);
-		} catch(IOException ex) {
+		} catch(Throwable t) {
 			lrs = new LaunchResult[_uuids.length];
-			Arrays.fill(lrs, new LaunchResult(act.getResource(), ex));
+			Arrays.fill(lrs, new LaunchResult(act.getResource(), t));
 		}
 
 		for(int i = 0; i < _uuids.length; ++i) {
 			results[indexMap.get(_uuids[i])] = lrs[i];
 		}
+	}
+
+	private static <T> T waitUninterruptibly(CompletableFuture<T> cf, Function<ExecutionException, T> handler) {
+		while(!cf.isDone()) {
+			try {
+				return cf.get();
+			} catch(ExecutionException e) {
+				return handler.apply(e);
+			} catch(InterruptedException e) {
+				/* nop */
+			}
+		}
+
+		throw new IllegalStateException();
 	}
 
 	@Override
@@ -228,8 +246,8 @@ public class JcloudsActuator implements Actuator {
 				+ ((uuids.length - nLaunchable) % agentsPerNode > 0 ? 1 : 0);
 
 		// FIXME: I don't like this
-		ConcurrentHashMap<NodeMetadata, Throwable> bad = new ConcurrentHashMap<>();
-		Set<NodeMetadata> _good = new HashSet<>();
+		ConcurrentHashMap<NodeMetadata, Throwable> bad = new ConcurrentHashMap<>(numRequired);
+		Set<NodeMetadata> _good = new HashSet<>(numRequired);
 		if(nLaunchable < uuids.length) {
 			try {
 				_good.addAll(compute.createNodesInGroup(groupName, numRequired, template));
@@ -263,6 +281,7 @@ public class JcloudsActuator implements Actuator {
 			}
 		}
 
+		/* Resolve host keys and launch the actuator. Do this in parallel if possible. */
 		CompletableFuture[] actFutures = good.stream().map(ni -> CompletableFuture.supplyAsync(() -> {
 			SSHResourceType.SSHConfig sscfg = resolveTransportFromNode(ni, agentInfo);
 			ni.sshConfig.complete(sscfg);
@@ -277,15 +296,24 @@ public class JcloudsActuator implements Actuator {
 			return null;
 		})).toArray(CompletableFuture[]::new);
 
-		try {
-			CompletableFuture.allOf(actFutures).get();
-		} catch(ExecutionException | InterruptedException e) {
-			//int x = 0;
-			LOGGER.catching(e);
-		}
+		/*
+		 * Wait for the actuators to be created. This is uninterruptible, as each future
+		 * should fail-fast interrupted and complete this future.
+		 *
+		 * If this future fails something has REALLY gone wrong, so nuke all the nodes.
+		 */
+		waitUninterruptibly(CompletableFuture.allOf(actFutures), e -> {
+			good.stream().forEach(ni -> bad.putIfAbsent(ni.node, e));
+			return null;
+		});
 
 		/* Destroy the bad nodes. */
-		compute.destroyNodesMatching(n -> bad.containsKey(n));
+		try {
+			compute.destroyNodesMatching(n -> bad.containsKey(n));
+		} catch(RuntimeException e) {
+			LOGGER.warn("Caught exception during bad node cleanup. Details follow.");
+			LOGGER.catching(e);
+		}
 
 		/* If an actuator launch failed, the node is now considered bad. */
 		good.removeAll(bad.keySet());
@@ -314,7 +342,12 @@ public class JcloudsActuator implements Actuator {
 				.map(e -> e.getKey().actuator.thenAcceptAsync(act -> launchAgentsOnActuator(results, act, fr.indexMap, e.getValue())))
 				.toArray(CompletableFuture[]::new);
 
-		CompletableFuture.allOf(actFutures).join();
+		/* Again, should fail-fast. */
+		waitUninterruptibly(CompletableFuture.allOf(actFutures), e -> {
+			/* This should never happen, as launchAgentsOnActuator() shoule never throw. */
+			LOGGER.catching(e);
+			return null;
+		});
 
 		/* This *should* never happen, but double check to be safe. */
 		for(int i = 0; i < results.length; ++i) {
