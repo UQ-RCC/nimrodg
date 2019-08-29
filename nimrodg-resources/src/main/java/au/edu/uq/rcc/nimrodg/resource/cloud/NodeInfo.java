@@ -49,7 +49,7 @@ class NodeInfo {
 	Optional<KeyPair> keyPair;
 	List<URI> uris;
 
-	public NodeInfo(NodeMetadata node) {
+	private NodeInfo(NodeMetadata node) {
 		this.node = node;
 		this.agents = new HashSet<>();
 		this.actuator = new CompletableFuture<>();
@@ -75,7 +75,7 @@ class NodeInfo {
 		return ni;
 	}
 
-	public void configureFromNode() {
+	private void configureFromNode() {
 		if(isConfigured) {
 			throw new IllegalStateException();
 		}
