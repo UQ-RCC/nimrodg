@@ -230,6 +230,9 @@ public class StringUtils {
 				} else if(c == 'v') {
 					sb.append((char)0x0B);
 					escaped = false;
+				} else if(c == '\n') {
+					sb.append(' ');
+					escaped = false;
 				} else {
 					throw new EscapeException("Unknown escape sequence '%c'", (char)c);
 				}
