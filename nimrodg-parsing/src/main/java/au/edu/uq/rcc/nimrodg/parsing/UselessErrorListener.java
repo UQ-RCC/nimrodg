@@ -19,29 +19,28 @@
  */
 package au.edu.uq.rcc.nimrodg.parsing;
 
-import java.util.Collection;
+import au.edu.uq.rcc.nimrodg.api.PlanfileParseException;
 import org.antlr.v4.runtime.BaseErrorListener;
 import org.antlr.v4.runtime.RecognitionException;
 import org.antlr.v4.runtime.Recognizer;
-import org.antlr.v4.runtime.misc.ParseCancellationException;
 
 /**
  * This could probably do more, but this is good-enough.
  */
 class UselessErrorListener extends BaseErrorListener {
 
-	private final Collection<String> m_Errors;
-	private final String m_FileName;
+	private final PlanfileParseException exception;
 
-	public UselessErrorListener(String fileName, Collection<String> errors) {
-		m_Errors = errors;
-		m_FileName = fileName;
+	public UselessErrorListener(PlanfileParseException exception) {
+		this.exception = exception;
 	}
 
 	@Override
 	public void syntaxError(Recognizer<?, ?> recognizer, Object offendingSymbol, int line, int charPositionInLine, String msg, RecognitionException e) {
-		String err = String.format("%s: %d:%d: %s", m_FileName, line, charPositionInLine, msg);
-		m_Errors.add(err);
-		throw new ParseCancellationException(err);
+		exception.addError(line, charPositionInLine, msg);
+	}
+
+	public PlanfileParseException getException() {
+		return exception;
 	}
 }

@@ -19,25 +19,51 @@
  */
 package au.edu.uq.rcc.nimrodg.api;
 
-public class PlanfileParseException extends Exception {
+import java.util.Collections;
+import java.util.Set;
+import java.util.TreeSet;
+
+public class PlanfileParseException extends RuntimeException {
+
+	public static class ParseError {
+
+		public final int line;
+		public final int position;
+		public final String message;
+
+		private ParseError(int line, int position, String message) {
+			this.line = line;
+			this.position = position;
+			this.message = message;
+		}
+
+		public String toString(String fileName) {
+			return String.format("%s: %d:%d: %s", fileName, line, position, message);
+		}
+
+		@Override
+		public String toString() {
+			return String.format("%d:%d: %s", line, position, message);
+		}
+	}
+
+	private final TreeSet<ParseError> errors;
 
 	public PlanfileParseException() {
+		this.errors = new TreeSet<>((a, b) -> {
+			int val = Integer.compare(a.line, b.line);
+			if(val == 0) {
+				val = Integer.compare(a.position, b.position);
+			}
+			return val;
+		});
 	}
 
-	public PlanfileParseException(String message) {
-		super(message);
+	public void addError(int line, int position, String message) {
+		this.errors.add(new ParseError(line, position, message));
 	}
 
-	public PlanfileParseException(String message, Throwable cause) {
-		super(message, cause);
+	public Set<ParseError> getErrors() {
+		return Collections.unmodifiableSet(errors);
 	}
-
-	public PlanfileParseException(Throwable cause) {
-		super(cause);
-	}
-
-	public PlanfileParseException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
-		super(message, cause, enableSuppression, writableStackTrace);
-	}
-
 }

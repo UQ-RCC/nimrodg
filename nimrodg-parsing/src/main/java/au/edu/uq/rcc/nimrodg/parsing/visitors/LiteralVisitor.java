@@ -53,8 +53,7 @@ public class LiteralVisitor extends NimrodFileParserBaseVisitor<String> {
 		try {
 			return StringUtils.unescape(s.substring(1, s.length() - 1));
 		} catch(EscapeException e) {
-			/* ANTLR should catch this before we do. If you get this, check the grammar or
-			 * CString#unescape(). */
+			/* ANTLR should catch this before we do. If you get this, check the grammar or CString#unescape(). */
 			throw new ParseCancellationException("Invalid escape sequence in string. This should never happen.", e);
 		}
 	}

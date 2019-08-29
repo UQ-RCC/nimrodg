@@ -55,7 +55,7 @@ public class TestUtils {
 				+ "	shexec \"as\"\n"
 				+ "	lexec \"/usr/bin/python\" \"/usr/bin/python\" \"script.py\"\n"
 				+ "	lpexec \"python\" \"python\" \"script.py\"\n"
-				+ "endtask", new ArrayList<>()).build();
+				+ "endtask").build();
 	}
 
 	public static CompiledRun getSimpleSampleExperiment() throws IOException, RunBuilder.RunfileBuildException, SubstitutionException, PlanfileParseException {
@@ -68,7 +68,7 @@ public class TestUtils {
 				+ "endjobs\n"
 				+ "task main\n"
 				+ "	shexec \"echo $x $y\"\n"
-				+ "endtask", new ArrayList<>()).build();
+				+ "endtask").build();
 	}
 
 	public static CompiledRun getSimpleSampleEmptyExperiment() throws IOException, RunBuilder.RunfileBuildException, SubstitutionException, PlanfileParseException {
@@ -78,7 +78,7 @@ public class TestUtils {
 				+ "\n"
 				+ "task main\n"
 				+ "	shexec \"echo $x $y\"\n"
-				+ "endtask", new ArrayList<>()).build();
+				+ "endtask").build();
 	}
 
 	public static CompiledRun getBenchRun() throws IOException, RunBuilder.RunfileBuildException, SubstitutionException, PlanfileParseException {
@@ -90,7 +90,7 @@ public class TestUtils {
 				+ "task main\n"
 				+ "\tonerror fail\n"
 				+ "\tshexec \"/home/uqzvanim/nimbench.sh $op $file\"\n"
-				+ "endtask", new ArrayList<>()).build();
+				+ "endtask").build();
 	}
 
 	public static CompiledRun get250000Run() throws IOException, RunBuilder.RunfileBuildException, SubstitutionException, PlanfileParseException {
@@ -103,7 +103,7 @@ public class TestUtils {
 				+ "    redirect stdout off\n"
 				+ "    redirect stderr off\n"
 				+ "    exec /home/nimrod/genpi.py $seed 1000000000\n"
-				+ "endtask", new ArrayList<>()).build();
+				+ "endtask").build();
 	}
 
 	public static void createSampleResources(NimrodAPI api) {

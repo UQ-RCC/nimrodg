@@ -34,8 +34,6 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
 
@@ -53,16 +51,15 @@ public class AddExp extends NimrodCLICommand {
 
 		NimrodParseAPI parseApi = ANTLR4ParseAPIImpl.INSTANCE;
 		/* Load the runfile */
-		List<String> errorList = new ArrayList<>();
 		RunBuilder b;
 		try {
 			if(runFile.equals("-")) {
-				b = parseApi.parseRunToBuilder(System.in, errorList);
+				b = parseApi.parseRunToBuilder(System.in);
 			} else {
-				b = parseApi.parseRunToBuilder(Paths.get(runFile), errorList);
+				b = parseApi.parseRunToBuilder(Paths.get(runFile));
 			}
-		} catch(PlanfileParseException e) {
-			e.printStackTrace(System.err);
+		} catch(PlanfileParseException ex) {
+			ex.getErrors().forEach(e -> System.err.println(e.toString(runFile)));
 			return 1;
 		}
 

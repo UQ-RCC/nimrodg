@@ -21,6 +21,7 @@ package au.edu.uq.rcc.nimrodg.cli.commands;
 
 import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.Job;
+import au.edu.uq.rcc.nimrodg.api.JobAttempt;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPIException;
 import au.edu.uq.rcc.nimrodg.api.NimrodParseAPI;
@@ -58,6 +59,7 @@ import org.apache.commons.csv.CSVPrinter;
 import au.edu.uq.rcc.nimrodg.api.Resource;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.EnumSet;
 
 public class PortalAPI extends NimrodCLICommand {
 
@@ -142,17 +144,12 @@ public class PortalAPI extends NimrodCLICommand {
 		}
 
 		NimrodParseAPI parseApi = ANTLR4ParseAPIImpl.INSTANCE;
-		List<String> errorList = new ArrayList<>();
 		RunBuilder b;
 		try {
-			b = parseApi.parseRunToBuilder(System.in, errorList);
+			b = parseApi.parseRunToBuilder(System.in);
 		} catch(PlanfileParseException e) {
 			e.printStackTrace(System.err);
 			return 1;
-		} finally {
-			if(!errorList.isEmpty()) {
-				errorList.forEach(msg -> err.printf("%s\n", msg));
-			}
 		}
 
 		CompiledRun cr;
@@ -406,6 +403,44 @@ public class PortalAPI extends NimrodCLICommand {
 		return 0;
 	}
 
+	public int compile(String[] args, NimrodAPI nimrod, PrintStream out, PrintStream err) throws IOException {
+		if(args.length != 0) {
+			return 2;
+		}
+
+		NimrodParseAPI parseApi = ANTLR4ParseAPIImpl.INSTANCE;
+		try(CSVPrinter csv = new CSVPrinter(out, CSVFormat.RFC4180)) {
+			csv.print("line");
+			csv.print("position");
+			csv.print("message");
+			csv.println();
+
+			RunBuilder b;
+			try {
+				b = parseApi.parseRunToBuilder(System.in);
+			} catch(PlanfileParseException ex) {
+				for(PlanfileParseException.ParseError e : ex.getErrors()) {
+					csv.print(e.line);
+					csv.print(e.position);
+					csv.print(e.message);
+					csv.println();
+				}
+				return 1;
+			}
+
+			try {
+				b.build();
+			} catch(RunBuilder.RunfileBuildException e) {
+				csv.print(-1);
+				csv.print(-1);
+				csv.print(e.getMessage());
+				csv.println();
+				return 1;
+			}
+		}
+		return 0;
+	}
+
 	private static void writeExperimentHeader(CSVPrinter csv) throws IOException {
 		csv.print("name");
 		csv.print("state");
@@ -479,7 +514,7 @@ public class PortalAPI extends NimrodCLICommand {
 	}
 
 	public static void main(String[] args) throws Exception {
-		System.exit(NimrodCLI.cliMain(new String[]{"portalapi", "getresources", "exp1"}));
+		System.exit(NimrodCLI.cliMain(new String[]{"portalapi", "compile"}));
 	}
 
 	public static final CommandEntry DEFINITION = new CommandEntry(new PortalAPI(), "Portal API") {

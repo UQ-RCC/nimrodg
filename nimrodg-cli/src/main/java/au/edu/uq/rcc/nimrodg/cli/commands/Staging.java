@@ -132,7 +132,7 @@ public class Staging extends DefaultCLICommand {
 				+ "	redirect stderr append to output.txt\n"
 				+ "	exec echo $x\n"
 				+ "	copy node:output.txt root:output-$x.txt\n"
-				+ "endtask", new ArrayList<>()).build();
+				+ "endtask").build();
 
 		Experiment exp1 = nimrod.getExperiment("exp1");
 		if(exp1 != null) {
@@ -183,7 +183,7 @@ public class Staging extends DefaultCLICommand {
 						+ "task main\n"
 						+ "    onerror fail\n"
 						+ "    shexec \"sleep %d\"\n"
-						+ "endtask", length), new ArrayList<>()).build();
+						+ "endtask", length)).build();
 
 		exp1 = nimrod.addExperiment("exp1", cr);
 //		Resource awoonga = createAwoonga(nimrod, "awoonga");

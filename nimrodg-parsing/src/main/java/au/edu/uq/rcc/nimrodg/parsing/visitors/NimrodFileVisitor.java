@@ -12,7 +12,10 @@ public class NimrodFileVisitor extends NimrodFileParserBaseVisitor<RunBuilder> {
 	public RunBuilder visitNimrodFile(NimrodFileParser.NimrodFileContext ctx) {
 		RunBuilder rb = new RunBuilder();
 
-		rb.addVariables(ctx.variableBlock().accept(VariableBlockVisiter.INSTANCE));
+		NimrodFileParser.VariableBlockContext vctx = ctx.variableBlock();
+		if(vctx != null) {
+			rb.addVariables(vctx.accept(VariableBlockVisiter.INSTANCE));
+		}
 
 		ctx.accept(new NimrodFileParserBaseVisitor<RunBuilder>() {
 			@Override

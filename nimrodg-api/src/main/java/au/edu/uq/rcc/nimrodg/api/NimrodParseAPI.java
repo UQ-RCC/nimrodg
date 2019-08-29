@@ -30,7 +30,6 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collection;
 
 /**
  * This is an API as ANTLR4 has lots of runtime dependencies that shouldn't be in the global classpath.
@@ -39,69 +38,69 @@ import java.util.Collection;
  */
 public interface NimrodParseAPI {
 
-	RunBuilder parseRunToBuilder(Reader r, Collection<String> errors) throws IOException, PlanfileParseException;
+	RunBuilder parseRunToBuilder(Reader r) throws IOException, PlanfileParseException;
 
-	default RunBuilder parseRunToBuilder(InputStream is, Collection<String> errors) throws IOException, PlanfileParseException {
+	default RunBuilder parseRunToBuilder(InputStream is) throws IOException, PlanfileParseException {
 		try(InputStreamReader isr = new InputStreamReader(is)) {
-			return parseRunToBuilder(isr, errors);
+			return parseRunToBuilder(isr);
 		}
 	}
 
-	default RunBuilder parseRunToBuilder(Path path, Collection<String> errors) throws IOException, PlanfileParseException {
+	default RunBuilder parseRunToBuilder(Path path) throws IOException, PlanfileParseException {
 		try(BufferedReader r = Files.newBufferedReader(path)) {
-			return parseRunToBuilder(r, errors);
+			return parseRunToBuilder(r);
 		}
 	}
 
-	default RunBuilder parseRunToBuilder(String s, Collection<String> errors) throws PlanfileParseException {
+	default RunBuilder parseRunToBuilder(String s) throws PlanfileParseException {
 		try(StringReader sr = new StringReader(s)) {
-			return parseRunToBuilder(sr, errors);
+			return parseRunToBuilder(sr);
 		} catch(IOException e) {
-			throw new IllegalStateException("StringReader threw IOException", e);
+			throw new IllegalStateException(e);
 		}
 	}
 
-	VariableBuilder[] parseVariableBlock(Reader r, Collection<String> errors) throws IOException, PlanfileParseException;
+	VariableBuilder[] parseVariableBlock(Reader r) throws IOException, PlanfileParseException;
 
-	default VariableBuilder[] parseVariableBlock(InputStream is, Collection<String> errors) throws IOException, PlanfileParseException {
+	default VariableBuilder[] parseVariableBlock(InputStream is) throws IOException, PlanfileParseException {
 		try(InputStreamReader isr = new InputStreamReader(is)) {
-			return parseVariableBlock(isr, errors);
+			return parseVariableBlock(isr);
 		}
 	}
 
-	default VariableBuilder[] parseVariableBlock(Path path, Collection<String> errors) throws IOException, PlanfileParseException {
+	default VariableBuilder[] parseVariableBlock(Path path) throws IOException, PlanfileParseException {
 		try(BufferedReader r = Files.newBufferedReader(path)) {
-			return parseVariableBlock(r, errors);
+			return parseVariableBlock(r);
 		}
 	}
 
-	default VariableBuilder[] parseVariableBlock(String s, Collection<String> errors) throws PlanfileParseException {
+	default VariableBuilder[] parseVariableBlock(String s) throws PlanfileParseException {
 		try(StringReader sr = new StringReader(s)) {
-			return parseVariableBlock(sr, errors);
+			return parseVariableBlock(sr);
 		} catch(IOException e) {
-			throw new IllegalStateException("StringReader threw IOException", e);
+			throw new IllegalStateException(e);
 		}
 	}
 
-	CompiledTask parseTask(Reader r, Collection<String> errors) throws IOException, PlanfileParseException;
+	CompiledTask parseTask(Reader r) throws IOException, PlanfileParseException;
 
-	default CompiledTask parseTask(InputStream is, Collection<String> errors) throws IOException, PlanfileParseException {
+	default CompiledTask parseTask(InputStream is) throws IOException, PlanfileParseException {
 		try(InputStreamReader isr = new InputStreamReader(is)) {
-			return parseTask(isr, errors);
+			return parseTask(isr);
 		}
 	}
 
-	default CompiledTask parseTask(Path path, Collection<String> errors) throws IOException, PlanfileParseException {
+	default CompiledTask parseTask(Path path) throws IOException, PlanfileParseException {
 		try(BufferedReader r = Files.newBufferedReader(path)) {
-			return parseTask(r, errors);
+			return parseTask(r);
 		}
 	}
 
-	default CompiledTask parseTask(String s, Collection<String> errors) throws PlanfileParseException {
+	default CompiledTask parseTask(String s) throws PlanfileParseException {
 		try(StringReader sr = new StringReader(s)) {
-			return parseTask(sr, errors);
+			return parseTask(sr);
 		} catch(IOException e) {
-			throw new IllegalStateException("StringReader threw IOException", e);
+			throw new IllegalStateException(e);
 		}
 	}
 }

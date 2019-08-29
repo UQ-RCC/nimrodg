@@ -31,37 +31,40 @@ import au.edu.uq.rcc.nimrodg.parsing.visitors.TaskVisitor;
 import au.edu.uq.rcc.nimrodg.parsing.visitors.VariableBlockVisiter;
 import java.io.IOException;
 import java.io.Reader;
-import java.util.Collection;
+import java.util.function.Function;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 
 public class ANTLR4ParseAPIImpl implements NimrodParseAPI {
 
-	@Override
-	public RunBuilder parseRunToBuilder(Reader r, Collection<String> errors) throws IOException {
+	private static <T> T parseOrThrow(Reader r, Function<NimrodFileParser, T> sss) throws IOException {
 		NimrodFileParser parser = new NimrodFileParser(
 				new CommonTokenStream(new NimrodFileLexer(CharStreams.fromReader(r)))
 		);
-		parser.addErrorListener(new UselessErrorListener("-", errors));
-		return parser.nimrodFile().accept(NimrodFileVisitor.INSTANCE);
+
+		PlanfileParseException exc = new PlanfileParseException();
+		parser.addErrorListener(new UselessErrorListener(exc));
+
+		T t = sss.apply(parser);
+		if(!exc.getErrors().isEmpty()) {
+			throw exc;
+		}
+		return t;
 	}
 
 	@Override
-	public VariableBuilder[] parseVariableBlock(Reader r, Collection<String> errors) throws IOException, PlanfileParseException {
-		NimrodFileParser parser = new NimrodFileParser(
-				new CommonTokenStream(new NimrodFileLexer(CharStreams.fromReader(r)))
-		);
-		parser.addErrorListener(new UselessErrorListener("-", errors));
-		return parser.variableBlock().accept(VariableBlockVisiter.INSTANCE).stream().toArray(VariableBuilder[]::new);
+	public RunBuilder parseRunToBuilder(Reader r) throws IOException, PlanfileParseException {
+		return parseOrThrow(r, p -> p.nimrodFile().accept(NimrodFileVisitor.INSTANCE));
 	}
 
 	@Override
-	public CompiledTask parseTask(Reader r, Collection<String> errors) throws IOException {
-		NimrodFileParser parser = new NimrodFileParser(
-				new CommonTokenStream(new NimrodFileLexer(CharStreams.fromReader(r)))
-		);
-		parser.addErrorListener(new UselessErrorListener("-", errors));
-		return parser.taskBlock().accept(TaskVisitor.INSTANCE);
+	public VariableBuilder[] parseVariableBlock(Reader r) throws IOException, PlanfileParseException {
+		return parseOrThrow(r, p -> p.variableBlock().accept(VariableBlockVisiter.INSTANCE).stream().toArray(VariableBuilder[]::new));
+	}
+
+	@Override
+	public CompiledTask parseTask(Reader r) throws IOException, PlanfileParseException {
+		return parseOrThrow(r, p -> p.taskBlock().accept(TaskVisitor.INSTANCE));
 	}
 
 	public static final NimrodParseAPI INSTANCE = new ANTLR4ParseAPIImpl();

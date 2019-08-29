@@ -277,15 +277,15 @@ public class Controller {
 	}
 
 	private void onPanelSubmit(String jobText) {
-		List<String> errors = new ArrayList<>();
 		CompiledRun run;
 		try {
-			run = ANTLR4ParseAPIImpl.INSTANCE.parseRunToBuilder(jobText, errors).build();
-		} catch(RunBuilder.RunfileBuildException | NullPointerException | PlanfileParseException e) {
+			run = ANTLR4ParseAPIImpl.INSTANCE.parseRunToBuilder(jobText).build();
+		} catch(RunBuilder.RunfileBuildException | NullPointerException e) {
 			m_Logger.log(ILogger.Level.ERR, e);
 			return;
-		} finally {
-			errors.forEach(s -> m_Logger.log(ILogger.Level.ERR, s));
+		} catch(PlanfileParseException ex) {
+			ex.getErrors().forEach(e -> m_Logger.log(ILogger.Level.ERR, e.toString()));
+			return;
 		}
 
 		m_Logger.log(ILogger.Level.INFO, "Compiled runfile, %d variables, %d jobs, %d tasks.", run.numVariables, run.numJobs, run.numTasks);
