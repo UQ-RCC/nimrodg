@@ -2,7 +2,7 @@
 
 # A wrapper to invoke nimrod normally via gradle
 
-CMD="gradle --no-daemon cli2 -PappArgs=["
+CMD="gradle --console=plain --quiet --no-daemon cli2 -PappArgs=["
 
 for var in "$@"
 do
