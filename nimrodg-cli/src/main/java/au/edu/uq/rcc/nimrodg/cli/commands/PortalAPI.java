@@ -19,10 +19,14 @@
  */
 package au.edu.uq.rcc.nimrodg.cli.commands;
 
+import au.edu.uq.rcc.nimrodg.agent.Agent;
+import au.edu.uq.rcc.nimrodg.agent.AgentState;
+import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
 import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.Job;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPIException;
+import au.edu.uq.rcc.nimrodg.api.NimrodMasterAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodParseAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.api.PlanfileParseException;
@@ -57,6 +61,7 @@ import org.apache.commons.csv.CSVPrinter;
 import au.edu.uq.rcc.nimrodg.api.Resource;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Optional;
 
 public class PortalAPI extends NimrodCLICommand {
 
@@ -201,7 +206,7 @@ public class PortalAPI extends NimrodCLICommand {
 		Collection<Job> jobs = nimrod.addJobs(exp, jjobs);
 
 		try(CSVPrinter csv = new CSVPrinter(out, CSVFormat.RFC4180)) {
-			writeJobHeader(csv);
+			csvWriteHeader(csv, "index", "creation_time", "status", "variables");
 			for(Job j : jobs) {
 				writeJob(j, csv);
 			}
@@ -315,6 +320,71 @@ public class PortalAPI extends NimrodCLICommand {
 		return 0;
 	}
 
+	public int getresourceagents(String[] args, NimrodAPI nimrod, PrintStream out, PrintStream err) throws IOException {
+		if(args.length < 1) {
+			return 2;
+		}
+
+		if(!nimrod.getAPICaps().master) {
+			err.printf("Implementation doesn't have master capabilities.\n");
+			return 1;
+		}
+
+		Resource node = nimrod.getResource(args[0]);
+		if(node == null) {
+			err.printf("No such resource '%s'\n", args[0]);
+			return 1;
+		}
+
+		/* FIXME: Agent querying facilities should be in the client-side api. */
+		NimrodMasterAPI mapi = (NimrodMasterAPI)nimrod;
+
+		try(CSVPrinter csv = new CSVPrinter(out, CSVFormat.RFC4180)) {
+			csvWriteHeader(csv, "state", "queue", "uuid", "shutdown_signal", "shutdown_reason",
+					"created", "connected_at", "last_heard_from", "expiry_time", "expired",
+					"actuator_data"
+			);
+
+			for(AgentState as : mapi.getResourceAgents(node)) {
+				csv.print(Agent.stateToString(as.getState()));
+				csv.print(as.getQueue());
+				csv.print(as.getUUID());
+				csv.print(as.getShutdownSignal());
+				csv.print(AgentShutdown.reasonToString(as.getShutdownReason()));
+				csv.print(as.getCreationTime().toEpochMilli() / 1000);
+				if(as.getConnectionTime() != null) {
+					csv.print(as.getCreationTime().toEpochMilli() / 1000);
+				} else {
+					csv.print("");
+				}
+
+				if(as.getLastHeardFrom() != null) {
+					csv.print(as.getLastHeardFrom().toEpochMilli() / 1000);
+				} else {
+					csv.print("");
+				}
+
+				if(as.getExpiryTime() != null) {
+					csv.print(as.getExpiryTime().toEpochMilli() / 1000);
+				} else {
+					csv.print("");
+				}
+
+				csv.print(as.getExpired());
+
+				if(as.getActuatorData() != null) {
+					csv.print(as.getActuatorData().toString());
+				} else {
+					csv.print("");
+				}
+
+				csv.println();
+
+			}
+		}
+		return 0;
+	}
+
 	public int deleteresource(String[] args, NimrodAPI nimrod, PrintStream out, PrintStream err) throws IOException {
 		if(args.length < 1) {
 			return 2;
@@ -407,10 +477,7 @@ public class PortalAPI extends NimrodCLICommand {
 
 		NimrodParseAPI parseApi = ANTLR4ParseAPIImpl.INSTANCE;
 		try(CSVPrinter csv = new CSVPrinter(out, CSVFormat.RFC4180)) {
-			csv.print("line");
-			csv.print("position");
-			csv.print("message");
-			csv.println();
+			csvWriteHeader(csv, "line", "position", "message");
 
 			RunBuilder b;
 			try {
@@ -438,14 +505,16 @@ public class PortalAPI extends NimrodCLICommand {
 		return 0;
 	}
 
-	private static void writeExperimentHeader(CSVPrinter csv) throws IOException {
-		csv.print("name");
-		csv.print("state");
-		csv.print("work_dir");
-		csv.print("creation_time");
-		csv.print("token");
-		csv.print("path");
+	private static void csvWriteHeader(CSVPrinter csv, String... fields) throws IOException {
+		for(String f : fields) {
+			csv.print(f);
+		}
+
 		csv.println();
+	}
+
+	private static void writeExperimentHeader(CSVPrinter csv) throws IOException {
+		csvWriteHeader(csv, "name", "state", "work_dir", "creation_time", "token", "path");
 	}
 
 	private static void writeExperiment(String rootDir, Experiment exp, CSVPrinter csv) throws IOException {
@@ -455,14 +524,6 @@ public class PortalAPI extends NimrodCLICommand {
 		csv.print(exp.getCreationTime().getEpochSecond());
 		csv.print(exp.getToken());
 		csv.print(exp.getPath());
-		csv.println();
-	}
-
-	private static void writeJobHeader(CSVPrinter csv) throws IOException {
-		csv.print("index");
-		csv.print("creation_time");
-		csv.print("status");
-		csv.print("variables");
 		csv.println();
 	}
 
@@ -479,19 +540,10 @@ public class PortalAPI extends NimrodCLICommand {
 	}
 
 	private static void writeResourceHeader(CSVPrinter csv) throws IOException {
-		csv.print("name");
-		csv.print("type");
-		csv.print("path");
-		csv.print("config");
-		csv.print("amqp_uri");
-		csv.print("amqp_cert");
-		csv.print("amqp_no_verify_peer");
-		csv.print("amqp_no_verify_host");
-		csv.print("tx_uri");
-		csv.print("tx_cert");
-		csv.print("tx_no_verify_peer");
-		csv.print("tx_no_verify_host");
-		csv.println();
+		csvWriteHeader(csv, "name", "type", "path", "config",
+				"amqp_uri", "amqp_cert", "amqp_no_verify_peer", "amqp_no_verify_host",
+				"tx_uri", "tx_cert", "tx_no_verify_peer", "tx_no_verify_host"
+		);
 	}
 
 	private static void writeResource(Resource n, CSVPrinter csv) throws IOException {
