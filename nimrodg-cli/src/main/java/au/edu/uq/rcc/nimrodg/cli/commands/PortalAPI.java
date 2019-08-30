@@ -483,6 +483,10 @@ public class PortalAPI extends NimrodCLICommand {
 		csv.print("type");
 		csv.print("path");
 		csv.print("config");
+		csv.print("amqp_uri");
+		csv.print("amqp_cert");
+		csv.print("amqp_no_verify_peer");
+		csv.print("amqp_no_verify_host");
 		csv.print("tx_uri");
 		csv.print("tx_cert");
 		csv.print("tx_no_verify_peer");
@@ -495,6 +499,7 @@ public class PortalAPI extends NimrodCLICommand {
 		csv.print(n.getTypeName());
 		csv.print(n.getPath());
 		csv.print(n.getConfig());
+		writeNimrodUri(n.getAMQPUri(), csv);
 		writeNimrodUri(n.getTransferUri(), csv);
 		csv.println();
 	}
