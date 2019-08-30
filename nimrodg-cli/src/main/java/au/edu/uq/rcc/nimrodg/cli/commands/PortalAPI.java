@@ -21,7 +21,6 @@ package au.edu.uq.rcc.nimrodg.cli.commands;
 
 import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.Job;
-import au.edu.uq.rcc.nimrodg.api.JobAttempt;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPIException;
 import au.edu.uq.rcc.nimrodg.api.NimrodParseAPI;
@@ -41,7 +40,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -59,7 +57,6 @@ import org.apache.commons.csv.CSVPrinter;
 import au.edu.uq.rcc.nimrodg.api.Resource;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.EnumSet;
 
 public class PortalAPI extends NimrodCLICommand {
 
@@ -483,6 +480,7 @@ public class PortalAPI extends NimrodCLICommand {
 
 	private static void writeResourceHeader(CSVPrinter csv) throws IOException {
 		csv.print("name");
+		csv.print("type");
 		csv.print("path");
 		csv.print("config");
 		csv.print("tx_uri");
@@ -494,6 +492,7 @@ public class PortalAPI extends NimrodCLICommand {
 
 	private static void writeResource(Resource n, CSVPrinter csv) throws IOException {
 		csv.print(n.getName());
+		csv.print(n.getTypeName());
 		csv.print(n.getPath());
 		csv.print(n.getConfig());
 		writeNimrodUri(n.getTransferUri(), csv);
