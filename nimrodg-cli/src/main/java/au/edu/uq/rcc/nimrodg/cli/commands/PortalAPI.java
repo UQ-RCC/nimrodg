@@ -364,12 +364,7 @@ public class PortalAPI extends NimrodCLICommand {
 					csv.print("");
 				}
 
-				if(as.getExpiryTime() != null) {
-					csv.print(as.getExpiryTime().getEpochSecond());
-				} else {
-					csv.print("");
-				}
-
+				csv.print(as.getExpiryTime().getEpochSecond());
 				csv.print(as.getExpired());
 
 				if(as.getActuatorData() != null) {
@@ -570,7 +565,7 @@ public class PortalAPI extends NimrodCLICommand {
 	}
 
 	public static void main(String[] args) throws Exception {
-		System.exit(NimrodCLI.cliMain(new String[]{"portalapi", "getresourceagents"}));
+		System.exit(NimrodCLI.cliMain(new String[]{"portalapi", "getresourceagents", "root"}));
 	}
 
 	public static final CommandEntry DEFINITION = new CommandEntry(new PortalAPI(), "Portal API") {
