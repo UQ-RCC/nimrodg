@@ -63,8 +63,6 @@ import java.util.stream.Collectors;
 import javax.json.JsonValue;
 import org.junit.Test;
 import au.edu.uq.rcc.nimrodg.api.Resource;
-import java.util.AbstractMap;
-import java.util.HashSet;
 import java.util.Optional;
 import javax.json.Json;
 import org.junit.Assert;
@@ -504,10 +502,7 @@ public abstract class APITests {
 		Assert.assertNotNull(ai);
 		Assert.assertEquals("x86_64-pc-linux-musl", ai.getPlatformString());
 
-		Set<Map.Entry<String, String>> x64mappings = new HashSet<>();
-		x64mappings.add(new AbstractMap.SimpleImmutableEntry<>("Linux", "x86_64"));
-		x64mappings.add(new AbstractMap.SimpleImmutableEntry<>("Linux", "k10m"));
-		Assert.assertEquals(x64mappings, new HashSet<>(ai.posixMappings()));
+		Assert.assertEquals(List.of(Map.entry("Linux", "x86_64"), Map.entry("Linux", "k10m")), ai.posixMappings());
 
 		AgentInfo ai2 = api.lookupAgentByPosix("Linux", "x86_64");
 		Assert.assertNotNull(ai2);
