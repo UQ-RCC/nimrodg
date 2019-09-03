@@ -74,7 +74,6 @@ import org.jclouds.ContextBuilder;
 import org.jclouds.compute.ComputeService;
 import org.jclouds.compute.ComputeServiceContext;
 import org.jclouds.compute.RunNodesException;
-import org.jclouds.compute.domain.Hardware;
 import org.jclouds.compute.domain.NodeMetadata;
 import org.jclouds.compute.domain.Template;
 import org.jclouds.compute.options.TemplateOptions;
@@ -92,10 +91,10 @@ public class JcloudsActuator implements Actuator {
 	private final NimrodURI amqpUri;
 	private final Certificate[] certs;
 
-	private final int agentsPerNode;
-	private final CloudConfig config;
 	private final AgentInfo agentInfo;
+	private final int agentsPerNode;
 	private final String tmpDir;
+	private final CloudConfig config;
 
 	private final ComputeService compute;
 	private final Template template;
@@ -130,18 +129,16 @@ public class JcloudsActuator implements Actuator {
 
 	}
 
-	public JcloudsActuator(Operations ops, NimrodAPI nimrod, Resource node, NimrodURI amqpUri, Certificate[] certs, int agentsPerNode, CloudConfig config) {
+	public JcloudsActuator(Operations ops, Resource node, NimrodURI amqpUri, Certificate[] certs, AgentInfo agentInfo, int agentsPerNode, String tmpDir, CloudConfig config) {
 		this.ops = ops;
-		this.nimrod = nimrod;
+		this.nimrod = ops.getNimrod();
 		this.node = node;
 		this.amqpUri = amqpUri;
 		this.certs = certs;
+		this.agentInfo = agentInfo;
 		this.agentsPerNode = agentsPerNode;
+		this.tmpDir = tmpDir;
 		this.config = config;
-
-		// FIXME: make these configurable
-		this.agentInfo = ops.getNimrod().lookupAgentByPlatform("x86_64-pc-linux-musl");
-		this.tmpDir = "/tmp";
 
 		this.compute = createComputeService();
 
@@ -149,13 +146,8 @@ public class JcloudsActuator implements Actuator {
 				.availabilityZone(config.availabilityZone)
 				.generateKeyPair(true)
 				.inboundPorts(22)
-				.userMetadata(Map.of(
-						"availability_zone", config.availabilityZone,
-						"OS-EXT-AZ:availability_zone", config.availabilityZone
-				))
 				.blockOnComplete(false)
 				.blockUntilRunning(false);
-		//.networks("283e92a3-40dc-482f-bb94-9f4632c0190b");
 
 		this.template = compute.templateBuilder()
 				.locationId(config.locationId)
@@ -164,7 +156,7 @@ public class JcloudsActuator implements Actuator {
 				.options(opts)
 				.build();
 
-		this.groupName = String.format("nimrodg-openstack-%d", this.hashCode());
+		this.groupName = String.format("nimrodg-jclouds-%d", this.hashCode());
 		this.nodes = new HashMap<>();
 		this.agentMap = new HashMap<>();
 		this.subOpts = new SubOptions();
@@ -592,6 +584,8 @@ public class JcloudsActuator implements Actuator {
 			try {
 				act = launchActuator(sscfg);
 			} catch(UncheckedIOException e) {
+				ni.actuator.completeExceptionally(e);
+				LOGGER.catching(e);
 				return false;
 			}
 
@@ -647,13 +641,6 @@ public class JcloudsActuator implements Actuator {
 		} catch(IOException e) {
 			throw new UncheckedIOException(e);
 		}
-	}
-
-	private static Optional<Hardware> resolveHardware(ComputeService compute, String name) {
-		return compute.listHardwareProfiles().stream()
-				.filter(h -> name.equals(h.getName()))
-				.findFirst()
-				.map(h -> (Hardware)h);
 	}
 
 	private class SubOptions implements Actuator.Operations {
