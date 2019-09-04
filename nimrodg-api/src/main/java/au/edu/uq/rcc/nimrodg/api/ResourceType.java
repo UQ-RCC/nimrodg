@@ -21,6 +21,7 @@ package au.edu.uq.rcc.nimrodg.api;
 
 import java.io.PrintStream;
 import java.nio.file.Path;
+import java.util.List;
 import javax.json.JsonStructure;
 
 /**
@@ -41,4 +42,14 @@ public interface ResourceType {
 	 * @return A resource-specific configuration structure, or null if parsing fails.
 	 */
 	JsonStructure parseCommandArguments(AgentProvider ap, String[] args, PrintStream out, PrintStream err, Path[] configDirs);
+
+	/**
+	 * Validate a resource-specific configuration blob.
+	 *
+	 * @param ap
+	 * @param cfg The configuration to validate.
+	 * @param errors A list to wrote error messages to.
+	 * @return true, if cfg is valid. Otherwise, false.
+	 */
+	boolean validateConfiguration(AgentProvider ap, JsonStructure cfg, List<String> errors);
 }

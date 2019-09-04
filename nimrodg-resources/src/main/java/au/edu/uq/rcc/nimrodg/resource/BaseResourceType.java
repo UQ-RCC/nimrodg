@@ -104,7 +104,8 @@ public abstract class BaseResourceType implements MasterResourceType {
 	 * @param errors A list of errors.
 	 * @return If validated successfully, return true. Otherwise, false.
 	 */
-	protected boolean validateConfiguration(AgentProvider ap, JsonStructure _cfg, List<String> errors) {
+	@Override
+	public boolean validateConfiguration(AgentProvider ap, JsonStructure _cfg, List<String> errors) {
 		String schema = this.getConfigSchema();
 		if(schema == null) {
 			errors.add("No schema provided.");

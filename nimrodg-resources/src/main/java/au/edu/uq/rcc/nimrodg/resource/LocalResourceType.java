@@ -106,7 +106,7 @@ public class LocalResourceType extends BaseResourceType {
 	}
 
 	@Override
-	protected boolean validateConfiguration(AgentProvider ap, JsonStructure _cfg, List<String> errors) {
+	public boolean validateConfiguration(AgentProvider ap, JsonStructure _cfg, List<String> errors) {
 		if(!super.validateConfiguration(ap, _cfg, errors)) {
 			return false;
 		}

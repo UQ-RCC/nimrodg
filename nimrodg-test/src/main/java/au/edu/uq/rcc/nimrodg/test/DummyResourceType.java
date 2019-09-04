@@ -28,6 +28,7 @@ import au.edu.uq.rcc.nimrodg.api.MasterResourceType;
 import java.security.cert.Certificate;
 import au.edu.uq.rcc.nimrodg.api.Resource;
 import java.nio.file.Path;
+import java.util.List;
 
 public class DummyResourceType implements MasterResourceType {
 
@@ -44,6 +45,11 @@ public class DummyResourceType implements MasterResourceType {
 	@Override
 	public Actuator createActuator(Actuator.Operations ops, Resource node, NimrodURI amqpUri, Certificate[] certs) {
 		return new DummyActuator(ops, node, amqpUri, certs);
+	}
+
+	@Override
+	public boolean validateConfiguration(AgentProvider ap, JsonStructure cfg, List<String> errors) {
+		return true;
 	}
 
 }
