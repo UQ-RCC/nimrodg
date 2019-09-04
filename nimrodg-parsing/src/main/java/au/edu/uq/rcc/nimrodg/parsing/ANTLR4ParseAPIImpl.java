@@ -34,6 +34,10 @@ import java.io.Reader;
 import java.util.function.Function;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.DefaultErrorStrategy;
+import org.antlr.v4.runtime.Parser;
+import org.antlr.v4.runtime.RecognitionException;
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 
 public class ANTLR4ParseAPIImpl implements NimrodParseAPI {
 
@@ -44,9 +48,30 @@ public class ANTLR4ParseAPIImpl implements NimrodParseAPI {
 		parser.removeErrorListeners();
 
 		PlanfileParseException exc = new PlanfileParseException();
-		parser.addErrorListener(new UselessErrorListener(exc));
+		UselessErrorListener errl = new UselessErrorListener(exc);
+		parser.addErrorListener(errl);
 
-		T t = sss.apply(parser);
+		parser.setErrorHandler(new DefaultErrorStrategy() {
+			@Override
+			public void recover(Parser recognizer, RecognitionException e) {
+				errl.recognitionException(e);
+				throw new ParseCancellationException(e);
+			}
+		});
+
+		T t;
+		try {
+			t = sss.apply(parser);
+		} catch(ParseCancellationException e) {
+			Throwable cause = e.getCause();
+			if(cause instanceof RecognitionException) {
+				errl.recognitionException((RecognitionException)e.getCause());
+			} else {
+				exc.addError(-1, -1, "Unknown parse error. This is a bug.");
+			}
+			t = null;
+		}
+
 		if(!exc.getErrors().isEmpty()) {
 			throw exc;
 		}

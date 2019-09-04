@@ -1,0 +1,12 @@
+parameter x integer range from 0 to 100 step 1
+
+task mai
+        onerror fail
+        //exec /bin/false
+         redirect stdout to output.txt
+        redirect stderr append to output.txt
+         exec uname -a
+        exec hostname
+        copy node:output.txt root:output-$x.txt
+        exec sleep 10
+endtask

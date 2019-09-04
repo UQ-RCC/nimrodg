@@ -502,6 +502,16 @@ public class ParseTests {
 		CompiledRun rr = getRunBuilder(getString(pln)).build();
 	}
 
+	@Test(expected = ParseCancellationException.class)
+	public void badTaskNameTest() throws IOException, RunBuilder.RunfileBuildException, SubstitutionException {
+		getRunBuilder(getFile("/test_badtask.pln")).build();
+	}
+
+	@Test(expected = ParseCancellationException.class)
+	public void truncParamTest() throws IOException, RunBuilder.RunfileBuildException, SubstitutionException {
+		getRunBuilder(getFile("/test_truncparam.pln")).build();
+	}
+
 	/*
 	CharStream cs = getString(pln);
 	CommonTokenStream cts = new CommonTokenStream(new NimrodFileLexer(cs));
