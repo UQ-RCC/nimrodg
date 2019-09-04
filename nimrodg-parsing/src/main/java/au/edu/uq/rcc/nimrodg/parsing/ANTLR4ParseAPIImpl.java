@@ -41,6 +41,7 @@ public class ANTLR4ParseAPIImpl implements NimrodParseAPI {
 		NimrodFileParser parser = new NimrodFileParser(
 				new CommonTokenStream(new NimrodFileLexer(CharStreams.fromReader(r)))
 		);
+		parser.removeErrorListeners();
 
 		PlanfileParseException exc = new PlanfileParseException();
 		parser.addErrorListener(new UselessErrorListener(exc));
