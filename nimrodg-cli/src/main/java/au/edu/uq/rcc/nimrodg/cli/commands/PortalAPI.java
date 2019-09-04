@@ -535,7 +535,7 @@ public class PortalAPI extends NimrodCLICommand {
 	}
 
 	private static void writeResourceHeader(CSVPrinter csv) throws IOException {
-		csvWriteHeader(csv, "name", "type", "path", "config",
+		csvWriteHeader(csv, "name", "type", "config",
 				"amqp_uri", "amqp_cert", "amqp_no_verify_peer", "amqp_no_verify_host",
 				"tx_uri", "tx_cert", "tx_no_verify_peer", "tx_no_verify_host"
 		);
@@ -544,7 +544,6 @@ public class PortalAPI extends NimrodCLICommand {
 	private static void writeResource(Resource n, CSVPrinter csv) throws IOException {
 		csv.print(n.getName());
 		csv.print(n.getTypeName());
-		csv.print(n.getPath());
 		csv.print(n.getConfig());
 		writeNimrodUri(n.getAMQPUri(), csv);
 		writeNimrodUri(n.getTransferUri(), csv);
