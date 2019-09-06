@@ -554,13 +554,19 @@ public class Master implements MessageQueueListener, AutoCloseable {
 
 			if(state != State.Started) {
 				LOGGER.warn("Agent connection during shutdown, terminating...");
+				CompletableFuture<LaunchRequest> lrq = pendingAgentConnections.remove(hello.getAgentUUID());
+				lrq.thenAccept(l -> {
+					
+				});
 				return MessageQueueListener.MessageOperation.Terminate;
 			}
 
 			/* If we're this far, this future should be complete. */
 			LaunchRequest lrq = pendingAgentConnections.remove(hello.getAgentUUID()).getNow(null);
 			assert lrq != null && !lrq.launchResults.isCompletedExceptionally() && lrq.launchResults.isDone();
-			Actuator.LaunchResult[] launchResults = lrq.launchResults.getNow(null);
+			
+			Actuator.LaunchResult[] launchResults = lrq.launchResults.join();
+			//Actuator.LaunchResult[] launchResults = lrq.launchResults.getNow(null);
 
 			int batchIndex = -1;
 			{
