@@ -237,16 +237,6 @@ public abstract class POSIXActuator<C extends SSHConfig> implements Actuator {
 	}
 
 	@Override
-	public final NimrodURI getAMQPUri() {
-		return uri;
-	}
-
-	@Override
-	public final Certificate[] getAMQPCertificates() {
-		return Arrays.copyOf(certs, certs.length);
-	}
-
-	@Override
 	public final boolean forceTerminateAgent(UUID uuid) {
 		try {
 			try(RemoteShell client = makeClient()) {

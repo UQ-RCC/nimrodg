@@ -39,32 +39,18 @@ public class DummyActuator implements Actuator {
 	private final Actuator.Operations ops;
 	private final NimrodMasterAPI nimrod;
 	private final Resource resource;
-	private final NimrodURI amqpUri;
-	private final Certificate[] certs;
 	private final ArrayList<UUID> pendingAgents;
 
-	public DummyActuator(Actuator.Operations ops, Resource resource, NimrodURI amqpUri, Certificate[] certs) {
+	public DummyActuator(Actuator.Operations ops, Resource resource) {
 		this.ops = ops;
 		this.nimrod = ops.getNimrod();
 		this.resource = resource;
-		this.amqpUri = amqpUri;
-		this.certs = Arrays.copyOf(certs, certs.length);
 		this.pendingAgents = new ArrayList<>();
 	}
 
 	@Override
 	public Resource getResource() throws NimrodAPIException {
 		return resource;
-	}
-
-	@Override
-	public NimrodURI getAMQPUri() {
-		return amqpUri;
-	}
-
-	@Override
-	public Certificate[] getAMQPCertificates() {
-		return Arrays.copyOf(certs, certs.length);
 	}
 
 	@Override

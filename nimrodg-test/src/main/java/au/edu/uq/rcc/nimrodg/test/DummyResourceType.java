@@ -44,7 +44,7 @@ public class DummyResourceType implements MasterResourceType {
 
 	@Override
 	public Actuator createActuator(Actuator.Operations ops, Resource node, NimrodURI amqpUri, Certificate[] certs) {
-		return new DummyActuator(ops, node, amqpUri, certs);
+		return new DummyActuator(ops, node);
 	}
 
 	@Override

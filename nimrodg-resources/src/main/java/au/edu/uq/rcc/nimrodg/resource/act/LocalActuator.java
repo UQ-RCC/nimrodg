@@ -135,16 +135,6 @@ public class LocalActuator implements Actuator {
 		return node;
 	}
 
-	@Override
-	public NimrodURI getAMQPUri() {
-		return uri;
-	}
-
-	@Override
-	public Certificate[] getAMQPCertificates() {
-		return Arrays.copyOf(certs, certs.length);
-	}
-
 	private LocalAgent[] buildAgentInfo(UUID[] uuids) throws IOException {
 		List<String> commonArgs = new ArrayList<>();
 		String scheme = uri.uri.getScheme().toLowerCase(Locale.ENGLISH);

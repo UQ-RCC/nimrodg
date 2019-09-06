@@ -52,10 +52,6 @@ public interface Actuator extends AutoCloseable {
 
 	public Resource getResource() throws NimrodAPIException;
 
-	public NimrodURI getAMQPUri();
-
-	public Certificate[] getAMQPCertificates();
-
 	public static class LaunchResult {
 
 		public final Resource node;
