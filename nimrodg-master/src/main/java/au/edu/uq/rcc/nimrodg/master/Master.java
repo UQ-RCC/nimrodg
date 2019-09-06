@@ -172,6 +172,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 	private final AAAAA aaaaa;
 	private final ConcurrentHashMap<UUID, AgentInfo> allAgents;
 	private final Map<UUID, CompletableFuture<LaunchRequest>> pendingAgentConnections;
+	private final Orphanage orphanage;
 
 	private final _AgentListener agentListener;
 	private final _ActuatorOperations actuatorOps;
@@ -205,6 +206,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 		this.aaaaa = new _AAAAA();
 		this.allAgents = new ConcurrentHashMap<>();
 		this.pendingAgentConnections = new HashMap<>();
+		this.orphanage = new Orphanage();
 
 		this.agentListener = new _AgentListener();
 		this.actuatorOps = new _ActuatorOperations();
@@ -348,9 +350,11 @@ public class Master implements MessageQueueListener, AutoCloseable {
 
 					if(a.adopt(as)) {
 						LOGGER.info("Resource {} actuator adopted orphaned agent {}.", r.getPath(), as.getUUID());
-						ai.actuator = Optional.of(a);
+						ai.actuator.complete(a);
 					} else {
 						LOGGER.info("Resource {} actuator rejected orphaned agent {}.", r.getPath(), as.getUUID());
+						ai.actuator.complete(orphanage);
+						orphanage.adopt(as);
 					}
 					return null;
 				});
@@ -640,6 +644,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 
 	@Override
 	public void close() {
+		orphanage.close();
 		aaaaa.close();
 	}
 
@@ -865,7 +870,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 
 			if(oldState == Agent.State.WAITING_FOR_HELLO && newState == Agent.State.READY) {
 				ai.state.setConnectionTime(Instant.now());
-				ai.actuator.ifPresent(a -> a.notifyAgentConnection(ai.state));
+				ai.actuator.thenAccept(a -> a.notifyAgentConnection(ai.state));
 				heart.onAgentConnect(ai.uuid, Instant.now());
 			} else {
 				if(newState == Agent.State.SHUTDOWN) {
@@ -873,7 +878,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 				}
 
 				if(newState == Agent.State.SHUTDOWN) {
-					ai.actuator.ifPresent(a -> a.notifyAgentDisconnection(ai.uuid));
+					ai.actuator.thenAccept(a -> a.notifyAgentDisconnection(ai.uuid));
 					heart.onAgentDisconnect(ai.uuid);
 					allAgents.remove(ai.uuid);
 				}
@@ -947,7 +952,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 		public void expireAgent(UUID u) {
 			AgentInfo ai = allAgents.remove(u);
 			ai.state.setExpired(true);
-			ai.actuator.ifPresent(a -> {
+			ai.actuator.thenAccept(a -> {
 				a.forceTerminateAgent(u);
 				a.notifyAgentDisconnection(u);
 			});

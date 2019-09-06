@@ -26,19 +26,21 @@ import java.util.Objects;
 import java.util.UUID;
 import au.edu.uq.rcc.nimrodg.api.Resource;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 class AgentInfo {
 
 	public final UUID uuid;
 	public final Resource resource;
-	public Optional<Actuator> actuator;
+	public final CompletableFuture<Actuator> actuator;
 	public final ReferenceAgent instance;
 	public final AgentState state;
 
 	public AgentInfo(UUID uuid, Resource resource, Optional<Actuator> actuator, ReferenceAgent instance, AgentState state) {
 		this.uuid = uuid;
 		this.resource = resource;
-		this.actuator = actuator;
+		this.actuator = new CompletableFuture<>();
+		actuator.ifPresent(act -> this.actuator.complete(act));
 		this.instance = instance;
 		this.state = state;
 	}
