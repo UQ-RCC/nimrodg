@@ -63,12 +63,12 @@ public abstract class AAAAA implements AutoCloseable {
 		public final CompletableFuture<Actuator> actuatorFuture;
 		public final CompletableFuture<LaunchResult[]> launchResults;
 
-		private LaunchRequest(UUID[] uuids, Resource resource, CompletableFuture<Actuator> actuatorFuture) {
+		private LaunchRequest(UUID[] uuids, Resource resource, CompletableFuture<Actuator> actuatorFuture, CompletableFuture<LaunchResult[]> launchResults) {
 			this.uuids = uuids;
 			this.resource = resource;
 			this.rootPath = this.resource.getPath();
 			this.actuatorFuture = actuatorFuture;
-			this.launchResults = new CompletableFuture<>();
+			this.launchResults = launchResults;
 		}
 
 	}
@@ -137,18 +137,21 @@ public abstract class AAAAA implements AutoCloseable {
 
 		ActuatorState as = getOrLaunchActuatorInternal(node);
 
-		LaunchRequest rq = new LaunchRequest(uuids, node, as.launchFuture);
+		CompletableFuture<LaunchResult[]> launchAnchor = new CompletableFuture<>();
 
-		/* If the launch failed, complete the future but mark each result as failed. */
-		rq.launchResults.exceptionally(t -> {
+		LaunchRequest rq = new LaunchRequest(uuids, node, as.launchFuture, launchAnchor.handle((r, t) -> {
+			if(r != null) {
+				return r;
+			}
+
+			/* We've failed, so fail all the individual results, not the request. */
 			Actuator.LaunchResult lr = new LaunchResult(node, t);
 			Actuator.LaunchResult[] lrs = new LaunchResult[uuids.length];
 			Arrays.setAll(lrs, i -> lr);
 			return lrs;
-		});
+		}));
 
-		/* Remove our request whether we succeeded or failed. */
-		rq.launchResults.handle((r, t) -> {
+		launchAnchor.handle((r, t) -> {
 			requests.remove(rq);
 			return null;
 		});
@@ -157,7 +160,7 @@ public abstract class AAAAA implements AutoCloseable {
 
 		/* If the actuator failed to launch, fail the launch future to trigger the above. */
 		as.launchFuture.exceptionally(t -> {
-			rq.launchResults.completeExceptionally(t);
+			launchAnchor.completeExceptionally(t);
 			return null;
 		});
 
@@ -174,11 +177,11 @@ public abstract class AAAAA implements AutoCloseable {
 					launchResults = a.launchAgents(rq.uuids);
 				}
 			} catch(IOException | RuntimeException e) {
-				rq.launchResults.completeExceptionally(e);
+				launchAnchor.completeExceptionally(e);
 				return;
 			}
 
-			rq.launchResults.complete(launchResults);
+			launchAnchor.complete(launchResults);
 		});
 
 		return rq;
@@ -222,7 +225,7 @@ public abstract class AAAAA implements AutoCloseable {
 		LOGGER.info("Waiting on {} actuator(s)...", actuators.size());
 
 		CompletableFuture.allOf(actuators.values().stream()
-				.map(as -> as.actuatorFuture.handle((a, t) -> {
+				.map(as -> as.actuatorFuture.handleAsync((a, t) -> {
 			if(a == null) {
 				return null;
 			}
