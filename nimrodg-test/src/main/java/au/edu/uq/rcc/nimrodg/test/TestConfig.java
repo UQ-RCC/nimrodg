@@ -100,77 +100,57 @@ public class TestConfig implements SetupConfig {
 
 	@Override
 	public Map<String, String> agents() {
-		return new HashMap<String, String>() {
-			{
-				put("x86_64-pc-linux-musl", path.resolve(".agents").resolve("x86_64-pc-linux-musl").toString());
-				put("i686-pc-linux-musl", path.resolve(".agents").resolve("i686-pc-linux-musl").toString());
-			}
-		};
+		return Map.of(
+				"x86_64-pc-linux-musl", path.resolve(".agents").resolve("x86_64-pc-linux-musl").toString(),
+				"i686-pc-linux-musl", path.resolve(".agents").resolve("i686-pc-linux-musl").toString(),
+				"noop", "/bin/true"
+		);
+	}
+
+	private static class _MachinePair implements MachinePair {
+
+		public final String system;
+		public final String machine;
+
+		public _MachinePair(String system, String machine) {
+			this.system = system;
+			this.machine = machine;
+		}
+
+		@Override
+		public String system() {
+			return system;
+		}
+
+		@Override
+		public String machine() {
+			return machine;
+		}
 	}
 
 	@Override
 	public Map<MachinePair, String> agentMappings() {
-		return new HashMap<MachinePair, String>() {
-			{
-				put(new MachinePair() {
-					@Override
-					public String system() {
-						return "Linux";
-					}
-
-					@Override
-					public String machine() {
-						return "x86_64";
-					}
-				}, "x86_64-pc-linux-musl");
-
-				put(new MachinePair() {
-					@Override
-					public String system() {
-						return "Linux";
-					}
-
-					@Override
-					public String machine() {
-						return "k10m";
-					}
-				}, "x86_64-pc-linux-musl");
-
-				put(new MachinePair() {
-					@Override
-					public String system() {
-						return "Linux";
-					}
-
-					@Override
-					public String machine() {
-						return "i686";
-					}
-				}, "i686-pc-linux-musl");
-			}
-		};
+		return Map.of(
+				new _MachinePair("Linux", "x86_64"), "x86_64-pc-linux-musl",
+				new _MachinePair("Linux", "k10m"), "x86_64-pc-linux-musl",
+				new _MachinePair("Linux", "i686"), "i686-pc-linux-musl"
+		);
 	}
 
 	@Override
 	public Map<String, String> resourceTypes() {
-		return new HashMap<String, String>() {
-			{
-				put("dummy", DummyResourceType.class.getCanonicalName());
-			}
-		};
+		return Map.of("dummy", DummyResourceType.class.getCanonicalName());
 	}
 
 	@Override
 	public Map<String, String> properties() {
-		return new HashMap<String, String>() {
-			{
-				put("nimrod.sched.default.launch_penalty", "-10");
-				put("nimrod.sched.default.spawn_cap", "10");
-				put("nimrod.sched.default.job_buf_size", "1000");
-				put("nimrod.sched.default.job_buf_refill_threshold", "100");
-				put("nimrod.master.run_rescan_interval", "60");
-			}
-		};
+		return Map.of(
+				"nimrod.sched.default.launch_penalty", "-10",
+				"nimrod.sched.default.spawn_cap", "10",
+				"nimrod.sched.default.job_buf_size", "1000",
+				"nimrod.sched.default.job_buf_refill_threshold", "100",
+				"nimrod.master.run_rescan_interval", "60"
+		);
 	}
 
 }

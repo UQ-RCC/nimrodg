@@ -25,13 +25,12 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.AbstractMap;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class DBAgentHelpers extends DBBaseHelper {
 
@@ -89,8 +88,9 @@ public class DBAgentHelpers extends DBBaseHelper {
 				rs.getLong("id"),
 				rs.getString("platform_string"),
 				rs.getString("path"),
-				Stream.of((String[][])(rs.getArray("mappings").getArray()))
-						.map(s -> new AbstractMap.SimpleImmutableEntry<>(s[0], s[1]))
+				Arrays.stream((Object[])rs.getArray("mappings").getArray())
+						.map(o -> (String[])o)
+						.map(s -> Map.entry(s[0], s[1]))
 						.collect(Collectors.toSet())
 		);
 	}

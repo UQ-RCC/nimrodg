@@ -565,6 +565,8 @@ public abstract class APITests {
 		ai2 = api.lookupAgentByPosix("Linux", "k10m");
 		Assert.assertNotNull(ai2);
 		Assert.assertEquals(ai, ai2);
+
+		api.lookupAgentByPlatform("noop");
 	}
 
 	@Test
