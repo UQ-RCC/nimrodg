@@ -20,27 +20,26 @@
 package au.edu.uq.rcc.nimrodg.impl.base.db;
 
 import au.edu.uq.rcc.nimrodg.api.AgentInfo;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Map;
-import java.util.Objects;
+import java.util.Set;
 
 public class TempAgentInfo {
 
 	public final long id;
 	public final String platform;
 	public final String path;
-	public final List<Map.Entry<String, String>> posixMappings;
+	public final Set<Map.Entry<String, String>> posixMappings;
 
-	private final List<Map.Entry<String, String>> actualMappings;
+	private final Set<Map.Entry<String, String>> actualMappings;
 
-	public TempAgentInfo(long id, String platform, String path, List<Map.Entry<String, String>> posixMappings) {
+	public TempAgentInfo(long id, String platform, String path, Set<Map.Entry<String, String>> posixMappings) {
 		this.id = id;
 		this.platform = platform;
 		this.path = path;
-		this.actualMappings = new ArrayList<>(posixMappings);
-		this.posixMappings = Collections.unmodifiableList(actualMappings);
+		this.actualMappings = new HashSet<>(posixMappings);
+		this.posixMappings = Collections.unmodifiableSet(actualMappings);
 	}
 
 	public Impl create() {
@@ -66,7 +65,7 @@ public class TempAgentInfo {
 		}
 
 		@Override
-		public List<Map.Entry<String, String>> posixMappings() {
+		public Set<Map.Entry<String, String>> posixMappings() {
 			return posixMappings;
 		}
 

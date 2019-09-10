@@ -122,8 +122,8 @@ public class ResourceTests {
 				}
 
 				@Override
-				public List<Map.Entry<String, String>> posixMappings() {
-					return List.of();
+				public Set<Map.Entry<String, String>> posixMappings() {
+					return Set.of();
 				}
 			};
 		}
@@ -142,8 +142,8 @@ public class ResourceTests {
 				}
 
 				@Override
-				public List<Map.Entry<String, String>> posixMappings() {
-					return List.of();
+				public Set<Map.Entry<String, String>> posixMappings() {
+					return Set.of();
 				}
 			};
 		}

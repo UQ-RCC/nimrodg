@@ -56,9 +56,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import javax.json.Json;
@@ -238,7 +240,7 @@ public class SQLite3DB extends SQLUUUUU<NimrodSQLException> implements NimrodDBA
 		String path = null;
 		Long id = null;
 
-		List<Map.Entry<String, String>> mappings = new ArrayList<>();
+		Set<Map.Entry<String, String>> mappings = new HashSet<>();
 		while(rs.next()) {
 			if(id == null) {
 				id = rs.getLong("id");

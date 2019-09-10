@@ -19,7 +19,7 @@
  */
 package au.edu.uq.rcc.nimrodg.api;
 
-import java.util.List;
+import java.util.Set;
 import java.util.Map;
 
 public interface AgentInfo {
@@ -28,5 +28,5 @@ public interface AgentInfo {
 
 	String getPath();
 
-	List<Map.Entry<String, String>> posixMappings();
+	Set<Map.Entry<String, String>> posixMappings();
 }

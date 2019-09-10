@@ -91,7 +91,7 @@ public class DBAgentHelpers extends DBBaseHelper {
 				rs.getString("path"),
 				Stream.of((String[][])(rs.getArray("mappings").getArray()))
 						.map(s -> new AbstractMap.SimpleImmutableEntry<>(s[0], s[1]))
-						.collect(Collectors.toList())
+						.collect(Collectors.toSet())
 		);
 	}
 
