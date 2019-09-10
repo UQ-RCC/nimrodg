@@ -337,7 +337,7 @@ public class Controller {
 
 	private void onPanelReset() {
 		m_Agent.disconnect(AgentShutdown.Reason.Requested, -1);
-		m_Agent.reset();
+		m_Agent.reset(null);
 		m_StatusPanel.setJob(null);
 	}
 
