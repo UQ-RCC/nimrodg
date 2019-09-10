@@ -68,7 +68,7 @@ public class PureReferenceAgent implements Agent {
 		}
 
 		this.state = null;
-		reset();
+		reset(null);
 	}
 
 	@Override
@@ -118,13 +118,13 @@ public class PureReferenceAgent implements Agent {
 		}
 	}
 
-	public final void reset() {
+	public final void reset(UUID uuid) {
 		if(state != State.SHUTDOWN && state != null) {
 			throw new IllegalStateException("Cannot reset, disconnect agent first.");
 		}
 
 		queue = null;
-		uuid = null;
+		this.uuid = uuid;
 		shutdownSignal = -1;
 		reason = Reason.HostSignal;
 		lastHeardFrom = null;
@@ -181,6 +181,7 @@ public class PureReferenceAgent implements Agent {
 			/* Fake a shutdown */
 			shutdownSignal = -1;
 			reason = Reason.Requested;
+			state = State.SHUTDOWN;
 			return;
 		}
 

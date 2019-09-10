@@ -20,7 +20,7 @@
 package au.edu.uq.rcc.nimrodg.impl.base.db;
 
 import au.edu.uq.rcc.nimrodg.agent.Agent;
-import au.edu.uq.rcc.nimrodg.agent.DefaultAgentState;
+import au.edu.uq.rcc.nimrodg.agent.AgentState;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
 import java.time.Instant;
 import java.util.UUID;
@@ -62,19 +62,117 @@ public class TempAgent {
 		return new Impl(this);
 	}
 
-	public static final class Impl extends DefaultAgentState {
+	public static final class Impl implements AgentState {
+
+		public final TempAgent ta;
 
 		private Impl(TempAgent ta) {
-			this.setState(ta.state);
-			this.setQueue(ta.queue);
-			this.setUUID(ta.uuid);
-			this.setShutdownSignal(ta.shutdownSignal);
-			this.setShutdownReason(ta.shutdownReason);
-			this.setCreationTime(ta.created);
-			this.setConnectionTime(ta.connectedAt);
-			this.setLastHeardFrom(ta.lastHeardFrom);
-			this.setExpiryTime(ta.expiryTime);
-			this.setActuatorData(ta.actuatorData);
+			this.ta = ta;
+		}
+
+		@Override
+		public Agent.State getState() {
+			return ta.state;
+		}
+
+		@Override
+		public void setState(Agent.State state) {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public String getQueue() {
+			return ta.queue;
+		}
+
+		@Override
+		public void setQueue(String q) {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public UUID getUUID() {
+			return ta.uuid;
+		}
+
+		@Override
+		public void setUUID(UUID uuid) {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public int getShutdownSignal() {
+			return ta.shutdownSignal;
+		}
+
+		@Override
+		public void setShutdownSignal(int s) {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public AgentShutdown.Reason getShutdownReason() {
+			return ta.shutdownReason;
+		}
+
+		@Override
+		public void setShutdownReason(AgentShutdown.Reason r) {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public Instant getCreationTime() {
+			return ta.created;
+		}
+
+		@Override
+		public Instant getConnectionTime() {
+			return ta.connectedAt;
+		}
+
+		@Override
+		public void setConnectionTime(Instant time) {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public Instant getLastHeardFrom() {
+			return ta.lastHeardFrom;
+		}
+
+		@Override
+		public void setLastHeardFrom(Instant time) {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public Instant getExpiryTime() {
+			return ta.expiryTime;
+		}
+
+		@Override
+		public void setExpiryTime(Instant time) {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public boolean getExpired() {
+			return ta.expired;
+		}
+
+		@Override
+		public void setExpired(boolean expired) {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public JsonObject getActuatorData() {
+			return ta.actuatorData;
+		}
+
+		@Override
+		public void setActuatorData(JsonObject data) {
+			throw new UnsupportedOperationException();
 		}
 	}
 

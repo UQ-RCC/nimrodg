@@ -123,7 +123,7 @@ DROP TABLE IF EXISTS nimrod_resource_agents;
 CREATE TABLE nimrod_resource_agents(
 	id						INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
 	state					TEXT NOT NULL CHECK(state IN ('WAITING_FOR_HELLO', 'READY', 'BUSY', 'SHUTDOWN')),
-	queue					TEXT CHECK((state != 'WAITING_FOR_HELLO') != (queue IS NULL)),
+	queue					TEXT CHECK((state != 'WAITING_FOR_HELLO' AND state != 'SHUTDOWN') != (queue IS NULL)),
 	agent_uuid				UUID NOT NULL UNIQUE,
 	shutdown_signal			INTEGER NOT NULL,
 	shutdown_reason			TEXT NOT NULL CHECK(shutdown_reason IN ('HostSignal', 'Requested')),

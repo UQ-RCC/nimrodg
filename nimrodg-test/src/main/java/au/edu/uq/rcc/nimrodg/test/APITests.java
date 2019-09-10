@@ -19,6 +19,8 @@
  */
 package au.edu.uq.rcc.nimrodg.test;
 
+import au.edu.uq.rcc.nimrodg.agent.Agent;
+import au.edu.uq.rcc.nimrodg.agent.AgentState;
 import au.edu.uq.rcc.nimrodg.agent.DefaultAgentState;
 import au.edu.uq.rcc.nimrodg.agent.ReferenceAgent;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentHello;
@@ -63,8 +65,10 @@ import java.util.stream.Collectors;
 import javax.json.JsonValue;
 import org.junit.Test;
 import au.edu.uq.rcc.nimrodg.api.Resource;
+import java.io.UncheckedIOException;
 import java.util.Optional;
 import javax.json.Json;
+import javax.json.JsonObject;
 import org.junit.Assert;
 
 public abstract class APITests {
@@ -286,6 +290,15 @@ public abstract class APITests {
 		}
 	}
 
+	private DummyActuator createDummyActuator(Resource res, NimrodMasterAPI mapi) {
+		try {
+			return (DummyActuator)mapi.createActuator(new _FactuatorOps(mapi), res, NimrodURI.create(URI.create("amqp://dummy-server/vhost"), "/not/a/path", true, true), new Certificate[]{});
+		} catch(IOException e) {
+			/* Won't happen, but whatever. */
+			throw new UncheckedIOException(e);
+		}
+	}
+
 	@Test
 	public void fakeAgentTests() throws IllegalArgumentException, IOException {
 		NimrodAPI api = getNimrod();
@@ -301,7 +314,7 @@ public abstract class APITests {
 		 * It really just creates a bunch of agent.hello messages, which is the same thing, really.
 		 */
 		List<AgentHello> hellos;
-		try(Actuator act = napi.createActuator(new _FactuatorOps(napi), rootResource, NimrodURI.create(URI.create("amqp://dummy-server/vhost"), "/not/a/path", true, true), new Certificate[]{})) {
+		try(DummyActuator act = createDummyActuator(rootResource, napi)) {
 			UUID[] uuids = new UUID[10];
 			for(int i = 0; i < uuids.length; ++i) {
 				uuids[i] = UUID.randomUUID();
@@ -312,11 +325,11 @@ public abstract class APITests {
 				nodeMap.put(uuids[i], lrs[i].node);
 			}
 
-			hellos = ((DummyActuator)act).simulateHellos();
+			hellos = act.simulateHellos();
 
 			ReferenceAgent[] agents = new ReferenceAgent[hellos.size()];
 
-			FakeAgentListener l = new FakeAgentListener(napi, (DummyActuator)act);
+			FakeAgentListener l = new FakeAgentListener(napi, act);
 
 			for(int i = 0; i < agents.length; ++i) {
 				agents[i] = new ReferenceAgent(new DefaultAgentState(), l);
@@ -330,6 +343,47 @@ public abstract class APITests {
 				);
 			}
 		}
+	}
+
+	/**
+	 * Simulate an agent being launched, but with the application being terminated before it's connected.
+	 *
+	 * @throws java.io.IOException For good measure.
+	 */
+	@Test
+	public void agentWaitingForHelloToShutdownTest() throws IOException {
+		NimrodAPI api = getNimrod();
+		Assert.assertTrue(api.getAPICaps().master);
+		NimrodMasterAPI napi = (NimrodMasterAPI)api;
+
+		Resource rootResource = api.addResource("root", "dummy", JsonValue.EMPTY_JSON_OBJECT, null, null);
+
+		UUID uuid = UUID.randomUUID();
+
+		try(DummyActuator act = createDummyActuator(rootResource, napi)) {
+			FakeAgentListener l = new FakeAgentListener(napi, act);
+
+			Actuator.LaunchResult lr = act.launchAgents(new UUID[]{uuid})[0];
+			Assert.assertNull(lr.t);
+
+			DefaultAgentState as = new DefaultAgentState();
+			ReferenceAgent ra = new ReferenceAgent(as, l, true);
+			as.setUUID(uuid);
+			as.setActuatorData(JsonObject.EMPTY_JSON_OBJECT);
+			napi.addAgent(rootResource, ra.getDataStore());
+
+			ra.terminate();
+			int x = 0;
+		}
+
+		/* This is a new instance. */
+		AgentState as = napi.getAgentByUUID(uuid);
+
+		Assert.assertEquals(Agent.State.SHUTDOWN, as.getState());
+		Assert.assertNull(as.getQueue());
+		Assert.assertTrue(as.getExpired());
+		Assert.assertEquals(AgentShutdown.Reason.Requested, as.getShutdownReason());
+		Assert.assertEquals(-1, as.getShutdownSignal());
 	}
 
 	@Test

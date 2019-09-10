@@ -114,7 +114,7 @@ DROP TABLE IF EXISTS nimrod_resource_agents CASCADE;
 CREATE TABLE nimrod_resource_agents(
 	id						BIGSERIAL NOT NULL PRIMARY KEY,
 	state					nimrod_agent_state NOT NULL,
-	queue					TEXT CHECK((state != 'WAITING_FOR_HELLO'::nimrod_agent_state) != (queue IS NULL)),
+	queue					TEXT CHECK((state != 'WAITING_FOR_HELLO'::nimrod_agent_state AND state != 'SHUTDOWN') != (queue IS NULL)),
 	agent_uuid				UUID NOT NULL UNIQUE,
 	shutdown_signal			INTEGER NOT NULL,
 	shutdown_reason			nimrod_agent_shutdown_reason NOT NULL,

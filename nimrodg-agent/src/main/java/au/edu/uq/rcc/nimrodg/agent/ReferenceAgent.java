@@ -85,7 +85,7 @@ public class ReferenceAgent implements Agent {
 
 		if(initial) {
 			storage.setState(null);
-			reset();
+			reset(null);
 		}
 	}
 
@@ -134,14 +134,14 @@ public class ReferenceAgent implements Agent {
 		}
 	}
 
-	public final void reset() {
+	public final void reset(UUID uuid) {
 		State state = storage.getState();
 		if(state != State.SHUTDOWN && state != null) {
 			throw new IllegalStateException("Cannot reset, disconnect agent first.");
 		}
 
 		storage.setQueue(null);
-		storage.setUUID(null);
+		storage.setUUID(uuid);
 		storage.setShutdownSignal(-1);
 		storage.setShutdownReason(Reason.HostSignal);
 		setState(State.WAITING_FOR_HELLO);
@@ -197,6 +197,7 @@ public class ReferenceAgent implements Agent {
 			/* Fake a shutdown */
 			storage.setShutdownSignal(-1);
 			storage.setShutdownReason(Reason.Requested);
+			this.setState(State.SHUTDOWN);
 			return;
 		}
 

@@ -30,6 +30,7 @@ import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentSubmit;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentUpdate;
 import au.edu.uq.rcc.nimrodg.api.Actuator;
+import au.edu.uq.rcc.nimrodg.api.Actuator.LaunchResult;
 import au.edu.uq.rcc.nimrodg.api.CommandResult;
 import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.Job;
@@ -250,7 +251,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 	 *
 	 * @param name The name of the function submitting. This is for debug purposes only.
 	 * @param r The task.
-	 * @param prio Does this task have priority?
+	 * @param prio Is this a priority task? Priority tasks are run even when shutting down.
 	 */
 	private void runLater(String name, Runnable r, boolean prio) {
 		if(prio) {
@@ -381,19 +382,19 @@ public class Master implements MessageQueueListener, AutoCloseable {
 		activeAttempts.entrySet().stream().forEach(je -> je.getValue().stream()
 				.filter(att -> att.getStatus() == JobAttempt.Status.RUNNING && !runningJobs.containsKey(att.getAgentUUID()))
 				.forEach(att -> {
-			AgentInfo ai = allAgents.get(att.getAgentUUID());
-			/* If there's no agent associated, something screwy's going on. Fail the attempt and let it reschedule. */
-			if(ai == null) {
-				/* FIXME: What if the job scheduler actually knows about it and somethings really gone screwy? */
-				LOGGER.warn("Active job attempt {} has invalid agent {}, marking as failed.", att.getUUID(), att.getAgentUUID());
-				nimrod.finishJobAttempt(att, true);
-				return;
-			}
+					AgentInfo ai = allAgents.get(att.getAgentUUID());
+					/* If there's no agent associated, something screwy's going on. Fail the attempt and let it reschedule. */
+					if(ai == null) {
+						/* FIXME: What if the job scheduler actually knows about it and somethings really gone screwy? */
+						LOGGER.warn("Active job attempt {} has invalid agent {}, marking as failed.", att.getUUID(), att.getAgentUUID());
+						nimrod.finishJobAttempt(att, true);
+						return;
+					}
 
-			Job job = je.getKey();
-			RunningJob rj = new RunningJob(att.getUUID(), job, att, buildNetworkJob(att, job, ai), ai.instance, true);
-			runningJobs.put(rj.uuid, rj);
-		}));
+					Job job = je.getKey();
+					RunningJob rj = new RunningJob(att.getUUID(), job, att, buildNetworkJob(att, job, ai), ai.instance, true);
+					runningJobs.put(rj.uuid, rj);
+				}));
 
 		/* Resync the schedulers. */
 		runningJobs.values().stream().forEach(j -> jobScheduler.recordAttempt(j.att, j.job));
@@ -510,14 +511,16 @@ public class Master implements MessageQueueListener, AutoCloseable {
 			AgentHello hello = (AgentHello)msg;
 			LOGGER.trace("Received agent.hello with (uuid, queue) = ({}, {})", hello.getAgentUUID(), hello.queue);
 
-			if(state != State.Started) {
-				LOGGER.warn("Agent connection during shutdown, terminating...");
+			CompletableFuture<LaunchRequest> _info = pendingAgentConnections.get(hello.getAgentUUID());
+
+			if(_info == null) {
+				LOGGER.warn("Agent connection unexpected, terminating...");
 				return MessageQueueListener.MessageOperation.Terminate;
 			}
 
-			CompletableFuture<LaunchRequest> _info;
-			if((_info = pendingAgentConnections.get(hello.getAgentUUID())) == null) {
-				LOGGER.warn("Agent connection unexpected, terminating...");
+			if(state != State.Started) {
+				pendingAgentConnections.remove(hello.getAgentUUID());
+				LOGGER.warn("Agent connection during shutdown, terminating...");
 				return MessageQueueListener.MessageOperation.Terminate;
 			}
 
@@ -555,16 +558,13 @@ public class Master implements MessageQueueListener, AutoCloseable {
 			if(state != State.Started) {
 				LOGGER.warn("Agent connection during shutdown, terminating...");
 				CompletableFuture<LaunchRequest> lrq = pendingAgentConnections.remove(hello.getAgentUUID());
-				lrq.thenAccept(l -> {
-					
-				});
 				return MessageQueueListener.MessageOperation.Terminate;
 			}
 
 			/* If we're this far, this future should be complete. */
 			LaunchRequest lrq = pendingAgentConnections.remove(hello.getAgentUUID()).getNow(null);
 			assert lrq != null && !lrq.launchResults.isCompletedExceptionally() && lrq.launchResults.isDone();
-			
+
 			Actuator.LaunchResult[] launchResults = lrq.launchResults.join();
 			//Actuator.LaunchResult[] launchResults = lrq.launchResults.getNow(null);
 
@@ -715,33 +715,33 @@ public class Master implements MessageQueueListener, AutoCloseable {
 			 * NB: rq.launchResults will never fail. In the case of an actuator failure,
 			 * AAAAA will fail each request instead of the entire future.
 			 */
-			rq.launchResults.thenAccept(lrs -> {
-				for(int i = 0; i < lrs.length; ++i) {
-					Optional<Actuator> act;
-					if(rq.actuatorFuture.isCompletedExceptionally()) {
-						act = Optional.empty();
+			LaunchResult[] lrs = rq.launchResults.join();
+			for(int i = 0; i < lrs.length; ++i) {
+				Optional<Actuator> act;
+				if(rq.actuatorFuture.isCompletedExceptionally()) {
+					act = Optional.empty();
+				} else {
+					act = Optional.of(rq.actuatorFuture.join());
+				}
+
+				Actuator.LaunchResult lr = lrs[i];
+				UUID uuid = rq.uuids[i];
+				runLater("launchAgents", () -> {
+					if(lr.t != null) {
+						/* We'll be run during shutdown, so ensure this isn't. */
+						runLater("launchAgents->onAgentLaunchFailure", () -> agentScheduler.onAgentLaunchFailure(uuid, res, lr.t), false);
+						pendingAgentConnections.remove(uuid);
 					} else {
-						act = Optional.ofNullable(rq.actuatorFuture.getNow(null));
+						AgentState as = new DefaultAgentState();
+						as.setUUID(uuid);
+						as.setActuatorData(lr.actuatorData);
+						AgentInfo ai = registerAgent(as, res, act, true);
+						nimrod.addAgent(res, ai.state);
 					}
 
-					Actuator.LaunchResult lr = lrs[i];
-					UUID uuid = rq.uuids[i];
-					runLater("launchAgents", () -> {
-						if(lr.t != null) {
-							agentScheduler.onAgentLaunchFailure(uuid, res, lr.t);
-							pendingAgentConnections.remove(uuid);
-						} else {
-							AgentState as = new DefaultAgentState();
-							as.setUUID(uuid);
-							as.setActuatorData(lr.actuatorData);
-							AgentInfo ai = registerAgent(as, res, act, true);
-							nimrod.addAgent(res, ai.state);
-						}
-
-						fff.complete(rq);
-					}, true);
-				}
-			});
+					fff.complete(rq);
+				}, true);
+			}
 
 			return rq.uuids;
 		}
@@ -864,6 +864,9 @@ public class Master implements MessageQueueListener, AutoCloseable {
 
 		@Override
 		public void onStateChange(Agent agent, Agent.State oldState, Agent.State newState) {
+			AgentInfo ai = getAgentInfo(agent);
+			assert agent == ai.instance;
+
 			if(oldState == null) {
 				/* Initial state setup, we don't do anything here. */
 				return;
@@ -871,24 +874,17 @@ public class Master implements MessageQueueListener, AutoCloseable {
 
 			LOGGER.debug("Agent {}: State change from {} -> {}", agent.getUUID(), oldState, newState);
 
-			AgentInfo ai = getAgentInfo(agent);
-			assert agent == ai.instance;
-
 			if(oldState == Agent.State.WAITING_FOR_HELLO && newState == Agent.State.READY) {
 				ai.state.setConnectionTime(Instant.now());
 				ai.actuator.thenAccept(a -> a.notifyAgentConnection(ai.state));
 				heart.onAgentConnect(ai.uuid, Instant.now());
-			} else {
-				if(newState == Agent.State.SHUTDOWN) {
-					ai.state.setExpired(true);
-				}
-
-				if(newState == Agent.State.SHUTDOWN) {
-					ai.actuator.thenAccept(a -> a.notifyAgentDisconnection(ai.uuid));
-					heart.onAgentDisconnect(ai.uuid);
-					allAgents.remove(ai.uuid);
-				}
+			} else if(newState == Agent.State.SHUTDOWN) {
+				ai.state.setExpired(true);
+				ai.actuator.thenAccept(a -> a.notifyAgentDisconnection(ai.uuid));
+				heart.onAgentDisconnect(ai.uuid);
+				allAgents.remove(ai.uuid);
 			}
+
 			nimrod.updateAgent(ai.state);
 
 			/* Execute this with priority so it's processed before the next scheduler tick. */

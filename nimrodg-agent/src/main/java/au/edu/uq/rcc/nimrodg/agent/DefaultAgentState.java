@@ -38,6 +38,24 @@ public class DefaultAgentState implements AgentState {
 	private boolean expired;
 	private JsonObject actuatorData;
 
+	public DefaultAgentState() {
+
+	}
+
+	public DefaultAgentState(AgentState as) {
+		this.state = as.getState();
+		this.queue = as.getQueue();
+		this.uuid = as.getUUID();
+		this.shutdownSignal = as.getShutdownSignal();
+		this.shutdownReason = as.getShutdownReason();
+		this.lastHeardFrom = as.getLastHeardFrom();
+		this.creationTime = as.getCreationTime();
+		this.connectionTime = as.getConnectionTime();
+		this.expiryTime = as.getExpiryTime();
+		this.expired = as.getExpired();
+		this.actuatorData = as.getActuatorData();
+	}
+
 	@Override
 	public Agent.State getState() {
 		return state;
