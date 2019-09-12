@@ -484,7 +484,7 @@ public class PortalAPI extends NimrodCLICommand {
 					csv.print(e.message);
 					csv.println();
 				}
-				return 1;
+				return 0;
 			}
 
 			try {
@@ -494,7 +494,7 @@ public class PortalAPI extends NimrodCLICommand {
 				csv.print(-1);
 				csv.print(e.getMessage());
 				csv.println();
-				return 1;
+				return 0;
 			}
 		}
 		return 0;
