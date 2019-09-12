@@ -332,7 +332,9 @@ public abstract class APITests {
 			FakeAgentListener l = new FakeAgentListener(napi, act);
 
 			for(int i = 0; i < agents.length; ++i) {
-				agents[i] = new ReferenceAgent(new DefaultAgentState(), l);
+				DefaultAgentState as = new DefaultAgentState();
+				agents[i] = new ReferenceAgent(as, l);
+				agents[i].reset(uuids[i]);
 				agents[i].processMessage(hellos.get(i), Instant.now());
 
 				Assert.assertEquals(
@@ -367,10 +369,9 @@ public abstract class APITests {
 			Assert.assertNull(lr.t);
 
 			DefaultAgentState as = new DefaultAgentState();
-			ReferenceAgent ra = new ReferenceAgent(as, l, true);
-			as.setUUID(uuid);
+			ReferenceAgent ra = new ReferenceAgent(as, l);
 			as.setActuatorData(JsonObject.EMPTY_JSON_OBJECT);
-			napi.addAgent(rootResource, ra.getDataStore());
+			ra.reset(uuid);
 
 			ra.terminate();
 			int x = 0;

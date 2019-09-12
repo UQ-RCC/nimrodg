@@ -172,13 +172,13 @@ class Heart {
 	}
 
 	/**
-	 * Called when an agent connects.
+	 * Called when an agent is created.
 	 *
 	 * This may not use any operations.
 	 *
 	 * @param u The UUID of the agent.
 	 */
-	public void onAgentConnect(UUID u, Instant now) {
+	public void onAgentCreate(UUID u, Instant now) {
 		expiryInfo.put(u, new ExpiryInfo(now));
 	}
 

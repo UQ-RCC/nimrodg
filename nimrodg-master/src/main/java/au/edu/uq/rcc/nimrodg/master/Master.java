@@ -319,20 +319,20 @@ public class Master implements MessageQueueListener, AutoCloseable {
 	/*
 	 * Register an agent with the master, creating its state machine et al.
 	 */
-	private AgentInfo registerAgent(AgentState as, Resource res, Optional<Actuator> act, boolean initial) {
-		AgentInfo ai = new AgentInfo(as.getUUID(), res, act, new ReferenceAgent(as, agentListener, initial), as);
-
-		/* ReferenceAgent will reset the UUID the initial flag is set. */
-		if(initial) {
-			as.setUUID(ai.uuid);
-		}
+	private AgentInfo registerAgent(DefaultAgentState as, Resource res, Optional<Actuator> act, boolean initial) {
+		AgentInfo ai = new AgentInfo(as.getUUID(), res, act, new ReferenceAgent(as, agentListener), as);
 
 		allAgents.put(ai.uuid, ai);
+
+		if(initial) {
+			ai.instance.reset(ai.uuid);
+		}
+
 		return ai;
 	}
 
 	private void checkOrphanage() {
-		Map<Resource, Collection<AgentState>> agentMap = nimrod.getAssignedResources(experiment).stream()
+		Map<Resource, Collection<DefaultAgentState>> agentMap = nimrod.getAssignedResources(experiment).stream()
 				.collect(Collectors.toMap(
 						r -> r,
 						//						r -> nimrod.getResourceAgents(r)
@@ -343,9 +343,9 @@ public class Master implements MessageQueueListener, AutoCloseable {
 
 		for(Resource r : agentMap.keySet()) {
 			CompletableFuture<Actuator> af = aaaaa.getOrLaunchActuator(r);
-			for(AgentState as : agentMap.get(r)) {
+			for(DefaultAgentState as : agentMap.get(r)) {
 				AgentInfo ai = registerAgent(as, r, Optional.empty(), false);
-				heart.onAgentConnect(as.getUUID(), Instant.now());
+				heart.onAgentCreate(as.getUUID(), Instant.now());
 				heart.resetPingTimer(as.getUUID());
 				af.handle((a, t) -> {
 					if(t != null) {
@@ -738,19 +738,8 @@ public class Master implements MessageQueueListener, AutoCloseable {
 					} else {
 						DefaultAgentState as = new DefaultAgentState();
 						as.setUUID(uuid);
-						AgentInfo ai = registerAgent(as, res, act, true);
-
 						as.setActuatorData(lr.actuatorData);
-						AgentState nas = nimrod.addAgent(res, ai.state);
-						as.update(nas);
-						/* FIXME: This should be renamed. */
-
- /*
-						 * WHERE I LEFT OFF:
-						 * This eventually dies because the creation time fields et. al. aren't
-						 * are set by the db. I need re-sync them or do them locally.
-						 */
-						heart.onAgentConnect(uuid, Instant.now());
+						registerAgent(as, res, act, true);
 					}
 
 					fff.complete(rq);
@@ -879,20 +868,22 @@ public class Master implements MessageQueueListener, AutoCloseable {
 		@Override
 		public void onStateChange(Agent agent, Agent.State oldState, Agent.State newState) {
 
-			if(oldState == null) {
-				/* Initial state setup, we don't do anything here. */
-				return;
-			}
-
 			AgentInfo ai = getAgentInfo(agent);
 			assert agent == ai.instance;
+
+			if(oldState == null) {
+				AgentState nas = nimrod.addAgent(ai.resource, ai.state);
+				ai.state.update(nas);
+				heart.onAgentCreate(ai.uuid, Instant.now());
+				return;
+			}
 
 			LOGGER.debug("Agent {}: State change from {} -> {}", agent.getUUID(), oldState, newState);
 
 			if(oldState == Agent.State.WAITING_FOR_HELLO && newState == Agent.State.READY) {
 				ai.state.setConnectionTime(Instant.now());
 				ai.actuator.thenAccept(a -> a.notifyAgentConnection(ai.state));
-				heart.onAgentConnect(ai.uuid, Instant.now());
+
 			} else if(newState == Agent.State.SHUTDOWN) {
 				ai.state.setExpired(true);
 				ai.actuator.thenAccept(a -> a.notifyAgentDisconnection(ai.uuid));

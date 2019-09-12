@@ -19,7 +19,7 @@
  */
 package au.edu.uq.rcc.nimrodg.master;
 
-import au.edu.uq.rcc.nimrodg.agent.AgentState;
+import au.edu.uq.rcc.nimrodg.agent.DefaultAgentState;
 import au.edu.uq.rcc.nimrodg.agent.ReferenceAgent;
 import au.edu.uq.rcc.nimrodg.api.Actuator;
 import java.util.Objects;
@@ -34,9 +34,9 @@ class AgentInfo {
 	public final Resource resource;
 	public final CompletableFuture<Actuator> actuator;
 	public final ReferenceAgent instance;
-	public final AgentState state;
+	public final DefaultAgentState state;
 
-	public AgentInfo(UUID uuid, Resource resource, Optional<Actuator> actuator, ReferenceAgent instance, AgentState state) {
+	public AgentInfo(UUID uuid, Resource resource, Optional<Actuator> actuator, ReferenceAgent instance, DefaultAgentState state) {
 		this.uuid = uuid;
 		this.resource = resource;
 		this.actuator = new CompletableFuture<>();

@@ -48,16 +48,17 @@ public class FakeAgentListener implements ReferenceAgent.AgentListener {
 
 	@Override
 	public void onStateChange(Agent _agent, Agent.State oldState, Agent.State newState) {
-		if(oldState == null) {
-			/* Initial state setup, we don't do anything here. */
-			return;
-		}
-
 		ReferenceAgent agent = (ReferenceAgent)_agent;
 		DefaultAgentState as = (DefaultAgentState)agent.getDataStore();
 
+		if(oldState == null) {
+			AgentState nas = nimrod.addAgent(actuator.getResource(), as);
+			as.update(nas);
+			return;
+		}
+
 		if(oldState == Agent.State.WAITING_FOR_HELLO && newState == Agent.State.READY) {
-			as.setCreationTime(Instant.now());
+			as.setConnectionTime(Instant.now());
 			actuator.notifyAgentConnection(as);
 		} else if(newState == Agent.State.SHUTDOWN) {
 			as.setExpired(true);

@@ -58,34 +58,18 @@ public class ReferenceAgent implements Agent {
 	private final AgentState storage;
 
 	/**
-	 * Create a new agent, setting the data store to the initial values.
-	 *
-	 * @param dataStore The data storage instance. This will be initialised to default values.
-	 * @param listener The listener.
-	 */
-	public ReferenceAgent(AgentState dataStore, AgentListener listener) {
-		this(dataStore, listener, true);
-	}
-
-	/**
 	 * Create a new agent with the state currently in the given data store.
 	 *
 	 * @param dataStore The data storage instance. It is the users responsibility that this is consistent.
 	 * @param listener The listener.
-	 * @param initial If set, initialise the data store to default values.
 	 */
-	public ReferenceAgent(AgentState dataStore, AgentListener listener, boolean initial) {
+	public ReferenceAgent(AgentState dataStore, AgentListener listener) {
 		if((storage = dataStore) == null) {
 			throw new IllegalArgumentException("dataStore cannot be null");
 		}
 
 		if((this.listener = listener) == null) {
 			throw new IllegalArgumentException("sender cannot be null");
-		}
-
-		if(initial) {
-			storage.setState(null);
-			reset(null);
 		}
 	}
 
@@ -140,6 +124,7 @@ public class ReferenceAgent implements Agent {
 			throw new IllegalStateException("Cannot reset, disconnect agent first.");
 		}
 
+		storage.setState(null);
 		storage.setQueue(null);
 		storage.setUUID(uuid);
 		storage.setShutdownSignal(-1);

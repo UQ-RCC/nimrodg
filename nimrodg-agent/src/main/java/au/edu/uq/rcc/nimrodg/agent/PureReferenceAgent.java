@@ -123,6 +123,7 @@ public class PureReferenceAgent implements Agent {
 			throw new IllegalStateException("Cannot reset, disconnect agent first.");
 		}
 
+		state = null;
 		queue = null;
 		this.uuid = uuid;
 		shutdownSignal = -1;
