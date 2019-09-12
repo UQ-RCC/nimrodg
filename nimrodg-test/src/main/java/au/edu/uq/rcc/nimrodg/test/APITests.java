@@ -343,6 +343,14 @@ public abstract class APITests {
 								.build(),
 						agents[i].getDataStore().getActuatorData()
 				);
+
+				int x = 0;
+			}
+
+			for(int i = 0; i < agents.length; ++i) {
+				ReferenceAgent ra = agents[i];
+				AgentShutdown as = new AgentShutdown(uuids[i], AgentShutdown.Reason.HostSignal, 15);
+				agents[i].processMessage(as, Instant.now());
 			}
 		}
 	}
