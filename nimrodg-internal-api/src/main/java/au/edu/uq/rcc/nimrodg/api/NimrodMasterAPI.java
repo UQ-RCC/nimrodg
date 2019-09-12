@@ -64,7 +64,7 @@ public interface NimrodMasterAPI extends NimrodAPI {
 
 	Collection<AgentState> getResourceAgents(Resource node);
 
-	void addAgent(Resource node, AgentState agent);
+	AgentState addAgent(Resource node, AgentState agent);
 
 	void updateAgent(AgentState agent);
 

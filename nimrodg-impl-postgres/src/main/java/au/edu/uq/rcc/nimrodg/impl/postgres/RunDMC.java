@@ -454,8 +454,8 @@ public class RunDMC extends SQLUUUUU<NimrodSQLException> implements NimrodDBAPI,
 	}
 
 	@Override
-	public synchronized void addAgent(TempResource.Impl node, AgentState agent) throws SQLException {
-		resourceHelpers.addAgent(node.base.id, agent);
+	public synchronized AgentState addAgent(TempResource.Impl node, AgentState agent) throws SQLException {
+		return resourceHelpers.addAgent(node.base.id, agent).create();
 	}
 
 	@Override

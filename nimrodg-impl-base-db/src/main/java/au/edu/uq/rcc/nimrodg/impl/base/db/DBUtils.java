@@ -19,7 +19,10 @@
  */
 package au.edu.uq.rcc.nimrodg.impl.base.db;
 
+import au.edu.uq.rcc.nimrodg.api.MasterResourceType;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
+import au.edu.uq.rcc.nimrodg.api.ResourceType;
+import au.edu.uq.rcc.nimrodg.api.utils.NimrodUtils;
 import java.io.StringReader;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -111,17 +114,6 @@ public class DBUtils {
 		return b;
 	}
 
-	@SafeVarargs
-	public static <T> T coalesce(T... args) {
-		for(int i = 0; i < args.length; ++i) {
-			if(args[i] != null) {
-				return args[i];
-			}
-		}
-
-		return null;
-	}
-
 	public static NimrodURI mergeNimrodURI(NimrodURI oldUri, NimrodURI newUri) {
 		if(oldUri == null) {
 			return newUri;
@@ -132,10 +124,10 @@ public class DBUtils {
 		}
 
 		return NimrodURI.create(
-				coalesce(newUri.uri, oldUri.uri),
-				coalesce(newUri.certPath, oldUri.certPath),
-				coalesce(newUri.noVerifyPeer, oldUri.noVerifyPeer),
-				coalesce(newUri.noVerifyHost, oldUri.noVerifyHost)
+				NimrodUtils.coalesce(newUri.uri, oldUri.uri),
+				NimrodUtils.coalesce(newUri.certPath, oldUri.certPath),
+				NimrodUtils.coalesce(newUri.noVerifyPeer, oldUri.noVerifyPeer),
+				NimrodUtils.coalesce(newUri.noVerifyHost, oldUri.noVerifyHost)
 		);
 	}
 
@@ -149,10 +141,10 @@ public class DBUtils {
 		}
 
 		return new TempConfig(
-				coalesce(newCfg.workDir, oldCfg.workDir),
-				coalesce(newCfg.storeDir, oldCfg.storeDir),
+				NimrodUtils.coalesce(newCfg.workDir, oldCfg.workDir),
+				NimrodUtils.coalesce(newCfg.storeDir, oldCfg.storeDir),
 				mergeNimrodURI(oldCfg.amqpUri, newCfg.amqpUri),
-				coalesce(newCfg.amqpRoutingKey, oldCfg.amqpRoutingKey),
+				NimrodUtils.coalesce(newCfg.amqpRoutingKey, oldCfg.amqpRoutingKey),
 				mergeNimrodURI(oldCfg.txUri, newCfg.txUri)
 		);
 	}
@@ -233,5 +225,19 @@ public class DBUtils {
 		} else {
 			return Optional.of(nuri);
 		}
+	}
+
+	public static MasterResourceType createType(String className) throws ReflectiveOperationException {
+		return createType(Class.forName(className));
+	}
+
+	public static MasterResourceType createType(Class<?> clazz) throws ReflectiveOperationException {
+
+		if(!ResourceType.class.isAssignableFrom(clazz)) {
+			/* Specified class doesn't implement ResourceType */
+			return null;
+		}
+
+		return (MasterResourceType)clazz.getConstructor().newInstance();
 	}
 }

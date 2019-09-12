@@ -564,8 +564,8 @@ public class SQLite3DB extends SQLUUUUU<NimrodSQLException> implements NimrodDBA
 	}
 
 	@Override
-	public synchronized void addAgent(TempResource.Impl node, AgentState agent) throws SQLException {
-		resourceHelpers.addAgent(node.base.id, agent);
+	public synchronized AgentState addAgent(TempResource.Impl node, AgentState agent) throws SQLException {
+		return resourceHelpers.addAgent(node.base.id, agent).create();
 	}
 
 	@Override

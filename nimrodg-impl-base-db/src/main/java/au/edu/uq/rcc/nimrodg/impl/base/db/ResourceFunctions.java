@@ -17,7 +17,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package au.edu.uq.rcc.nimrodg.api.utils;
+package au.edu.uq.rcc.nimrodg.impl.base.db;
 
 import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPIException;
@@ -78,7 +78,7 @@ public interface ResourceFunctions<T extends Resource, E extends Experiment, A e
 
 	Collection<A> getResourceAgentInformation(T node) throws X;
 
-	void addAgent(T node, AgentState agent) throws X;
+	AgentState addAgent(T node, AgentState agent) throws X;
 
 	void updateAgent(AgentState agent) throws X;
 

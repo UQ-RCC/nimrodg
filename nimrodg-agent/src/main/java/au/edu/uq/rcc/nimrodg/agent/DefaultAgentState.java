@@ -24,7 +24,7 @@ import java.time.Instant;
 import java.util.UUID;
 import javax.json.JsonObject;
 
-public class DefaultAgentState implements AgentState {
+public final class DefaultAgentState implements AgentState {
 
 	private Agent.State state;
 	private String queue;
@@ -43,6 +43,10 @@ public class DefaultAgentState implements AgentState {
 	}
 
 	public DefaultAgentState(AgentState as) {
+		this.update(as);
+	}
+
+	public void update(AgentState as) {
 		this.state = as.getState();
 		this.queue = as.getQueue();
 		this.uuid = as.getUUID();

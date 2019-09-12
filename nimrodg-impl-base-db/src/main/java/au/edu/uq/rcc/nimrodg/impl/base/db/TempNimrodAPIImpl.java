@@ -26,7 +26,6 @@ import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPIException;
 import au.edu.uq.rcc.nimrodg.api.ResourceTypeInfo;
 import au.edu.uq.rcc.nimrodg.api.Actuator;
-import au.edu.uq.rcc.nimrodg.api.utils.ResourceUtils;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -204,7 +203,7 @@ public abstract class TempNimrodAPIImpl implements NimrodAPI, NimrodMasterAPI, N
 		for(Map.Entry<String, String> e : types) {
 			ResourceType t;
 			try {
-				tl.add(ResourceUtils.createType(e.getValue()));
+				tl.add(DBUtils.createType(e.getValue()));
 			} catch(ReflectiveOperationException ex) {
 				throw new NimrodAPIException(ex);
 			}
@@ -220,7 +219,7 @@ public abstract class TempNimrodAPIImpl implements NimrodAPI, NimrodMasterAPI, N
 		}
 
 		try {
-			return ResourceUtils.createType(t.getValue());
+			return DBUtils.createType(t.getValue());
 		} catch(ReflectiveOperationException ex) {
 			throw new NimrodAPIException(ex);
 		}
@@ -247,7 +246,7 @@ public abstract class TempNimrodAPIImpl implements NimrodAPI, NimrodMasterAPI, N
 
 		try {
 			/* NB: Using className instead of clazz here for a reason. */
-			return ResourceUtils.createType(ti.className).createActuator(ops, resource, uri, certs);
+			return DBUtils.createType(ti.className).createActuator(ops, resource, uri, certs);
 		} catch(ReflectiveOperationException e) {
 			throw new IOException(e);
 		}
@@ -321,8 +320,8 @@ public abstract class TempNimrodAPIImpl implements NimrodAPI, NimrodMasterAPI, N
 	}
 
 	@Override
-	public void addAgent(Resource node, AgentState agent) {
-		db.runSQL(() -> db.addAgent(validateResource(node), agent));
+	public AgentState addAgent(Resource node, AgentState agent) {
+		return db.runSQL(() -> db.addAgent(validateResource(node), agent));
 	}
 
 	@Override

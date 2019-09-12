@@ -22,7 +22,6 @@ package au.edu.uq.rcc.nimrodg.impl.base.db;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPIException;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.api.ResourceType;
-import au.edu.uq.rcc.nimrodg.api.utils.ResourceUtils;
 import javax.json.JsonObject;
 import au.edu.uq.rcc.nimrodg.api.Resource;
 
@@ -79,7 +78,7 @@ public class TempResource {
 		@Override
 		public ResourceType getType() {
 			try {
-				return ResourceUtils.createType(typeClass);
+				return DBUtils.createType(typeClass);
 			} catch(ReflectiveOperationException ex) {
 				throw new NimrodAPIException(ex);
 			}

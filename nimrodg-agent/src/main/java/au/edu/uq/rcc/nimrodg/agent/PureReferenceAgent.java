@@ -167,8 +167,9 @@ public class PureReferenceAgent implements Agent {
 	public void ping() throws IOException {
 		if(state == State.SHUTDOWN) {
 			throw new IllegalStateException("Can't ping a stopped agent");
+		} else if(state == State.WAITING_FOR_HELLO) {
+			sendMessage(new AgentPing(uuid));
 		}
-		sendMessage(new AgentPing(uuid));
 	}
 
 	@Override

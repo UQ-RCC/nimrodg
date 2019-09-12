@@ -184,6 +184,7 @@ class Heart {
 
 	/**
 	 * Reset the ping timer, causing a ping to be sent next tick.
+	 *
 	 * @param u The UUID of the agent.
 	 */
 	public void resetPingTimer(UUID u) {
@@ -202,6 +203,11 @@ class Heart {
 	 */
 	public void onAgentDisconnect(UUID u) {
 		ExpiryInfo ei = expiryInfo.remove(u);
+		if(ei == null) {
+			/* Sometimes happens if we've been killed before a expiry has gone through. */
+			return;
+		}
+
 		/* Only log if we've tried to terminate. */
 		if(ei.isExpiring()) {
 			LOGGER.info("Agent {} expired on attempt {}", u, ei.retryCount);

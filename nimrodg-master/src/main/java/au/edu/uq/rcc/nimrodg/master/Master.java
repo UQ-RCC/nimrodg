@@ -46,6 +46,7 @@ import au.edu.uq.rcc.nimrodg.api.events.NimrodMasterEvent;
 import au.edu.uq.rcc.nimrodg.master.sched.AgentScheduler;
 import au.edu.uq.rcc.nimrodg.master.sched.JobScheduler;
 import au.edu.uq.rcc.nimrodg.api.utils.MsgUtils;
+import au.edu.uq.rcc.nimrodg.api.utils.NimrodUtils;
 import au.edu.uq.rcc.nimrodg.master.AAAAA.LaunchRequest;
 import au.edu.uq.rcc.nimrodg.resource.act.ActuatorUtils;
 import java.io.IOException;
@@ -334,7 +335,10 @@ public class Master implements MessageQueueListener, AutoCloseable {
 		Map<Resource, Collection<AgentState>> agentMap = nimrod.getAssignedResources(experiment).stream()
 				.collect(Collectors.toMap(
 						r -> r,
-						r -> nimrod.getResourceAgents(r)
+						//						r -> nimrod.getResourceAgents(r)
+						r -> nimrod.getResourceAgents(r).stream()
+								.map(as -> new DefaultAgentState(as))
+								.collect(Collectors.toList())
 				));
 
 		for(Resource r : agentMap.keySet()) {
@@ -732,11 +736,21 @@ public class Master implements MessageQueueListener, AutoCloseable {
 						runLater("launchAgents->onAgentLaunchFailure", () -> agentScheduler.onAgentLaunchFailure(uuid, res, lr.t), false);
 						pendingAgentConnections.remove(uuid);
 					} else {
-						AgentState as = new DefaultAgentState();
+						DefaultAgentState as = new DefaultAgentState();
 						as.setUUID(uuid);
-						as.setActuatorData(lr.actuatorData);
 						AgentInfo ai = registerAgent(as, res, act, true);
-						nimrod.addAgent(res, ai.state);
+
+						as.setActuatorData(lr.actuatorData);
+						AgentState nas = nimrod.addAgent(res, ai.state);
+						as.update(nas);
+						/* FIXME: This should be renamed. */
+
+ /*
+						 * WHERE I LEFT OFF:
+						 * This eventually dies because the creation time fields et. al. aren't
+						 * are set by the db. I need re-sync them or do them locally.
+						 */
+						heart.onAgentConnect(uuid, Instant.now());
 					}
 
 					fff.complete(rq);
@@ -864,13 +878,14 @@ public class Master implements MessageQueueListener, AutoCloseable {
 
 		@Override
 		public void onStateChange(Agent agent, Agent.State oldState, Agent.State newState) {
-			AgentInfo ai = getAgentInfo(agent);
-			assert agent == ai.instance;
 
 			if(oldState == null) {
 				/* Initial state setup, we don't do anything here. */
 				return;
 			}
+
+			AgentInfo ai = getAgentInfo(agent);
+			assert agent == ai.instance;
 
 			LOGGER.debug("Agent {}: State change from {} -> {}", agent.getUUID(), oldState, newState);
 
@@ -958,7 +973,14 @@ public class Master implements MessageQueueListener, AutoCloseable {
 				a.forceTerminateAgent(u);
 				a.notifyAgentDisconnection(u);
 			});
-			runLater("heartExpireAgent", () -> agentScheduler.onAgentExpiry(u));
+
+			/*
+			 * If we're still WAITING_FOR_HELLO, don't notify the scheduler as it doesn't
+			 * know about it yet.
+			 */
+			if(ai.state.getState() != Agent.State.WAITING_FOR_HELLO) {
+				runLater("heartExpireAgent", () -> agentScheduler.onAgentExpiry(u));
+			}
 			nimrod.updateAgent(ai.state);
 		}
 
@@ -987,7 +1009,13 @@ public class Master implements MessageQueueListener, AutoCloseable {
 
 		@Override
 		public Instant getLastHeardFrom(UUID u) {
-			return allAgents.get(u).state.getLastHeardFrom();
+			AgentState as = allAgents.get(u).state;
+			/* This doesn't necessarily need to be last heard from, it just needs a reference point for the heartbeats. */
+			return NimrodUtils.coalesce(
+					as.getLastHeardFrom(),
+					as.getConnectionTime(),
+					as.getCreationTime()
+			);
 		}
 
 		@Override

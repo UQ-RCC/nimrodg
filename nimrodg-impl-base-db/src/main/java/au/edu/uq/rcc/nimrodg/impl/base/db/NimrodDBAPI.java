@@ -33,7 +33,6 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import au.edu.uq.rcc.nimrodg.api.utils.ResourceFunctions;
 import java.util.Optional;
 
 public interface NimrodDBAPI extends ResourceFunctions<TempResource.Impl, TempExperiment.Impl, TempAgent.Impl, SQLException>, ISQLBase<NimrodSQLException>, AutoCloseable {

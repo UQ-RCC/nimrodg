@@ -183,8 +183,9 @@ public class ReferenceAgent implements Agent {
 	public void ping() throws IOException {
 		if(storage.getState() == State.SHUTDOWN) {
 			throw new IllegalStateException("Can't ping a stopped agent");
+		} else if(storage.getState() != State.WAITING_FOR_HELLO) {
+			sendMessage(new AgentPing(storage.getUUID()));
 		}
-		sendMessage(new AgentPing(storage.getUUID()));
 	}
 
 	@Override

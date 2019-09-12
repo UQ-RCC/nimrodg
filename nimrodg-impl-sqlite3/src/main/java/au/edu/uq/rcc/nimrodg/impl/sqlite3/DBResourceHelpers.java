@@ -62,6 +62,7 @@ public class DBResourceHelpers extends DBBaseHelper {
 	private final PreparedStatement qAddResourceCaps;
 	private final PreparedStatement qRemoveResourceCaps;
 
+	private final PreparedStatement qGetAgentById;
 	private final PreparedStatement qGetAgentInformation;
 	private final PreparedStatement qGetAgentResource;
 	private final PreparedStatement qGetAgentsOnResource;
@@ -93,6 +94,7 @@ public class DBResourceHelpers extends DBBaseHelper {
 		this.qAddResourceCaps = prepareStatement("INSERT OR IGNORE INTO nimrod_resource_capabilities(resource_id, exp_id) VALUES(?, ?)");
 		this.qRemoveResourceCaps = prepareStatement("DELETE FROM nimrod_resource_capabilities WHERE resource_id = ? AND exp_id");
 
+		this.qGetAgentById = prepareStatement("SELECT * FROM nimrod_resource_agents WHERE id = ?");
 		this.qGetAgentInformation = prepareStatement("SELECT * FROM nimrod_resource_agents WHERE agent_uuid = ?");
 		this.qGetAgentResource = prepareStatement("SELECT * FROM nimrod_full_resources WHERE id = (SELECT location FROM nimrod_resource_agents WHERE agent_uuid = ?)");
 		this.qGetAgentsOnResource = prepareStatement("SELECT * FROM nimrod_resource_agents WHERE location = ? AND expired = FALSE");
@@ -281,7 +283,7 @@ public class DBResourceHelpers extends DBBaseHelper {
 		}
 	}
 
-	public void addAgent(long resId, AgentState agent) throws SQLException {
+	public TempAgent addAgent(long resId, AgentState agent) throws SQLException {
 		qAddAgent.setString(1, Agent.stateToString(agent.getState()));
 		qAddAgent.setString(2, agent.getQueue());
 		qAddAgent.setString(3, agent.getUUID().toString());
@@ -298,6 +300,24 @@ public class DBResourceHelpers extends DBBaseHelper {
 
 		if(qAddAgent.executeUpdate() == 0) {
 			throw new SQLException("Creating agent failed, no rows affected");
+		}
+
+		long id;
+		try(ResultSet rs = qAddAgent.getGeneratedKeys()) {
+			if(rs.next()) {
+				id = rs.getLong(1);
+			} else {
+				throw new SQLException("Creating agent failed, no id obtained");
+			}
+		}
+
+		qGetAgentById.setLong(0, id);
+		try(ResultSet rs = qGetAgentById.executeQuery()) {
+			if(!rs.next()) {
+				throw new SQLException("Creating agent failed, unable to retrieve info");
+			}
+
+			return agentFromResultSet(rs);
 		}
 	}
 
