@@ -75,16 +75,13 @@ public class DummyActuator implements Actuator {
 
 	@Override
 	public void notifyAgentConnection(AgentState state) {
-		state.setActuatorData(Json.createObjectBuilder()
-				.add("hashCode", state.hashCode())
-				.build());
+
 	}
 
 	@Override
 	public void notifyAgentDisconnection(UUID uuid) {
 
 	}
-
 
 	@Override
 	public boolean forceTerminateAgent(UUID uuid) {

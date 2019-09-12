@@ -334,6 +334,9 @@ public abstract class APITests {
 			for(int i = 0; i < agents.length; ++i) {
 				DefaultAgentState as = new DefaultAgentState();
 				agents[i] = new ReferenceAgent(as, l);
+				as.setActuatorData(Json.createObjectBuilder()
+						.add("hashCode", as.hashCode())
+						.build());
 				agents[i].reset(uuids[i]);
 				agents[i].processMessage(hellos.get(i), Instant.now());
 
