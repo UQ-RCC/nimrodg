@@ -311,7 +311,7 @@ public class DBResourceHelpers extends DBBaseHelper {
 			}
 		}
 
-		qGetAgentById.setLong(0, id);
+		qGetAgentById.setLong(1, id);
 		try(ResultSet rs = qGetAgentById.executeQuery()) {
 			if(!rs.next()) {
 				throw new SQLException("Creating agent failed, unable to retrieve info");
