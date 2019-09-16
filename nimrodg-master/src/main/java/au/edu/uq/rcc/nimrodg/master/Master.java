@@ -514,11 +514,8 @@ public class Master implements MessageQueueListener, AutoCloseable {
 				}
 			});
 
-			Map<CompletableFuture<Actuator>, List<UUID>> aa = NimrodUtils.mapToParent(ais, ai -> ai.actuator, ai -> ai.uuid);
-
-			CompletableFuture.allOf(aa.entrySet().stream()
-					.map(e -> e.getKey().thenAcceptAsync(a -> a.forceTerminateAgent(e.getValue().stream().toArray(UUID[]::new))))
-					.toArray(CompletableFuture[]::new)).join();
+			Map<Resource, List<UUID>> aa = NimrodUtils.mapToParent(ais, ai -> ai.resource, ai -> ai.uuid);
+			aa.forEach((k, v) -> aaaaa.runWithActuator(k, a -> a.forceTerminateAgent(v.stream().toArray(UUID[]::new))));
 
 		}
 		heartOps.toExpire.clear();
@@ -913,11 +910,11 @@ public class Master implements MessageQueueListener, AutoCloseable {
 
 			if(oldState == Agent.State.WAITING_FOR_HELLO && newState == Agent.State.READY) {
 				ai.state.setConnectionTime(Instant.now());
-				ai.actuator.thenAccept(a -> a.notifyAgentConnection(ai.state));
+				aaaaa.runWithActuator(ai.resource, a -> a.notifyAgentConnection(ai.state));
 
 			} else if(newState == Agent.State.SHUTDOWN) {
 				ai.state.setExpired(true);
-				ai.actuator.thenAccept(a -> a.notifyAgentDisconnection(ai.uuid));
+				aaaaa.runWithActuator(ai.resource, a -> a.notifyAgentDisconnection(ai.uuid));
 				heart.onAgentDisconnect(ai.uuid);
 				allAgents.remove(ai.uuid);
 			}

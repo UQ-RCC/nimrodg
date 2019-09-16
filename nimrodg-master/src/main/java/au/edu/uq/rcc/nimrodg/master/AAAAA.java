@@ -29,11 +29,14 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import au.edu.uq.rcc.nimrodg.api.Resource;
 import java.util.Arrays;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 /**
  * AAAAA - Amazing Always Active Actuator Accelerator
@@ -76,15 +79,13 @@ public abstract class AAAAA implements AutoCloseable {
 	private static final Logger LOGGER = LogManager.getLogger(AAAAA.class);
 
 	private final LinkedBlockingDeque<LaunchRequest> requests;
-	private final AtomicBoolean wantStop;
 	private final ConcurrentHashMap<Resource, ActuatorState> actuators;
-	private final CompletableFuture<Void> shutdownFuture;
+	private final ExecutorService executor;
 
 	public AAAAA() {
 		requests = new LinkedBlockingDeque<>();
-		wantStop = new AtomicBoolean(false);
 		actuators = new ConcurrentHashMap<>();
-		shutdownFuture = new CompletableFuture<>();
+		executor = Executors.newCachedThreadPool();
 	}
 
 	public CompletableFuture<Actuator> getOrLaunchActuator(Resource root) {
@@ -101,7 +102,7 @@ public abstract class AAAAA implements AutoCloseable {
 				} catch(IOException | IllegalArgumentException e) {
 					throw new CompletionException(e);
 				}
-			}).handleAsync((act, t) -> {
+			}, executor).handleAsync((act, t) -> {
 				// TODO: This needs to be handled better. Any pending launches should be cancelled.
 				if(t != null) {
 					LOGGER.error("Error launching actuator on '{}'", key.getPath());
@@ -118,7 +119,7 @@ public abstract class AAAAA implements AutoCloseable {
 					launchFuture.complete(act);
 					return act;
 				}
-			}), launchFuture);
+			}, executor), launchFuture);
 		});
 	}
 
@@ -131,15 +132,11 @@ public abstract class AAAAA implements AutoCloseable {
 	}
 
 	public LaunchRequest launchAgents(Resource node, UUID[] uuids) {
-		if(wantStop.get()) {
-			throw new IllegalStateException();
-		}
-
 		ActuatorState as = getOrLaunchActuatorInternal(node);
 
 		CompletableFuture<LaunchResult[]> launchAnchor = new CompletableFuture<>();
 
-		LaunchRequest rq = new LaunchRequest(uuids, node, as.launchFuture, launchAnchor.handle((r, t) -> {
+		LaunchRequest rq = new LaunchRequest(uuids, node, as.launchFuture, launchAnchor.handleAsync((r, t) -> {
 			if(r != null) {
 				return r;
 			}
@@ -149,26 +146,22 @@ public abstract class AAAAA implements AutoCloseable {
 			Actuator.LaunchResult[] lrs = new LaunchResult[uuids.length];
 			Arrays.setAll(lrs, i -> lr);
 			return lrs;
-		}));
+		}, executor));
 
-		launchAnchor.handle((r, t) -> {
+		launchAnchor.handleAsync((r, t) -> {
 			requests.remove(rq);
 			return null;
-		});
+		}, executor);
 
 		requests.addLast(rq);
 
-		/* If the actuator failed to launch, fail the launch future to trigger the above. */
-		as.launchFuture.exceptionally(t -> {
-			launchAnchor.completeExceptionally(t);
-			return null;
-		});
+		as.launchFuture.handleAsync((a, t) -> {
+			/* If the actuator failed to launch, fail the launch future to trigger the above. */
+			if(t != null) {
+				launchAnchor.completeExceptionally(t);
+				return null;
+			}
 
-		/*
-		 * If the actuator was created, actually launch the agents.
-		 * NB: This must be async, we don't want it blocking this call.
-		 */
-		as.launchFuture.thenAcceptAsync(a -> {
 			/* Try to launch the agent. If it goes badly, fail the future and let it handle cleanup. */
 			Actuator.LaunchResult[] launchResults;
 			try {
@@ -178,72 +171,107 @@ public abstract class AAAAA implements AutoCloseable {
 				}
 			} catch(IOException | RuntimeException e) {
 				launchAnchor.completeExceptionally(e);
-				return;
+				return null;
 			}
 
 			launchAnchor.complete(launchResults);
-		});
+			return null;
+		}, executor);
 
 		return rq;
 	}
 
 	public boolean isShutdown() {
-		return shutdownFuture.isDone();
+		return executor.isShutdown();
 	}
 
-	public CompletableFuture<Void> shutdown() {
-		if(shutdownFuture.isDone()) {
-			return shutdownFuture;
+	/**
+	 * Cancel any pending launches and prevent any new ones.
+	 */
+	public void shutdown() {
+		if(executor.isTerminated() || executor.isTerminated()) {
+			return;
 		}
 
-		/*
-		 * Shutdown Procedure:
-		 * 1. Set the stop flag, interrupt the threads and wait for them to die.
-		 * 2. Cancel any pending launches and wait on all the futures.
-		 */
-		wantStop.set(true);
-
+		/* Prevent any further launches. */
 		actuators.values().forEach(as -> as.launchFuture.obtrudeException(new CancellationException()));
 
-		/* Stop pending launches. */
-		CompletableFuture.runAsync(() -> {
-			/* Kill any pending launches and gather their futures. */
-			LOGGER.trace("Cancelling pending launches...");
-			requests.forEach(rq -> rq.launchResults.cancel(true));
-			requests.clear();
-		}).thenRun(() -> shutdownFuture.complete(null));
-
-		return shutdownFuture;
+		/* Abort pending launches. */
+		requests.forEach(rq -> rq.launchResults.cancel(true));
 	}
 
 	@Override
 	public void close() {
 		/* Shutdown if we haven't already. */
-		this.shutdown().join();
+		this.shutdown();
 
-		/* Kill the actuators. */
+		/* Kill the actuators, keep the executor alive as the actuators may go wide to shut down.  */
 		LOGGER.info("Waiting on {} actuator(s)...", actuators.size());
-
 		CompletableFuture.allOf(actuators.values().stream()
 				.map(as -> as.actuatorFuture.handleAsync((a, t) -> {
 			if(a == null) {
 				return null;
 			}
 
-			String path = a.getResource().getPath();
 			try {
 				synchronized(a) {
 					a.close();
 				}
 			} catch(IOException | RuntimeException ex) {
-				LOGGER.error("close() failed on actuator for resource '{}'", path);
+				LOGGER.error("close() failed on actuator for resource '{}'", a.getResource().getName());
 				LOGGER.catching(ex);
 			}
 			return null;
-		})).toArray(CompletableFuture[]::new)).join();
+		}, executor)).toArray(CompletableFuture[]::new)).join();
 		actuators.clear();
+
+		/* All actuators are down, terminate the executor. */
+		shutdownAndAwaitTermination(executor);
+	}
+
+	/* Based off https://docs.oracle.com/javase/7/docs/api/java/util/concurrent/ExecutorService.html */
+	private void shutdownAndAwaitTermination(ExecutorService pool) {
+		pool.shutdown(); // Disable new tasks from being submitted
+		try {
+			// Wait a while for existing tasks to terminate
+			if(!pool.awaitTermination(60, TimeUnit.SECONDS)) {
+				pool.shutdownNow(); // Cancel currently executing tasks
+				// Wait a while for tasks to respond to being cancelled
+				if(!pool.awaitTermination(60, TimeUnit.SECONDS)) {
+					LOGGER.warn("Executor did not terminate, program may hang. Sorry.");
+				}
+			}
+		} catch(InterruptedException ie) {
+			// (Re-)Cancel if current thread also interrupted
+			pool.shutdownNow();
+			// Preserve interrupt status
+			Thread.currentThread().interrupt();
+		}
 	}
 
 	//protected abstract void reportLaunchFailure(UUID uuid, Resource node, Throwable t);
 	protected abstract Actuator createActuator(Resource root) throws IOException, IllegalArgumentException;
+
+	/**
+	 * Run a task on the given resource's actuator sometime in the future.
+	 *
+	 * Tasks will be synchronized on the actuator. Shutdown will wait for tasks to finish.
+	 *
+	 * @param res The resource.
+	 * @param proc The consumer to run.
+	 */
+	public void runWithActuator(Resource res, Consumer<Actuator> proc) {
+		ActuatorState as = this.actuators.get(res);
+		if(as == null) {
+			throw new IllegalStateException();
+		}
+
+		as.launchFuture.thenAcceptAsync(act -> {
+			synchronized(act) {
+				if(!act.isClosed()) {
+					proc.accept(act);
+				}
+			}
+		}, executor);
+	}
 }
