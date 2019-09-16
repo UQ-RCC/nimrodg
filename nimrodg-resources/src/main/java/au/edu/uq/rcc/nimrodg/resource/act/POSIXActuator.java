@@ -237,18 +237,17 @@ public abstract class POSIXActuator<C extends SSHConfig> implements Actuator {
 	}
 
 	@Override
-	public final boolean forceTerminateAgent(UUID uuid) {
+	public final void forceTerminateAgent(UUID[] uuids) {
 		try {
 			try(RemoteShell client = makeClient()) {
-				return forceTerminateAgent(client, uuid);
+				forceTerminateAgent(client, uuids);
 			}
 		} catch(IOException e) {
 			LOGGER.catching(e);
-			return false;
 		}
 	}
 
-	protected abstract boolean forceTerminateAgent(RemoteShell shell, UUID uuid);
+	protected abstract void forceTerminateAgent(RemoteShell shell, UUID[] uuids);
 
 	@Override
 	public void close() throws IOException {

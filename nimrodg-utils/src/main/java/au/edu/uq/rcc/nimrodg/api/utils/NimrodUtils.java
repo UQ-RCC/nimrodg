@@ -81,19 +81,17 @@ public class NimrodUtils {
 		return mapToParent(vals.stream(), mapper);
 	}
 
+	public static <T, U, V> Map<T, List<V>> mapToParent(Collection<U> vals, Function<U, T> keyMapper, Function<U, V> valueMapper) {
+		return mapToParent(vals.stream(), keyMapper, valueMapper);
+	}
+
 	public static <T, U> Map<T, List<U>> mapToParent(Stream<U> vals, Function<U, T> mapper) {
-		Map<T, List<U>> map = new HashMap<>();
+		return mapToParent(vals, mapper, x -> x);
+	}
 
-		vals.forEach(u -> {
-			T t = mapper.apply(u);
-			List<U> pl = map.getOrDefault(t, null);
-			if(pl == null) {
-				pl = new ArrayList<>();
-				map.put(t, pl);
-			}
-			pl.add(u);
-		});
-
+	public static <T, U, V> Map<T, List<V>> mapToParent(Stream<U> vals, Function<U, T> keyMapper, Function<U, V> valueMapper) {
+		Map<T, List<V>> map = new HashMap<>();
+		vals.forEach(u -> getOrAddLazy(map, keyMapper.apply(u), tt -> new ArrayList<>()).add(valueMapper.apply(u)));
 		return map;
 	}
 

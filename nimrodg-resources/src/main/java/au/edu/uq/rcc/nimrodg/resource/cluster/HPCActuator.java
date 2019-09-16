@@ -123,12 +123,12 @@ public class HPCActuator extends ClusterActuator<HPCConfig> {
 	}
 
 	@Override
-	protected boolean killJob(RemoteShell shell, String jobId) {
-		String[] args = Stream.concat(Arrays.stream(config.hpc.deleteForce), Stream.of(jobId)).toArray(String[]::new);
+	protected boolean killJobs(RemoteShell shell, String[] jobIds) {
+		String[] args = Stream.concat(Arrays.stream(config.hpc.deleteForce), Stream.of(jobIds)).toArray(String[]::new);
 		try {
 			shell.runCommand(args);
 		} catch(IOException ex) {
-			LOGGER.warn("Unable to kill job '{}'", jobId);
+			LOGGER.warn("Unable to kill jobs '{}'", String.join(",", jobIds));
 			LOGGER.catching(ex);
 			return false;
 		}

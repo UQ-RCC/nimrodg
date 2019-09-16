@@ -33,6 +33,8 @@ import au.edu.uq.rcc.nimrodg.api.Resource;
 import au.edu.uq.rcc.nimrodg.resource.act.ActuatorUtils;
 import au.edu.uq.rcc.nimrodg.resource.cluster.LegacyClusterActuator;
 import au.edu.uq.rcc.nimrodg.resource.cluster.LegacyClusterResourceType.DialectConfig;
+import java.util.Arrays;
+import java.util.stream.Stream;
 
 public class SLURMActuator extends LegacyClusterActuator {
 
@@ -81,11 +83,12 @@ public class SLURMActuator extends LegacyClusterActuator {
 	}
 
 	@Override
-	protected boolean killJob(RemoteShell shell, String jobId) {
+	protected boolean killJobs(RemoteShell shell, String[] jobIds) {
+		String[] cmd = Stream.concat(Stream.of("scancel", "-f", "-s", "KILL"), Arrays.stream(jobIds)).toArray(String[]::new);
 		try {
-			shell.runCommand("scancel", "-f", "-s", "KILL", jobId);
+			shell.runCommand(cmd);
 		} catch(IOException ex) {
-			LOGGER.warn("Unable to execute scancel for agent '{}'", jobId);
+			LOGGER.warn("Unable to execute scancel for jobs '{}'", String.join(",", jobIds));
 			LOGGER.catching(ex);
 			return false;
 		}

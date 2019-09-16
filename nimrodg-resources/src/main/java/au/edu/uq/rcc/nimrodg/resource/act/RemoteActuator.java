@@ -154,13 +154,13 @@ public class RemoteActuator extends POSIXActuator<SSHResourceType.SSHConfig> {
 	}
 
 	@Override
-	protected boolean forceTerminateAgent(RemoteShell shell, UUID uuid) {
-		RemoteAgent ra = agents.remove(uuid);
-		if(ra == null) {
-			return false;
-		}
-
-		return kill(shell, new int[]{ra.pid});
+	protected void forceTerminateAgent(RemoteShell shell, UUID[] uuids) {
+		kill(shell, Arrays.stream(uuids)
+				.map(u -> agents.remove(u))
+				.filter(ra -> ra != null)
+				.mapToInt(ra -> ra.pid)
+				.toArray()
+		);
 	}
 
 	@Override

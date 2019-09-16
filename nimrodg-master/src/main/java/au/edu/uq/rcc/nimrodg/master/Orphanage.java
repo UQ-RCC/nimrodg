@@ -35,8 +35,8 @@ public final class Orphanage implements Actuator {
 	}
 
 	@Override
-	public boolean forceTerminateAgent(UUID uuid) {
-		return this.agents.remove(uuid);
+	public void forceTerminateAgent(UUID[] uuid) {
+		this.agents.removeAll(Arrays.asList(uuid));
 	}
 
 	@Override

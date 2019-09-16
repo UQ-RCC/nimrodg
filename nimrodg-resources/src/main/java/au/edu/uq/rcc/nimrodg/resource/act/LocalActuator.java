@@ -327,25 +327,25 @@ public class LocalActuator implements Actuator {
 	}
 
 	@Override
-	public boolean forceTerminateAgent(UUID uuid) {
-		LocalAgent la;
+	public void forceTerminateAgent(UUID[] uuid) {
+		LocalAgent[] las;
 		synchronized(agents) {
-			la = agents.remove(uuid);
+			las = Arrays.stream(uuid)
+					.map(u -> agents.remove(u))
+					.filter(la -> la != null)
+					.toArray(LocalAgent[]::new);
 		}
 
-		if(la == null) {
-			return false;
+		for(LocalAgent la : las) {
+			/*
+			 * Call destroyForcibly() on it to give it a nudge.
+			 * Regardless of what it does, obtrude the value just so the
+			 * future's completed. Best case scenario, it dies and the cleanup runs
+			 * silently.
+			 */
+			la.handle.destroyForcibly();
+			la.future.obtrudeValue(null);
 		}
-
-		/*
-		 * Call destroyForcibly() on it to give it a nudge.
-		 * Regardless of what it does, obtrude the value just so the
-		 * future's completed. Best case scenario, it dies and the cleanup runs
-		 * silently.
-		 */
-		la.handle.destroyForcibly();
-		la.future.obtrudeValue(null);
-		return true;
 	}
 
 	@Override

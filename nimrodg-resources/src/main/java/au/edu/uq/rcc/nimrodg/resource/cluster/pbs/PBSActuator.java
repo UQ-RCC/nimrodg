@@ -31,6 +31,8 @@ import au.edu.uq.rcc.nimrodg.resource.act.ActuatorUtils;
 import au.edu.uq.rcc.nimrodg.resource.cluster.LegacyClusterActuator;
 import au.edu.uq.rcc.nimrodg.resource.cluster.LegacyClusterResourceType.DialectConfig;
 import au.edu.uq.rcc.nimrodg.resource.ssh.SSHClient;
+import java.util.Arrays;
+import java.util.stream.Stream;
 
 public class PBSActuator extends LegacyClusterActuator {
 
@@ -77,11 +79,12 @@ public class PBSActuator extends LegacyClusterActuator {
 	}
 
 	@Override
-	protected boolean killJob(RemoteShell shell, String jobId) {
+	protected boolean killJobs(RemoteShell shell, String[] jobIds) {
+		String[] cmd = Stream.concat(Stream.of("qdel", "-W", "force"), Arrays.stream(jobIds)).toArray(String[]::new);
 		try {
-			shell.runCommand("qdel", "-W", "force", jobId);
+			shell.runCommand(cmd);
 		} catch(IOException ex) {
-			LOGGER.warn("Unable to execute qdel for job '{}'", jobId);
+			LOGGER.warn("Unable to execute qdel for jobs '{}'", String.join(",", jobIds));
 			LOGGER.catching(ex);
 			return false;
 		}

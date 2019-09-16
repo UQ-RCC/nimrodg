@@ -23,7 +23,6 @@ import au.edu.uq.rcc.nimrodg.agent.AgentState;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentHello;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPIException;
 import au.edu.uq.rcc.nimrodg.api.Actuator;
-import java.security.cert.Certificate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -84,8 +83,8 @@ public class DummyActuator implements Actuator {
 	}
 
 	@Override
-	public boolean forceTerminateAgent(UUID uuid) {
-		return false;
+	public void forceTerminateAgent(UUID[] uuids) {
+
 	}
 
 	@Override

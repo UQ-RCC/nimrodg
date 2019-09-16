@@ -38,7 +38,13 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import au.edu.uq.rcc.nimrodg.api.Resource;
+import au.edu.uq.rcc.nimrodg.api.utils.NimrodUtils;
 import au.edu.uq.rcc.nimrodg.resource.act.POSIXActuator;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import javax.json.Json;
 import javax.json.JsonNumber;
 import javax.json.JsonObject;
@@ -182,25 +188,26 @@ public abstract class ClusterActuator<C extends ClusterConfig> extends POSIXActu
 	}
 
 	@Override
-	public boolean forceTerminateAgent(RemoteShell shell, UUID uuid) {
-		Batch b = jobNames.getOrDefault(uuid, null);
-		/* We can only kill batches of size 1. */
-		if(b.results.length > 1) {
-			return false;
+	public void forceTerminateAgent(RemoteShell shell, UUID[] uuids) {
+		/* Filter whole batches. */
+		Map<Batch, List<UUID>> batches = NimrodUtils.mapToParent(Arrays.stream(uuids), u -> jobNames.get(u)).entrySet().stream()
+				.filter(e -> Set.of(e.getKey().uuids).equals(new HashSet<>(e.getValue())))
+				.collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
+
+		if(!killJobs(shell, batches.keySet().stream().map(b -> b.jobId).toArray(String[]::new))) {
+			return;
 		}
 
-		if(killJob(shell, b.jobId)) {
-			jobNames.remove(uuid);
-			return true;
+		for(UUID u : uuids) {
+			jobNames.remove(u);
 		}
-		return false;
 	}
 
-	protected abstract boolean killJob(RemoteShell shell, String jobId);
+	protected abstract boolean killJobs(RemoteShell shell, String[] jobIds);
 
 	@Override
 	public void close(RemoteShell shell) throws IOException {
-		Set.copyOf(jobNames.values()).stream().forEach(batch -> killJob(shell, batch.jobId));
+		killJobs(shell, jobNames.values().stream().map(b -> b.jobId).toArray(String[]::new));
 	}
 
 	@Override

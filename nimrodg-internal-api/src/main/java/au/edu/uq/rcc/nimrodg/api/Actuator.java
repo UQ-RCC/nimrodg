@@ -22,7 +22,6 @@ package au.edu.uq.rcc.nimrodg.api;
 import au.edu.uq.rcc.nimrodg.agent.AgentState;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
 import java.io.IOException;
-import java.security.cert.Certificate;
 import java.time.Instant;
 import java.util.UUID;
 import javax.json.JsonObject;
@@ -103,10 +102,9 @@ public interface Actuator extends AutoCloseable {
 	 * Cleanup should attempted, but should not necessarily be successful.
 	 *
 	 *
-	 * @param uuid The UUID of the agent.
-	 * @return If the agent was able to be terminated.
+	 * @param uuid The list of agent UUIDs to terminate.
 	 */
-	boolean forceTerminateAgent(UUID uuid);
+	void forceTerminateAgent(UUID[] uuid);
 
 	@Override
 	void close() throws IOException;

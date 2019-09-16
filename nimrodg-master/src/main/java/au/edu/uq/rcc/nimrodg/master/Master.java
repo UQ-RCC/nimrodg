@@ -57,11 +57,13 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.CompletableFuture;
@@ -163,6 +165,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 	private final NimrodMasterAPI nimrod;
 	private final Experiment experiment;
 	private final Queue<NimrodMasterEvent> events;
+	private final _HeartOperations heartOps;
 	private final Heart heart;
 	private final JobScheduler jobScheduler;
 	private final AgentScheduler agentScheduler;
@@ -197,7 +200,8 @@ public class Master implements MessageQueueListener, AutoCloseable {
 		this.nimrod = nimrod;
 		this.experiment = experiment;
 		this.events = new LinkedList<>();
-		this.heart = new Heart(new _HeartOperations());
+		this.heartOps = new _HeartOperations();
+		this.heart = new Heart(heartOps);
 		this.jobScheduler = jsf.create();
 		this.agentScheduler = asf.create();
 
@@ -491,6 +495,33 @@ public class Master implements MessageQueueListener, AutoCloseable {
 		}
 
 		heart.tick(Instant.now());
+
+		{
+			List<AgentInfo> ais = heartOps.toExpire.stream()
+					.map(u -> allAgents.remove(u))
+					.filter(ai -> ai != null)
+					.collect(Collectors.toList());
+
+			ais.forEach(ai -> {
+				ai.state.setExpired(true);
+
+				/*
+				 * If we're still WAITING_FOR_HELLO, don't notify the scheduler as it doesn't
+				 * know about it yet.
+				 */
+				if(ai.state.getState() != Agent.State.WAITING_FOR_HELLO) {
+					runLater("heartExpireAgent", () -> agentScheduler.onAgentExpiry(ai.uuid));
+				}
+			});
+
+			Map<CompletableFuture<Actuator>, List<UUID>> aa = NimrodUtils.mapToParent(ais, ai -> ai.actuator, ai -> ai.uuid);
+
+			CompletableFuture.allOf(aa.entrySet().stream()
+					.map(e -> e.getKey().thenAcceptAsync(a -> a.forceTerminateAgent(e.getValue().stream().toArray(UUID[]::new))))
+					.toArray(CompletableFuture[]::new)).join();
+
+		}
+		heartOps.toExpire.clear();
 	}
 
 	private void processQueue(BlockingDeque<QTask> tasks) {
@@ -956,23 +987,15 @@ public class Master implements MessageQueueListener, AutoCloseable {
 
 	private class _HeartOperations implements Heart.Operations {
 
+		public final Set<UUID> toExpire;
+
+		public _HeartOperations() {
+			this.toExpire = new HashSet<>();
+		}
+
 		@Override
 		public void expireAgent(UUID u) {
-			AgentInfo ai = allAgents.remove(u);
-			ai.state.setExpired(true);
-			ai.actuator.thenAccept(a -> {
-				a.forceTerminateAgent(u);
-				a.notifyAgentDisconnection(u);
-			});
-
-			/*
-			 * If we're still WAITING_FOR_HELLO, don't notify the scheduler as it doesn't
-			 * know about it yet.
-			 */
-			if(ai.state.getState() != Agent.State.WAITING_FOR_HELLO) {
-				runLater("heartExpireAgent", () -> agentScheduler.onAgentExpiry(u));
-			}
-			nimrod.updateAgent(ai.state);
+			toExpire.add(u);
 		}
 
 		@Override
