@@ -34,7 +34,7 @@ public abstract class LegacyClusterActuator extends ClusterActuator<DialectConfi
 	 */
 	private void applySubmissionArguments(StringBuilder sb, UUID[] uuids, String out, String err) {
 		String[] args = config.dialect.buildSubmissionArguments(uuids.length, config.batchConfig, config.submissionArgs);
-		applyBatchedSubmissionArguments(sb, uuids, args, out ,err);
+		applyBatchedSubmissionArguments(sb, uuids, args, out, err);
 	}
 
 	@Override
@@ -56,6 +56,10 @@ public abstract class LegacyClusterActuator extends ClusterActuator<DialectConfi
 
 	@Override
 	public void notifyAgentConnection(AgentState state) {
+		if(isClosed) {
+			return;
+		}
+
 		super.notifyAgentConnection(state);
 
 		/* Set the walltime. */

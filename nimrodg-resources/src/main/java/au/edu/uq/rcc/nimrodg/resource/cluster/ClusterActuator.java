@@ -40,7 +40,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import au.edu.uq.rcc.nimrodg.api.Resource;
 import au.edu.uq.rcc.nimrodg.api.utils.NimrodUtils;
 import au.edu.uq.rcc.nimrodg.resource.act.POSIXActuator;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -217,12 +216,20 @@ public abstract class ClusterActuator<C extends ClusterConfig> extends POSIXActu
 
 	@Override
 	public void notifyAgentDisconnection(UUID uuid) {
+		if(isClosed) {
+			return;
+		}
+
 		/* Agent gone, remove its name */
 		jobNames.remove(uuid);
 	}
 
 	@Override
 	public boolean adopt(AgentState state) {
+		if(isClosed) {
+			return false;
+		}
+
 		JsonObject data = state.getActuatorData();
 		if(data == null) {
 			return false;
@@ -281,6 +288,10 @@ public abstract class ClusterActuator<C extends ClusterConfig> extends POSIXActu
 
 	@Override
 	public final boolean canSpawnAgents(int num) throws IllegalArgumentException {
+		if(isClosed) {
+			return false;
+		}
+
 		return nimrod.getResourceAgents(node).stream().count() + num <= config.limit;
 	}
 }

@@ -19,6 +19,7 @@
  */
 package au.edu.uq.rcc.nimrodg.resource.act;
 
+import au.edu.uq.rcc.nimrodg.api.Actuator;
 import au.edu.uq.rcc.nimrodg.api.AgentInfo;
 import au.edu.uq.rcc.nimrodg.api.AgentProvider;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
@@ -578,6 +579,12 @@ public class ActuatorUtils {
 
 	public static RemoteShell.CommandResult doProcessOneshot(String[] args, Logger logger) throws IOException {
 		return doProcessOneshot(args, new byte[0], logger);
+	}
+
+	public static Actuator.LaunchResult[] makeFailedLaunch(UUID[] uuid, Throwable t) {
+		Actuator.LaunchResult[] lrs = new Actuator.LaunchResult[uuid.length];
+		Arrays.fill(lrs, new Actuator.LaunchResult(null, t));
+		return lrs;
 	}
 
 	/**

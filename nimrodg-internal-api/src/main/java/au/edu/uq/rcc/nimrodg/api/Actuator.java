@@ -106,6 +106,8 @@ public interface Actuator extends AutoCloseable {
 	 */
 	void forceTerminateAgent(UUID[] uuid);
 
+	boolean isClosed();
+
 	@Override
 	void close() throws IOException;
 

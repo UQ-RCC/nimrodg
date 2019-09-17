@@ -16,10 +16,12 @@ public final class Orphanage implements Actuator {
 
 	private final Resource resource;
 	private final HashSet<UUID> agents;
+	private boolean closed;
 
 	public Orphanage() {
 		this.resource = null;
 		this.agents = new HashSet<>();
+		this.closed = false;
 	}
 
 	@Override
@@ -61,7 +63,16 @@ public final class Orphanage implements Actuator {
 	}
 
 	@Override
+	public boolean isClosed() {
+		return this.closed;
+	}
+
+	@Override
 	public void close() {
+		if(this.closed) {
+			return;
+		}
 		this.agents.clear();
+		this.closed = true;
 	}
 }

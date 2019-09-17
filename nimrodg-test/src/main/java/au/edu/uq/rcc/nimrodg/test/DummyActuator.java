@@ -28,10 +28,8 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import au.edu.uq.rcc.nimrodg.api.NimrodMasterAPI;
-import au.edu.uq.rcc.nimrodg.api.NimrodURI;
-import java.util.Arrays;
 import au.edu.uq.rcc.nimrodg.api.Resource;
-import javax.json.Json;
+import java.util.Arrays;
 
 public class DummyActuator implements Actuator {
 
@@ -39,12 +37,14 @@ public class DummyActuator implements Actuator {
 	private final NimrodMasterAPI nimrod;
 	private final Resource resource;
 	private final ArrayList<UUID> pendingAgents;
+	private boolean closed;
 
 	public DummyActuator(Actuator.Operations ops, Resource resource) {
 		this.ops = ops;
 		this.nimrod = ops.getNimrod();
 		this.resource = resource;
 		this.pendingAgents = new ArrayList<>();
+		this.closed = false;
 	}
 
 	@Override
@@ -54,6 +54,11 @@ public class DummyActuator implements Actuator {
 
 	@Override
 	public LaunchResult[] launchAgents(UUID[] uuid) {
+		if(closed) {
+			LaunchResult[] lrs = new LaunchResult[uuid.length];
+			Arrays.fill(lrs, new IllegalStateException("actuator closed"));
+			return lrs;
+		}
 		LaunchResult[] lr = new LaunchResult[uuid.length];
 		for(int i = 0; i < lr.length; ++i) {
 			pendingAgents.add(uuid[i]);
@@ -68,8 +73,13 @@ public class DummyActuator implements Actuator {
 	}
 
 	@Override
-	public void close() {
+	public boolean isClosed() {
+		return closed;
+	}
 
+	@Override
+	public void close() {
+		this.closed = true;
 	}
 
 	@Override
@@ -89,11 +99,11 @@ public class DummyActuator implements Actuator {
 
 	@Override
 	public boolean canSpawnAgents(int num) throws IllegalArgumentException {
-		return true;
+		return !closed;
 	}
 
 	@Override
 	public boolean adopt(AgentState state) {
-		return true;
+		return !closed;
 	}
 }

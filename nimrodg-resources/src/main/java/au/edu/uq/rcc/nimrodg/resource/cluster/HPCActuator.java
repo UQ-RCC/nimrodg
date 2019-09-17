@@ -86,6 +86,10 @@ public class HPCActuator extends ClusterActuator<HPCConfig> {
 
 	@Override
 	public void notifyAgentConnection(AgentState state) {
+		if(isClosed) {
+			return;
+		}
+
 		super.notifyAgentConnection(state);
 
 		/* Set the walltime. */

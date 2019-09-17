@@ -187,6 +187,10 @@ public class RemoteActuator extends POSIXActuator<SSHResourceType.SSHConfig> {
 
 	@Override
 	public void notifyAgentConnection(AgentState state) {
+		if(isClosed) {
+			return;
+		}
+
 		RemoteAgent ra = agents.get(state.getUUID());
 		if(ra == null) {
 			return;
@@ -197,6 +201,10 @@ public class RemoteActuator extends POSIXActuator<SSHResourceType.SSHConfig> {
 
 	@Override
 	public void notifyAgentDisconnection(UUID uuid) {
+		if(isClosed) {
+			return;
+		}
+
 		RemoteAgent ra = agents.remove(uuid);
 		if(ra == null) {
 			return;
@@ -206,12 +214,20 @@ public class RemoteActuator extends POSIXActuator<SSHResourceType.SSHConfig> {
 	}
 
 	@Override
-	public boolean canSpawnAgents(int num) throws IllegalArgumentException {
+	public boolean canSpawnAgents(int num) {
+		if(isClosed) {
+			return false;
+		}
+
 		return agents.size() + num <= limit;
 	}
 
 	@Override
 	public boolean adopt(AgentState state) {
+		if(isClosed) {
+			return false;
+		}
+
 		JsonObject data = state.getActuatorData();
 		if(data == null) {
 			return false;

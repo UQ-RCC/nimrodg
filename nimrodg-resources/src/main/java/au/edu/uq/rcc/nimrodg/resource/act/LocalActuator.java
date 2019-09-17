@@ -274,7 +274,7 @@ public class LocalActuator implements Actuator {
 	@Override
 	public LaunchResult[] launchAgents(UUID[] uuids) throws IOException {
 		if(isClosed) {
-			throw new IllegalStateException("Cannot launch agent, actuator closed.");
+			return ActuatorUtils.makeFailedLaunch(uuids, new IllegalStateException("actuator closed"));
 		}
 
 		LaunchResult[] results = new LaunchResult[uuids.length];
@@ -328,6 +328,10 @@ public class LocalActuator implements Actuator {
 
 	@Override
 	public void forceTerminateAgent(UUID[] uuid) {
+		if(isClosed) {
+			return;
+		}
+
 		LocalAgent[] las;
 		synchronized(agents) {
 			las = Arrays.stream(uuid)
@@ -346,6 +350,11 @@ public class LocalActuator implements Actuator {
 			la.handle.destroyForcibly();
 			la.future.obtrudeValue(null);
 		}
+	}
+
+	@Override
+	public boolean isClosed() {
+		return this.isClosed;
 	}
 
 	@Override
@@ -400,6 +409,10 @@ public class LocalActuator implements Actuator {
 
 	@Override
 	public void notifyAgentConnection(AgentState state) {
+		if(isClosed) {
+			return;
+		}
+
 		LocalAgent la;
 		synchronized(agents) {
 			if((la = agents.get(state.getUUID())) == null) {
@@ -414,6 +427,10 @@ public class LocalActuator implements Actuator {
 
 	@Override
 	public void notifyAgentDisconnection(UUID uuid) {
+		if(isClosed) {
+			return;
+		}
+
 		LocalAgent la;
 		synchronized(agents) {
 			if((la = agents.get(uuid)) == null) {
@@ -428,11 +445,19 @@ public class LocalActuator implements Actuator {
 
 	@Override
 	public boolean canSpawnAgents(int num) throws IllegalArgumentException {
+		if(isClosed) {
+			return false;
+		}
+
 		return agents.size() + num <= parallelism;
 	}
 
 	@Override
 	public boolean adopt(AgentState state) {
+		if(isClosed) {
+			return false;
+		}
+
 		JsonObject data = state.getActuatorData();
 		if(data == null) {
 			return false;

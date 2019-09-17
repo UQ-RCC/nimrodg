@@ -221,7 +221,7 @@ public abstract class POSIXActuator<C extends SSHConfig> implements Actuator {
 	@Override
 	public final LaunchResult[] launchAgents(UUID[] uuid) throws IOException {
 		if(isClosed) {
-			throw new IllegalStateException("Cannot launch agent, actuator closed.");
+			return ActuatorUtils.makeFailedLaunch(uuid, new IllegalStateException("actuator closed"));
 		}
 
 		try(RemoteShell client = makeClient()) {
@@ -238,6 +238,10 @@ public abstract class POSIXActuator<C extends SSHConfig> implements Actuator {
 
 	@Override
 	public final void forceTerminateAgent(UUID[] uuids) {
+		if(isClosed) {
+			return;
+		}
+
 		try {
 			try(RemoteShell client = makeClient()) {
 				forceTerminateAgent(client, uuids);
@@ -248,6 +252,11 @@ public abstract class POSIXActuator<C extends SSHConfig> implements Actuator {
 	}
 
 	protected abstract void forceTerminateAgent(RemoteShell shell, UUID[] uuids);
+
+	@Override
+	public final boolean isClosed() {
+		return isClosed;
+	}
 
 	@Override
 	public void close() throws IOException {
