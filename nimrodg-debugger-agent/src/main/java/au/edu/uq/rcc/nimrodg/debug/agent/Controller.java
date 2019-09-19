@@ -231,6 +231,10 @@ public class Controller {
 			return MessageQueueListener.MessageOperation.Reject;
 		}
 
+		if(m_Agent.getState() == null) {
+			m_Agent.reset(msg.getAgentUUID());
+		}
+
 		try {
 			m_Agent.processMessage(msg, Instant.now());
 			return MessageQueueListener.MessageOperation.Ack;
