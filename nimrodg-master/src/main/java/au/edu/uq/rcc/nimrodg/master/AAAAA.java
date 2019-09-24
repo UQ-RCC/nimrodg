@@ -81,11 +81,13 @@ public abstract class AAAAA implements AutoCloseable {
 	private final LinkedBlockingDeque<LaunchRequest> requests;
 	private final ConcurrentHashMap<Resource, ActuatorState> actuators;
 	private final ExecutorService executor;
+	private boolean isShutdown;
 
 	public AAAAA() {
 		requests = new LinkedBlockingDeque<>();
 		actuators = new ConcurrentHashMap<>();
 		executor = Executors.newCachedThreadPool();
+		isShutdown = false;
 	}
 
 	public CompletableFuture<Actuator> getOrLaunchActuator(Resource root) {
@@ -182,14 +184,14 @@ public abstract class AAAAA implements AutoCloseable {
 	}
 
 	public boolean isShutdown() {
-		return executor.isShutdown();
+		return this.isShutdown || executor.isShutdown() || executor.isTerminated();
 	}
 
 	/**
 	 * Cancel any pending launches and prevent any new ones.
 	 */
 	public void shutdown() {
-		if(executor.isTerminated() || executor.isTerminated()) {
+		if(isShutdown()) {
 			return;
 		}
 
@@ -198,6 +200,8 @@ public abstract class AAAAA implements AutoCloseable {
 
 		/* Abort pending launches. */
 		requests.forEach(rq -> rq.launchResults.cancel(true));
+
+		this.isShutdown = true;
 	}
 
 	@Override
