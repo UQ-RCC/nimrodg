@@ -61,6 +61,7 @@ import org.apache.commons.csv.CSVPrinter;
 import au.edu.uq.rcc.nimrodg.api.Resource;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Optional;
 
 public class PortalAPI extends NimrodCLICommand {
@@ -497,6 +498,36 @@ public class PortalAPI extends NimrodCLICommand {
 				return 0;
 			}
 		}
+		return 0;
+	}
+
+	public int checkprocess(String[] args, NimrodAPI nimrod, PrintStream out, PrintStream err) throws IOException {
+		long[] pids = new long[args.length];
+		for(int i = 0; i < pids.length; ++i) {
+			try {
+				pids[i] = Long.parseUnsignedLong(args[i]);
+			} catch(NumberFormatException e) {
+				return 2;
+			}
+		}
+
+		try(CSVPrinter csv = new CSVPrinter(out, CSVFormat.RFC4180)) {
+			/* Not giving any more information than this. I'm apprehensive about even giving this much :/ */
+			csvWriteHeader(csv, "pid", "alive");
+			for(int i = 0; i < pids.length; ++i) {
+				Optional<ProcessHandle> ph;
+				try {
+					ph = ProcessHandle.of(pids[i]);
+				} catch(SecurityException | UnsupportedOperationException e) {
+					ph = Optional.empty();
+				}
+
+				csv.print(pids[i]);
+				csv.print(ph.isPresent() ? 1 : 0);
+				csv.println();
+			}
+		}
+
 		return 0;
 	}
 
