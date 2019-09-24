@@ -339,7 +339,6 @@ public class Master implements MessageQueueListener, AutoCloseable {
 		Map<Resource, Collection<DefaultAgentState>> agentMap = nimrod.getAssignedResources(experiment).stream()
 				.collect(Collectors.toMap(
 						r -> r,
-						//						r -> nimrod.getResourceAgents(r)
 						r -> nimrod.getResourceAgents(r).stream()
 								.map(as -> new DefaultAgentState(as))
 								.collect(Collectors.toList())
@@ -357,13 +356,19 @@ public class Master implements MessageQueueListener, AutoCloseable {
 						return null;
 					}
 
-					if(a.adopt(as)) {
-						LOGGER.info("Resource {} actuator adopted orphaned agent {}.", r.getPath(), as.getUUID());
+					Actuator.AdoptStatus adopt = a.adopt(as);
+					if(adopt == Actuator.AdoptStatus.Adopted) {
+						LOGGER.info("Resource {} adopted orphaned agent {}.", r.getPath(), as.getUUID());
 						ai.actuator.complete(a);
-					} else {
-						LOGGER.info("Resource {} actuator rejected orphaned agent {}.", r.getPath(), as.getUUID());
-						ai.actuator.complete(orphanage);
+					} else if(adopt == Actuator.AdoptStatus.Stale) {
+						LOGGER.info("Resource {} marked orphaned agent {} as stale, expiring...", r.getPath(), as.getUUID());
 						orphanage.adopt(as);
+						ai.actuator.complete(orphanage);
+						runLater("checkOrphanage", () -> Master.this.doExpire(as));
+					} else {
+						LOGGER.info("Resource {} rejected orphaned agent {}.", r.getPath(), as.getUUID());
+						orphanage.adopt(as);
+						ai.actuator.complete(orphanage);
 					}
 					return null;
 				});
@@ -504,23 +509,28 @@ public class Master implements MessageQueueListener, AutoCloseable {
 					.filter(ai -> ai != null)
 					.collect(Collectors.toList());
 
-			ais.forEach(ai -> {
-				ai.state.setExpired(true);
-
-				/*
-				 * If we're still WAITING_FOR_HELLO, don't notify the scheduler as it doesn't
-				 * know about it yet.
-				 */
-				if(ai.state.getState() != Agent.State.WAITING_FOR_HELLO) {
-					runLater("heartExpireAgent", () -> agentScheduler.onAgentExpiry(ai.uuid));
-				}
-			});
+			ais.forEach(ai -> this.doExpire(ai.state));
 
 			Map<Resource, List<UUID>> aa = NimrodUtils.mapToParent(ais, ai -> ai.resource, ai -> ai.uuid);
 			aa.forEach((k, v) -> aaaaa.runWithActuator(k, a -> a.forceTerminateAgent(v.stream().toArray(UUID[]::new))));
 
 		}
 		heartOps.toExpire.clear();
+	}
+
+	/* Expire an agent. */
+	private void doExpire(AgentState as) {
+		as.setExpired(true);
+
+		/*
+		 * If we're still WAITING_FOR_HELLO, don't notify the scheduler as it doesn't
+		 * know about it yet.
+		 */
+		if(as.getState() != Agent.State.WAITING_FOR_HELLO) {
+			runLater("heartExpireAgent", () -> agentScheduler.onAgentExpiry(as.getUUID()));
+		}
+
+		nimrod.updateAgent(as);
 	}
 
 	private void processQueue(BlockingDeque<QTask> tasks) {

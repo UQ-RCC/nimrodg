@@ -57,9 +57,9 @@ public final class Orphanage implements Actuator {
 	}
 
 	@Override
-	public boolean adopt(AgentState state) {
+	public AdoptStatus adopt(AgentState state) {
 		this.agents.add(state.getUUID());
-		return true;
+		return AdoptStatus.Adopted;
 	}
 
 	@Override

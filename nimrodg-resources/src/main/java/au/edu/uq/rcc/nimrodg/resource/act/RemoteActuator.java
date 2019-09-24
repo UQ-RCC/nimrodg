@@ -223,34 +223,34 @@ public class RemoteActuator extends POSIXActuator<SSHResourceType.SSHConfig> {
 	}
 
 	@Override
-	public boolean adopt(AgentState state) {
+	public AdoptStatus adopt(AgentState state) {
 		if(isClosed) {
-			return false;
+			return AdoptStatus.Rejected;
 		}
 
 		JsonObject data = state.getActuatorData();
 		if(data == null) {
-			return false;
+			return AdoptStatus.Rejected;
 		}
 
 		if(state.getState() == Agent.State.SHUTDOWN) {
-			return false;
+			return AdoptStatus.Rejected;
 		}
 
 		JsonNumber jpid = data.getJsonNumber("pid");
 		if(jpid == null) {
-			return false;
+			return AdoptStatus.Rejected;
 		}
 
 		JsonString jworkroot = data.getJsonString("work_root");
 		if(jworkroot == null) {
-			return false;
+			return AdoptStatus.Rejected;
 		}
 
 		RemoteAgent ra = new RemoteAgent(state.getUUID(), jpid.intValue(), jworkroot.getString());
 		ra.state = state.getState() == Agent.State.WAITING_FOR_HELLO ? RemoteState.NOT_CONNECTED : RemoteState.CONNECTED;
 		agents.putIfAbsent(ra.uuid, ra);
 
-		return true;
+		return AdoptStatus.Adopted;
 	}
 }

@@ -103,7 +103,7 @@ public class DummyActuator implements Actuator {
 	}
 
 	@Override
-	public boolean adopt(AgentState state) {
-		return !closed;
+	public AdoptStatus adopt(AgentState state) {
+		return closed ? AdoptStatus.Rejected : AdoptStatus.Adopted;
 	}
 }

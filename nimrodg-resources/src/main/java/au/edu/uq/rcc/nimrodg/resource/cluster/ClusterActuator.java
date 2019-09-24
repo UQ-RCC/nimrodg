@@ -225,33 +225,33 @@ public abstract class ClusterActuator<C extends ClusterConfig> extends POSIXActu
 	}
 
 	@Override
-	public boolean adopt(AgentState state) {
+	public AdoptStatus adopt(AgentState state) {
 		if(isClosed) {
-			return false;
+			return AdoptStatus.Rejected;
 		}
 
 		JsonObject data = state.getActuatorData();
 		if(data == null) {
-			return false;
+			return AdoptStatus.Rejected;
 		}
 
 		if(state.getState() == Agent.State.SHUTDOWN) {
-			return false;
+			return AdoptStatus.Rejected;
 		}
 
 		JsonString jbatchid = data.getJsonString("batch_id");
 		if(jbatchid == null) {
-			return false;
+			return AdoptStatus.Rejected;
 		}
 
 		JsonNumber jbatchsize = data.getJsonNumber("batch_size");
 		if(jbatchsize == null) {
-			return false;
+			return AdoptStatus.Rejected;
 		}
 
 		JsonNumber jbatchindex = data.getJsonNumber("batch_index");
 		if(jbatchindex == null) {
-			return false;
+			return AdoptStatus.Rejected;
 		}
 
 		String batchId = jbatchid.getString();
@@ -264,26 +264,26 @@ public abstract class ClusterActuator<C extends ClusterConfig> extends POSIXActu
 		}
 
 		if(!batch.jobId.equals(batchId)) {
-			return false;
+			return AdoptStatus.Rejected;
 		}
 
 		if(batch.results.length != batchSize || batchIndex >= batchSize) {
-			return false;
+			return AdoptStatus.Rejected;
 		}
 
 		if(batch.uuids[batchIndex] == state.getUUID()) {
-			return true;
+			return AdoptStatus.Rejected;
 		}
 
 		if(batch.uuids[batchIndex] != state.getUUID() && batch.uuids[batchIndex] != null) {
-			return false;
+			return AdoptStatus.Rejected;
 		}
 
 		batch.uuids[batchIndex] = state.getUUID();
 		batch.results[batchIndex] = new LaunchResult(node, null, state.getExpiryTime(), data);
 		jobNames.putIfAbsent(state.getUUID(), batch);
 
-		return true;
+		return AdoptStatus.Adopted;
 	}
 
 	@Override

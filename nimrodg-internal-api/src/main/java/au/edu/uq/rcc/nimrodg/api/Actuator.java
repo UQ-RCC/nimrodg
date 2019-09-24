@@ -133,5 +133,22 @@ public interface Actuator extends AutoCloseable {
 	 */
 	boolean canSpawnAgents(int num) throws IllegalArgumentException;
 
-	boolean adopt(AgentState state);
+	public enum AdoptStatus {
+		/**
+		 * Agent was adopted.
+		 */
+		Adopted,
+		/**
+		 * Agent was rejected (not ours).
+		 */
+		Rejected,
+		/**
+		 * Agent was ours, but doesn't exist anymore.
+		 *
+		 * The actuator should not add the agent to any internal data structures.
+		 */
+		Stale
+	}
+
+	AdoptStatus adopt(AgentState state);
 }

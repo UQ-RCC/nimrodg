@@ -453,28 +453,28 @@ public class LocalActuator implements Actuator {
 	}
 
 	@Override
-	public boolean adopt(AgentState state) {
+	public AdoptStatus adopt(AgentState state) {
 		if(isClosed) {
-			return false;
+			return AdoptStatus.Rejected;
 		}
 
 		JsonObject data = state.getActuatorData();
 		if(data == null) {
-			return false;
+			return AdoptStatus.Rejected;
 		}
 
 		if(state.getState() == Agent.State.SHUTDOWN) {
-			return false;
+			return AdoptStatus.Rejected;
 		}
 
 		JsonNumber jpid = data.getJsonNumber("pid");
 		if(jpid == null) {
-			return false;
+			return AdoptStatus.Rejected;
 		}
 
 		JsonString jworkroot = data.getJsonString("work_root");
 		if(jworkroot == null) {
-			return false;
+			return AdoptStatus.Rejected;
 		}
 
 		Optional<Path> outputPath = Optional.ofNullable(data.getJsonString("output_path"))
@@ -485,7 +485,7 @@ public class LocalActuator implements Actuator {
 		/* See if the process is alive. */
 		Optional<ProcessHandle> oph = ProcessHandle.of(jpid.longValue());
 		if(!oph.isPresent()) {
-			return true;
+			return AdoptStatus.Stale;
 		}
 
 		LocalAgent la = new LocalAgent(
@@ -509,6 +509,6 @@ public class LocalActuator implements Actuator {
 			la.future = la.handle.onExit().handle((p, t) -> agentShutdownHandler(la, t));
 		}
 
-		return true;
+		return AdoptStatus.Adopted;
 	}
 }
