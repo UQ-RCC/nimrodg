@@ -414,6 +414,8 @@ public class Master implements MessageQueueListener, AutoCloseable {
 
 	private State startProc(State state, Mode mode) {
 		if(mode == Mode.Enter) {
+			nimrod.updateExperimentState(experiment, Experiment.State.STARTED);
+
 			/* Create psuedo-events for initial configuration values. */
 			nimrod.getProperties().entrySet().stream()
 					.map(e -> new ConfigChangeMasterEvent(e.getKey(), null, e.getValue()))
@@ -673,6 +675,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 			return State.Stopping;
 		}
 
+		nimrod.updateExperimentState(experiment, Experiment.State.STOPPED);
 		return State.Stopped;
 	}
 
