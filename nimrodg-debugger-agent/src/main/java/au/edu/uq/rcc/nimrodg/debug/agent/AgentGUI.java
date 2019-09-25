@@ -102,6 +102,10 @@ public class AgentGUI extends javax.swing.JFrame {
 		return m_AuthToken.getText();
 	}
 
+	public boolean getShowMessageWindow() {
+		return m_ShowMessageWindow.isSelected();
+	}
+
 	@SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
@@ -129,6 +133,8 @@ public class AgentGUI extends javax.swing.JFrame {
         javax.swing.JMenuItem jMenuItem2 = new javax.swing.JMenuItem();
         javax.swing.JPopupMenu.Separator jSeparator2 = new javax.swing.JPopupMenu.Separator();
         javax.swing.JMenuItem jMenuItem3 = new javax.swing.JMenuItem();
+        jMenu2 = new javax.swing.JMenu();
+        m_ShowMessageWindow = new javax.swing.JCheckBoxMenuItem();
 
         setTitle("Nimrod/G Agent Debugger");
 
@@ -210,7 +216,10 @@ public class AgentGUI extends javax.swing.JFrame {
         );
 
         jSplitPane1.setBorder(null);
+        jSplitPane1.setDividerLocation(300);
         jSplitPane1.setOrientation(javax.swing.JSplitPane.VERTICAL_SPLIT);
+
+        jPanel4.setPreferredSize(new java.awt.Dimension(1108, 300));
 
         javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
         jPanel4.setLayout(jPanel4Layout);
@@ -219,15 +228,12 @@ public class AgentGUI extends javax.swing.JFrame {
             .addGroup(jPanel4Layout.createSequentialGroup()
                 .addComponent(m_AgentPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(m_StatusPanel, javax.swing.GroupLayout.DEFAULT_SIZE, 1162, Short.MAX_VALUE))
+                .addComponent(m_StatusPanel, javax.swing.GroupLayout.DEFAULT_SIZE, 762, Short.MAX_VALUE))
         );
         jPanel4Layout.setVerticalGroup(
             jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel4Layout.createSequentialGroup()
-                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(m_StatusPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(m_AgentPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                .addGap(0, 0, Short.MAX_VALUE))
+            .addComponent(m_StatusPanel, javax.swing.GroupLayout.DEFAULT_SIZE, 300, Short.MAX_VALUE)
+            .addComponent(m_AgentPanel, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
         );
 
         jSplitPane1.setLeftComponent(jPanel4);
@@ -251,7 +257,7 @@ public class AgentGUI extends javax.swing.JFrame {
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addComponent(jSplitPane1)
+                    .addComponent(jSplitPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 1104, Short.MAX_VALUE)
                     .addComponent(jPanel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap())
         );
@@ -261,7 +267,7 @@ public class AgentGUI extends javax.swing.JFrame {
                 .addContainerGap()
                 .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jSplitPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 538, Short.MAX_VALUE)
+                .addComponent(jSplitPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 435, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, 24, javax.swing.GroupLayout.PREFERRED_SIZE))
         );
@@ -295,6 +301,20 @@ public class AgentGUI extends javax.swing.JFrame {
         jMenu1.add(jMenuItem3);
 
         jMenuBar1.add(jMenu1);
+
+        jMenu2.setText("View");
+
+        m_ShowMessageWindow.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_M, java.awt.event.InputEvent.CTRL_MASK));
+        m_ShowMessageWindow.setText("Show Message Window");
+        m_ShowMessageWindow.setActionCommand("view->show_message_window");
+        m_ShowMessageWindow.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                onActionPerformed(evt);
+            }
+        });
+        jMenu2.add(m_ShowMessageWindow);
+
+        jMenuBar1.add(jMenu2);
 
         setJMenuBar(jMenuBar1);
 
@@ -334,6 +354,7 @@ public class AgentGUI extends javax.swing.JFrame {
 //	}
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JMenu jMenu2;
     private javax.swing.JMenuBar jMenuBar1;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
@@ -346,6 +367,7 @@ public class AgentGUI extends javax.swing.JFrame {
     private javax.swing.JProgressBar m_ConnectProgressBar;
     private au.edu.uq.rcc.nimrodg.debug.agent.LogPanel m_LogPanel;
     private javax.swing.JTextField m_RoutingKey;
+    private javax.swing.JCheckBoxMenuItem m_ShowMessageWindow;
     private au.edu.uq.rcc.nimrodg.debug.agent.AgentStatusPanel m_StatusPanel;
     private javax.swing.JTextField m_TransferUri;
     // End of variables declaration//GEN-END:variables

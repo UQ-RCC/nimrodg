@@ -31,5 +31,6 @@ public interface MessageQueueListener {
 		Terminate
 	}
 
-	MessageOperation processAgentMessage(AgentMessage msg) throws IllegalStateException, IOException;
+	/* FIXME: This needs to be redone. The body parameter is a hack. */
+	MessageOperation processAgentMessage(AgentMessage msg, byte[] body) throws IllegalStateException, IOException;
 }

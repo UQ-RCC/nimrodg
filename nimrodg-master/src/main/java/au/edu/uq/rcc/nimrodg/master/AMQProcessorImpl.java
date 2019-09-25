@@ -148,14 +148,17 @@ public class AMQProcessorImpl implements AMQProcessor {
 		}
 	}
 
+	@Override
 	public String getQueue() {
 		return m_QueueOk.getQueue();
 	}
 
+	@Override
 	public String getExchange() {
 		return m_DirectName;
 	}
 
+	@Override
 	public void sendMessage(String key, AgentMessage msg) throws IOException {
 		byte[] bytes = m_MessageBackend.toBytes(msg);
 		if(bytes == null) {
@@ -174,7 +177,7 @@ public class AMQProcessorImpl implements AMQProcessor {
 		long tag = envelope.getDeliveryTag();
 		MessageQueueListener.MessageOperation op;
 		try {
-			op = m_Listener.processAgentMessage(am);
+			op = m_Listener.processAgentMessage(am, body);
 		} catch(IllegalStateException e) {
 			op = MessageQueueListener.MessageOperation.RejectAndRequeue;
 		} catch(IOException e) {

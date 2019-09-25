@@ -44,6 +44,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -51,12 +52,15 @@ import java.security.GeneralSecurityException;
 import java.security.cert.Certificate;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeoutException;
+import javax.json.Json;
+import javax.json.JsonException;
+import javax.json.JsonReader;
+import javax.json.JsonStructure;
 import javax.swing.SwingUtilities;
-import javax.swing.UIManager;
 
 public class Controller {
 
@@ -69,7 +73,10 @@ public class Controller {
 	private final ILogger m_Logger;
 	private final AgentStatusPanel m_StatusPanel;
 
+	private final MessageWindow m_MessageWindow;
+
 	private final MessageBackend m_MessageBackend;
+	private final ArrayList<Message> m_Messages;
 
 	private static final String SAMPLE_PLANFILE = "parameter x int range from 0 to 10\n"
 			+ "parameter y int range from 0 to 10\n"
@@ -109,7 +116,10 @@ public class Controller {
 
 		m_Agent = new ReferenceAgent(new DefaultAgentState(), m_AgentListener);
 		m_StatusPanel.setAgent(m_Agent);
+		m_MessageWindow = new MessageWindow();
 		m_MessageBackend = MessageBackend.createBackend();
+		m_Messages = new ArrayList<>();
+		m_MessageWindow.getMessagePanel().setMessages(m_Messages);
 	}
 
 	public boolean isConnected() {
@@ -174,26 +184,12 @@ public class Controller {
 			m_View.dispatchEvent(new WindowEvent(m_View, WindowEvent.WINDOW_CLOSING));
 		} else if(cmd.equals("file->clear_log")) {
 			m_Logger.clear();
+		} else if(cmd.equals("view->show_message_window")) {
+			m_MessageWindow.setVisible(m_View.getShowMessageWindow());
 		}
 	}
 
 	public static void main(String[] args) {
-		try {
-			UIManager.LookAndFeelInfo[] lf = UIManager.getInstalledLookAndFeels();
-			for(javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-				//if("Nimbus".equals(info.getName())) {
-				//if("CDE/Motif".equals(info.getName())) {
-				//if("Windows".equals(info.getName())) {
-				if("Windows Classic".equals(info.getName())) {
-					//if("Metal".equals(info.getName())) {
-					javax.swing.UIManager.setLookAndFeel(info.getClassName());
-					break;
-				}
-			}
-		} catch(Throwable ex) {
-
-		}
-
 		new Controller();
 	}
 
@@ -212,10 +208,11 @@ public class Controller {
 			if(isConnected()) {
 				disconnect();
 			}
+			m_MessageWindow.dispose();
 		}
 	}
 
-	private MessageQueueListener.MessageOperation handleAgentMessage(AgentMessage msg) throws IOException {
+	private MessageQueueListener.MessageOperation handleAgentMessage(AgentMessage msg, byte[] body) throws IOException {
 
 		UUID uuid = msg.getAgentUUID();
 
@@ -235,6 +232,9 @@ public class Controller {
 			m_Agent.reset(msg.getAgentUUID());
 		}
 
+		m_Messages.add(Message.create(body, true));
+		m_MessageWindow.getMessagePanel().refreshMessages();
+
 		try {
 			m_Agent.processMessage(msg, Instant.now());
 			return MessageQueueListener.MessageOperation.Ack;
@@ -250,6 +250,8 @@ public class Controller {
 			throw new IOException("Message serialisation failure");
 		}
 
+		m_Messages.add(Message.create(bytes, false));
+		m_MessageWindow.getMessagePanel().refreshMessages();
 		m_AMQP.sendMessage(key, msg);
 	}
 
@@ -343,6 +345,8 @@ public class Controller {
 		m_Agent.disconnect(AgentShutdown.Reason.Requested, -1);
 		m_Agent.reset(null);
 		m_StatusPanel.setJob(null);
+		m_Messages.clear();
+		m_MessageWindow.getMessagePanel().refreshMessages();
 	}
 
 	private class _AgentListener implements ReferenceAgent.AgentListener {
@@ -405,8 +409,8 @@ public class Controller {
 	private class _MessageQueueListener implements MessageQueueListener {
 
 		@Override
-		public MessageOperation processAgentMessage(AgentMessage msg) throws IllegalStateException, IOException {
-			return handleAgentMessage(msg);
+		public MessageOperation processAgentMessage(AgentMessage msg, byte[] body) throws IllegalStateException, IOException {
+			return handleAgentMessage(msg, body);
 		}
 	}
 }

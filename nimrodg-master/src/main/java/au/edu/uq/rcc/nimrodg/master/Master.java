@@ -227,7 +227,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 
 	/* This runs out-of-band with the state machine. */
 	@Override
-	public MessageOperation processAgentMessage(AgentMessage msg) throws IllegalStateException, IOException {
+	public MessageOperation processAgentMessage(AgentMessage msg, byte[] body) throws IllegalStateException, IOException {
 		if(!agentMessages.offer(new _AgentMessage(msg, Instant.now()))) {
 			return MessageOperation.RejectAndRequeue;
 		}
