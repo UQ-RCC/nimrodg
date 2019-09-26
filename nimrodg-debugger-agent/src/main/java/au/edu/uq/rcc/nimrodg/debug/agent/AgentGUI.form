@@ -282,6 +282,7 @@
             </Property>
             <Property name="dividerLocation" type="int" value="300"/>
             <Property name="orientation" type="int" value="0"/>
+            <Property name="resizeWeight" type="double" value="1.0"/>
           </Properties>
           <AuxValues>
             <AuxValue name="JavaCodeGenerator_VariableLocal" type="java.lang.Boolean" value="true"/>

@@ -218,6 +218,7 @@ public class AgentGUI extends javax.swing.JFrame {
         jSplitPane1.setBorder(null);
         jSplitPane1.setDividerLocation(300);
         jSplitPane1.setOrientation(javax.swing.JSplitPane.VERTICAL_SPLIT);
+        jSplitPane1.setResizeWeight(1.0);
 
         jPanel4.setPreferredSize(new java.awt.Dimension(1108, 300));
 

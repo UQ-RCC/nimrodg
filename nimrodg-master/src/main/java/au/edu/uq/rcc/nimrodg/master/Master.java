@@ -135,12 +135,18 @@ public class Master implements MessageQueueListener, AutoCloseable {
 
 	private static class _AgentMessage {
 
+		public final long tag;
+		public final UUID uuid;
 		public final AgentMessage msg;
+		public final Instant remoteTime;
 		public final Instant receivedTime;
 		public Instant processedTime;
 
-		public _AgentMessage(AgentMessage msg, Instant receivedTime) {
+		public _AgentMessage(long tag, UUID uuid, AgentMessage msg, Instant remoteTime, Instant receivedTime) {
+			this.tag = tag;
+			this.uuid = uuid;
 			this.msg = msg;
+			this.remoteTime = remoteTime;
 			this.receivedTime = receivedTime;
 		}
 	}
@@ -229,9 +235,14 @@ public class Master implements MessageQueueListener, AutoCloseable {
 
 	/* This runs out-of-band with the state machine. */
 	@Override
-	public MessageOperation processAgentMessage(AgentMessage msg, byte[] body) throws IllegalStateException {
-		if(!agentMessages.offer(new _AgentMessage(msg, Instant.now()))) {
+	public MessageOperation processAgentMessage(long tag, AMQPMessage amsg) throws IllegalStateException {
+		if(amsg.message == null || amsg.messageId == null || amsg.timestamp == null) {
+			return MessageOperation.Reject;
+		}
+
+		if(!agentMessages.offer(new _AgentMessage(tag, amsg.messageId, amsg.message, amsg.timestamp, Instant.now()))) {
 			return MessageOperation.RejectAndRequeue;
+
 		}
 
 		return MessageOperation.Ack;
@@ -505,10 +516,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 				continue;
 			}
 
-			/* Requeue the message if the handler bounced it */
-			if(mop == MessageOperation.RejectAndRequeue) {
-				agentMessages.offer(msg);
-			}
+			amqp.opMessage(mop, msg.tag);
 		}
 
 		heart.tick(Instant.now());
@@ -1005,13 +1013,16 @@ public class Master implements MessageQueueListener, AutoCloseable {
 
 		@Override
 		public void reportAgentFailure(Actuator act, UUID uuid, AgentShutdown.Reason reason, int signal) throws IllegalArgumentException {
-			agentMessages.offer(new _AgentMessage(new AgentShutdown(uuid, reason, signal), Instant.now()));
+			Instant now = Instant.now();
+			// FIXME: Should probably be some way to tell this message was faked.
+			agentMessages.offer(new _AgentMessage(-1, UUID.randomUUID(), new AgentShutdown(uuid, reason, signal), now, now));
 		}
 
 	}
 
 	private class _HeartOperations implements Heart.Operations {
 
+		public final Logger LOGGER = LogManager.getLogger(Heart.class);
 		public final Set<UUID> toExpire;
 
 		public _HeartOperations() {
@@ -1058,8 +1069,18 @@ public class Master implements MessageQueueListener, AutoCloseable {
 		}
 
 		@Override
-		public Instant getExpiryTime(UUID u) {
+		public Instant getWalltime(UUID u) {
 			return allAgents.get(u).state.getExpiryTime();
+		}
+
+		@Override
+		public void logInfo(String fmt, Object... args) {
+			LOGGER.info("{}", String.format(fmt, args));
+		}
+
+		@Override
+		public void logTrace(String fmt, Object... args) {
+			//LOGGER.trace("{}", String.format(fmt, args));
 		}
 
 	}

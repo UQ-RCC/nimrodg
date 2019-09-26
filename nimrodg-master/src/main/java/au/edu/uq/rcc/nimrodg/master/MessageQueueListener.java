@@ -21,6 +21,9 @@ package au.edu.uq.rcc.nimrodg.master;
 
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentMessage;
 import java.io.IOException;
+import java.time.Instant;
+import java.util.Optional;
+import java.util.UUID;
 
 public interface MessageQueueListener {
 
@@ -28,9 +31,10 @@ public interface MessageQueueListener {
 		Ack,
 		Reject,
 		RejectAndRequeue,
+		@Deprecated
 		Terminate
 	}
 
-	/* FIXME: This needs to be redone. The body parameter is a hack. */
-	MessageOperation processAgentMessage(AgentMessage msg, byte[] body) throws IllegalStateException, IOException;
+	/* Return an empty optional to do nothing. The tag must be passed to opMessage() */
+	Optional<MessageOperation> processAgentMessage(long tag, AMQPMessage msg) throws IllegalStateException, IOException;
 }

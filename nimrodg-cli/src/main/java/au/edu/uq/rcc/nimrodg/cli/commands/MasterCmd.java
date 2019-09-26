@@ -20,12 +20,14 @@
 package au.edu.uq.rcc.nimrodg.cli.commands;
 
 import au.edu.uq.rcc.nimrodg.agent.MessageBackend;
+import au.edu.uq.rcc.nimrodg.agent.messages.AgentMessage;
 import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodException;
 import au.edu.uq.rcc.nimrodg.api.NimrodConfig;
 import au.edu.uq.rcc.nimrodg.api.NimrodMasterAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
+import au.edu.uq.rcc.nimrodg.master.AMQPMessage;
 import au.edu.uq.rcc.nimrodg.setup.UserConfig;
 import au.edu.uq.rcc.nimrodg.cli.CommandEntry;
 import au.edu.uq.rcc.nimrodg.cli.NimrodCLI;
@@ -44,6 +46,9 @@ import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
+import java.time.Instant;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -65,6 +70,27 @@ public class MasterCmd extends NimrodCLICommand {
 		} else {
 			return ActuatorUtils.readX509Certificates(Paths.get(path));
 		}
+	}
+
+	private static class _MessageQueueListener implements MessageQueueListener {
+
+		public final Master m;
+		public final Object monitor;
+
+		public _MessageQueueListener(Master m, Object monitor) {
+			this.m = m;
+			this.monitor = monitor;
+		}
+
+		@Override
+		public Optional<MessageOperation> processAgentMessage(long tag, AMQPMessage amsg) throws IllegalStateException, IOException {
+			Optional<MessageQueueListener.MessageOperation> op = m.processAgentMessage(tag, amsg);
+			synchronized(monitor) {
+				monitor.notify();
+			}
+			return op;
+		}
+
 	}
 
 	@Override
@@ -106,14 +132,7 @@ public class MasterCmd extends NimrodCLICommand {
 					cfg.getAmqpRoutingKey(),
 					amqpUri.noVerifyPeer,
 					amqpUri.noVerifyHost,
-					MessageBackend.createBackend(),
-					(msg, body) -> {
-						MessageQueueListener.MessageOperation op = m.processAgentMessage(msg, body);
-						synchronized(monitor) {
-							monitor.notify();
-						}
-						return op;
-					},
+					new _MessageQueueListener(m, monitor),
 					ForkJoinPool.commonPool()
 			)) {
 				m.setAMQP(amqp);

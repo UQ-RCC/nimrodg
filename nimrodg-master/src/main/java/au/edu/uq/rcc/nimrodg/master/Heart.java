@@ -21,6 +21,7 @@ package au.edu.uq.rcc.nimrodg.master;
 
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
 import au.edu.uq.rcc.nimrodg.api.utils.NimrodUtils;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -29,24 +30,20 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Heart, manages heartbeats, expiry timeouts, etc.
  */
 class Heart {
 
-	private static final Logger LOGGER = LogManager.getLogger(Heart.class);
-
 	/* Time in seconds between shutdown attempts. */
-	private static final long DEFAULT_EXPIRY_RETRY_INTERVAL = 5;
+	public static final long DEFAULT_EXPIRY_RETRY_INTERVAL = 5;
 	/* Maximum number of retries before force disconnecting. */
-	private static final long DEFAULT_EXPIRY_RETRY_COUNT = 5;
+	public static final long DEFAULT_EXPIRY_RETRY_COUNT = 5;
 	/* Time in seconds between heartbeats. */
-	private static final long DEFAULT_HEARTBEAT_INTERVAL = 5;
+	public static final long DEFAULT_HEARTBEAT_INTERVAL = 5;
 	/* Number of missed heartbeats before an agent is expired. */
-	private static final long DEFAULT_HEARTBEAT_MISSED_THRESHOLD = 3;
+	public static final long DEFAULT_HEARTBEAT_MISSED_THRESHOLD = 3;
 
 	private static class ExpiryInfo {
 
@@ -89,7 +86,11 @@ class Heart {
 
 		Instant getLastHeardFrom(UUID u);
 
-		Instant getExpiryTime(UUID u);
+		Instant getWalltime(UUID u);
+
+		void logInfo(String fmt, Object... args);
+
+		void logTrace(String fmt, Object... args);
 	}
 
 	Heart(Operations ops) {
@@ -110,7 +111,7 @@ class Heart {
 	private void tickAgent(UUID u, Instant now, Set<UUID> exps) {
 		ExpiryInfo ei = expiryInfo.get(u);
 
-		tickExpiry(u, ei, now);
+		tickWalltime(u, ei, now);
 
 		if(!ei.isExpiring()) {
 			tickHeartbeat(u, ei, now, exps);
@@ -118,8 +119,8 @@ class Heart {
 
 	}
 
-	private void tickExpiry(UUID u, ExpiryInfo ei, Instant now) {
-		if(now.isBefore(ops.getExpiryTime(u))) {
+	private void tickWalltime(UUID u, ExpiryInfo ei, Instant now) {
+		if(now.isBefore(ops.getWalltime(u))) {
 			return;
 		}
 
@@ -129,21 +130,25 @@ class Heart {
 		}
 
 		if(ei.retryCount >= expiryRetryCount) {
-			LOGGER.info("Agent {} ignored {} expiry requests, marking as disconnected...", u, ei.retryCount);
+			ops.logInfo("Agent %s ignored %d termination requests, marking as disconnected...", u, ei.retryCount);
 			ops.disconnectAgent(u, AgentShutdown.Reason.Requested, -1);
 			ei.lastExpiryCheck = now;
 			return;
 		}
 
+		if(ei.retryCount == 0) {
+			ops.logInfo("Agent %s hit walltime, attempting to terminate...", u);
+		}
 		ops.terminateAgent(u);
 		++ei.retryCount;
 		ei.lastExpiryCheck = now;
 	}
 
 	private void tickHeartbeat(UUID u, ExpiryInfo ei, Instant now, Set<UUID> exps) {
+		/* FIXME: This logic needs to be redone. */
 		//long commDiff = ops.getLastHeardFrom(u).until(now.plus(1, ChronoUnit.SECONDS), ChronoUnit.SECONDS);
 		long commDiff = ops.getLastHeardFrom(u).until(now, ChronoUnit.SECONDS);
-		//LOGGER.trace("Agent {} commDiff = {}", u, commDiff);
+		//ops.logTrace("Agent %s commDiff = %d", u, commDiff);
 		/* FIXME: Set this to the actual delay */
 		long processingDelay = 1;
 		if(commDiff < (heartbeatInterval + processingDelay) || heartbeatInterval == 0) {
@@ -151,7 +156,7 @@ class Heart {
 		}
 
 		if(ei.missedBeats >= heartbeatMissedThreshold && heartbeatMissedThreshold > 0) {
-			LOGGER.info("Agent {} missed {} heartbeats, expiring...", u, ei.missedBeats);
+			ops.logInfo("Agent %s missed %d heartbeats, expiring...", u, ei.missedBeats);
 			exps.add(u);
 			ops.expireAgent(u);
 			return;
@@ -161,19 +166,25 @@ class Heart {
 			ops.pingAgent(u);
 			ei.lastPing = now;
 			++ei.missedBeats;
-			//LOGGER.trace("Agent {} now at {} missed beats.", u, ei.missedBeats);
+			if(ei.missedBeats > 1) {
+				ops.logTrace("Agent %s now at %d missed beats.", u, ei.missedBeats);
+			}
 		}
 	}
 
 	public void onAgentPong(UUID u) {
 		/* We've received a heartbeat, reset */
 		ExpiryInfo ei = expiryInfo.get(u);
+		if(ei == null) {
+			/* Will happen if we've already been expired. Tough luck. */
+			return;
+		}
 		ei.missedBeats = 0;
 	}
 
 	/**
 	 * Called when an agent is created.
-	 *
+	 * <p>
 	 * This may not use any operations.
 	 *
 	 * @param u The UUID of the agent.
@@ -196,7 +207,7 @@ class Heart {
 
 	/**
 	 * Called when an agent disconnects.
-	 *
+	 * <p>
 	 * This may not use any operations.
 	 *
 	 * @param u The UUID of the agent.
@@ -210,7 +221,7 @@ class Heart {
 
 		/* Only log if we've tried to terminate. */
 		if(ei.isExpiring()) {
-			LOGGER.info("Agent {} expired on attempt {}", u, ei.retryCount);
+			ops.logInfo("Agent %s expired on attempt %d", u, ei.retryCount);
 		}
 	}
 

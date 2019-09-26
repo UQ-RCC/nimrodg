@@ -23,6 +23,9 @@ import au.edu.uq.rcc.nimrodg.agent.messages.AgentHello;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentLifeControl;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentMessage;
 import au.edu.uq.rcc.nimrodg.agent.MessageBackend;
+import au.edu.uq.rcc.nimrodg.agent.messages.json.JsonBackend;
+import au.edu.uq.rcc.nimrodg.resource.act.ActuatorUtils;
+import au.edu.uq.rcc.nimrodg.shell.ShellUtils;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.AlreadyClosedException;
 import com.rabbitmq.client.BuiltinExchangeType;
@@ -38,13 +41,21 @@ import com.rabbitmq.client.impl.ForgivingExceptionHandler;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.security.cert.Certificate;
+import java.time.Instant;
+import java.util.Date;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeoutException;
 import javax.json.Json;
+import javax.mail.internet.ContentType;
+import javax.mail.internet.ParseException;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
@@ -56,6 +67,7 @@ public class AMQProcessorImpl implements AMQProcessor {
 
 	private static final Logger LOGGER = LogManager.getLogger(Master.class);
 
+	private final String m_User;
 	private final MessageQueueListener m_Listener;
 	private final Connection m_Connection;
 	private final Channel m_Channel;
@@ -64,9 +76,13 @@ public class AMQProcessorImpl implements AMQProcessor {
 	private final AMQP.Queue.DeclareOk m_QueueOk;
 	private final _Consumer m_Consumer;
 
-	private final MessageBackend m_MessageBackend;
+	private static final MessageBackend DEFAULT_MESSAGE_BACKEND = JsonBackend.INSTANCE;
 
-	public AMQProcessorImpl(URI uri, Certificate[] certs, String tlsProtocol, String routingKey, boolean noVerifyPeer, boolean noVerifyHost, MessageBackend msgBackend, MessageQueueListener listener, ExecutorService execs) throws IOException, TimeoutException, URISyntaxException, GeneralSecurityException {
+	private static final Map<String, MessageBackend> MESSAGE_BACKENDS = Map.of(
+			DEFAULT_MESSAGE_BACKEND.getContentType().getBaseType(), DEFAULT_MESSAGE_BACKEND
+	);
+
+	public AMQProcessorImpl(URI uri, Certificate[] certs, String tlsProtocol, String routingKey, boolean noVerifyPeer, boolean noVerifyHost, MessageQueueListener listener, ExecutorService execs) throws IOException, TimeoutException, URISyntaxException, GeneralSecurityException {
 		m_Listener = listener;
 		ConnectionFactory cf = new ConnectionFactory();
 
@@ -74,6 +90,13 @@ public class AMQProcessorImpl implements AMQProcessor {
 		if(scheme == null) {
 			scheme = "amqp";
 		}
+
+		Optional<String> user = ShellUtils.getUriUser(uri);
+		if(!user.isPresent()) {
+			throw new IllegalArgumentException();
+		}
+		
+		m_User = user.get();
 
 		/* Do this before setUri() */
 		if(scheme.equalsIgnoreCase("amqps")) {
@@ -119,10 +142,6 @@ public class AMQProcessorImpl implements AMQProcessor {
 		m_Connection = cf.newConnection();
 
 		m_Channel = m_Connection.createChannel();
-
-		/* Don't schedule messages that haven't been ACK'd */
-		m_Channel.basicQos(1);
-
 		m_Channel.addConfirmListener(new _ConfirmListener());
 		m_Channel.addReturnListener(new _ReturnListener());
 
@@ -135,12 +154,10 @@ public class AMQProcessorImpl implements AMQProcessor {
 
 		m_Consumer = new _Consumer(m_Channel);
 		m_Channel.basicConsume(m_QueueOk.getQueue(), false, m_Consumer);
-
-		m_MessageBackend = msgBackend;
 	}
 
 	@Override
-	public void close() throws IOException, TimeoutException {
+	public void close() throws IOException {
 		try(m_Connection) {
 			//m_Channel.close();
 			/* abort() will wait for the close to finish. */
@@ -161,70 +178,170 @@ public class AMQProcessorImpl implements AMQProcessor {
 	}
 
 	@Override
-	public void sendMessage(String key, AgentMessage msg) throws IOException {
-		byte[] bytes = m_MessageBackend.toBytes(msg);
+	public AMQPMessage sendMessage(String key, AgentMessage msg) throws IOException {
+		Charset cs = StandardCharsets.UTF_8;
+		byte[] bytes = DEFAULT_MESSAGE_BACKEND.toBytes(msg, cs);
 		if(bytes == null) {
 			throw new IOException("Message serialisation failure");
 		}
 
-		m_Channel.basicPublish(m_DirectName, key, true, MessageProperties.PERSISTENT_BASIC, bytes);
+		ContentType ct = DEFAULT_MESSAGE_BACKEND.getContentType();
+		ct.setParameter("charset", cs.name());
+
+		UUID messageId = UUID.randomUUID();
+		Instant timestamp = Instant.now();
+		AMQP.BasicProperties props = new AMQP.BasicProperties.Builder()
+				.deliveryMode(2)
+				.contentType(ct.toString())
+				.contentEncoding("identity")
+				.type(msg.getTypeString())
+				.messageId(messageId.toString())
+				.timestamp(Date.from(timestamp))
+				.userId(m_User)
+				.appId("nimrod")
+				.build();
+
+		
+		m_Channel.basicPublish(m_DirectName, key, true, props, bytes);
+
+		return new AMQPMessage(
+				bytes,
+				props,
+				messageId,
+				ct,
+				cs,
+				timestamp,
+				msg
+		);
+	}
+
+	private Optional<Charset> resolveCharset(String name) {
+		/* Following HTTP/1.1 here: https://tools.ietf.org/html/rfc2616 section 3.4.1*/
+		if(name == null) {
+			return Optional.of(StandardCharsets.ISO_8859_1);
+		}
+
+		if(!Charset.isSupported(name)) {
+			return Optional.empty();
+		}
+
+		return Optional.of(Charset.forName(name));
 	}
 
 	private void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
-		AgentMessage am = m_MessageBackend.fromBytes(body);
+		long tag = envelope.getDeliveryTag();
+
+		if(!Optional.ofNullable(properties.getAppId()).map("nimrod"::equals).orElse(false)) {
+			opMessage(MessageQueueListener.MessageOperation.Reject, tag);
+			return;
+		}
+
+		if(properties.getMessageId() == null) {
+			opMessage(MessageQueueListener.MessageOperation.Reject, tag);
+			return;
+		}
+
+		UUID uuid;
+
+		try {
+			uuid = UUID.fromString(properties.getMessageId());
+		} catch(IllegalArgumentException e) {
+			opMessage(MessageQueueListener.MessageOperation.Reject, tag);
+			return;
+		}
+
+		if(properties.getContentType() == null) {
+			opMessage(MessageQueueListener.MessageOperation.Reject, tag);
+			return;
+		}
+
+		ContentType contentType;
+		try {
+			contentType = new ContentType(properties.getContentType());
+		} catch(ParseException e) {
+			opMessage(MessageQueueListener.MessageOperation.Reject, tag);
+			return;
+		}
+
+		MessageBackend mb = MESSAGE_BACKENDS.get(contentType.getBaseType());
+		if(mb == null) {
+			opMessage(MessageQueueListener.MessageOperation.Reject, tag);
+			return;
+		}
+
+		Optional<Charset> charset = resolveCharset(contentType.getParameter("charset"));
+
+		if(!charset.isPresent()) {
+			opMessage(MessageQueueListener.MessageOperation.Reject, tag);
+			return;
+		}
+
+		if(properties.getTimestamp() == null) {
+			opMessage(MessageQueueListener.MessageOperation.Reject, tag);
+			return;
+		}
+
+		AgentMessage am = mb.fromBytes(body, charset.get());
 		if(am == null) {
 			throw new IOException("Message deserialisation failed");
 		}
 
-		long tag = envelope.getDeliveryTag();
-		MessageQueueListener.MessageOperation op;
+		AMQPMessage amsg = new AMQPMessage(
+				body,
+				properties,
+				uuid,
+				contentType,
+				charset.get(),
+				properties.getTimestamp().toInstant(),
+				am
+		);
+		Optional<MessageQueueListener.MessageOperation> op;
 		try {
-			op = m_Listener.processAgentMessage(am, body);
+			op = m_Listener.processAgentMessage(tag, amsg);
 		} catch(IllegalStateException e) {
-			op = MessageQueueListener.MessageOperation.RejectAndRequeue;
-		} catch(IOException e) {
-			m_Channel.basicReject(tag, true);
-			throw e;
+			op = Optional.of(MessageQueueListener.MessageOperation.Terminate);
 		}
 
-		switch(op) {
-			case Ack:
-				m_Channel.basicAck(tag, false);
-				break;
-			case Reject:
-				m_Channel.basicReject(tag, false);
-				break;
-			case RejectAndRequeue:
-				m_Channel.basicReject(tag, true);
-				break;
-			case Terminate:
-				m_Channel.basicAck(tag, false);
-
+		if(op.isPresent()) {
+			opMessage(op.get(), tag);
+			if(op.get() == MessageQueueListener.MessageOperation.Terminate) {
+				opMessage(MessageQueueListener.MessageOperation.Ack, tag);
 				if(am instanceof AgentHello) {
 					AgentHello ah = (AgentHello)am;
 					sendMessage(ah.queue, new AgentLifeControl(am.getAgentUUID(), AgentLifeControl.Operation.Terminate));
 				} else {
 					/* FIXME: Don't really know what to do here as we can't get the routing key :/ */
 				}
-
-				break;
-			default:
-				throw new IllegalStateException();
+			}
 		}
 	}
 
-	private void handleAck(long deliveryTag, boolean multiple) throws IOException {
-		//assert !multiple;
-
-	}
-
-	private void handleNack(long deliveryTag, boolean multiple) throws IOException {
-		//throw new IllegalStateException("handleNack() called. We don't use nacks.");
+	@Override
+	public void opMessage(MessageQueueListener.MessageOperation op, long tag) {
+		synchronized(m_Channel) {
+			try {
+				switch(op) {
+					case Ack:
+						m_Channel.basicAck(tag, false);
+						break;
+					case Reject:
+						m_Channel.basicReject(tag, false);
+						break;
+					case RejectAndRequeue:
+						m_Channel.basicReject(tag, true);
+						break;
+					case Terminate:
+						break;
+				}
+			} catch(IOException e) {
+				LOGGER.catching(e);
+			}
+		}
 	}
 
 	private class _Consumer extends DefaultConsumer {
 
-		public _Consumer(Channel channel) {
+		_Consumer(Channel channel) {
 			super(channel);
 		}
 
@@ -234,20 +351,20 @@ public class AMQProcessorImpl implements AMQProcessor {
 		}
 	}
 
-	private class _ConfirmListener implements ConfirmListener {
+	private static class _ConfirmListener implements ConfirmListener {
 
 		@Override
 		public void handleAck(long deliveryTag, boolean multiple) throws IOException {
-			AMQProcessorImpl.this.handleAck(deliveryTag, multiple);
+			/* nop */
 		}
 
 		@Override
 		public void handleNack(long deliveryTag, boolean multiple) throws IOException {
-			AMQProcessorImpl.this.handleNack(deliveryTag, multiple);
+			/* nop */
 		}
 	}
 
-	private class _ReturnListener implements ReturnListener {
+	private static class _ReturnListener implements ReturnListener {
 
 		@Override
 		public void handleReturn(int replyCode, String replyText, String exchange, String routingKey, AMQP.BasicProperties properties, byte[] body) throws IOException {

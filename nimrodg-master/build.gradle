@@ -11,5 +11,6 @@ dependencies {
 
 	implementation project(':nimrodg-internal-api')
 	implementation project(':nimrodg-utils')
+	implementation project(':nimrodg-shell')
 	implementation project(':nimrodg-resources')
 }

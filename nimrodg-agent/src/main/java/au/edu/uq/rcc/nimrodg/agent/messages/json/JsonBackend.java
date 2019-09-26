@@ -22,30 +22,31 @@ package au.edu.uq.rcc.nimrodg.agent.messages.json;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentMessage;
 import au.edu.uq.rcc.nimrodg.agent.MessageBackend;
 import java.io.ByteArrayInputStream;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import javax.json.Json;
-import javax.json.JsonObject;
-import javax.json.JsonObjectBuilder;
-import javax.json.JsonReader;
-import javax.json.JsonString;
+import javax.json.*;
+import javax.json.stream.JsonParserFactory;
+import javax.mail.internet.ContentType;
+import javax.mail.internet.ParameterList;
 
 public class JsonBackend implements MessageBackend {
+	private static final Map<AgentMessage.Type, JsonHandler> MESSAGE_HANDLERS = Map.of(
+			AgentMessage.Type.Hello, new HelloHandler(),
+			AgentMessage.Type.Init, new InitHandler(),
+			AgentMessage.Type.LifeControl, new LifeControlHandler(),
+			AgentMessage.Type.Shutdown, new ShutdownHandler(),
+			AgentMessage.Type.Submit, new SubmitHandler(),
+			AgentMessage.Type.Update, new UpdateHandler(),
+			AgentMessage.Type.Ping, new PingHandler(),
+			AgentMessage.Type.Pong, new PongHandler()
+	);
 
-	private static final Map<AgentMessage.Type, JsonHandler> MESSAGE_HANDLERS = new HashMap<AgentMessage.Type, JsonHandler>() {
-		{
-			put(AgentMessage.Type.Hello, new HelloHandler());
-			put(AgentMessage.Type.Init, new InitHandler());
-			put(AgentMessage.Type.LifeControl, new LifeControlHandler());
-			put(AgentMessage.Type.Shutdown, new ShutdownHandler());
-			put(AgentMessage.Type.Submit, new SubmitHandler());
-			put(AgentMessage.Type.Update, new UpdateHandler());
-			put(AgentMessage.Type.Ping, new PingHandler());
-			put(AgentMessage.Type.Pong, new PongHandler());
-		}
-	};
+	private static final ContentType CONTENT_TYPE = new ContentType("application", "json", new ParameterList());
+	private static final JsonReaderFactory READER_FACTORY = Json.createReaderFactory(Map.of());
+	public static final JsonBackend INSTANCE = new JsonBackend();
 
 	private static JsonHandler getHandlerForType(AgentMessage.Type type) {
 		JsonHandler h = MESSAGE_HANDLERS.getOrDefault(type, null);
@@ -56,25 +57,44 @@ public class JsonBackend implements MessageBackend {
 		return h;
 	}
 
-	@Override
-	public byte[] toBytes(AgentMessage msg) {
+	public JsonObject toJson(AgentMessage msg) {
 		JsonObjectBuilder jo = Json.createObjectBuilder();
 		jo.add("uuid", msg.getAgentUUID().toString());
 		jo.add("type", toJson(msg.getType()));
 		getHandlerForType(msg.getType()).write(jo, msg);
-		return jo.build().toString().getBytes(StandardCharsets.UTF_8);
+		return jo.build();
 	}
 
 	@Override
-	public AgentMessage fromBytes(byte[] bytes) {
+	public byte[] toBytes(AgentMessage msg, Charset charset) {
+		return toJson(msg).toString().getBytes(charset);
+	}
+
+	@Override
+	public AgentMessage fromBytes(byte[] bytes, Charset charset) {
 		JsonObject jo;
-		try(JsonReader p = Json.createReader(new ByteArrayInputStream(bytes))) {
+		try(JsonReader p = READER_FACTORY.createReader(new ByteArrayInputStream(bytes), charset)) {
 			jo = p.readObject();
 		}
 
 		UUID uuid = UUID.fromString(jo.getString("uuid"));
 		AgentMessage.Type msgType = readMessageType(jo.getString("type"));
 		return getHandlerForType(msgType).read(jo, uuid);
+	}
+
+	/* TODO: Move this out of here if there's ever more than one message backend. */
+	private static ContentType duplicateContentType(ContentType ct) {
+		ParameterList parms = new ParameterList();
+		ct.getParameterList().getNames().asIterator().forEachRemaining(s -> {
+			parms.set(s, ct.getParameterList().get(s));
+		});
+
+		return new ContentType(ct.getPrimaryType(), ct.getSubType(), parms);
+	}
+
+	@Override
+	public ContentType getContentType() {
+		return duplicateContentType(CONTENT_TYPE);
 	}
 
 	public static JsonString toJson(AgentMessage.Type type) {

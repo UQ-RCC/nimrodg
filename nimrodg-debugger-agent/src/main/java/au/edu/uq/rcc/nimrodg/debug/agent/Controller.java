@@ -35,8 +35,8 @@ import au.edu.uq.rcc.nimrodg.api.PlanfileParseException;
 import au.edu.uq.rcc.nimrodg.api.Task;
 import au.edu.uq.rcc.nimrodg.api.utils.MsgUtils;
 import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledRun;
-import au.edu.uq.rcc.nimrodg.api.utils.run.RunBuilder;
 import au.edu.uq.rcc.nimrodg.api.utils.run.RunfileBuildException;
+import au.edu.uq.rcc.nimrodg.master.AMQPMessage;
 import au.edu.uq.rcc.nimrodg.master.AMQProcessorImpl;
 import au.edu.uq.rcc.nimrodg.master.MessageQueueListener;
 import au.edu.uq.rcc.nimrodg.parsing.ANTLR4ParseAPIImpl;
@@ -77,7 +77,6 @@ public class Controller {
 
 	private final MessageWindow m_MessageWindow;
 
-	private final MessageBackend m_MessageBackend;
 	private final ArrayList<Message> m_Messages;
 
 	private static final String SAMPLE_PLANFILE = "parameter x int range from 0 to 10\n"
@@ -119,7 +118,6 @@ public class Controller {
 		m_Agent = new ReferenceAgent(new DefaultAgentState(), m_AgentListener);
 		m_StatusPanel.setAgent(m_Agent);
 		m_MessageWindow = new MessageWindow();
-		m_MessageBackend = MessageBackend.createBackend();
 		m_Messages = new ArrayList<>();
 		m_MessageWindow.getMessagePanel().setMessages(m_Messages);
 	}
@@ -140,7 +138,7 @@ public class Controller {
 
 		SwingUtilities.invokeLater(() -> {
 			try {
-				m_AMQP = new AMQProcessorImpl(new URI(uri), new Certificate[0], "TLSv1.2", m_View.getRoutingKey(), true, true, m_MessageBackend, new _MessageQueueListener(), ForkJoinPool.commonPool());
+				m_AMQP = new AMQProcessorImpl(new URI(uri), new Certificate[0], "TLSv1.2", m_View.getRoutingKey(), true, true, new _MessageQueueListener(), ForkJoinPool.commonPool());
 				m_Logger.log(ILogger.Level.INFO, "Connected to %s", uri);
 
 				m_View.setConnectProgress(1.0f);
@@ -163,7 +161,7 @@ public class Controller {
 
 		try {
 			m_AMQP.close();
-		} catch(IOException | TimeoutException e) {
+		} catch(IOException e) {
 			m_Logger.log(ILogger.Level.ERR, e);
 		}
 
@@ -214,7 +212,14 @@ public class Controller {
 		}
 	}
 
-	private MessageQueueListener.MessageOperation handleAgentMessage(AgentMessage msg, byte[] body) throws IOException {
+	private MessageQueueListener.MessageOperation handleAgentMessage(long tag, AMQPMessage amsg) throws IOException {
+		m_Messages.add(Message.create(amsg, true));
+		m_MessageWindow.getMessagePanel().refreshMessages();
+
+		AgentMessage msg = amsg.message;
+		if(msg == null) {
+			return MessageQueueListener.MessageOperation.Reject;
+		}
 
 		UUID uuid = msg.getAgentUUID();
 
@@ -237,9 +242,6 @@ public class Controller {
 			m_Agent.reset(msg.getAgentUUID());
 		}
 
-		m_Messages.add(Message.create(body, true));
-		m_MessageWindow.getMessagePanel().refreshMessages();
-
 		try {
 			m_Agent.processMessage(msg, Instant.now());
 			return MessageQueueListener.MessageOperation.Ack;
@@ -250,14 +252,9 @@ public class Controller {
 	}
 
 	private void sendMessage(String key, AgentMessage msg) throws IOException {
-		byte[] bytes = m_MessageBackend.toBytes(msg);
-		if(bytes == null) {
-			throw new IOException("Message serialisation failure");
-		}
-
-		m_Messages.add(Message.create(bytes, false));
+		AMQPMessage amsg = m_AMQP.sendMessage(key, msg);
+		m_Messages.add(Message.create(amsg, false));
 		m_MessageWindow.getMessagePanel().refreshMessages();
-		m_AMQP.sendMessage(key, msg);
 	}
 
 	private void onAgentStateChange(Agent agent, Agent.State oldState, Agent.State newState) {
@@ -414,8 +411,8 @@ public class Controller {
 	private class _MessageQueueListener implements MessageQueueListener {
 
 		@Override
-		public MessageOperation processAgentMessage(AgentMessage msg, byte[] body) throws IllegalStateException, IOException {
-			return handleAgentMessage(msg, body);
+		public Optional<MessageOperation> processAgentMessage(long tag, AMQPMessage msg) throws IllegalStateException, IOException {
+			return Optional.of(handleAgentMessage(tag, msg));
 		}
 	}
 }

@@ -184,7 +184,7 @@ public class Staging extends DefaultCLICommand {
 		}
 
 		CompiledRun cr = PARSE_API.parseRunToBuilder(
-				String.format("parameter x integer range from 0 to 10000 step 1\n"
+				String.format("parameter x integer range from 0 to 100 step 1\n"
 						+ "task main\n"
 						+ "    onerror fail\n"
 						+ "    shexec \"sleep %d\"\n"
@@ -197,60 +197,60 @@ public class Staging extends DefaultCLICommand {
 //		Resource tinaroo = createTinaroo(nimrod, "tinaroo");
 //		nimrod.assignResource(tinaroo, exp1);
 //
-//		Resource flashlite = createFlashlite(nimrod, "flashlite");
-//		nimrod.assignResource(flashlite, exp1);
+		Resource flashlite = createFlashlite(nimrod, "flashlite");
+		nimrod.assignResource(flashlite, exp1);
 
-//		Resource local = createLocal(nimrod, "local", "x86_64-pc-linux-musl", nAgents);
-//		nimrod.assignResource(local, exp1);
+		Resource local = createLocal(nimrod, "local", "x86_64-pc-linux-musl", nAgents);
+		nimrod.assignResource(local, exp1);
 //
 //		Resource[] slaves = createSlaves(nimrod);
 //
 //		for(int i = 0; i < slaves.length; ++i) {
 //			nimrod.assignResource(slaves[i], exp1);
 //		}
-		HPCResourceType hpcr = new HPCResourceType();
-		Resource tinaroo = nimrod.getResource("tinaroo");
-		if(tinaroo != null) {
-			nimrod.deleteResource(tinaroo);
-		}
-
-		JsonObject cfg = hpcr.parseCommandArguments(nimrod, new String[]{
-			"--platform", "x86_64-pc-linux-musl",
-			"--transport", "openssh",
-			"--uri", "ssh://tinaroo1",
-			"--limit", "10",
-			"--tmpvar", "TMPDIR",
-			"--max-batch-size", "10",
-			"--type", "pbspro",
-			"--ncpus", "1",
-			"--mem", "1GiB",
-			"--walltime", "24:00:00",
-			"--account", "UQ-RCC"
-		}, out, err, configDirs).asJsonObject();
-
-		tinaroo = nimrod.addResource("tinaroo", "hpc", cfg, null, null);
-		nimrod.assignResource(tinaroo, exp1);
-
-		Resource wiener = nimrod.getResource("wiener");
-		if(wiener != null) {
-			nimrod.deleteResource(wiener);
-		}
-
-		JsonObject wcfg = hpcr.parseCommandArguments(nimrod, new String[]{
-			"--platform", "x86_64-pc-linux-musl",
-			"--transport", "openssh",
-			"--uri", "ssh://wiener",
-			"--limit", "10",
-			"--tmpvar", "TMPDIR",
-			"--max-batch-size", "10",
-			"--type", "slurm",
-			"--ncpus", "1",
-			"--mem", "1GiB",
-			"--walltime", "24:00:00"
-		}, out, err, configDirs).asJsonObject();
-
-		wiener = nimrod.addResource("wiener", "hpc", wcfg, null, null);
-		nimrod.assignResource(wiener, exp1);
+//		HPCResourceType hpcr = new HPCResourceType();
+//		Resource tinaroo = nimrod.getResource("tinaroo");
+//		if(tinaroo != null) {
+//			nimrod.deleteResource(tinaroo);
+//		}
+//
+//		JsonObject cfg = hpcr.parseCommandArguments(nimrod, new String[]{
+//			"--platform", "x86_64-pc-linux-musl",
+//			"--transport", "openssh",
+//			"--uri", "ssh://tinaroo1",
+//			"--limit", "10",
+//			"--tmpvar", "TMPDIR",
+//			"--max-batch-size", "10",
+//			"--type", "pbspro",
+//			"--ncpus", "1",
+//			"--mem", "1GiB",
+//			"--walltime", "24:00:00",
+//			"--account", "UQ-RCC"
+//		}, out, err, configDirs).asJsonObject();
+//
+//		tinaroo = nimrod.addResource("tinaroo", "hpc", cfg, null, null);
+//		nimrod.assignResource(tinaroo, exp1);
+//
+//		Resource wiener = nimrod.getResource("wiener");
+//		if(wiener != null) {
+//			nimrod.deleteResource(wiener);
+//		}
+//
+//		JsonObject wcfg = hpcr.parseCommandArguments(nimrod, new String[]{
+//			"--platform", "x86_64-pc-linux-musl",
+//			"--transport", "openssh",
+//			"--uri", "ssh://wiener",
+//			"--limit", "10",
+//			"--tmpvar", "TMPDIR",
+//			"--max-batch-size", "10",
+//			"--type", "slurm",
+//			"--ncpus", "1",
+//			"--mem", "1GiB",
+//			"--walltime", "24:00:00"
+//		}, out, err, configDirs).asJsonObject();
+//
+//		wiener = nimrod.addResource("wiener", "hpc", wcfg, null, null);
+//		nimrod.assignResource(wiener, exp1);
 	}
 
 	public void bigGet(UserConfig config, NimrodAPI nimrod, PrintStream out, PrintStream err, Path[] configDirs, String[] args) throws Exception {

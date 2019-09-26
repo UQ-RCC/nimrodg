@@ -20,13 +20,35 @@
 package au.edu.uq.rcc.nimrodg.agent;
 
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentMessage;
-import au.edu.uq.rcc.nimrodg.agent.messages.json.JsonBackend;
+
+import javax.mail.internet.ContentType;
+import java.nio.charset.Charset;
 
 public interface MessageBackend {
-	public byte[] toBytes(AgentMessage msg);
-	public AgentMessage fromBytes(byte[] bytes);
+    /**
+     * Encode an agent message to bytes using a given Charset.
+     *
+     * @param msg     The message to send. May not be null.
+     * @param charset The charset to encode the message with. May not be null.
+     * @return The charset-encoded byte representation of the message.
+     */
+    byte[] toBytes(AgentMessage msg, Charset charset);
 
-	public static MessageBackend createBackend() {
-		return new JsonBackend();
-	}
+    /**
+     * Decode an agent message from bytes using a given Charset.
+     *
+     * @param bytes   The bytes to decode. May not be null.
+     * @param charset The charset to decode the message with. May not be null.
+     * @return The agent message represented by the bytes.
+     */
+    AgentMessage fromBytes(byte[] bytes, Charset charset);
+
+    /**
+     * Get the MIME Content-Type this handler produces/consumes.
+     * <p>
+     * This is a new copy, and may be modified.
+     *
+     * @return The MIME Content-Type this handler produces/consumes.
+     */
+    ContentType getContentType();
 }
