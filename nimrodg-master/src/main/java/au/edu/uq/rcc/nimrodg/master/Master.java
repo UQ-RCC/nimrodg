@@ -139,13 +139,17 @@ public class Master implements MessageQueueListener, AutoCloseable {
 	private static class _AgentMessage {
 
 		public final long tag;
+		public final UUID uuid;
 		public final AgentMessage msg;
+		public final Instant remoteTime;
 		public final Instant receivedTime;
 		public Instant processedTime;
 
-		public _AgentMessage(long tag, AgentMessage msg, Instant receivedTime) {
+		public _AgentMessage(long tag, UUID uuid, AgentMessage msg, Instant remoteTime, Instant receivedTime) {
 			this.tag = tag;
+			this.uuid = uuid;
 			this.msg = msg;
+			this.remoteTime = remoteTime;
 			this.receivedTime = receivedTime;
 		}
 	}
@@ -232,8 +236,12 @@ public class Master implements MessageQueueListener, AutoCloseable {
 
 	/* This runs out-of-band with the state machine. */
 	@Override
-	public Optional<MessageOperation> processAgentMessage(long tag, AgentMessage msg, byte[] body) throws IllegalStateException {
-		if(!agentMessages.offer(new _AgentMessage(tag, msg, Instant.now()))) {
+	public Optional<MessageOperation> processAgentMessage(long tag, AMQPMessage amsg) throws IllegalStateException {
+		if(amsg.message == null || amsg.messageId == null || !amsg.sentAt.isPresent()) {
+			return Optional.of(MessageOperation.Reject);
+		}
+
+		if(!agentMessages.offer(new _AgentMessage(tag, amsg.messageId, amsg.message, amsg.sentAt.get(), Instant.now()))) {
 			return Optional.of(MessageOperation.RejectAndRequeue);
 		}
 
@@ -1002,11 +1010,12 @@ public class Master implements MessageQueueListener, AutoCloseable {
 		public void reportAgentFailure(Actuator act, UUID uuid, AgentShutdown.Reason reason, int signal) throws IllegalArgumentException {
 			Instant now = Instant.now();
 			// FIXME: Should probably be some way to tell this message was faked.
-			agentMessages.offer(new _AgentMessage(-1, new AgentShutdown.Builder()
+			agentMessages.offer(new _AgentMessage(-1, UUID.randomUUID(), new AgentShutdown.Builder()
 					.agentUuid(uuid)
 					.reason(reason)
 					.signal(signal)
 					.build(),
+					now,
 					now));
 		}
 

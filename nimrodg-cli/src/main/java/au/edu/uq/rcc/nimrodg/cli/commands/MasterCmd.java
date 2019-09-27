@@ -19,13 +19,13 @@
  */
 package au.edu.uq.rcc.nimrodg.cli.commands;
 
-import au.edu.uq.rcc.nimrodg.agent.messages.AgentMessage;
 import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodConfig;
 import au.edu.uq.rcc.nimrodg.api.NimrodException;
 import au.edu.uq.rcc.nimrodg.api.NimrodMasterAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
+import au.edu.uq.rcc.nimrodg.master.AMQPMessage;
 import au.edu.uq.rcc.nimrodg.cli.CommandEntry;
 import au.edu.uq.rcc.nimrodg.cli.NimrodCLI;
 import au.edu.uq.rcc.nimrodg.cli.NimrodCLICommand;
@@ -81,8 +81,8 @@ public class MasterCmd extends NimrodCLICommand {
 		}
 
 		@Override
-		public Optional<MessageOperation> processAgentMessage(long tag, AgentMessage msg, byte[] body) throws IllegalStateException {
-			Optional<MessageQueueListener.MessageOperation> op = m.processAgentMessage(tag, msg, body);
+		public Optional<MessageOperation> processAgentMessage(long tag, AMQPMessage amsg) throws IllegalStateException, IOException {
+			Optional<MessageQueueListener.MessageOperation> op = m.processAgentMessage(tag, amsg);
 			synchronized(monitor) {
 				monitor.notify();
 			}

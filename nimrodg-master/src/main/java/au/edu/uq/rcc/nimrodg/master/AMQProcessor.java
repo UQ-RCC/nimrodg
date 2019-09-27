@@ -9,7 +9,7 @@ public interface AMQProcessor extends AutoCloseable {
 
 	String getExchange();
 
-	void sendMessage(String key, AgentMessage msg) throws IOException;
+	AMQPMessage sendMessage(String key, AgentMessage msg) throws IOException;
 
 	void opMessage(MessageQueueListener.MessageOperation op, long tag);
 }

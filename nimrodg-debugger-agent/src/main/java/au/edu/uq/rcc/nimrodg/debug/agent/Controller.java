@@ -35,6 +35,7 @@ import au.edu.uq.rcc.nimrodg.api.Task;
 import au.edu.uq.rcc.nimrodg.api.utils.MsgUtils;
 import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledRun;
 import au.edu.uq.rcc.nimrodg.api.utils.run.RunfileBuildException;
+import au.edu.uq.rcc.nimrodg.master.AMQPMessage;
 import au.edu.uq.rcc.nimrodg.master.AMQProcessorImpl;
 import au.edu.uq.rcc.nimrodg.master.MessageQueueListener;
 import au.edu.uq.rcc.nimrodg.parsing.ANTLR4ParseAPIImpl;
@@ -211,7 +212,14 @@ public class Controller {
 		}
 	}
 
-	private MessageQueueListener.MessageOperation handleAgentMessage(AgentMessage msg, byte[] body) throws IOException {
+	private MessageQueueListener.MessageOperation handleAgentMessage(long tag, AMQPMessage amsg) throws IOException {
+		m_Messages.add(Message.create(amsg.body, true));
+		m_MessageWindow.getMessagePanel().refreshMessages();
+
+		AgentMessage msg = amsg.message;
+		if(msg == null) {
+			return MessageQueueListener.MessageOperation.Reject;
+		}
 
 		UUID uuid = msg.getAgentUUID();
 
@@ -236,9 +244,6 @@ public class Controller {
 			m_Agent.reset(msg.getAgentUUID());
 		}
 
-		m_Messages.add(Message.create(body, true));
-		m_MessageWindow.getMessagePanel().refreshMessages();
-
 		try {
 			m_Agent.processMessage(msg, Instant.now());
 			return MessageQueueListener.MessageOperation.Ack;
@@ -249,15 +254,9 @@ public class Controller {
 	}
 
 	private void sendMessage(String key, AgentMessage.Builder<?> msg) throws IOException {
-		AgentMessage amsg = msg.timestamp(Instant.now()).build();
-		byte[] bytes = JsonBackend.INSTANCE.toBytes(amsg, StandardCharsets.UTF_8);
-		if(bytes == null) {
-			throw new IOException("Message serialisation failure");
-		}
-
-		m_Messages.add(Message.create(bytes, false));
+		AMQPMessage amsg = m_AMQP.sendMessage(key, msg.timestamp(Instant.now()).build());
+		m_Messages.add(Message.create(amsg.body, false));
 		m_MessageWindow.getMessagePanel().refreshMessages();
-		m_AMQP.sendMessage(key, amsg);
 	}
 
 	private void onAgentStateChange(Agent agent, Agent.State oldState, Agent.State newState) {
@@ -413,8 +412,8 @@ public class Controller {
 	private class _MessageQueueListener implements MessageQueueListener {
 
 		@Override
-		public Optional<MessageOperation> processAgentMessage(long tag, AgentMessage msg, byte[] body) throws IllegalStateException, IOException {
-			return Optional.of(handleAgentMessage(msg, body));
+		public Optional<MessageOperation> processAgentMessage(long tag, AMQPMessage msg) throws IllegalStateException, IOException {
+			return Optional.of(handleAgentMessage(tag, msg));
 		}
 	}
 }

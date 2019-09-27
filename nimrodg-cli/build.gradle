@@ -23,6 +23,7 @@ dependencies {
 	runtimeOnly group: 'org.apache.logging.log4j', name: 'log4j-jul', version: LOG4J_VERSION
 	runtimeOnly group: 'org.apache.logging.log4j', name: 'log4j-slf4j-impl', version: LOG4J_VERSION
 	runtimeOnly group: 'org.glassfish', name: 'javax.json', version: JAVAX_JSON_VERSION
+	runtimeOnly group: 'com.sun.mail', name: 'jakarta.mail', version: JAKARTA_MAIL_VERSION
 }
 
 task cli(type: JavaExec, dependsOn: classes) {

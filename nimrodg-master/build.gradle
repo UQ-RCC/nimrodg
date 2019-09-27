@@ -9,6 +9,7 @@ dependencies {
 
 	implementation project(':nimrodg-internal-api')
 	implementation project(':nimrodg-utils')
+	implementation project(':nimrodg-shell')
 	implementation project(':nimrodg-resources')
 
 	testImplementation group: 'org.slf4j', name: 'slf4j-simple', version: SLF4J_VERSION

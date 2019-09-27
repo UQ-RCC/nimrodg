@@ -19,7 +19,6 @@
  */
 package au.edu.uq.rcc.nimrodg.master;
 
-import au.edu.uq.rcc.nimrodg.agent.messages.AgentMessage;
 import java.io.IOException;
 import java.util.Optional;
 
@@ -32,5 +31,5 @@ public interface MessageQueueListener {
 	}
 
 	/* Return an empty optional to do nothing. The tag must be passed to opMessage() */
-	Optional<MessageOperation> processAgentMessage(long tag, AgentMessage msg, byte[] body) throws IllegalStateException, IOException;
+	Optional<MessageOperation> processAgentMessage(long tag, AMQPMessage msg) throws IllegalStateException, IOException;
 }
