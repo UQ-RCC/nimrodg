@@ -107,8 +107,8 @@ public class MasterCmd extends NimrodCLICommand {
 					amqpUri.noVerifyPeer,
 					amqpUri.noVerifyHost,
 					MessageBackend.createBackend(),
-					msg -> {
-						MessageQueueListener.MessageOperation op = m.processAgentMessage(msg);
+					(msg, body) -> {
+						MessageQueueListener.MessageOperation op = m.processAgentMessage(msg, body);
 						synchronized(monitor) {
 							monitor.notify();
 						}
