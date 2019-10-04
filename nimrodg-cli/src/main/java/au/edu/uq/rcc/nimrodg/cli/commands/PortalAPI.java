@@ -24,6 +24,7 @@ import au.edu.uq.rcc.nimrodg.agent.AgentState;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
 import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.Job;
+import au.edu.uq.rcc.nimrodg.api.JobAttempt;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPIException;
 import au.edu.uq.rcc.nimrodg.api.NimrodMasterAPI;
@@ -61,6 +62,7 @@ import org.apache.commons.csv.CSVPrinter;
 import au.edu.uq.rcc.nimrodg.api.Resource;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.EnumSet;
 import java.util.Optional;
 
 public class PortalAPI extends NimrodCLICommand {
@@ -509,16 +511,44 @@ public class PortalAPI extends NimrodCLICommand {
 	}
 
 	private static void writeExperimentHeader(CSVPrinter csv) throws IOException {
-		csvWriteHeader(csv, "name", "state", "work_dir", "creation_time", "token", "path");
+		csvWriteHeader(csv, "name", "state", "work_dir", "creation_time", "token", "path", "total_jobs",
+				"completed_jobs", "running_jobs", "failed_jobs", "pending_jobs"
+		);
 	}
 
 	private static void writeExperiment(String rootDir, Experiment exp, CSVPrinter csv) throws IOException {
+
+		/* FIXME: This is horrendous. Fix this when performance/stats stuff is done. */
+		Collection<Job> jobs = exp.filterJobs(EnumSet.allOf(JobAttempt.Status.class), 0, -1);
+		int nComplete = 0, nFailed = 0, nPending = 0, nRunning = 0;
+		for(Job j : jobs) {
+			switch(j.getStatus()) {
+				case COMPLETED:
+					++nComplete;
+					break;
+				case RUNNING:
+					++nRunning;
+					break;
+				case FAILED:
+					++nFailed;
+					break;
+				case NOT_RUN:
+					++nPending;
+					break;
+			}
+		}
+
 		csv.print(exp.getName());
 		csv.print(Experiment.stateToString(exp.getState()));
 		csv.print(Paths.get(rootDir).resolve(exp.getWorkingDirectory()).toString());
 		csv.print(exp.getCreationTime().getEpochSecond());
 		csv.print(exp.getToken());
 		csv.print(exp.getPath());
+		csv.print(jobs.size());
+		csv.print(nComplete);
+		csv.print(nRunning);
+		csv.print(nFailed);
+		csv.print(nPending);
 		csv.println();
 	}
 
