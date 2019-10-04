@@ -27,6 +27,7 @@ import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPIException;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.api.Actuator;
+import au.edu.uq.rcc.nimrodg.api.NimrodConfig;
 import au.edu.uq.rcc.nimrodg.api.ResourceFullException;
 import au.edu.uq.rcc.nimrodg.api.utils.NimrodUtils;
 import java.io.IOException;
@@ -100,6 +101,7 @@ public class LocalActuator implements Actuator {
 	private final Path tmpRoot;
 	private final Resource node;
 	private final NimrodURI uri;
+	private final String routingKey;
 	private final Certificate[] certs;
 	private final int parallelism;
 	private final AgentInfo agentInfo;
@@ -111,7 +113,8 @@ public class LocalActuator implements Actuator {
 	public LocalActuator(Operations ops, Resource node, NimrodURI uri, Certificate[] certs, int parallelism, String platString, CaptureMode captureMode) throws IOException {
 		this.ops = ops;
 		this.nimrod = ops.getNimrod();
-		this.tmpRoot = Paths.get(nimrod.getConfig().getWorkDir()).resolve("localact-tmp");
+		NimrodConfig ncfg = nimrod.getConfig();
+		this.tmpRoot = Paths.get(ncfg.getWorkDir()).resolve("localact-tmp");
 		try {
 			Files.createDirectories(tmpRoot);
 		} catch(FileAlreadyExistsException e) {
@@ -119,6 +122,7 @@ public class LocalActuator implements Actuator {
 		}
 		this.node = node;
 		this.uri = uri;
+		this.routingKey = ncfg.getAmqpRoutingKey();
 		this.certs = Arrays.copyOf(certs, certs.length);
 		this.parallelism = parallelism;
 		if((this.agentInfo = nimrod.lookupAgentByPlatform(platString)) == null) {
@@ -140,6 +144,9 @@ public class LocalActuator implements Actuator {
 		String scheme = uri.uri.getScheme().toLowerCase(Locale.ENGLISH);
 		commonArgs.add("--amqp-uri");
 		commonArgs.add(uri.uri.toASCIIString());
+
+		commonArgs.add("--amqp-routing-key");
+		commonArgs.add(routingKey);
 
 		Path tmpDir = Files.createTempDirectory("nimrodg-localact-");
 
