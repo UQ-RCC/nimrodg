@@ -102,13 +102,9 @@ public abstract class POSIXActuator<C extends SSHConfig> implements Actuator {
 		try(RemoteShell client = makeClient()) {
 			try {
 				agentPath = Paths.get(config.agentInfo.getPath());
-				SSHClient.CommandResult homeDirResult = client.runCommand("printf", "%s", "$HOME");
-				if(homeDirResult.status != 0) {
-					throw new SshException(String.format("Error retrieving home directory"));
-				}
 
-				homeDir = homeDirResult.stdout;
-				if(homeDir.isEmpty()) {
+				remoteEnvironment = readEnv(client);
+				if((homeDir = remoteEnvironment.get("HOME")) == null) {
 					throw new SshException(String.format("Error retrieving home directory"));
 				}
 
@@ -135,34 +131,6 @@ public abstract class POSIXActuator<C extends SSHConfig> implements Actuator {
 				} else {
 					this.remoteCertPath = Optional.empty();
 				}
-
-				{
-					this.remoteEnvironment = new HashMap<>();
-					SSHClient.CommandResult env = client.runCommand("env");
-					if(env.status != 0) {
-						throw new SshException("Error retrieving environment");
-					}
-
-					String[] lines = env.stdout.split("[\\r\\n]+");
-
-					for(String l : lines) {
-						Matcher m = ENV_PATTERN.matcher(l);
-						if(!m.matches()) {
-							//throw new SshException("Error retrieving environment, malformed 'env' output");
-
-							/*
-							 * Tell me this isn't horrible. This was on Flashlite.
-							 * G_BROKEN_FILENAMES=1
-							 * BASH_FUNC_module()=() {  eval `/usr/bin/modulecmd bash $*`
-							 * }
-							 * _=/bin/env
-							 */
-							continue;
-						}
-						this.remoteEnvironment.put(m.group(1), m.group(2));
-					}
-				}
-
 			} catch(IOException e) {
 				doCleanup(client, cs);
 				throw e;
@@ -170,6 +138,34 @@ public abstract class POSIXActuator<C extends SSHConfig> implements Actuator {
 		}
 
 		this.isClosed = false;
+	}
+
+	private static Map<String, String> readEnv(RemoteShell client) throws SshException, IOException {
+		Map<String, String> envs = new HashMap<>();
+		SSHClient.CommandResult env = client.runCommand("env");
+		if(env.status != 0) {
+			throw new SshException("Error retrieving environment");
+		}
+
+		String[] lines = env.stdout.split("[\\r\\n]+");
+
+		for(String l : lines) {
+			Matcher m = ENV_PATTERN.matcher(l);
+			if(!m.matches()) {
+				//throw new SshException("Error retrieving environment, malformed 'env' output");
+
+				/*
+				 * Tell me this isn't horrible. This was on Flashlite.
+				 * G_BROKEN_FILENAMES=1
+				 * BASH_FUNC_module()=() {  eval `/usr/bin/modulecmd bash $*`
+				 * }
+				 * _=/bin/env
+				 */
+				continue;
+			}
+			envs.put(m.group(1), m.group(2));
+		}
+		return envs;
 	}
 
 	public void nop() throws IOException {
