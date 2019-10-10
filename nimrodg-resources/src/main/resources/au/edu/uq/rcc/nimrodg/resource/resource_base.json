@@ -99,11 +99,13 @@
 				{
 					"type": "object",
 					"properties": {
-                        "definition": { "$ref": "cluster/hpc_definition.json#/definitions/hpc_definition_config" },
-                        "ncpus": { "type": "integer", "minimum": 1},
-                        "mem": { "type": "integer", "minimum": 1},
+						"definition": { "$ref": "cluster/hpc_definition.json#/definitions/hpc_definition_config" },
+						"ncpus": { "type": "integer", "minimum": 1},
+						"mem": { "type": "integer", "minimum": 1},
 						"walltime": { "type": "integer", "minimum": 1},
-						"account": { "type": "string" }
+						"account": { "type": "string" },
+						"queue": { "type": "string" },
+						"server": { "type": "string" }
 					},
 					"required": ["definition", "ncpus", "mem", "walltime"]
 				}

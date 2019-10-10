@@ -91,6 +91,12 @@ public class HPCResourceType extends ClusterResourceType {
 				.type(String.class)
 				.required(false)
 				.help("Account String");
+
+		argparser.addArgument("--queue")
+				.dest("queue")
+				.type(String.class)
+				.required(false)
+				.help("Submission Queue");
 	}
 
 	@Override
@@ -155,6 +161,9 @@ public class HPCResourceType extends ClusterResourceType {
 			jb.add("account", account);
 		}
 
+		Map.Entry<Optional<String>, Optional<String>> queue = StringUtils.parseQueue(ns.getString("queue"));
+		queue.getKey().ifPresent(q -> jb.add("queue", q));
+		queue.getValue().ifPresent(s -> jb.add("server", s));
 		return valid;
 	}
 
@@ -167,6 +176,8 @@ public class HPCResourceType extends ClusterResourceType {
 				ccfg.getJsonNumber("mem").longValue(),
 				ccfg.getJsonNumber("walltime").longValue(),
 				Optional.ofNullable(ccfg.get("account")).map(jv -> ((JsonString)jv).getString()),
+				Optional.ofNullable(ccfg.get("queue")).map(jv -> ((JsonString)jv).getString()),
+				Optional.ofNullable(ccfg.get("server")).map(jv -> ((JsonString)jv).getString()),
 				parseHpcDef("", ccfg.getJsonObject("definition"), true)
 		));
 	}
@@ -177,19 +188,23 @@ public class HPCResourceType extends ClusterResourceType {
 		public final long mem;
 		public final long walltime;
 		public final Optional<String> account;
+		public final Optional<String> queue;
+		public final Optional<String> server;
 		public final HPCDefinition hpc;
 
-		public HPCConfig(ClusterConfig cfg, long ncpus, long mem, long walltime, Optional<String> account, HPCDefinition hpc) {
+		public HPCConfig(ClusterConfig cfg, long ncpus, long mem, long walltime, Optional<String> account, Optional<String> queue, Optional<String> server, HPCDefinition hpc) {
 			super(cfg);
 			this.ncpus = ncpus;
 			this.mem = mem;
 			this.walltime = walltime;
 			this.account = account;
+			this.queue = queue;
+			this.server = server;
 			this.hpc = hpc;
 		}
 
 		public HPCConfig(HPCConfig cfg) {
-			this(cfg, cfg.ncpus, cfg.mem, cfg.walltime, cfg.account, cfg.hpc);
+			this(cfg, cfg.ncpus, cfg.mem, cfg.walltime, cfg.account, cfg.queue, cfg.server, cfg.hpc);
 		}
 	}
 

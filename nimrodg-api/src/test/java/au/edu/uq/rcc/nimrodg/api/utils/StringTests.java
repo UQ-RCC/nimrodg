@@ -23,6 +23,7 @@ import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import junit.framework.Assert;
 import org.junit.Test;
 
@@ -172,5 +173,12 @@ public class StringTests {
 		Assert.assertEquals(1000000000000000000L, StringUtils.parseMemory("1EB"));
 		Assert.assertEquals(144115188075855872L, StringUtils.parseMemory("1Eib"));
 		Assert.assertEquals(1152921504606846976L, StringUtils.parseMemory("1EiB"));
+	}
+
+	@Test
+	public void queueParseTest() {
+		Assert.assertEquals(Map.entry(Optional.of("workq"), Optional.empty()), StringUtils.parseQueue("workq"));
+		Assert.assertEquals(Map.entry(Optional.empty(), Optional.of("tinmgr2.ibo")), StringUtils.parseQueue("@tinmgr2.ibo"));
+		Assert.assertEquals(Map.entry(Optional.of("workq"), Optional.of("tinmgmr2.ibo")), StringUtils.parseQueue("workq@tinmgmr2.ibo"));
 	}
 }

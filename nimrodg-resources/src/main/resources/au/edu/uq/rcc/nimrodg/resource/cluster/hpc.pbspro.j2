@@ -5,6 +5,7 @@
 #PBS -o {{ output_path|quote }}
 #PBS -e {{ error_path|quote }}
 {% if job_account is defined %}#PBS -A {{ job_account|quote }}{% endif %}
+{% if job_queue is defined or job_server is defined %}#PBS -q {{ job_queue|quote }}{% if job_server is defined %}@{{ job_server|quote }}{% endif %}{% endif %}
 
 ##
 # Nimrod/G Batch Submission Script

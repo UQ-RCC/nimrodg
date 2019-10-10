@@ -23,6 +23,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -484,5 +485,23 @@ public class StringUtils {
 		}
 
 		throw new IllegalArgumentException();
+	}
+
+	public static Map.Entry<Optional<String>, Optional<String>> parseQueue(String s) throws IllegalArgumentException {
+		if(s == null || s.isEmpty()) {
+			return Map.entry(Optional.empty(), Optional.empty());
+		}
+
+		/*
+		 * This is the closest regex I could find, but it's not quite right.
+		 * "([^@\s]+)?(?:@(.*))?$
+		 */
+		String[] _s = s.split("@", 2);
+		if(_s.length == 2) {
+			return Map.entry(Optional.of(_s[0]).filter(ss -> !ss.isEmpty()), Optional.of(_s[1]));
+		} else {
+			return Map.entry(Optional.of(_s[0]), Optional.empty());
+		}
+
 	}
 }

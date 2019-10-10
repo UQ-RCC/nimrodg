@@ -75,6 +75,8 @@ public class HPCActuator extends ClusterActuator<HPCConfig> {
 		vars.put("output_path", out);
 		vars.put("error_path", err);
 		config.account.ifPresent(acc -> vars.put("job_account", acc));
+		config.queue.ifPresent(q -> vars.put("job_queue", q));
+		config.server.ifPresent(s -> vars.put("job_server", s));
 		vars.put("job_ncpus", config.ncpus);
 		vars.put("job_mem", config.mem);
 		vars.put("job_walltime", config.walltime);
@@ -171,26 +173,29 @@ public class HPCActuator extends ClusterActuator<HPCConfig> {
 			UUID.fromString("c67de3a0-ec19-4780-b533-828999482e3a"),
 			UUID.fromString("73f5c6e7-afca-466d-aba6-b85aec2c93da")
 		};
-		return Map.of(
-				"batch_size", uuids.length,
-				"output_path", "/remote/path/to/stdout.txt",
-				"error_path", "/remote/path/to/stderr.txt",
-				"job_account", "account",
-				"job_ncpus", 12,
-				"job_mem", 4294967296L,
-				"job_walltime", 86400,
-				"agent_binary", "/remote/path/to/agent/binary",
-				"agent_uuids", uuids,
-				"agent_args", Map.of(
-						"amqp_uri", "amqps://user:pass@host:port/vhost",
-						"amqp_routing_key", "routingkey",
-						"amqp_no_verify_peer", true,
-						"amqp_no_verify_host", false,
-						"cacert", "/path/to/cert.pem",
-						"caenc", "b64",
-						"no_ca_delete", true
-				)
-		);
+		Map<String, Object> vars = new HashMap<>();
+		vars.put("batch_uuid", "57ace1d4-0f8d-4439-9181-0fe91d6d73d4");
+		vars.put("batch_size", uuids.length);
+		vars.put("output_path", "/remote/path/to/stdout.txt");
+		vars.put("error_path", "/remote/path/to/stderr.txt");
+		//vars.put("job_queue", "workq");
+		//vars.put("job_server", "tinmgr2.ib0");
+		vars.put("job_account", "account");
+		vars.put("job_ncpus", 12);
+		vars.put("job_mem", 4294967296L);
+		vars.put("job_walltime", 86400);
+		vars.put("agent_binary", "/remote/path/to/agent/binary");
+		vars.put("agent_uuids", uuids);
+		vars.put("agent_args", Map.of(
+				"amqp_uri", "amqps://user:pass@host:port/vhost",
+				"amqp_routing_key", "routingkey",
+				"amqp_no_verify_peer", true,
+				"amqp_no_verify_host", false,
+				"cacert", "/path/to/cert.pem",
+				"caenc", "b64",
+				"no_ca_delete", true
+		));
+		return vars;
 	}
 
 	public static void main(String[] args) throws IOException {
