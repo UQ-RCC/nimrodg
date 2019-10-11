@@ -84,7 +84,7 @@ public class HPCResourceType extends ClusterResourceType {
 				.dest("walltime")
 				.type(String.class)
 				.required(true)
-				.help("Walltime used by an individual job (supports HH[:MM[:SS]] and [Hh][Mm][Ss])");
+				.help("Walltime used by each batch (supports HH[:MM[:SS]] and [Hh][Mm][Ss])");
 
 		argparser.addArgument("--account")
 				.dest("account")

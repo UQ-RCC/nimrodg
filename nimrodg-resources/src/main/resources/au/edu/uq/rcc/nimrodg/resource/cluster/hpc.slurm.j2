@@ -1,6 +1,6 @@
 #!/bin/sh
 #SBATCH --job-name nimrod-hpc-{{ batch_uuid }}
-#SBATCH --time={{ (job_walltime / 60)|round(0, 'ceil') }}
+#SBATCH --time={{ (batch_walltime / 60)|round(0, 'ceil') }}
 #SBATCH --ntasks={{ batch_size }}
 #SBATCH --cpus-per-task={{ job_ncpus }}
 #SBATCH --mem-per-cpu={{ (job_mem / job_ncpus / 1024)|round(0, 'ceil') }}K

@@ -1,7 +1,7 @@
 #!/bin/sh
 #PBS -N nimrod-hpc-{{ batch_uuid }}
-#PBS -l walltime={{ job_walltime }}
-#PBS -l select=1:ncpus={{ job_ncpus * batch_size }}:mem={{ job_mem }}b
+#PBS -l walltime={{ batch_walltime }}
+#PBS -l select=1:ncpus={{ job_ncpus * batch_size }}:mem={{ job_mem * batch_size }}b
 #PBS -o {{ output_path|quote }}
 #PBS -e {{ error_path|quote }}
 {% if job_account is defined %}#PBS -A {{ job_account|quote }}{% endif %}

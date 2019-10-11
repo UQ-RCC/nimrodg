@@ -72,6 +72,7 @@ public class HPCActuator extends ClusterActuator<HPCConfig> {
 		Map<String, Object> vars = new HashMap<>();
 		vars.put("batch_uuid", batchUuid);
 		vars.put("batch_size", agentUuids.length);
+		vars.put("batch_walltime", config.walltime);
 		vars.put("output_path", out);
 		vars.put("error_path", err);
 		config.account.ifPresent(acc -> vars.put("job_account", acc));
@@ -79,7 +80,6 @@ public class HPCActuator extends ClusterActuator<HPCConfig> {
 		config.server.ifPresent(s -> vars.put("job_server", s));
 		vars.put("job_ncpus", config.ncpus);
 		vars.put("job_mem", config.mem);
-		vars.put("job_walltime", config.walltime);
 		vars.put("agent_binary", this.remoteAgentPath);
 		vars.put("agent_uuids", agentUuids);
 		vars.put("agent_args", agentVars);
@@ -176,6 +176,7 @@ public class HPCActuator extends ClusterActuator<HPCConfig> {
 		Map<String, Object> vars = new HashMap<>();
 		vars.put("batch_uuid", "57ace1d4-0f8d-4439-9181-0fe91d6d73d4");
 		vars.put("batch_size", uuids.length);
+		vars.put("batch_walltime", 86400);
 		vars.put("output_path", "/remote/path/to/stdout.txt");
 		vars.put("error_path", "/remote/path/to/stderr.txt");
 		//vars.put("job_queue", "workq");
@@ -183,7 +184,6 @@ public class HPCActuator extends ClusterActuator<HPCConfig> {
 		vars.put("job_account", "account");
 		vars.put("job_ncpus", 12);
 		vars.put("job_mem", 4294967296L);
-		vars.put("job_walltime", 86400);
 		vars.put("agent_binary", "/remote/path/to/agent/binary");
 		vars.put("agent_uuids", uuids);
 		vars.put("agent_args", Map.of(
