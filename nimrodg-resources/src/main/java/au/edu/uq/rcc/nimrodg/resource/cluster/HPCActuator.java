@@ -179,8 +179,8 @@ public class HPCActuator extends ClusterActuator<HPCConfig> {
 		vars.put("batch_walltime", 86400);
 		vars.put("output_path", "/remote/path/to/stdout.txt");
 		vars.put("error_path", "/remote/path/to/stderr.txt");
-		//vars.put("job_queue", "workq");
-		//vars.put("job_server", "tinmgr2.ib0");
+		vars.put("job_queue", "workq");
+		vars.put("job_server", "tinmgr2.ib0");
 		vars.put("job_account", "account");
 		vars.put("job_ncpus", 12);
 		vars.put("job_mem", 4294967296L);

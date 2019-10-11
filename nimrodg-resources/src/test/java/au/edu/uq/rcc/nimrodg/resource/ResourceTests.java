@@ -39,13 +39,16 @@ import javax.json.JsonStructure;
 import org.junit.Assert;
 import org.junit.Test;
 import au.edu.uq.rcc.nimrodg.api.Resource;
+import au.edu.uq.rcc.nimrodg.resource.HPCResourceType.HPCDefinition;
 import au.edu.uq.rcc.nimrodg.resource.act.ActuatorUtils;
+import au.edu.uq.rcc.nimrodg.resource.cluster.HPCActuator;
 import au.edu.uq.rcc.nimrodg.resource.cluster.pbs.PBSProDialect;
 import au.edu.uq.rcc.nimrodg.resource.cluster.slurm.SLURMDialect;
 import au.edu.uq.rcc.nimrodg.resource.ssh.OpenSSHClient;
 import au.edu.uq.rcc.nimrodg.resource.ssh.SSHClient;
 import au.edu.uq.rcc.nimrodg.resource.ssh.TransportFactory;
 import au.edu.uq.rcc.nimrodg.test.TestUtils;
+import com.hubspot.jinjava.Jinjava;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -61,6 +64,8 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.Optional;
 import java.util.Random;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x500.X500NameBuilder;
 import org.bouncycastle.asn1.x500.style.BCStyle;
@@ -519,4 +524,51 @@ public class ResourceTests {
 		Assert.assertNotNull(t);
 	}
 
+	private static void testTemplate(HPCDefinition def, String marker, Set<String> expected) {
+		Jinjava jj = HPCActuator.createTemplateEngine();
+		Map<String, Object> vars = HPCActuator.createSampleVars();
+
+		String renderedTemplate = jj.render(def.template, vars);
+		Set<String> hash = Arrays.stream(renderedTemplate.split("\n"))
+				.map(l -> l.trim())
+				.filter(l -> l.startsWith(marker))
+				.collect(Collectors.toSet());
+
+		Assert.assertEquals(expected, hash);
+	}
+
+	@Test
+	public void hpcTemplateTests() throws IOException {
+		Map<String, HPCDefinition> hpcDefs = HPCResourceType.loadConfig(new Path[0], new ArrayList<>());
+
+		testTemplate(hpcDefs.get("pbspro"), "#PBS", Set.of(
+				"#PBS -N nimrod-hpc-57ace1d4-0f8d-4439-9181-0fe91d6d73d4",
+				"#PBS -l walltime=86400",
+				"#PBS -l select=1:ncpus=120:mem=42949672960b",
+				"#PBS -o /remote/path/to/stdout.txt",
+				"#PBS -e /remote/path/to/stderr.txt",
+				"#PBS -A account",
+				"#PBS -q workq@tinmgr2.ib0"
+		));
+
+		testTemplate(hpcDefs.get("slurm"), "#SBATCH", Set.of(
+				"#SBATCH --job-name nimrod-hpc-57ace1d4-0f8d-4439-9181-0fe91d6d73d4",
+				"#SBATCH --time=1440",
+				"#SBATCH --ntasks=10",
+				"#SBATCH --cpus-per-task=12",
+				"#SBATCH --mem-per-cpu=349526K",
+				"#SBATCH --output /remote/path/to/stdout.txt",
+				"#SBATCH --error /remote/path/to/stderr.txt",
+				"#SBATCH --account account"
+		));
+
+		testTemplate(hpcDefs.get("lsf"), "#BSUB", Set.of(
+				"#BSUB -J nimrod-hpc-57ace1d4-0f8d-4439-9181-0fe91d6d73d4",
+				"#BSUB -W 1440",
+				"#BSUB -n 120",
+				"#BSUB -M 41943040KB",
+				"#BSUB -o /remote/path/to/stdout.txt",
+				"#BSUB -e /remote/path/to/stderr.txt"
+		));
+	}
 }
