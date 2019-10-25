@@ -115,7 +115,7 @@ public abstract class SSHResourceType extends BaseResourceType {
 		/* Always load the key here to see if it's valid. */
 		if(!noValidatePrivateKey && keyFile.isPresent()) {
 			try {
-				Optional.of(ActuatorUtils.readPEMKey(keyFile.get()));
+				ActuatorUtils.readPEMKey(keyFile.get());
 			} catch(IOException e) {
 				err.printf("Unable to read private key.\n");
 				e.printStackTrace(err);
