@@ -22,7 +22,6 @@ package au.edu.uq.rcc.nimrodg.resource.ssh;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
-import java.security.KeyPair;
 import java.security.PublicKey;
 import java.util.Arrays;
 import java.util.List;
@@ -39,15 +38,13 @@ public interface TransportFactory {
 		public final Optional<String> user;
 		public final PublicKey[] hostKeys;
 		public final Optional<Path> privateKey;
-		public final Optional<KeyPair> keyPair;
 		public final Optional<Path> executablePath;
 
-		public Config(Optional<URI> uri, Optional<String> user, PublicKey[] hostKeys, Optional<Path> privateKey, Optional<KeyPair> keyPair, Optional<Path> executablePath) {
+		public Config(Optional<URI> uri, Optional<String> user, PublicKey[] hostKeys, Optional<Path> privateKey, Optional<Path> executablePath) {
 			this.uri = uri;
 			this.user = user;
 			this.hostKeys = Arrays.copyOf(hostKeys, hostKeys.length);
 			this.privateKey = privateKey;
-			this.keyPair = keyPair;
 			this.executablePath = executablePath;
 		}
 

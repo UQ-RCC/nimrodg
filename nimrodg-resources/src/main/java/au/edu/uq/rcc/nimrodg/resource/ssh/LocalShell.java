@@ -82,7 +82,6 @@ public class LocalShell implements RemoteShell {
 					Optional.empty(),
 					new PublicKey[0],
 					Optional.empty(),
-					Optional.empty(),
 					Optional.empty()
 			));
 		}

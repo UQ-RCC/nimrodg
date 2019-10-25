@@ -351,18 +351,11 @@ public class SSHClient implements RemoteShell {
 				throw new IOException("No host keys provided");
 			}
 
-			KeyPair kp;
-			if(!cfg.keyPair.isPresent()) {
-				if(!cfg.privateKey.isPresent()) {
-					throw new IOException("No private key provided");
-				}
-
-				kp = ActuatorUtils.readPEMKey(cfg.privateKey.get());
-			} else {
-				kp = cfg.keyPair.get();
+			if(!cfg.privateKey.isPresent()) {
+				throw new IOException("No private key provided");
 			}
 
-			return new SSHClient(cfg.uri.get(), cfg.hostKeys, kp);
+			return new SSHClient(cfg.uri.get(), cfg.hostKeys, ActuatorUtils.readPEMKey(cfg.privateKey.get()));
 		}
 
 		@Override
@@ -392,7 +385,6 @@ public class SSHClient implements RemoteShell {
 					cfg.user,
 					hostKeys,
 					cfg.privateKey,
-					cfg.keyPair,
 					Optional.empty()
 			);
 		}
@@ -464,7 +456,6 @@ public class SSHClient implements RemoteShell {
 					user,
 					hostKeys,
 					privateKey,
-					Optional.empty(),
 					Optional.empty()
 			));
 		}

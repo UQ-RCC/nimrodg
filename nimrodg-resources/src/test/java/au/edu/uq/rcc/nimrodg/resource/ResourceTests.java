@@ -266,7 +266,6 @@ public class ResourceTests {
 			Assert.assertArrayEquals(new PublicKey[]{hostKey.get()}, tcfg.hostKeys);
 			Assert.assertTrue(tcfg.privateKey.isPresent());
 			Assert.assertEquals(privKey, tcfg.privateKey.get());
-			Assert.assertFalse(tcfg.keyPair.isPresent());
 			Assert.assertFalse(tcfg.executablePath.isPresent());
 		}
 
@@ -299,7 +298,6 @@ public class ResourceTests {
 			Assert.assertArrayEquals(new PublicKey[0], tcfg.hostKeys);
 			Assert.assertTrue(tcfg.privateKey.isPresent());
 			Assert.assertEquals(privKey, tcfg.privateKey.get());
-			Assert.assertFalse(tcfg.keyPair.isPresent());
 			Assert.assertTrue(tcfg.executablePath.isPresent());
 			Assert.assertEquals(tcfg.executablePath.get(), Paths.get("/path/to/ssh"));
 		}

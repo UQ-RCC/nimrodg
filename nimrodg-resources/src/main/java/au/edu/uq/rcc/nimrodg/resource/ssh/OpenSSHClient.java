@@ -305,7 +305,6 @@ public class OpenSSHClient implements RemoteShell {
 					ActuatorUtils.getUriUser(uri),
 					new PublicKey[0],
 					TransportFactory.getOrNullIfEmpty(cfg, "keyfile").map(s -> Paths.get(s)),
-					Optional.empty(),
 					TransportFactory.getOrNullIfEmpty(cfg, "executable").map(s -> Paths.get(s))
 			));
 		}

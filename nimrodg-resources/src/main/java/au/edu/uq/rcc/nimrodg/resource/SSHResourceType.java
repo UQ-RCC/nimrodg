@@ -113,10 +113,9 @@ public abstract class SSHResourceType extends BaseResourceType {
 		Optional<Path> keyFile = Optional.ofNullable(ns.getString("key")).map(s -> Paths.get(s));
 
 		/* Always load the key here to see if it's valid. */
-		Optional<KeyPair> kp = Optional.empty();
 		if(!noValidatePrivateKey && keyFile.isPresent()) {
 			try {
-				kp = Optional.of(ActuatorUtils.readPEMKey(keyFile.get()));
+				Optional.of(ActuatorUtils.readPEMKey(keyFile.get()));
 			} catch(IOException e) {
 				err.printf("Unable to read private key.\n");
 				e.printStackTrace(err);
@@ -140,7 +139,6 @@ public abstract class SSHResourceType extends BaseResourceType {
 				user,
 				hkk.map(k -> new PublicKey[]{k}).orElse(new PublicKey[0]),
 				keyFile,
-				kp,
 				Optional.ofNullable(ns.getString("openssh_executable")).map(s -> Paths.get(s))
 		);
 
