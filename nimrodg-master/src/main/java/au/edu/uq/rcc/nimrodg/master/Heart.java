@@ -177,6 +177,10 @@ class Heart implements ConfigListener {
 	public void onAgentPong(UUID u) {
 		/* We've received a heartbeat, reset */
 		ExpiryInfo ei = expiryInfo.get(u);
+		if(ei == null) {
+			/* Will happen if we've already been expired. Tough luck. */
+			return;
+		}
 		ei.missedBeats = 0;
 	}
 
