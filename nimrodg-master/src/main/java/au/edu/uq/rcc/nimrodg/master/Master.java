@@ -627,9 +627,10 @@ public class Master implements MessageQueueListener, AutoCloseable {
 			}
 
 			if(batchIndex < 0) {
-				throw new IllegalStateException("batchIndex < 0, this should never happen");
+				LOGGER.warn("batchIndex < 0, this should never happen");
+			} else {
+				ai.state.setExpiryTime(launchResults[batchIndex].expiryTime);
 			}
-			ai.state.setExpiryTime(launchResults[batchIndex].expiryTime);
 		} else if(msg.getType() == AgentMessage.Type.Shutdown && ai.state.getState() == Agent.State.SHUTDOWN) {
 			/*
 			 * We can ignore a stray shutdown.
