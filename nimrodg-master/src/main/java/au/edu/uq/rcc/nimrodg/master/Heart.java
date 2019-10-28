@@ -41,13 +41,13 @@ class Heart implements ConfigListener {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(Heart.class);
 	/* Time in seconds between shutdown attempts. */
-	private static final long DEFAULT_EXPIRY_RETRY_INTERVAL = 5;
+	public static final long DEFAULT_EXPIRY_RETRY_INTERVAL = 5;
 	/* Maximum number of retries before force disconnecting. */
-	private static final long DEFAULT_EXPIRY_RETRY_COUNT = 5;
+	public static final long DEFAULT_EXPIRY_RETRY_COUNT = 5;
 	/* Time in seconds between heartbeats. */
-	private static final long DEFAULT_HEARTBEAT_INTERVAL = 5;
+	public static final long DEFAULT_HEARTBEAT_INTERVAL = 5;
 	/* Number of missed heartbeats before an agent is expired. */
-	private static final long DEFAULT_HEARTBEAT_MISSED_THRESHOLD = 3;
+	public static final long DEFAULT_HEARTBEAT_MISSED_THRESHOLD = 3;
 
 	private static class ExpiryInfo {
 
