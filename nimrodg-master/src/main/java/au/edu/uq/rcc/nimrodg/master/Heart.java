@@ -40,7 +40,6 @@ import java.util.UUID;
 class Heart implements ConfigListener {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(Heart.class);
-
 	/* Time in seconds between shutdown attempts. */
 	private static final long DEFAULT_EXPIRY_RETRY_INTERVAL = 5;
 	/* Maximum number of retries before force disconnecting. */
@@ -92,6 +91,10 @@ class Heart implements ConfigListener {
 		Instant getLastHeardFrom(UUID u);
 
 		Instant getWalltime(UUID u);
+
+		void logInfo(String fmt, Object... args);
+
+		void logTrace(String fmt, Object... args);
 	}
 
 	Heart(Operations ops) {
@@ -131,12 +134,15 @@ class Heart implements ConfigListener {
 		}
 
 		if(ei.retryCount >= expiryRetryCount) {
-			LOGGER.info("Agent {} ignored {} expiry requests, marking as disconnected...", u, ei.retryCount);
+			ops.logInfo("Agent %s ignored %d termination requests, marking as disconnected...", u, ei.retryCount);
 			ops.disconnectAgent(u, AgentShutdown.Reason.Requested, -1);
 			ei.lastExpiryCheck = now;
 			return;
 		}
 
+		if(ei.retryCount == 0) {
+			ops.logInfo("Agent %s hit walltime, attempting to terminate...", u);
+		}
 		ops.terminateAgent(u);
 		++ei.retryCount;
 		ei.lastExpiryCheck = now;
@@ -144,9 +150,7 @@ class Heart implements ConfigListener {
 
 	private void tickHeartbeat(UUID u, ExpiryInfo ei, Instant now, Set<UUID> exps) {
 		/* FIXME: This logic needs to be redone. */
-		//long commDiff = ops.getLastHeardFrom(u).until(now.plus(1, ChronoUnit.SECONDS), ChronoUnit.SECONDS);
 		long commDiff = ops.getLastHeardFrom(u).until(now, ChronoUnit.SECONDS);
-		//LOGGER.trace("Agent {} commDiff = {}", u, commDiff);
 		/* FIXME: Set this to the actual delay */
 		long processingDelay = 1;
 		if(commDiff < (heartbeatInterval + processingDelay) || heartbeatInterval == 0) {
@@ -154,7 +158,7 @@ class Heart implements ConfigListener {
 		}
 
 		if(ei.missedBeats >= heartbeatMissedThreshold && heartbeatMissedThreshold > 0) {
-			LOGGER.info("Agent {} missed {} heartbeats, expiring...", u, ei.missedBeats);
+			ops.logInfo("Agent %s missed %d heartbeats, expiring...", u, ei.missedBeats);
 			exps.add(u);
 			ops.expireAgent(u);
 			return;
@@ -164,7 +168,9 @@ class Heart implements ConfigListener {
 			ops.pingAgent(u);
 			ei.lastPing = now;
 			++ei.missedBeats;
-			//LOGGER.trace("Agent {} now at {} missed beats.", u, ei.missedBeats);
+			if(ei.missedBeats > 1) {
+				ops.logTrace("Agent %s now at %d missed beats.", u, ei.missedBeats);
+			}
 		}
 	}
 
@@ -213,7 +219,7 @@ class Heart implements ConfigListener {
 
 		/* Only log if we've tried to terminate. */
 		if(ei.isExpiring()) {
-			LOGGER.info("Agent {} expired on attempt {}", u, ei.retryCount);
+			ops.logInfo("Agent %s expired on attempt %d", u, ei.retryCount);
 		}
 	}
 

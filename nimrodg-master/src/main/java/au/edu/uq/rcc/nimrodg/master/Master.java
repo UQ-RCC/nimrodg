@@ -989,6 +989,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 
 	private class _HeartOperations implements Heart.Operations {
 
+		public final Logger LOGGER = LoggerFactory.getLogger(Heart.class);
 		public final Set<UUID> toExpire;
 
 		public _HeartOperations() {
@@ -1037,6 +1038,16 @@ public class Master implements MessageQueueListener, AutoCloseable {
 		@Override
 		public Instant getWalltime(UUID u) {
 			return allAgents.get(u).state.getExpiryTime();
+		}
+
+		@Override
+		public void logInfo(String fmt, Object... args) {
+			LOGGER.info("{}", String.format(fmt, args));
+		}
+
+		@Override
+		public void logTrace(String fmt, Object... args) {
+			//LOGGER.trace("{}", String.format(fmt, args));
 		}
 
 	}
