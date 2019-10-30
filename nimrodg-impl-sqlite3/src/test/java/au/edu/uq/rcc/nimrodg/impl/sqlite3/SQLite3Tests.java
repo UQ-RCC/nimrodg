@@ -41,8 +41,10 @@ public class SQLite3Tests extends APITests {
 
 	@Before
 	public void setupDb() throws Exception {
-		Path root = tmpDir.getRoot().toPath();
+		nimrod = createTestNimrod(tmpDir.getRoot().toPath());
+	}
 
+	public static NimrodAPI createTestNimrod(Path root) throws Exception {
 		Path dbPath = root.resolve("nimrod.db");
 		UserConfig ucfg = new UserConfig() {
 			@Override
@@ -52,22 +54,13 @@ public class SQLite3Tests extends APITests {
 
 			@Override
 			public Map<String, Map<String, String>> config() {
-				return new HashMap<String, Map<String, String>>() {
-					{
-						put("config", new HashMap<String, String>() {
-							{
-								put("factory", SQLite3APIFactory.class.getCanonicalName());
-							}
-						});
-
-						put("sqlite3", new HashMap<String, String>() {
-							{
-								put("driver", "org.sqlite.JDBC");
-								put("url", String.format("jdbc:sqlite://%s", dbPath.toString()));
-							}
-						});
-					}
-				};
+				return Map.of(
+						"config", Map.of("factory", SQLite3APIFactory.class.getCanonicalName()),
+						"sqlite3", Map.of(
+								"driver", "org.sqlite.JDBC",
+								"url", String.format("jdbc:sqlite://%s", dbPath.toString())
+						)
+				);
 			}
 		};
 
@@ -77,7 +70,7 @@ public class SQLite3Tests extends APITests {
 			api.setup(new TestConfig(root));
 		}
 
-		nimrod = fimpl.createNimrod(ucfg);
+		return fimpl.createNimrod(ucfg);
 	}
 
 	@After
