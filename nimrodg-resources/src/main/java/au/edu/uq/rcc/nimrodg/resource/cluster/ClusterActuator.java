@@ -26,6 +26,7 @@ import au.edu.uq.rcc.nimrodg.api.ResourceFullException;
 import au.edu.uq.rcc.nimrodg.resource.act.ActuatorUtils;
 import au.edu.uq.rcc.nimrodg.resource.cluster.ClusterResourceType.ClusterConfig;
 import au.edu.uq.rcc.nimrodg.resource.ssh.RemoteShell;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.attribute.PosixFilePermission;
@@ -37,9 +38,11 @@ import java.util.EnumSet;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+
 import au.edu.uq.rcc.nimrodg.api.Resource;
 import au.edu.uq.rcc.nimrodg.api.utils.NimrodUtils;
 import au.edu.uq.rcc.nimrodg.resource.act.POSIXActuator;
+
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -100,7 +103,7 @@ public abstract class ClusterActuator<C extends ClusterConfig> extends POSIXActu
 	 * Given a list of agent UUIDs, fail any that would kick us above our limit and return a new array of agents that
 	 * are allowed to be spawned.
 	 *
-	 * @param uuids An array of agent UUIDs.
+	 * @param uuids   An array of agent UUIDs.
 	 * @param results An array of launch results. Must be the same length as uuids.
 	 * @return The new list of UUIDs.
 	 */
@@ -156,30 +159,30 @@ public abstract class ClusterActuator<C extends ClusterConfig> extends POSIXActu
 		TempBatch[] batches = calculateBatches(uuids);
 
 		/* Now do things that can actually fail. */
-		LaunchResult goodLaunch = new LaunchResult(node, null);
 		Instant utcNow = Instant.now(Clock.systemUTC());
 		for(TempBatch tb : batches) {
 			shell.upload(tb.scriptPath, tb.script.getBytes(StandardCharsets.UTF_8), EnumSet.of(PosixFilePermission.OWNER_READ), utcNow);
 
-			LaunchResult res;
 			String jobId;
 			try {
 				jobId = submitBatch(shell, tb);
 				Batch b = new Batch(jobId, tb.to - tb.from);
-				res = goodLaunch;
-				Arrays.setAll(b.results, i -> new LaunchResult(node, null, null, Json.createObjectBuilder()
-						.add("batch_id", b.jobId)
-						.add("batch_size", b.results.length)
-						.add("batch_index", i)
-						.build()));
+				for(int i = 0; i < b.results.length; ++i) {
+					b.results[i] = new LaunchResult(node, null, null, Json.createObjectBuilder()
+							.add("batch_id", b.jobId)
+							.add("batch_size", b.results.length)
+							.add("batch_index", i)
+							.build());
+
+					lr[tb.from + i] = b.results[i];
+				}
 				Arrays.setAll(b.uuids, i -> tb.uuids[i]);
 				Arrays.stream(tb.uuids).forEach(u -> jobNames.put(u, b));
 			} catch(IOException e) {
-				res = new LaunchResult(null, e);
-			}
-
-			for(int i = tb.from; i < tb.to; ++i) {
-				lr[i] = res;
+				LaunchResult res = new LaunchResult(null, e);
+				for(int i = tb.from; i < tb.to; ++i) {
+					lr[i] = res;
+				}
 			}
 		}
 
