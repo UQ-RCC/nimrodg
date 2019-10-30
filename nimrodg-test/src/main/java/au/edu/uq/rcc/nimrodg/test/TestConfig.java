@@ -19,17 +19,25 @@
  */
 package au.edu.uq.rcc.nimrodg.test;
 
+import au.edu.uq.rcc.nimrodg.api.AgentInfo;
+import au.edu.uq.rcc.nimrodg.api.AgentProvider;
 import au.edu.uq.rcc.nimrodg.setup.SetupConfig;
+
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class TestConfig implements SetupConfig {
 
+	public final AgentProvider agentProvider;
 	public final Path path;
 
 	public TestConfig(Path root) {
+		this.agentProvider = new TestAgentProvider(root);
 		this.path = root;
 	}
 
@@ -100,11 +108,8 @@ public class TestConfig implements SetupConfig {
 
 	@Override
 	public Map<String, String> agents() {
-		return Map.of(
-				"x86_64-pc-linux-musl", path.resolve(".agents").resolve("x86_64-pc-linux-musl").toString(),
-				"i686-pc-linux-musl", path.resolve(".agents").resolve("i686-pc-linux-musl").toString(),
-				"noop", "/bin/true"
-		);
+		return agentProvider.lookupAgents().values().stream()
+				.collect(Collectors.toMap(AgentInfo::getPlatformString, AgentInfo::getPath));
 	}
 
 	private static class _MachinePair implements MachinePair {
@@ -130,11 +135,10 @@ public class TestConfig implements SetupConfig {
 
 	@Override
 	public Map<MachinePair, String> agentMappings() {
-		return Map.of(
-				new _MachinePair("Linux", "x86_64"), "x86_64-pc-linux-musl",
-				new _MachinePair("Linux", "k10m"), "x86_64-pc-linux-musl",
-				new _MachinePair("Linux", "i686"), "i686-pc-linux-musl"
-		);
+		return agentProvider.lookupAgents().values().stream()
+				.flatMap(ai -> ai.posixMappings().stream()
+						.map(e -> Map.entry(new _MachinePair(e.getKey(), e.getValue()), ai.getPlatformString())))
+				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 	}
 
 	@Override
