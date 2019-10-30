@@ -107,7 +107,7 @@ public abstract class ClusterActuator<C extends ClusterConfig> extends POSIXActu
 	protected UUID[] applyFullCap(UUID[] uuids, LaunchResult[] results) {
 		LaunchResult fullLaunch = new LaunchResult(null, new ResourceFullException(node));
 
-		int currentAgents = nimrod.getResourceAgents(node).size();
+		int currentAgents = ops.getAgentCount(node);
 
 		/* If this will send us over our limit, cap it and mark the excess as failed. */
 		if(currentAgents + uuids.length >= config.limit) {
@@ -292,6 +292,6 @@ public abstract class ClusterActuator<C extends ClusterConfig> extends POSIXActu
 			return false;
 		}
 
-		return nimrod.getResourceAgents(node).stream().count() + num <= config.limit;
+		return ops.getAgentCount(node) + num <= config.limit;
 	}
 }

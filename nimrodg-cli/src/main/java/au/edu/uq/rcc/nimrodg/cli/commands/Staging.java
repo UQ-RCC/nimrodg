@@ -27,6 +27,7 @@ import au.edu.uq.rcc.nimrodg.api.NimrodMasterAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodParseAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.api.Actuator;
+import au.edu.uq.rcc.nimrodg.api.ActuatorOpsAdapter;
 import au.edu.uq.rcc.nimrodg.setup.UserConfig;
 import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledRun;
 import au.edu.uq.rcc.nimrodg.cli.CommandEntry;
@@ -248,24 +249,15 @@ public class Staging extends DefaultCLICommand {
 		nimrod.assignResource(wiener, exp1);
 	}
 
-	private class NullOps implements Actuator.Operations {
-
-		public final NimrodMasterAPI nimrod;
-
+	private class NullOps extends ActuatorOpsAdapter {
 		public NullOps(NimrodMasterAPI nimrod) {
-			this.nimrod = nimrod;
+			super(nimrod);
 		}
 
 		@Override
 		public void reportAgentFailure(Actuator act, UUID uuid, AgentShutdown.Reason reason, int signal) throws IllegalArgumentException {
-			int x = 0;
-		}
 
-		@Override
-		public NimrodMasterAPI getNimrod() {
-			return nimrod;
 		}
-
 	}
 
 	public static void main(String[] args) throws Exception, Exception {

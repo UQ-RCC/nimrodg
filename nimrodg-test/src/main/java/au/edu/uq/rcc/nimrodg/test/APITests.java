@@ -49,6 +49,7 @@ import au.edu.uq.rcc.nimrodg.api.utils.MsgUtils;
 import au.edu.uq.rcc.nimrodg.api.utils.SubstitutionException;
 import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledRun;
 import au.edu.uq.rcc.nimrodg.api.utils.run.RunBuilder;
+
 import java.io.IOException;
 import java.net.URI;
 import java.security.cert.Certificate;
@@ -63,12 +64,16 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import javax.json.JsonValue;
+
+import au.edu.uq.rcc.nimrodg.api.ActuatorOpsAdapter;
 import org.junit.Test;
 import au.edu.uq.rcc.nimrodg.api.Resource;
+
 import java.io.UncheckedIOException;
 import java.util.Optional;
 import javax.json.Json;
 import javax.json.JsonObject;
+
 import org.junit.Assert;
 
 public abstract class APITests {
@@ -271,12 +276,10 @@ public abstract class APITests {
 		int x = 0;
 	}
 
-	private class _FactuatorOps implements Actuator.Operations {
-
-		public final NimrodMasterAPI nimrod;
+	private class _FactuatorOps extends ActuatorOpsAdapter {
 
 		public _FactuatorOps(NimrodMasterAPI nimrod) {
-			this.nimrod = nimrod;
+			super(nimrod);
 		}
 
 		@Override
@@ -284,10 +287,6 @@ public abstract class APITests {
 
 		}
 
-		@Override
-		public NimrodMasterAPI getNimrod() {
-			return nimrod;
-		}
 	}
 
 	private DummyActuator createDummyActuator(Resource res, NimrodMasterAPI mapi) {

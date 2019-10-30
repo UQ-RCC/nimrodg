@@ -321,7 +321,7 @@ public class LocalResourceType extends BaseResourceType {
 	public Actuator createActuator(Actuator.Operations ops, Resource node, NimrodURI amqpUri, Certificate[] certs) throws IOException {
 		List<String> errors = new ArrayList<>();
 		JsonStructure _cfg = node.getConfig();
-		if(!validateConfiguration(ops.getNimrod(), _cfg, errors)) {
+		if(!validateConfiguration(ops, _cfg, errors)) {
 			throw new IOException("Invalid resource configuration");
 		}
 

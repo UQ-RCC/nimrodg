@@ -48,6 +48,7 @@ import au.edu.uq.rcc.nimrodg.master.sched.JobScheduler;
 import au.edu.uq.rcc.nimrodg.api.utils.MsgUtils;
 import au.edu.uq.rcc.nimrodg.api.utils.NimrodUtils;
 import au.edu.uq.rcc.nimrodg.master.AAAAA.LaunchRequest;
+import au.edu.uq.rcc.nimrodg.api.ActuatorOpsAdapter;
 import au.edu.uq.rcc.nimrodg.resource.act.ActuatorUtils;
 import java.io.IOException;
 import java.security.cert.Certificate;
@@ -983,17 +984,16 @@ public class Master implements MessageQueueListener, AutoCloseable {
 		}
 	}
 
-	private class _ActuatorOperations implements Actuator.Operations {
+	private class _ActuatorOperations extends ActuatorOpsAdapter {
+		public _ActuatorOperations() {
+			super(Master.this.nimrod);
+		}
 
 		@Override
 		public void reportAgentFailure(Actuator act, UUID uuid, AgentShutdown.Reason reason, int signal) throws IllegalArgumentException {
 			agentMessages.offer(new _AgentMessage(new AgentShutdown(uuid, reason, signal), Instant.now()));
 		}
 
-		@Override
-		public NimrodMasterAPI getNimrod() {
-			return nimrod;
-		}
 	}
 
 	private class _HeartOperations implements Heart.Operations {

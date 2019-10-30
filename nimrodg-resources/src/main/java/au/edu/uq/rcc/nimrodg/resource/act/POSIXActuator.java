@@ -51,7 +51,6 @@ public abstract class POSIXActuator<C extends SSHConfig> implements Actuator {
 	private static final Pattern ENV_PATTERN = Pattern.compile("^([a-zA-Z0-9_]+)=(.*)$");
 
 	protected final Operations ops;
-	protected final NimrodMasterAPI nimrod;
 	protected final Resource node;
 	protected final NimrodURI uri;
 	protected final String routingKey;
@@ -91,11 +90,10 @@ public abstract class POSIXActuator<C extends SSHConfig> implements Actuator {
 
 	public POSIXActuator(Operations ops, Resource node, NimrodURI amqpUri, Certificate[] certs, C config) throws IOException {
 		this.ops = ops;
-		this.nimrod = ops.getNimrod();
 		this.config = config;
 		this.node = node;
 		this.uri = amqpUri;
-		this.routingKey = nimrod.getConfig().getAmqpRoutingKey();
+		this.routingKey = ops.getConfig().getAmqpRoutingKey();
 		this.certs = Arrays.copyOf(certs, certs.length);
 
 		CleanupStage cs = CleanupStage.Client;
@@ -182,7 +180,7 @@ public abstract class POSIXActuator<C extends SSHConfig> implements Actuator {
 	}
 
 	private RemoteShell makeClient() throws IOException {
-		return config.transportFactory.create(config.transportConfig, Paths.get(this.nimrod.getConfig().getWorkDir()));
+		return config.transportFactory.create(config.transportConfig, Paths.get(ops.getConfig().getWorkDir()));
 	}
 
 	/* 'Cause Java doesn't have goto */

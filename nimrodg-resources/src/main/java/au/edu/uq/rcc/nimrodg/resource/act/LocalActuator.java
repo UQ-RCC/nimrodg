@@ -97,7 +97,6 @@ public class LocalActuator implements Actuator {
 	}
 
 	private final Operations ops;
-	private final NimrodAPI nimrod;
 	private final Path tmpRoot;
 	private final Resource node;
 	private final NimrodURI uri;
@@ -112,8 +111,7 @@ public class LocalActuator implements Actuator {
 
 	public LocalActuator(Operations ops, Resource node, NimrodURI uri, Certificate[] certs, int parallelism, String platString, CaptureMode captureMode) throws IOException {
 		this.ops = ops;
-		this.nimrod = ops.getNimrod();
-		NimrodConfig ncfg = nimrod.getConfig();
+		NimrodConfig ncfg = ops.getConfig();
 		this.tmpRoot = Paths.get(ncfg.getWorkDir()).resolve("localact-tmp");
 		try {
 			Files.createDirectories(tmpRoot);
@@ -125,7 +123,7 @@ public class LocalActuator implements Actuator {
 		this.routingKey = ncfg.getAmqpRoutingKey();
 		this.certs = Arrays.copyOf(certs, certs.length);
 		this.parallelism = parallelism;
-		if((this.agentInfo = nimrod.lookupAgentByPlatform(platString)) == null) {
+		if((this.agentInfo = ops.lookupAgentByPlatform(platString)) == null) {
 			throw new IOException(String.format("No agent for platform string '%s'", platString));
 		}
 		this.captureMode = captureMode;

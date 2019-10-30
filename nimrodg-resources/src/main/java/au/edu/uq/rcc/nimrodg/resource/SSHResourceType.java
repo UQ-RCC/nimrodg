@@ -288,7 +288,7 @@ public abstract class SSHResourceType extends BaseResourceType {
 		List<String> errors = new ArrayList<>();
 
 		JsonStructure _cfg = node.getConfig();
-		if(!validateConfiguration(ops.getNimrod(), _cfg, errors)) {
+		if(!validateConfiguration(ops, _cfg, errors)) {
 			throw new IOException(errors.get(0));
 		}
 
@@ -305,7 +305,7 @@ public abstract class SSHResourceType extends BaseResourceType {
 			throw new IOException(errors.get(0));
 		}
 
-		Optional<AgentInfo> ai = ActuatorUtils.lookupAgentByPlatform(ops.getNimrod(), cfg.getString("agent_platform"), errors);
+		Optional<AgentInfo> ai = ActuatorUtils.lookupAgentByPlatform(ops, cfg.getString("agent_platform"), errors);
 		if(!ai.isPresent()) {
 			throw new IOException(errors.get(0));
 		}

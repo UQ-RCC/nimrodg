@@ -34,14 +34,12 @@ import java.util.Arrays;
 public class DummyActuator implements Actuator {
 
 	private final Actuator.Operations ops;
-	private final NimrodMasterAPI nimrod;
 	private final Resource resource;
 	private final ArrayList<UUID> pendingAgents;
 	private boolean closed;
 
 	public DummyActuator(Actuator.Operations ops, Resource resource) {
 		this.ops = ops;
-		this.nimrod = ops.getNimrod();
 		this.resource = resource;
 		this.pendingAgents = new ArrayList<>();
 		this.closed = false;
@@ -56,7 +54,7 @@ public class DummyActuator implements Actuator {
 	public LaunchResult[] launchAgents(UUID[] uuid) {
 		if(closed) {
 			LaunchResult[] lrs = new LaunchResult[uuid.length];
-			Arrays.fill(lrs, new IllegalStateException("actuator closed"));
+			Arrays.fill(lrs, new LaunchResult(null, new IllegalStateException("actuator closed")));
 			return lrs;
 		}
 		LaunchResult[] lr = new LaunchResult[uuid.length];

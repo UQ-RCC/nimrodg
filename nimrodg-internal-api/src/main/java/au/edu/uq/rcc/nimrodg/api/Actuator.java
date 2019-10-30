@@ -21,6 +21,7 @@ package au.edu.uq.rcc.nimrodg.api;
 
 import au.edu.uq.rcc.nimrodg.agent.AgentState;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
+
 import java.io.IOException;
 import java.time.Instant;
 import java.util.UUID;
@@ -28,7 +29,7 @@ import javax.json.JsonObject;
 
 public interface Actuator extends AutoCloseable {
 
-	interface Operations {
+	interface Operations extends AgentProvider {
 
 		/**
 		 * Report an out-of-band failure of the agent.Some examples of an out-of-band failure are:
@@ -46,7 +47,9 @@ public interface Actuator extends AutoCloseable {
 		 */
 		void reportAgentFailure(Actuator act, UUID uuid, AgentShutdown.Reason reason, int signal) throws IllegalArgumentException;
 
-		NimrodMasterAPI getNimrod();
+		NimrodConfig getConfig();
+
+		int getAgentCount(Resource res);
 	}
 
 	public Resource getResource() throws NimrodAPIException;
