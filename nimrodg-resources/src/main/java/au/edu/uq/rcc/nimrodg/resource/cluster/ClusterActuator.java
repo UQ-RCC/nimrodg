@@ -190,13 +190,14 @@ public abstract class ClusterActuator<C extends ClusterConfig> extends POSIXActu
 	}
 
 	@Override
-	public void forceTerminateAgent(RemoteShell shell, UUID[] uuids) {
+	public final void forceTerminateAgent(RemoteShell shell, UUID[] uuids) {
 		/* Filter whole batches. */
 		Map<Batch, List<UUID>> batches = NimrodUtils.mapToParent(Arrays.stream(uuids), u -> jobNames.get(u)).entrySet().stream()
 				.filter(e -> Set.of(e.getKey().uuids).equals(new HashSet<>(e.getValue())))
 				.collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
 
-		if(!killJobs(shell, batches.keySet().stream().map(b -> b.jobId).distinct().toArray(String[]::new))) {
+		String[] jobs = batches.keySet().stream().map(b -> b.jobId).distinct().toArray(String[]::new);
+		if(jobs.length > 0 && !killJobs(shell, jobs)) {
 			return;
 		}
 
@@ -205,11 +206,18 @@ public abstract class ClusterActuator<C extends ClusterConfig> extends POSIXActu
 		}
 	}
 
+	/**
+	 * @param shell  The remote shell to use.
+	 * @param jobIds A list of batch system job identifiers to kill. This will never be empty.
+	 * @return If all of the jobs were able to be killed, returns true. Otherwise, false.
+	 */
 	protected abstract boolean killJobs(RemoteShell shell, String[] jobIds);
 
 	@Override
-	public void close(RemoteShell shell) throws IOException {
-		killJobs(shell, jobNames.values().stream().map(b -> b.jobId).distinct().toArray(String[]::new));
+	protected final void close(RemoteShell shell) {
+		String[] jobs = jobNames.values().stream().map(b -> b.jobId).distinct().toArray(String[]::new);
+		if(jobs.length > 0)
+			killJobs(shell, jobs);
 	}
 
 	@Override
