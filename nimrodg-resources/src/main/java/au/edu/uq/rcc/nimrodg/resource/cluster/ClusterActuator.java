@@ -196,7 +196,7 @@ public abstract class ClusterActuator<C extends ClusterConfig> extends POSIXActu
 				.filter(e -> Set.of(e.getKey().uuids).equals(new HashSet<>(e.getValue())))
 				.collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
 
-		if(!killJobs(shell, batches.keySet().stream().map(b -> b.jobId).toArray(String[]::new))) {
+		if(!killJobs(shell, batches.keySet().stream().map(b -> b.jobId).distinct().toArray(String[]::new))) {
 			return;
 		}
 
@@ -209,7 +209,7 @@ public abstract class ClusterActuator<C extends ClusterConfig> extends POSIXActu
 
 	@Override
 	public void close(RemoteShell shell) throws IOException {
-		killJobs(shell, jobNames.values().stream().map(b -> b.jobId).toArray(String[]::new));
+		killJobs(shell, jobNames.values().stream().map(b -> b.jobId).distinct().toArray(String[]::new));
 	}
 
 	@Override
