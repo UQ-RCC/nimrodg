@@ -41,6 +41,7 @@ import java.util.stream.Stream;
 import javax.json.Json;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
+import javax.json.JsonPatch;
 import javax.json.JsonReader;
 import javax.json.JsonStructure;
 import javax.json.JsonValue;
@@ -382,10 +383,53 @@ public class ResourceTests {
 
 	@Test
 	public void pbsProBatchArgsTest() {
-		JsonObject expected;
-		try(JsonReader p = Json.createReader(new StringReader("{\"agent_platform\":\"x86_64-pc-linux-musl\",\"transport\":{\"name\":\"sshd\",\"uri\":\"ssh://user@pbscluster.com\",\"keyfile\":\"file:///path/to/key\",\"hostkeys\":[\"ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQDMIAQc5QFZfdjImP2T9FNGe9r6l89binb5uH/vxzlnhAtHxesD8B7WXFBN/GxOplb3ih/vadT9gWliXUayvMn+ZMO7iBScnZwdmcMeKP3K80Czlrio+eI3jU77RQPYXBtcD8CBRT94r7nd29I+lMWxOD1U+LBA43kxAbyXqkQ0PQ==\"]},\"tmpvar\":\"TMPDIR\",\"pbsargs\":[\"-A\",\"ACCOUNTSTRING\"],\"limit\":100,\"max_batch_size\":10,\"batch_config\":[{\"name\":\"walltime\",\"value\":36000,\"scale\":false},{\"name\":\"pmem\",\"value\":2000000000000,\"scale\":false},{\"name\":\"pvmem\",\"value\":1000000000000,\"scale\":false},{\"name\":\"ncpus\",\"value\":1,\"scale\":true},{\"name\":\"mem\",\"value\":1073741824,\"scale\":true},{\"name\":\"vmem\",\"value\":536870912000,\"scale\":true},{\"name\":\"mpiprocs\",\"value\":1,\"scale\":true},{\"name\":\"ompthreads\",\"value\":1,\"scale\":true}]}"))) {
-			expected = p.readObject();
-		}
+		JsonObject expected = Json.createObjectBuilder()
+				.add("agent_platform", DEFAULT_AGENT)
+				.add("max_batch_size", 10)
+				.add("tmpvar", "TMPDIR")
+				.add("limit", 100)
+				.add("pbsargs", Json.createArrayBuilder().add("-A").add("ACCOUNTSTRING"))
+				.add("batch_config", Json.createArrayBuilder()
+						.add(Json.createObjectBuilder()
+								.add("name", "walltime")
+								.add("scale", false)
+								.add("value", 36000)
+						).add(Json.createObjectBuilder()
+								.add("name", "pmem")
+								.add("scale", false)
+								.add("value", 2000000000000L)
+						).add(Json.createObjectBuilder()
+								.add("name", "pvmem")
+								.add("scale", false)
+								.add("value", 1000000000000L)
+						).add(Json.createObjectBuilder()
+								.add("name", "ncpus")
+								.add("scale", true)
+								.add("value", 1)
+						).add(Json.createObjectBuilder()
+								.add("name", "mem")
+								.add("scale", true)
+								.add("value", 1073741824)
+						).add(Json.createObjectBuilder()
+								.add("name", "vmem")
+								.add("scale", true)
+								.add("value", 536870912000L)
+						).add(Json.createObjectBuilder()
+								.add("name", "mpiprocs")
+								.add("scale", true)
+								.add("value", 1)
+						).add(Json.createObjectBuilder()
+								.add("name", "ompthreads")
+								.add("scale", true)
+								.add("value", 1)
+						)
+				).add("transport", Json.createObjectBuilder()
+						.add("name", "sshd")
+						.add("uri", "ssh://user@pbscluster.com")
+						.add("keyfile", "file:///path/to/key")
+						.add("hostkeys", Json.createArrayBuilder()
+								.add("ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQDMIAQc5QFZfdjImP2T9FNGe9r6l89binb5uH/vxzlnhAtHxesD8B7WXFBN/GxOplb3ih/vadT9gWliXUayvMn+ZMO7iBScnZwdmcMeKP3K80Czlrio+eI3jU77RQPYXBtcD8CBRT94r7nd29I+lMWxOD1U+LBA43kxAbyXqkQ0PQ=="))
+				).build();
 
 		PBSProResourceType pbs = new PBSProResourceType();
 		URI sshUri = URI.create("ssh://user@pbscluster.com");
@@ -419,6 +463,7 @@ public class ResourceTests {
 		JsonObject js = (JsonObject)pbs.parseCommandArguments(agentProvider, args, System.out, System.err, new Path[0]);
 		Assert.assertEquals(expected, js);
 
+
 		PBSProDialect d = new PBSProDialect();
 		String[] subArgs = d.buildSubmissionArguments(5, js.getJsonArray("batch_config").stream().map(j -> (JsonObject)j).toArray(JsonObject[]::new), pbsargs);
 		String[] expectedArgs = new String[]{
@@ -434,10 +479,41 @@ public class ResourceTests {
 
 	@Test
 	public void slurmBatchArgsTest() {
-		JsonObject expected;
-		try(JsonReader p = Json.createReader(new StringReader("{\"agent_platform\":\"x86_64-pc-linux-musl\",\"transport\":{\"name\":\"sshd\",\"uri\":\"ssh://user@pbscluster.com\",\"keyfile\":\"file:///path/to/key\",\"hostkeys\":[\"ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQDMIAQc5QFZfdjImP2T9FNGe9r6l89binb5uH/vxzlnhAtHxesD8B7WXFBN/GxOplb3ih/vadT9gWliXUayvMn+ZMO7iBScnZwdmcMeKP3K80Czlrio+eI3jU77RQPYXBtcD8CBRT94r7nd29I+lMWxOD1U+LBA43kxAbyXqkQ0PQ==\"]},\"tmpvar\":\"TMPDIR\",\"slurmargs\":[\"--job-name\",\"NimrodTest\"],\"limit\":100,\"max_batch_size\":10,\"batch_config\":[{\"name\":\"cpus-per-task\",\"value\":1,\"scale\":false},{\"name\":\"nodes\",\"value\":1,\"scale\":false},{\"name\":\"mem-per-cpu\",\"value\":1073741824,\"scale\":false},{\"name\":\"ntasks-per-node\",\"value\":1,\"scale\":false},{\"name\":\"ntasks\",\"value\":1,\"scale\":true}]}"))) {
-			expected = p.readObject();
-		}
+		JsonObject expected = Json.createObjectBuilder()
+				.add("agent_platform", DEFAULT_AGENT)
+				.add("max_batch_size", 10)
+				.add("tmpvar", "TMPDIR")
+				.add("limit", 100)
+				.add("slurmargs", Json.createArrayBuilder().add("--job-name").add("NimrodTest"))
+				.add("batch_config", Json.createArrayBuilder()
+						.add(Json.createObjectBuilder()
+								.add("name", "cpus-per-task")
+								.add("scale", false)
+								.add("value", 1)
+						).add(Json.createObjectBuilder()
+								.add("name", "nodes")
+								.add("scale", false)
+								.add("value", 1)
+						).add(Json.createObjectBuilder()
+								.add("name", "mem-per-cpu")
+								.add("scale", false)
+								.add("value", 1073741824)
+						).add(Json.createObjectBuilder()
+								.add("name", "ntasks-per-node")
+								.add("scale", false)
+								.add("value", 1)
+						).add(Json.createObjectBuilder()
+								.add("name", "ntasks")
+								.add("scale", true)
+								.add("value", 1)
+						)
+				).add("transport", Json.createObjectBuilder()
+						.add("name", "sshd")
+						.add("uri", "ssh://user@pbscluster.com")
+						.add("keyfile", "file:///path/to/key")
+						.add("hostkeys", Json.createArrayBuilder()
+								.add("ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQDMIAQc5QFZfdjImP2T9FNGe9r6l89binb5uH/vxzlnhAtHxesD8B7WXFBN/GxOplb3ih/vadT9gWliXUayvMn+ZMO7iBScnZwdmcMeKP3K80Czlrio+eI3jU77RQPYXBtcD8CBRT94r7nd29I+lMWxOD1U+LBA43kxAbyXqkQ0PQ=="))
+				).build();
 
 		SLURMResourceType slurm = new SLURMResourceType();
 		URI sshUri = URI.create("ssh://user@pbscluster.com");
