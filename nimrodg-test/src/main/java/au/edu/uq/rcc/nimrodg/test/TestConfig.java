@@ -21,34 +21,32 @@ package au.edu.uq.rcc.nimrodg.test;
 
 import au.edu.uq.rcc.nimrodg.api.AgentInfo;
 import au.edu.uq.rcc.nimrodg.api.AgentProvider;
+import au.edu.uq.rcc.nimrodg.api.NimrodConfig;
 import au.edu.uq.rcc.nimrodg.setup.SetupConfig;
 
 import java.net.URI;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 public class TestConfig implements SetupConfig {
 
 	public final AgentProvider agentProvider;
-	public final Path path;
+	public final NimrodConfig nimrodConfig;
 
 	public TestConfig(Path root) {
 		this.agentProvider = new TestAgentProvider(root);
-		this.path = root;
+		this.nimrodConfig = new TestNimrodConfig(root);
 	}
 
 	@Override
 	public String workDir() {
-		return path.toString();
+		return nimrodConfig.getWorkDir();
 	}
 
 	@Override
 	public String storeDir() {
-		return path.resolve("experiments/").toString();
+		return nimrodConfig.getRootStore();
 	}
 
 	@Override
@@ -56,27 +54,27 @@ public class TestConfig implements SetupConfig {
 		return new AMQPConfig() {
 			@Override
 			public URI uri() {
-				return URI.create("amqps://user:pass@hostname/vhost");
+				return nimrodConfig.getAmqpUri().uri;
 			}
 
 			@Override
 			public String routingKey() {
-				return "iamthemaster";
+				return nimrodConfig.getAmqpRoutingKey();
 			}
 
 			@Override
 			public String certPath() {
-				return "";
+				return nimrodConfig.getAmqpUri().certPath;
 			}
 
 			@Override
 			public boolean noVerifyPeer() {
-				return false;
+				return nimrodConfig.getAmqpUri().noVerifyPeer;
 			}
 
 			@Override
 			public boolean noVerifyHost() {
-				return false;
+				return nimrodConfig.getAmqpUri().noVerifyHost;
 			}
 		};
 	}
@@ -86,22 +84,22 @@ public class TestConfig implements SetupConfig {
 		return new TransferConfig() {
 			@Override
 			public URI uri() {
-				return URI.create("http://localhost:8080/storage/");
+				return nimrodConfig.getTransferUri().uri;
 			}
 
 			@Override
 			public String certPath() {
-				return "";
+				return nimrodConfig.getTransferUri().certPath;
 			}
 
 			@Override
 			public boolean noVerifyPeer() {
-				return false;
+				return nimrodConfig.getTransferUri().noVerifyPeer;
 			}
 
 			@Override
 			public boolean noVerifyHost() {
-				return false;
+				return nimrodConfig.getTransferUri().noVerifyHost;
 			}
 		};
 	}

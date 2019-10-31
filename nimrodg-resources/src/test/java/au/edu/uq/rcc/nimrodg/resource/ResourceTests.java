@@ -19,23 +19,42 @@
  */
 package au.edu.uq.rcc.nimrodg.resource;
 
+import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
 import au.edu.uq.rcc.nimrodg.api.AgentInfo;
+import au.edu.uq.rcc.nimrodg.api.MasterResourceType;
+import au.edu.uq.rcc.nimrodg.api.NimrodConfig;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.api.Actuator;
 import au.edu.uq.rcc.nimrodg.api.AgentProvider;
+
 import java.io.IOException;
 import java.io.StringReader;
 import java.net.URI;
+import java.nio.file.FileSystem;
 import java.security.cert.Certificate;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Stream;
 import javax.json.Json;
+import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
 import javax.json.JsonStructure;
+import javax.json.JsonValue;
+
+import au.edu.uq.rcc.nimrodg.api.ResourceType;
+import au.edu.uq.rcc.nimrodg.api.utils.NimrodUtils;
+import au.edu.uq.rcc.nimrodg.resource.cluster.ClusterActuator;
+import au.edu.uq.rcc.nimrodg.resource.cluster.ClusterResourceType;
+import au.edu.uq.rcc.nimrodg.resource.ssh.RemoteShell;
+import au.edu.uq.rcc.nimrodg.test.TestAgentProvider;
+import au.edu.uq.rcc.nimrodg.test.TestNimrodConfig;
+import au.edu.uq.rcc.nimrodg.test.TestResource;
+import com.google.common.jimfs.Configuration;
+import com.google.common.jimfs.Jimfs;
 import org.junit.Assert;
 import org.junit.Test;
 import au.edu.uq.rcc.nimrodg.api.Resource;
@@ -49,6 +68,7 @@ import au.edu.uq.rcc.nimrodg.resource.ssh.SSHClient;
 import au.edu.uq.rcc.nimrodg.resource.ssh.TransportFactory;
 import au.edu.uq.rcc.nimrodg.test.TestUtils;
 import com.hubspot.jinjava.Jinjava;
+
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -64,8 +84,8 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.Optional;
 import java.util.Random;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x500.X500NameBuilder;
 import org.bouncycastle.asn1.x500.style.BCStyle;
@@ -83,80 +103,14 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
-import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
-import org.junit.rules.TemporaryFolder;
 
 public class ResourceTests {
 
 	public static final String DEFAULT_AGENT = "x86_64-pc-linux-musl";
 
-	private static class _TestSSHResource extends SSHResourceType {
-
-		public _TestSSHResource() {
-			super("sshtest", "SSHTest");
-		}
-
-		@Override
-		public Actuator createActuator(Actuator.Operations ops, Resource node, NimrodURI amqpUri, Certificate[] certs, SSHConfig sshCfg) throws IOException {
-			throw new UnsupportedOperationException("Seriously?");
-		}
-	}
-
-	private static class _AgentProvider implements AgentProvider {
-
-		public static AgentProvider INSTANCE = new _AgentProvider();
-
-		@Override
-		public Map<String, AgentInfo> lookupAgents() {
-			return Map.of(DEFAULT_AGENT, lookupAgentByPlatform(DEFAULT_AGENT));
-		}
-
-		@Override
-		public AgentInfo lookupAgentByPlatform(String platString) {
-			return new AgentInfo() {
-				@Override
-				public String getPlatformString() {
-					return DEFAULT_AGENT;
-				}
-
-				@Override
-				public String getPath() {
-					return "/some/path/agent";
-				}
-
-				@Override
-				public Set<Map.Entry<String, String>> posixMappings() {
-					return Set.of();
-				}
-			};
-		}
-
-		@Override
-		public AgentInfo lookupAgentByPosix(String system, String machine) {
-			return new AgentInfo() {
-				@Override
-				public String getPlatformString() {
-					return DEFAULT_AGENT;
-				}
-
-				@Override
-				public String getPath() {
-					return "/some/path/agent";
-				}
-
-				@Override
-				public Set<Map.Entry<String, String>> posixMappings() {
-					return Set.of();
-				}
-			};
-		}
-
-	}
-
-	@Rule
-	public TemporaryFolder tmpDir = new TemporaryFolder();
+	private FileSystem memFs;
+	private Path fsRoot;
 
 	private Path pubKey;
 	private Path privKey;
@@ -165,6 +119,12 @@ public class ResourceTests {
 	private X509Certificate x509;
 	private byte[] rawX509;
 	private Path x509Path;
+
+	private AgentProvider agentProvider;
+	private NimrodConfig nimrodConfig;
+
+	private Resource testSSHResource;
+	private Resource testClusterResource;
 
 	private static X509Certificate keyPairToCert(KeyPair keyPair) throws CertIOException, IOException, OperatorCreationException, CertificateException {
 		X500Name subject = new X500NameBuilder(BCStyle.INSTANCE)
@@ -194,8 +154,8 @@ public class ResourceTests {
 		KeyUsage usage = new KeyUsage(KeyUsage.keyCertSign | KeyUsage.digitalSignature);
 		certificate.addExtension(Extension.keyUsage, false, usage.getEncoded());
 		ExtendedKeyUsage usageEx = new ExtendedKeyUsage(new KeyPurposeId[]{
-			KeyPurposeId.id_kp_serverAuth,
-			KeyPurposeId.id_kp_clientAuth
+				KeyPurposeId.id_kp_serverAuth,
+				KeyPurposeId.id_kp_clientAuth
 		});
 		certificate.addExtension(
 				Extension.extendedKeyUsage,
@@ -213,10 +173,13 @@ public class ResourceTests {
 
 	@Before
 	public void before() throws IOException, OperatorCreationException, CertificateException {
-		pubKey = tmpDir.newFile("key.pub").toPath();
+		memFs = Jimfs.newFileSystem(Configuration.unix().toBuilder().setAttributeViews("posix").build());
+		fsRoot = memFs.getPath("/");
+
+		pubKey = fsRoot.resolve("key.pub");
 		Files.write(pubKey, TestUtils.RSA_PEM_KEY_PUBLIC.getBytes(StandardCharsets.UTF_8));
 
-		privKey = tmpDir.newFile("key").toPath();
+		privKey = fsRoot.resolve("key");
 		Files.write(privKey, TestUtils.RSA_PEM_KEY_PRIVATE.getBytes(StandardCharsets.UTF_8));
 
 		List<String> errors = new ArrayList<>();
@@ -228,27 +191,122 @@ public class ResourceTests {
 		x509 = keyPairToCert(keyPair);
 		rawX509 = x509.getEncoded();
 
-		x509Path = tmpDir.newFile("cert.crt").toPath();
+		x509Path = fsRoot.resolve("cert.crt");
 		Files.write(x509Path, rawX509);
+
+		agentProvider = new TestAgentProvider(fsRoot);
+		nimrodConfig = new TestNimrodConfig(fsRoot);
+
+		/* Create placeholder files for the agents. */
+		for(AgentInfo ai : agentProvider.lookupAgents().values()) {
+			Path p = memFs.getPath(ai.getPath());
+			Files.createDirectories(p.getParent());
+			Files.write(p, new byte[0]);
+		}
+
+		testSSHResource = new TestResource(
+				"testssh",
+				new _TestSSHResourceType("testssh", "TestSSH"),
+				nimrodConfig.getAmqpUri(),
+				nimrodConfig.getTransferUri(),
+				JsonValue.EMPTY_JSON_OBJECT
+		);
+
+		ClusterResourceType.ClusterConfig ccfg = new ClusterResourceType.ClusterConfig(
+				new SSHResourceType.SSHConfig(
+						agentProvider.lookupAgentByPlatform(DEFAULT_AGENT),
+						TestShell.createFactory(fsRoot.resolve("home")),
+						TestShell.createConfig()
+				),
+				10,
+				"TMPDIR",
+				new String[0],
+				3
+		);
+		testClusterResource = new TestResource(
+				"testcluster",
+				new _TestClusterResourceType("testcluster", "TestCluster", "testargs", ccfg),
+				nimrodConfig.getAmqpUri(),
+				nimrodConfig.getTransferUri(),
+				JsonValue.EMPTY_JSON_OBJECT
+		);
 	}
 
-	@After
-	public void after() throws IOException {
-		Files.delete(pubKey);
-		Files.delete(privKey);
+	private static class _TestClusterActuator extends ClusterActuator<ClusterResourceType.ClusterConfig> {
+
+		public _TestClusterActuator(Operations ops, Resource node, NimrodURI amqpUri, Certificate[] certs, ClusterResourceType.ClusterConfig cfg) throws IOException {
+			super(ops, node, amqpUri, certs, cfg);
+		}
+
+		@Override
+		protected String submitBatch(RemoteShell shell, TempBatch batch) {
+			return Integer.toString(Arrays.hashCode(batch.uuids));
+		}
+
+		@Override
+		protected String buildSubmissionScript(UUID batchUuid, UUID[] agentUuids, String out, String err) {
+			JsonArrayBuilder jab = Json.createArrayBuilder();
+			for(int i = 0; i < agentUuids.length; ++i) {
+				jab.add(agentUuids[i].toString());
+			}
+
+			return Json.createObjectBuilder()
+					.add("batch_uuid", batchUuid.toString())
+					.add("out", out)
+					.add("err", err)
+					.add("agent_uuids", jab)
+					.build().toString();
+		}
+
+		@Override
+		protected boolean killJobs(RemoteShell shell, String[] jobIds) {
+			return true;
+		}
 	}
 
-	private void testSSHParser(SSHResourceType ssh, URI uri) {
+	private static class _TestSSHResourceType extends SSHResourceType {
+		public _TestSSHResourceType(String name, String displayName) {
+			super(name, displayName);
+		}
+
+		@Override
+		protected Actuator createActuator(Actuator.Operations ops, Resource node, NimrodURI amqpUri, Certificate[] certs, SSHConfig sshCfg) {
+			throw new UnsupportedOperationException("really?");
+		}
+	}
+
+	private static class _TestClusterResourceType extends ClusterResourceType {
+
+		private ClusterConfig config;
+
+		public _TestClusterResourceType(String name, String displayName, String argsName, ClusterConfig config) {
+			super(name, displayName, argsName);
+			this.config = config;
+		}
+
+		@Override
+		protected Actuator createActuator(Actuator.Operations ops, Resource node, NimrodURI amqpUri, Certificate[] certs, ClusterConfig ccfg) throws IOException {
+			return new _TestClusterActuator(ops, node, amqpUri, certs, config);
+		}
+
+		@Override
+		public Actuator createActuator(Actuator.Operations ops, Resource node, NimrodURI amqpUri, Certificate[] certs) throws IOException {
+			return this.createActuator(ops, node, amqpUri, certs, config);
+		}
+	}
+
+
+	private void testSSHParser(ResourceType ssh, URI uri) {
 		{
 			String[] sshdArgs = {
-				"--uri", uri.toString(),
-				"--key", privKey.toString(),
-				"--hostkey", TestUtils.RSA_PEM_KEY_PUBLIC,
-				"--platform", DEFAULT_AGENT,
-				"--transport", "sshd"
+					"--uri", uri.toString(),
+					"--key", privKey.toUri().toString(),
+					"--hostkey", TestUtils.RSA_PEM_KEY_PUBLIC,
+					"--platform", DEFAULT_AGENT,
+					"--transport", "sshd"
 			};
 
-			JsonStructure js = ssh.parseCommandArguments(_AgentProvider.INSTANCE, sshdArgs, System.out, System.err, new Path[0]);
+			JsonStructure js = ssh.parseCommandArguments(agentProvider, sshdArgs, System.out, System.err, new Path[0]);
 			Assert.assertNotNull(js);
 
 			JsonObject cfg = js.asJsonObject();
@@ -272,15 +330,16 @@ public class ResourceTests {
 		{
 
 			String[] openSshArgs = {
-				"--uri", uri.toString(),
-				"--key", privKey.toString(),
-				"--hostkey", TestUtils.RSA_PEM_KEY_PUBLIC,
-				"--platform", DEFAULT_AGENT,
-				"--transport", "openssh",
-				"--openssh-executable", "/path/to/ssh"
+					"--uri", uri.toString(),
+					"--key", privKey.toUri().toString(),
+					"--hostkey", TestUtils.RSA_PEM_KEY_PUBLIC,
+					"--platform", DEFAULT_AGENT,
+					"--transport", "openssh",
+					"--openssh-executable", "/path/to/ssh",
+					"--no-validate-private-key"
 			};
 
-			JsonStructure js = ssh.parseCommandArguments(_AgentProvider.INSTANCE, openSshArgs, System.out, System.err, new Path[0]);
+			JsonStructure js = ssh.parseCommandArguments(agentProvider, openSshArgs, System.out, System.err, new Path[0]);
 			Assert.assertNotNull(js);
 
 			JsonObject cfg = js.asJsonObject();
@@ -306,18 +365,16 @@ public class ResourceTests {
 
 	@Test
 	public void sshBaseParserTests() {
-		SSHResourceType ssh = new _TestSSHResource();
 		URI validSshUri = URI.create("ssh://username@hostname:22");
-		testSSHParser(ssh, validSshUri);
+		testSSHParser(testSSHResource.getType(), validSshUri);
 	}
 
 	@Test
 	public void sshBaseParserURIWithPasswordTest() {
-		SSHResourceType ssh = new _TestSSHResource();
-		JsonStructure js = ssh.parseCommandArguments(null, new String[]{
-			"--uri", "ssh://username:pass@hostname:22",
-			"--key", "",
-			"--hostkey", "none"
+		JsonStructure js = testSSHResource.getType().parseCommandArguments(agentProvider, new String[]{
+				"--uri", "ssh://username:pass@hostname:22",
+				"--key", "",
+				"--hostkey", "none"
 		}, System.out, System.err, new Path[0]);
 
 		Assert.assertNull(js);
@@ -326,7 +383,7 @@ public class ResourceTests {
 	@Test
 	public void pbsProBatchArgsTest() {
 		JsonObject expected;
-		try(JsonReader p = Json.createReader(new StringReader("{\"agent_platform\":\"x86_64-pc-linux-musl\",\"transport\":{\"name\":\"sshd\",\"uri\":\"ssh://user@pbscluster.com\",\"keyfile\":\"/path/to/key\",\"hostkeys\":[\"ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQDMIAQc5QFZfdjImP2T9FNGe9r6l89binb5uH/vxzlnhAtHxesD8B7WXFBN/GxOplb3ih/vadT9gWliXUayvMn+ZMO7iBScnZwdmcMeKP3K80Czlrio+eI3jU77RQPYXBtcD8CBRT94r7nd29I+lMWxOD1U+LBA43kxAbyXqkQ0PQ==\"]},\"tmpvar\":\"TMPDIR\",\"pbsargs\":[\"-A\",\"ACCOUNTSTRING\"],\"limit\":100,\"max_batch_size\":10,\"batch_config\":[{\"name\":\"walltime\",\"value\":36000,\"scale\":false},{\"name\":\"pmem\",\"value\":2000000000000,\"scale\":false},{\"name\":\"pvmem\",\"value\":1000000000000,\"scale\":false},{\"name\":\"ncpus\",\"value\":1,\"scale\":true},{\"name\":\"mem\",\"value\":1073741824,\"scale\":true},{\"name\":\"vmem\",\"value\":536870912000,\"scale\":true},{\"name\":\"mpiprocs\",\"value\":1,\"scale\":true},{\"name\":\"ompthreads\",\"value\":1,\"scale\":true}]}"))) {
+		try(JsonReader p = Json.createReader(new StringReader("{\"agent_platform\":\"x86_64-pc-linux-musl\",\"transport\":{\"name\":\"sshd\",\"uri\":\"ssh://user@pbscluster.com\",\"keyfile\":\"file:///path/to/key\",\"hostkeys\":[\"ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQDMIAQc5QFZfdjImP2T9FNGe9r6l89binb5uH/vxzlnhAtHxesD8B7WXFBN/GxOplb3ih/vadT9gWliXUayvMn+ZMO7iBScnZwdmcMeKP3K80Czlrio+eI3jU77RQPYXBtcD8CBRT94r7nd29I+lMWxOD1U+LBA43kxAbyXqkQ0PQ==\"]},\"tmpvar\":\"TMPDIR\",\"pbsargs\":[\"-A\",\"ACCOUNTSTRING\"],\"limit\":100,\"max_batch_size\":10,\"batch_config\":[{\"name\":\"walltime\",\"value\":36000,\"scale\":false},{\"name\":\"pmem\",\"value\":2000000000000,\"scale\":false},{\"name\":\"pvmem\",\"value\":1000000000000,\"scale\":false},{\"name\":\"ncpus\",\"value\":1,\"scale\":true},{\"name\":\"mem\",\"value\":1073741824,\"scale\":true},{\"name\":\"vmem\",\"value\":536870912000,\"scale\":true},{\"name\":\"mpiprocs\",\"value\":1,\"scale\":true},{\"name\":\"ompthreads\",\"value\":1,\"scale\":true}]}"))) {
 			expected = p.readObject();
 		}
 
@@ -359,17 +416,17 @@ public class ResourceTests {
 				Stream.of(pbsargs)
 		).toArray(String[]::new);
 
-		JsonObject js = (JsonObject)pbs.parseCommandArguments(_AgentProvider.INSTANCE, args, System.out, System.err, new Path[0]);
+		JsonObject js = (JsonObject)pbs.parseCommandArguments(agentProvider, args, System.out, System.err, new Path[0]);
 		Assert.assertEquals(expected, js);
 
 		PBSProDialect d = new PBSProDialect();
 		String[] subArgs = d.buildSubmissionArguments(5, js.getJsonArray("batch_config").stream().map(j -> (JsonObject)j).toArray(JsonObject[]::new), pbsargs);
 		String[] expectedArgs = new String[]{
-			"-A", "ACCOUNTSTRING",
-			"-l", "walltime=36000",
-			"-l", "pmem=2000000000000b",
-			"-l", "pvmem=1000000000000b",
-			"-l", "select=1:ncpus=5:mem=5368709120b:vmem=2684354560000b:mpiprocs=5:ompthreads=5"
+				"-A", "ACCOUNTSTRING",
+				"-l", "walltime=36000",
+				"-l", "pmem=2000000000000b",
+				"-l", "pvmem=1000000000000b",
+				"-l", "select=1:ncpus=5:mem=5368709120b:vmem=2684354560000b:mpiprocs=5:ompthreads=5"
 		};
 
 		Assert.assertArrayEquals(expectedArgs, subArgs);
@@ -378,7 +435,7 @@ public class ResourceTests {
 	@Test
 	public void slurmBatchArgsTest() {
 		JsonObject expected;
-		try(JsonReader p = Json.createReader(new StringReader("{\"agent_platform\":\"x86_64-pc-linux-musl\",\"transport\":{\"name\":\"sshd\",\"uri\":\"ssh://user@pbscluster.com\",\"keyfile\":\"/path/to/key\",\"hostkeys\":[\"ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQDMIAQc5QFZfdjImP2T9FNGe9r6l89binb5uH/vxzlnhAtHxesD8B7WXFBN/GxOplb3ih/vadT9gWliXUayvMn+ZMO7iBScnZwdmcMeKP3K80Czlrio+eI3jU77RQPYXBtcD8CBRT94r7nd29I+lMWxOD1U+LBA43kxAbyXqkQ0PQ==\"]},\"tmpvar\":\"TMPDIR\",\"slurmargs\":[\"--job-name\",\"NimrodTest\"],\"limit\":100,\"max_batch_size\":10,\"batch_config\":[{\"name\":\"cpus-per-task\",\"value\":1,\"scale\":false},{\"name\":\"nodes\",\"value\":1,\"scale\":false},{\"name\":\"mem-per-cpu\",\"value\":1073741824,\"scale\":false},{\"name\":\"ntasks-per-node\",\"value\":1,\"scale\":false},{\"name\":\"ntasks\",\"value\":1,\"scale\":true}]}"))) {
+		try(JsonReader p = Json.createReader(new StringReader("{\"agent_platform\":\"x86_64-pc-linux-musl\",\"transport\":{\"name\":\"sshd\",\"uri\":\"ssh://user@pbscluster.com\",\"keyfile\":\"file:///path/to/key\",\"hostkeys\":[\"ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQDMIAQc5QFZfdjImP2T9FNGe9r6l89binb5uH/vxzlnhAtHxesD8B7WXFBN/GxOplb3ih/vadT9gWliXUayvMn+ZMO7iBScnZwdmcMeKP3K80Czlrio+eI3jU77RQPYXBtcD8CBRT94r7nd29I+lMWxOD1U+LBA43kxAbyXqkQ0PQ==\"]},\"tmpvar\":\"TMPDIR\",\"slurmargs\":[\"--job-name\",\"NimrodTest\"],\"limit\":100,\"max_batch_size\":10,\"batch_config\":[{\"name\":\"cpus-per-task\",\"value\":1,\"scale\":false},{\"name\":\"nodes\",\"value\":1,\"scale\":false},{\"name\":\"mem-per-cpu\",\"value\":1073741824,\"scale\":false},{\"name\":\"ntasks-per-node\",\"value\":1,\"scale\":false},{\"name\":\"ntasks\",\"value\":1,\"scale\":true}]}"))) {
 			expected = p.readObject();
 		}
 
@@ -408,18 +465,18 @@ public class ResourceTests {
 				Stream.of(slurmargs)
 		).toArray(String[]::new);
 
-		JsonObject js = (JsonObject)slurm.parseCommandArguments(_AgentProvider.INSTANCE, args, System.out, System.err, new Path[0]);
+		JsonObject js = (JsonObject)slurm.parseCommandArguments(agentProvider, args, System.out, System.err, new Path[0]);
 		Assert.assertEquals(expected, js);
 
 		SLURMDialect sd = new SLURMDialect();
 		String[] subArgs = sd.buildSubmissionArguments(5, js.getJsonArray("batch_config").stream().map(j -> (JsonObject)j).toArray(JsonObject[]::new), slurmargs);
 		String[] expectedArgs = new String[]{
-			"--cpus-per-task", "1",
-			"--nodes", "1",
-			"--mem-per-cpu", "1073741K",
-			"--ntasks-per-node", "1",
-			"--ntasks", "5",
-			"--job-name", "NimrodTest"
+				"--cpus-per-task", "1",
+				"--nodes", "1",
+				"--mem-per-cpu", "1073741K",
+				"--ntasks-per-node", "1",
+				"--ntasks", "5",
+				"--job-name", "NimrodTest"
 		};
 
 		Assert.assertArrayEquals(expectedArgs, subArgs);
@@ -428,7 +485,7 @@ public class ResourceTests {
 	@Test
 	public void pbsParserTest() {
 		JsonObject expected;
-		try(JsonReader p = Json.createReader(new StringReader("{\"agent_platform\":\"x86_64-pc-linux-musl\",\"transport\":{\"name\":\"sshd\",\"uri\":\"ssh://user@pbscluster.com\",\"keyfile\":\"/path/to/key\",\"hostkeys\":[\"ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQDMIAQc5QFZfdjImP2T9FNGe9r6l89binb5uH/vxzlnhAtHxesD8B7WXFBN/GxOplb3ih/vadT9gWliXUayvMn+ZMO7iBScnZwdmcMeKP3K80Czlrio+eI3jU77RQPYXBtcD8CBRT94r7nd29I+lMWxOD1U+LBA43kxAbyXqkQ0PQ==\"]},\"tmpvar\":\"TMPDIR\",\"pbsargs\":[\"-A\",\"ACCOUNTSTRING\",\"-l\",\"select=1:ncpus=1,pmem=1gb\",\"-l\",\"walltime=10:00:00\"],\"limit\":100,\"max_batch_size\":10,\"batch_config\":[]}"))) {
+		try(JsonReader p = Json.createReader(new StringReader("{\"agent_platform\":\"x86_64-pc-linux-musl\",\"transport\":{\"name\":\"sshd\",\"uri\":\"ssh://user@pbscluster.com\",\"keyfile\":\"file:///path/to/key\",\"hostkeys\":[\"ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQDMIAQc5QFZfdjImP2T9FNGe9r6l89binb5uH/vxzlnhAtHxesD8B7WXFBN/GxOplb3ih/vadT9gWliXUayvMn+ZMO7iBScnZwdmcMeKP3K80Czlrio+eI3jU77RQPYXBtcD8CBRT94r7nd29I+lMWxOD1U+LBA43kxAbyXqkQ0PQ==\"]},\"tmpvar\":\"TMPDIR\",\"pbsargs\":[\"-A\",\"ACCOUNTSTRING\",\"-l\",\"select=1:ncpus=1,pmem=1gb\",\"-l\",\"walltime=10:00:00\"],\"limit\":100,\"max_batch_size\":10,\"batch_config\":[]}"))) {
 			expected = p.readObject();
 		}
 
@@ -436,9 +493,9 @@ public class ResourceTests {
 		URI sshUri = URI.create("ssh://user@pbscluster.com");
 
 		String[] pbsargs = {
-			"-A", "ACCOUNTSTRING",
-			"-l", "select=1:ncpus=1,pmem=1gb",
-			"-l", "walltime=10:00:00"
+				"-A", "ACCOUNTSTRING",
+				"-l", "select=1:ncpus=1,pmem=1gb",
+				"-l", "walltime=10:00:00"
 		};
 
 		String[] args = Stream.concat(
@@ -454,7 +511,7 @@ public class ResourceTests {
 				), Arrays.stream(pbsargs)
 		).toArray(String[]::new);
 
-		JsonStructure js = pbs.parseCommandArguments(_AgentProvider.INSTANCE, args, System.out, System.err, new Path[0]);
+		JsonStructure js = pbs.parseCommandArguments(agentProvider, args, System.out, System.err, new Path[0]);
 		Assert.assertEquals(expected, js);
 	}
 
@@ -484,25 +541,25 @@ public class ResourceTests {
 				.add("template_classpath", "au/edu/uq/rcc/nimrodg/resource/cluster/hpc.pbspro.j2")
 		).build();
 
-		Path p = tmpDir.newFile("hpc.json").toPath();
+		Path p = fsRoot.resolve("hpc.json");
 		Files.write(p, userCfg.toString().getBytes(StandardCharsets.UTF_8));
 
 		String args[] = new String[]{
-			"--platform", "x86_64-pc-linux-musl",
-			"--transport", "openssh",
-			"--uri", "ssh://nowhere",
-			"--limit", "10",
-			"--max-batch-size", "10",
-			"--type", "asdfa",
-			"--ncpus", "1",
-			"--walltime", "24:00:00",
-			"--mem", "1GiB"
+				"--platform", "x86_64-pc-linux-musl",
+				"--transport", "openssh",
+				"--uri", "ssh://nowhere",
+				"--limit", "10",
+				"--max-batch-size", "10",
+				"--type", "asdfa",
+				"--ncpus", "1",
+				"--walltime", "24:00:00",
+				"--mem", "1GiB"
 		};
 
-		JsonStructure _cfg = hpc.parseCommandArguments(_AgentProvider.INSTANCE, args, System.out, System.err, new Path[]{tmpDir.getRoot().toPath()});
+		JsonStructure _cfg = hpc.parseCommandArguments(agentProvider, args, System.out, System.err, new Path[]{fsRoot});
 		Assert.assertNotNull(_cfg);
 
-		_cfg = hpc.parseCommandArguments(_AgentProvider.INSTANCE, args, System.out, System.err, new Path[0]);
+		_cfg = hpc.parseCommandArguments(agentProvider, args, System.out, System.err, new Path[0]);
 		Assert.assertNull(_cfg);
 
 		/* Now test with an invalid hpc.json */
@@ -510,12 +567,12 @@ public class ResourceTests {
 				.add("submit2", Json.createArrayBuilder(List.of("alfalfa")))
 		).build();
 
-		Path badDir = tmpDir.newFolder().toPath();
+		Path badDir = fsRoot;
 		Files.write(badDir.resolve("hpc.json"), badUserCfg.toString().getBytes(StandardCharsets.UTF_8));
 
 		Throwable t = null;
 		try {
-			hpc.parseCommandArguments(_AgentProvider.INSTANCE, args, System.out, System.err, new Path[]{badDir});
+			hpc.parseCommandArguments(agentProvider, args, System.out, System.err, new Path[]{badDir});
 		} catch(Throwable e) {
 			t = e;
 		}
@@ -568,5 +625,83 @@ public class ResourceTests {
 				"#BSUB -o /remote/path/to/stdout.txt",
 				"#BSUB -e /remote/path/to/stderr.txt"
 		));
+	}
+
+
+	private class _TestOps implements Actuator.Operations {
+		public int agentCount = 0;
+
+		@Override
+		public void reportAgentFailure(Actuator act, UUID uuid, AgentShutdown.Reason reason, int signal) throws IllegalArgumentException {
+
+		}
+
+		@Override
+		public NimrodConfig getConfig() {
+			return nimrodConfig;
+		}
+
+		@Override
+		public int getAgentCount(Resource res) {
+			return agentCount;
+		}
+
+		@Override
+		public Map<String, AgentInfo> lookupAgents() {
+			return agentProvider.lookupAgents();
+		}
+
+		@Override
+		public AgentInfo lookupAgentByPlatform(String platString) {
+			return agentProvider.lookupAgentByPlatform(platString);
+		}
+
+		@Override
+		public AgentInfo lookupAgentByPosix(String system, String machine) {
+			return agentProvider.lookupAgentByPosix(system, machine);
+		}
+	}
+
+	@Test
+	public void clusterBatchTest() throws IOException {
+		_TestOps ops = new _TestOps();
+
+		MasterResourceType type = (MasterResourceType)testClusterResource.getType();
+
+		UUID[] uuids = new UUID[10];
+		for(int i = 0; i < uuids.length; ++i) {
+			uuids[i] = UUID.randomUUID();
+		}
+
+
+		try(Actuator act = type.createActuator(ops, testClusterResource, nimrodConfig.getAmqpUri(), new Certificate[0])) {
+			Actuator.LaunchResult[] lrs = act.launchAgents(uuids);
+
+			for(int i = 0; i < lrs.length; ++i) {
+				if(lrs[i].t != null) {
+					++ops.agentCount;
+				}
+			}
+
+			for(int i = 0; i < lrs.length; ++i) {
+				Assert.assertNotNull(lrs[i].actuatorData);
+				Assert.assertTrue(lrs[i].actuatorData.containsKey("batch_id"));
+				Assert.assertTrue(lrs[i].actuatorData.containsKey("batch_size"));
+				Assert.assertTrue(lrs[i].actuatorData.containsKey("batch_index"));
+			}
+
+			Map<String, List<Actuator.LaunchResult>> l2rs = NimrodUtils.mapToParent(Arrays.stream(lrs),
+					lr -> lr.actuatorData.getString("batch_id")
+			);
+
+			int[] sizes = l2rs.values().stream().mapToInt(List::size).sorted().toArray();
+			Assert.assertArrayEquals(new int[]{1, 3, 3, 3}, sizes);
+
+			for(Map.Entry<String, List<Actuator.LaunchResult>> e : l2rs.entrySet()) {
+				for(Actuator.LaunchResult lr : e.getValue()) {
+					Assert.assertEquals(e.getValue().size(), lr.actuatorData.getInt("batch_size"));
+				}
+			}
+		}
 	}
 }

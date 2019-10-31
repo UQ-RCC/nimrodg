@@ -28,6 +28,7 @@ import au.edu.uq.rcc.nimrodg.resource.ssh.SystemInformation;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
@@ -110,7 +111,15 @@ public abstract class SSHResourceType extends BaseResourceType {
 			return false;
 		}
 
-		Optional<Path> keyFile = Optional.ofNullable(ns.getString("key")).map(s -> Paths.get(s));
+		Optional<Path> keyFile = Optional.ofNullable(ns.getString("key"))
+				.map(URI::create)
+				.map(u -> {
+					if(u.getScheme() == null) {
+						return Paths.get(u.toString());
+					} else {
+						return Paths.get(u);
+					}
+				});
 
 		/* Always load the key here to see if it's valid. */
 		if(!noValidatePrivateKey && keyFile.isPresent()) {

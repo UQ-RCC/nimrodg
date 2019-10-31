@@ -26,8 +26,10 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.PosixFilePermission;
 import java.security.PublicKey;
 import java.time.Instant;
@@ -70,11 +72,9 @@ public class OpenSSHClient implements RemoteShell {
 
 	public OpenSSHClient(URI uri, Path workDir, Optional<Path> privateKey, Optional<Path> executable, Map<String, String> opts) throws IOException {
 		this.uri = uri;
-		this.privateKey = privateKey;
-
 		this.executable = executable.orElse(Paths.get("ssh"));
 
-		Path socketPath = workDir.resolve(String.format("ssh-control-%d", (long)uri.hashCode() & 0xFFFFFFFFL));
+		Path socketPath = workDir.resolve(String.format("openssh-%d-control", (long)uri.hashCode() & 0xFFFFFFFFL));
 
 		if(opts.keySet().stream().anyMatch(k -> !k.matches("^[a-zA-Z0-9]+$"))) {
 			throw new IllegalArgumentException("invalid custom option key");
@@ -98,15 +98,24 @@ public class OpenSSHClient implements RemoteShell {
 		ArrayList<String> ssh = new ArrayList<>();
 		ssh.add(this.executable.toString());
 
-		Optional<String> user = ActuatorUtils.getUriUser(uri);
-		if(user.isPresent()) {
+		ActuatorUtils.getUriUser(uri).ifPresent(u -> {
 			ssh.add("-l");
-			ssh.add(user.get());
-		}
+			ssh.add(u);
+		});
 
 		if(privateKey.isPresent()) {
+			/* The key may be on another filesystem, so make a "local" copy of it. */
+			this.privateKey = Optional.of(workDir.resolve(String.format("openssh-%d-key", (long)uri.hashCode() & 0xFFFFFFFFL)));
+			Files.copy(privateKey.get(), this.privateKey.get(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES);
+			try {
+				Files.setPosixFilePermissions(privateKey.get(), EnumSet.of(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE));
+			} catch(UnsupportedOperationException e) {
+				LOGGER.catching(e);
+			}
 			ssh.add("-i");
-			ssh.add(privateKey.get().toString());
+			ssh.add(this.privateKey.get().toString());
+		} else {
+			this.privateKey = Optional.empty();
 		}
 
 		int port = uri.getPort();
@@ -277,7 +286,7 @@ public class OpenSSHClient implements RemoteShell {
 			return Json.createObjectBuilder()
 					.add("name", TRANSPORT_NAME)
 					.add("uri", cfg.uri.map(u -> u.toString()).orElse(""))
-					.add("keyfile", cfg.privateKey.map(p -> p.toString()).orElse(""))
+					.add("keyfile", cfg.privateKey.map(p -> p.toUri().toString()).orElse(""))
 					.add("executable", cfg.executablePath.map(p -> p.toString()).orElse(""))
 					.build();
 		}
@@ -304,7 +313,7 @@ public class OpenSSHClient implements RemoteShell {
 					Optional.of(uri),
 					ActuatorUtils.getUriUser(uri),
 					new PublicKey[0],
-					TransportFactory.getOrNullIfEmpty(cfg, "keyfile").map(s -> Paths.get(s)),
+					TransportFactory.getOrNullIfEmpty(cfg, "keyfile").map(s -> Paths.get(URI.create(s))),
 					TransportFactory.getOrNullIfEmpty(cfg, "executable").map(s -> Paths.get(s))
 			));
 		}
@@ -312,6 +321,14 @@ public class OpenSSHClient implements RemoteShell {
 
 	@Override
 	public void close() throws IOException {
+		/* This is safe as we've copied it. */
+		if(privateKey.isPresent()) {
+			try {
+				Files.deleteIfExists(this.privateKey.get());
+			} catch(IOException e) {
+				LOGGER.catching(e);
+			}
+		}
 		ActuatorUtils.doProcessOneshot(closeArgs, LOGGER);
 	}
 }

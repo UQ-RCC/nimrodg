@@ -399,7 +399,7 @@ public class SSHClient implements RemoteShell {
 			return Json.createObjectBuilder()
 					.add("name", TRANSPORT_NAME)
 					.add("uri", cfg.uri.map(u -> u.toString()).orElse(""))
-					.add("keyfile", cfg.privateKey.map(p -> p.toString()).orElse(""))
+					.add("keyfile", cfg.privateKey.map(p -> p.toUri().toString()).orElse(""))
 					.add("hostkeys", ja)
 					.build();
 		}
@@ -441,7 +441,7 @@ public class SSHClient implements RemoteShell {
 				valid = false;
 			}
 
-			Optional<Path> privateKey = TransportFactory.getOrNullIfEmpty(cfg, "keyfile").map(s -> Paths.get(s));
+			Optional<Path> privateKey = TransportFactory.getOrNullIfEmpty(cfg, "keyfile").map(s -> Paths.get(URI.create(s)));
 			if(!privateKey.isPresent()) {
 				errors.add("No private key specified.");
 				valid = false;
