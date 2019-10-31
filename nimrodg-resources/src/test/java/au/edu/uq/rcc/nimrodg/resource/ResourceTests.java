@@ -264,6 +264,7 @@ public class ResourceTests {
 
 		@Override
 		protected boolean killJobs(RemoteShell shell, String[] jobIds) {
+			Assert.assertEquals(jobIds.length, Arrays.stream(jobIds).distinct().count());
 			return true;
 		}
 	}
