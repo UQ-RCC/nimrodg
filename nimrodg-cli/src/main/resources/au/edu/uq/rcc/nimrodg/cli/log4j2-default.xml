@@ -22,8 +22,6 @@
 		</Console>
 	</Appenders>
 	<Loggers>
-		<Logger name="org.apache" level="INFO"/>
-		<Logger name="org.postgresql" level="ERROR"/>
 		<Logger name="au.edu.uq.rcc.nimrodg" level="INFO"/>
 		<Root level="INFO">
 			<AppenderRef ref="STDOUT"/>

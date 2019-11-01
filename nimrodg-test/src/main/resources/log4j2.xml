@@ -27,8 +27,9 @@
 		<Logger name="org.postgresql" level="INFO"/>
 		<Logger name="org.sqlite" level="INFO"/>
 		<Logger name="au.edu.uq.rcc.nimrodg" level="TRACE"/>
-		<Logger name="org.apache.sshd" level="DEBUG"/>
-		<Root level="TRACE">
+		<Logger name="org.apache.sshd" level="INFO"/>
+		<Logger name="jinjava" level="INFO"/>
+		<Root level="INFO">
 			<AppenderRef ref="STDOUT"/>
 			<AppenderRef ref="STDERR"/>
 		</Root>

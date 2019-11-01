@@ -22,12 +22,8 @@
 		</Console>
 	</Appenders>
 	<Loggers>
-		<!--<Logger name="org.apache.sshd" level="DEBUG"/>-->
-		<Logger name="org.apache" level="INFO"/>
-		<Logger name="org.postgresql" level="INFO"/>
-		<Logger name="org.sqlite" level="INFO"/>
 		<Logger name="au.edu.uq.rcc.nimrodg" level="TRACE"/>
-		<Root level="TRACE">
+		<Root level="INFO">
 			<AppenderRef ref="STDOUT"/>
 			<AppenderRef ref="STDERR"/>
 		</Root>
