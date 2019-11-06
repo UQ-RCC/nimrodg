@@ -39,6 +39,7 @@ import au.edu.uq.rcc.nimrodg.api.utils.run.RunBuilder;
 import au.edu.uq.rcc.nimrodg.master.AMQProcessorImpl;
 import au.edu.uq.rcc.nimrodg.master.MessageQueueListener;
 import au.edu.uq.rcc.nimrodg.parsing.ANTLR4ParseAPIImpl;
+
 import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -216,8 +217,11 @@ public class Controller {
 
 		UUID uuid = msg.getAgentUUID();
 
-		if(m_Agent.getUUID() != null && !uuid.equals(m_Agent.getUUID())) {
-			/* If we've received a hello, send a terminate back */
+		boolean terminate =
+				(m_Agent.getUUID() != null && !uuid.equals(m_Agent.getUUID())) ||	/* Mismatching UUID. */
+						(m_Agent.getState() == Agent.State.SHUTDOWN);				/* Already shutdown. */
+
+		if(terminate) {
 			if(msg.getType() == AgentMessage.Type.Hello) {
 				AgentHello hello = (AgentHello)msg;
 				m_Logger.log(ILogger.Level.WARN, "Received agent.hello with key '%s', sending termination...", hello.queue);
@@ -225,7 +229,7 @@ public class Controller {
 			} else {
 				m_Logger.log(ILogger.Level.WARN, "Ignoring message from unknown agent %s", uuid);
 			}
-			return MessageQueueListener.MessageOperation.Reject;
+			return MessageQueueListener.MessageOperation.Ack;
 		}
 
 		if(m_Agent.getState() == null) {
