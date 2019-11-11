@@ -1,0 +1,11 @@
+parameter x integer range from 1 to 100 step 1
+
+
+result obj1
+result obj2
+
+
+task main
+	onerror fail
+	exec sleep 10
+endtask

@@ -4,6 +4,8 @@ import au.edu.uq.rcc.nimrodg.api.utils.run.RunBuilder;
 import au.edu.uq.rcc.nimrodg.parsing.antlr.NimrodFileParser;
 import au.edu.uq.rcc.nimrodg.parsing.antlr.NimrodFileParserBaseVisitor;
 
+import java.util.Optional;
+
 public class NimrodFileVisitor extends NimrodFileParserBaseVisitor<RunBuilder> {
 
 	public static NimrodFileVisitor INSTANCE = new NimrodFileVisitor();
@@ -17,22 +19,17 @@ public class NimrodFileVisitor extends NimrodFileParserBaseVisitor<RunBuilder> {
 			rb.addVariables(vctx.accept(VariableBlockVisiter.INSTANCE));
 		}
 
-		ctx.accept(new NimrodFileParserBaseVisitor<RunBuilder>() {
-			@Override
-			public RunBuilder visitJobEntry(NimrodFileParser.JobEntryContext ctx) {
-				return rb.addJob(ctx.accept(JobVisitor.INSTANCE));
-			}
+		NimrodFileParser.ResultBlockContext rctx = ctx.resultBlock();
+		if(rctx != null) {
+			rb.addResults(rctx.resultStatement().stream().map(r -> r.resultName().getText()));
+		}
 
-		});
+		NimrodFileParser.JobsBlockContext jctx = ctx.jobsBlock();
+		if(jctx != null) {
+			rb.addJobs(jctx.jobEntry().stream().map(JobVisitor.INSTANCE::visitJobEntry));
+		}
 
-		ctx.accept(new NimrodFileParserBaseVisitor<RunBuilder>() {
-			@Override
-			public RunBuilder visitTaskBlock(NimrodFileParser.TaskBlockContext ctx) {
-				return rb.addTask(ctx.accept(TaskVisitor.INSTANCE));
-			}
-
-		});
-
+		rb.addTasks(ctx.taskBlock().stream().map(TaskVisitor.INSTANCE::visitTaskBlock));
 		return rb;
 	}
 

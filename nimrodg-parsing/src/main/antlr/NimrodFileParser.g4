@@ -51,8 +51,6 @@ parameterName		: IDENTIFIER ;
 parameterLabel		: STRING_LITERAL ;
 parameterType		: FLOAT | INTEGER | TEXT | FILES ;
 
-
-
 domainDefault		: variableValue ;
 domainRange			: RANGE FROM number TO number (STEP positiveNumber | POINTS positiveInteger) ;
 domainRandom		: RANDOM FROM number TO number (POINTS positiveInteger)? ;
@@ -65,6 +63,10 @@ parameterDomain		: domainDefault
 					;
 
 parameterStatement	: PARAMETER parameterName (LABEL parameterLabel)? (parameterType parameterDomain)? NEWLINE+ ;
+
+
+resultName          : IDENTIFIER;
+resultStatement     : RESULT resultName NEWLINE+ ;
 
 /*
 ** Task Mode
@@ -117,12 +119,14 @@ taskCommand			: onerrorCommand
 					| lpexecCommand
 					;
 
-variableBlock		: (variableStatement | parameterStatement)+;
+variableBlock		: (variableStatement | parameterStatement)+ ;
+resultBlock         : resultStatement* ;
 taskBlock			: TASK TM_TASKNAME NEWLINE+ (taskCommand NEWLINE+)* TM_ENDTASK NEWLINE* ;
 
 nimrodFile			:
 	NEWLINE*
 	variableBlock
+	resultBlock
 	jobsBlock?
 	taskBlock*
 	EOF

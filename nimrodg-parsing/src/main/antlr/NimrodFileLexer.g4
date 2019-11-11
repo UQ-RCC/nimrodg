@@ -41,6 +41,7 @@ STRING_LITERAL			: '"' SCharSequence? '"' ;
 /* Variable and parameter definitions */
 VARIABLE					: 'variable' ;
 PARAMETER				: 'parameter' ;
+RESULT                  : 'result' ;
 
 INDEX					: 'index' ;
 LIST						: 'list' ;

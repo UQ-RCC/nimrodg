@@ -512,6 +512,11 @@ public class ParseTests {
 		getRunBuilder(getFile("test_truncparam.pln")).build();
 	}
 
+	@Test
+	public void resultsTest() throws IOException, RunBuilder.RunfileBuildException {
+		getRunBuilder(getFile("test_results.pln")).build();
+	}
+
 	/*
 	CharStream cs = getString(pln);
 	CommonTokenStream cts = new CommonTokenStream(new NimrodFileLexer(cs));
