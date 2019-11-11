@@ -244,7 +244,7 @@ public class ResourceCmd extends NimrodCLICommand {
 		System.exit(NimrodCLI.cliMain(new String[]{"resource", "add-root", "local", "local"}));
 	}
 
-	public static final CommandEntry DEFINITION = new CommandEntry(new ResourceCmd(), "Compute resource operations.") {
+	public static final CommandEntry DEFINITION = new CommandEntry(new ResourceCmd(), "Resource operations.") {
 		@Override
 		public void addArgs(Subparser parser) {
 			super.addArgs(parser);

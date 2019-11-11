@@ -19,7 +19,6 @@
  */
 package au.edu.uq.rcc.nimrodg.cli.commands;
 
-import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPIException;
 import au.edu.uq.rcc.nimrodg.setup.UserConfig;
@@ -40,14 +39,8 @@ public class DelExp  extends NimrodCLICommand  {
 
 	@Override
 	public int execute(Namespace args, UserConfig config, NimrodAPI nimrod, PrintStream out, PrintStream err, Path[] configDirs) throws IOException, NimrodAPIException {
-		String expName = args.getString("exp_name");
-
-		Experiment exp = nimrod.getExperiment(expName);
-		if(exp != null) {
-			nimrod.deleteExperiment(exp);
-		}
-
-		return 0;
+		args.getAttrs().put("operation", "delete");
+		return ((NimrodCLICommand)ExperimentCmd.DEFINITION.command).execute(args, config, nimrod, out, err, configDirs);
 	}
 
 	public static final CommandEntry DEFINITION = new CommandEntry(new DelExp(), "Delete an experiment and all associated data from the database.") {

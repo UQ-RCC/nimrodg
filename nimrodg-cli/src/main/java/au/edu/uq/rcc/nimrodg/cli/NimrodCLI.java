@@ -23,6 +23,7 @@ import au.edu.uq.rcc.nimrodg.cli.commands.AddExp;
 import au.edu.uq.rcc.nimrodg.cli.commands.AddJobs;
 import au.edu.uq.rcc.nimrodg.cli.commands.Compile;
 import au.edu.uq.rcc.nimrodg.cli.commands.DelExp;
+import au.edu.uq.rcc.nimrodg.cli.commands.ExperimentCmd;
 import au.edu.uq.rcc.nimrodg.cli.commands.GenConfig;
 import au.edu.uq.rcc.nimrodg.cli.commands.GetProp;
 import au.edu.uq.rcc.nimrodg.cli.commands.MasterCmd;
@@ -32,6 +33,7 @@ import au.edu.uq.rcc.nimrodg.cli.commands.ResourceCmd;
 import au.edu.uq.rcc.nimrodg.cli.commands.SetProp;
 import au.edu.uq.rcc.nimrodg.cli.commands.Setup;
 import au.edu.uq.rcc.nimrodg.cli.commands.Staging;
+
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -54,6 +56,7 @@ public class NimrodCLI {
 		AddExp.DEFINITION,
 		DelExp.DEFINITION,
 		AddJobs.DEFINITION,
+		ExperimentCmd.DEFINITION,
 		MasterCmd.DEFINITION,
 		ResourceCmd.DEFINITION,
 		Setup.DEFINITION,

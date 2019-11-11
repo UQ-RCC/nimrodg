@@ -46,39 +46,8 @@ public class AddExp extends NimrodCLICommand {
 
 	@Override
 	public int execute(Namespace args, UserConfig config, NimrodAPI nimrod, PrintStream out, PrintStream err, Path[] configDirs) throws IOException, NimrodAPIException {
-		String expName = args.getString("exp_name");
-		String runFile = args.getString("planfile");
-
-		NimrodParseAPI parseApi = ANTLR4ParseAPIImpl.INSTANCE;
-		/* Load the runfile */
-		RunBuilder b;
-		try {
-			if(runFile.equals("-")) {
-				b = parseApi.parseRunToBuilder(System.in);
-			} else {
-				b = parseApi.parseRunToBuilder(Paths.get(runFile));
-			}
-		} catch(PlanfileParseException ex) {
-			ex.getErrors().forEach(e -> System.err.println(e.toString(runFile)));
-			return 1;
-		}
-
-		CompiledRun rf;
-		try {
-			rf = b.build();
-		} catch(RunBuilder.RunfileBuildException e) {
-			throw new NimrodAPIException(e);
-		}
-
-		/* Now add it */
-		Experiment exp = nimrod.getExperiment(expName);
-		if(exp != null) {
-			err.printf("Duplicate experiment '%s'.\n", expName);
-			return 1;
-		}
-
-		nimrod.addExperiment(expName, rf);
-		return 0;
+		args.getAttrs().put("operation", "add");
+		return ((NimrodCLICommand)ExperimentCmd.DEFINITION.command).execute(args, config, nimrod, out, err, configDirs);
 	}
 
 	public static final CommandEntry DEFINITION = new CommandEntry(new AddExp(), "Add a new, empty experiment from a planfile.") {
