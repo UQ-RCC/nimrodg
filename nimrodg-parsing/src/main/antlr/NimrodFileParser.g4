@@ -40,11 +40,11 @@ negativeNumber		: negativeInteger | negativeDecimal ;
 variableName			: IDENTIFIER ;
 variableIndex		: INTEGER_CONSTANT ;
 variableValue		: STRING_LITERAL | number ;
-variableStatement		: VARIABLE variableName INDEX variableIndex LIST variableValue+ NEWLINE+ ;
+variableStatement	: VARIABLE variableName INDEX variableIndex LIST variableValue+ NEWLINE+ ;
 
-jobIndex				: INTEGER_CONSTANT ;
+jobIndex			: INTEGER_CONSTANT ;
 jobVarIndex			: INTEGER_CONSTANT ;
-jobEntry				: jobIndex jobVarIndex+ NEWLINE+ ;
+jobEntry			: jobIndex jobVarIndex+ NEWLINE+ ;
 jobsBlock			: JOBS NEWLINE+ jobEntry* ENDJOBS NEWLINE+ ;
 
 parameterName		: IDENTIFIER ;
@@ -55,7 +55,7 @@ parameterType		: FLOAT | INTEGER | TEXT | FILES ;
 
 domainDefault		: variableValue ;
 domainRange			: RANGE FROM number TO number (STEP positiveNumber | POINTS positiveInteger) ;
-domainRandom			: RANDOM FROM number TO number (POINTS positiveInteger)? ;
+domainRandom		: RANDOM FROM number TO number (POINTS positiveInteger)? ;
 domainAnyof			: SELECT ANYOF variableValue+ ;
 
 parameterDomain		: domainDefault
@@ -70,7 +70,7 @@ parameterStatement	: PARAMETER parameterName (LABEL parameterLabel)? (parameterT
 ** Task Mode
 */
 
-sliteral				: STRING_LITERAL
+sliteral			: STRING_LITERAL
 					| TM_SLITERAL_ARG
 					| TM_LITERAL_ARG
 					| TM_TASKNAME
@@ -95,13 +95,13 @@ literal				: STRING_LITERAL | TM_LITERAL_ARG ;
 
 onerrorCommand		: TM_ONERROR TM_ACTION ;
 
-copyFile				: (TM_CONTEXT TM_COLON)? sliteral ;
+copyFile			: (TM_CONTEXT TM_COLON)? sliteral ;
 copyCommand			: TM_COPY copyFile copyFile ;
 
 argList				: (sliteral+ | TM_CONTINUATION NEWLINE? | TM_CONTINUATION sliteral+)* ;
 shexecCommand		: TM_SHEXEC sliteral ;
 execCommand			: TM_EXEC literal argList ;
-lexecCommand			: TM_LEXEC literal argList ;
+lexecCommand		: TM_LEXEC literal argList ;
 lpexecCommand		: TM_LPEXEC literal argList ;
 
 redirectStream		: TM_STDOUT | TM_STDERR ;
