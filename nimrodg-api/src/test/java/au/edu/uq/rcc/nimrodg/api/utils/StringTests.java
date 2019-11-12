@@ -20,6 +20,7 @@
 package au.edu.uq.rcc.nimrodg.api.utils;
 
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,8 +31,8 @@ import org.junit.Test;
 public class StringTests {
 
 	@Test
-	public void escapeHexSingleTest() throws EscapeException, UnsupportedEncodingException {
-		Assert.assertEquals(0x04, StringUtils.unescape("\\x4").getBytes("US-ASCII")[0]);
+	public void escapeHexSingleTest() throws EscapeException {
+		Assert.assertEquals(0x04, StringUtils.unescape("\\x4").getBytes(StandardCharsets.US_ASCII)[0]);
 	}
 
 	@Test(expected = EscapeException.class)
