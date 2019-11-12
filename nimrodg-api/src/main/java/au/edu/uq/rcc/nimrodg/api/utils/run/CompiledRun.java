@@ -21,25 +21,30 @@ package au.edu.uq.rcc.nimrodg.api.utils.run;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 public final class CompiledRun {
 
 	public final int numVariables;
+	public final int numResults;
 	public final int numJobs;
 	public final int numTasks;
 	public final List<CompiledVariable> variables; // Variables are in index-ascending order
 	public final List<CompiledJob> jobs; // Jobs are in index-ascending order
 	public final List<CompiledTask> tasks;
+	public final List<String> results;
 
-	CompiledRun(List<CompiledVariable> vars, List<CompiledJob> jobs, List<CompiledTask> tasks) {
+	CompiledRun(List<CompiledVariable> vars, List<String> results, List<CompiledJob> jobs, List<CompiledTask> tasks) {
 		this.numVariables = vars.size();
 		this.numJobs = jobs.size();
 		this.numTasks = tasks.size();
-		this.variables = List.copyOf(vars);
-		this.jobs = List.copyOf(jobs);
-		this.tasks = List.copyOf(tasks);
+		this.numResults = results.size();
+		this.variables = Collections.unmodifiableList(vars);
+		this.jobs = Collections.unmodifiableList(jobs);
+		this.tasks = Collections.unmodifiableList(tasks);
+		this.results = Collections.unmodifiableList(results);
 	}
 
 	public List<Map<String, String>> buildJobsList() {

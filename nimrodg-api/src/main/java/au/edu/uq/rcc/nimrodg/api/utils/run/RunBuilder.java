@@ -20,34 +20,33 @@
 package au.edu.uq.rcc.nimrodg.api.utils.run;
 
 import au.edu.uq.rcc.nimrodg.api.Task;
+
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class RunBuilder {
 
-	private static final Set<String> IMPLICIT_VARIABLES;
-
-	static {
-		IMPLICIT_VARIABLES = new HashSet<>();
-		IMPLICIT_VARIABLES.add("jobname");
-		IMPLICIT_VARIABLES.add("jobindex");
-	}
+	private static final Set<String> IMPLICIT_VARIABLES = Set.of("jobname", "jobindex");
 
 	private final List<VariableBuilder> m_Variables;
 	private final List<JobBuilder> m_Jobs;
 	private final List<CompiledTask> m_Tasks;
 	private final List<ParameterBuilder> m_Parameters;
+	private final Set<String> m_Results;
 
 	public RunBuilder() {
 		m_Variables = new ArrayList<>();
 		m_Jobs = new ArrayList<>();
 		m_Tasks = new ArrayList<>();
 		m_Parameters = new ArrayList<>();
+		m_Results = new HashSet<>();
 	}
 
 	public RunBuilder addVariable(VariableBuilder var) {
@@ -56,7 +55,7 @@ public class RunBuilder {
 	}
 
 	public RunBuilder addVariables(Collection<VariableBuilder> vars) {
-		vars.stream().map(var -> new VariableBuilder(var)).forEach(m_Variables::add);
+		vars.stream().map(VariableBuilder::new).forEach(m_Variables::add);
 		return this;
 	}
 
@@ -66,7 +65,22 @@ public class RunBuilder {
 	}
 
 	public RunBuilder addParameters(Collection<ParameterBuilder> params) {
-		params.stream().map(p -> new ParameterBuilder(p)).forEach(m_Parameters::add);
+		params.stream().map(ParameterBuilder::new).forEach(m_Parameters::add);
+		return this;
+	}
+
+	public RunBuilder addResult(String r) {
+		m_Results.add(r);
+		return this;
+	}
+
+	public RunBuilder addResults(Collection<String> rs) {
+		m_Results.addAll(rs);
+		return this;
+	}
+
+	public RunBuilder addResults(Stream<String> s) {
+		s.forEach(m_Results::add);
 		return this;
 	}
 
@@ -80,6 +94,11 @@ public class RunBuilder {
 		return this;
 	}
 
+	public RunBuilder addJobs(Stream<JobBuilder> jobs) {
+		jobs.forEach(m_Jobs::add);
+		return this;
+	}
+
 	public RunBuilder addTask(CompiledTask task) {
 		m_Tasks.add(task);
 		return this;
@@ -90,81 +109,69 @@ public class RunBuilder {
 		return this;
 	}
 
-	public static class RunfileBuildException extends Exception {
+	public RunBuilder addTasks(Stream<CompiledTask> tasks) {
+		tasks.forEach(m_Tasks::add);
+		return this;
+	}
 
-		public RunfileBuildException(String s) {
+	public static class RunfileBuildException extends Exception {
+		RunfileBuildException(String s) {
 			super(s);
 		}
 	}
 
 	public static class FirstVariableIndexNonzero extends RunfileBuildException {
-
-		public FirstVariableIndexNonzero(CompiledVariable var) {
+		FirstVariableIndexNonzero(CompiledVariable var) {
 			super(String.format("First variable '%s' has nonzero index.", var.name));
 		}
-
 	}
 
 	public static class DuplicateVariableException extends RunfileBuildException {
-
-		public DuplicateVariableException(String name, int count) {
+		DuplicateVariableException(String name, int count) {
 			super(String.format("Duplicate variable '%s', %d instances", name, count));
 		}
 	}
 
 	public static class DuplicateVariableIndexException extends RunfileBuildException {
-
-		public DuplicateVariableIndexException(CompiledVariable v1, CompiledVariable v2) {
+		DuplicateVariableIndexException(CompiledVariable v1, CompiledVariable v2) {
 			super(String.format("Variables '%s' and '%s' share index %d", v1.name, v2.name, v1.index));
 		}
 	}
 
 	public static class NonConsecutiveVariableIndexException extends RunfileBuildException {
-
-		public NonConsecutiveVariableIndexException(CompiledVariable v1, CompiledVariable v2) {
+		NonConsecutiveVariableIndexException(CompiledVariable v1, CompiledVariable v2) {
 			super(String.format("Variable '%s' (%d) has partner '%s' (%d) with non-consecutive index.", v1.name, v1.index, v2.name, v2.index));
 		}
-
 	}
 
 	public static class FirstJobIndexNononeException extends RunfileBuildException {
-
-		public FirstJobIndexNononeException(CompiledJob job) {
+		FirstJobIndexNononeException(CompiledJob job) {
 			super(String.format("First job has non-one index '%d'", job.index));
 		}
-
 	}
 
 	public static class DuplicateJobIndexException extends RunfileBuildException {
-
-		public DuplicateJobIndexException(int index) {
+		DuplicateJobIndexException(int index) {
 			super(String.format("Multiple jobs with same index %d", index));
 		}
-
 	}
 
 	public static class NonConsecutiveJobIndexException extends RunfileBuildException {
-
-		public NonConsecutiveJobIndexException(int i1, int i2) {
+		NonConsecutiveJobIndexException(int i1, int i2) {
 			super(String.format("Job indices '%d' and '%d' are nonconsecutive", i1, i2));
 		}
-
 	}
 
 	public static class InvalidJobVariablesException extends RunfileBuildException {
-
-		public InvalidJobVariablesException(CompiledJob j) {
+		InvalidJobVariablesException(CompiledJob j) {
 			super(String.format("Job '%d' has missing or too many variable references", j.index));
 		}
-
 	}
 
 	public static class InvalidJobVariableIndexException extends RunfileBuildException {
-
-		public InvalidJobVariableIndexException(CompiledJob j, CompiledVariable var, int index) {
+		InvalidJobVariableIndexException(CompiledJob j, CompiledVariable var, int index) {
 			super(String.format("Job '%d' references invalid value index '%d' in variable '%s'", j.index, index, var.name));
 		}
-
 	}
 
 	private void checkAndProcessVariables(List<VariableBuilder> inVars, List<CompiledVariable> vars, List<CompiledVariable> pars) throws RunfileBuildException {
@@ -220,7 +227,7 @@ public class RunBuilder {
 
 	private static List<CompiledJob> checkJobs(List<CompiledVariable> vars, List<CompiledJob> runJobs) throws RunfileBuildException {
 		List<CompiledJob> initialJobs = new ArrayList<>(runJobs);
-		initialJobs.sort((j1, j2) -> Integer.compare(j1.index, j2.index));
+		initialJobs.sort(Comparator.comparingInt(j -> j.index));
 
 		if(!initialJobs.isEmpty() && initialJobs.get(0).index != 1) {
 			throw new FirstJobIndexNononeException(initialJobs.get(0));
@@ -258,37 +265,31 @@ public class RunBuilder {
 	}
 
 	public static class DuplicateTaskNameException extends RunfileBuildException {
-
-		public DuplicateTaskNameException(Task.Name name) {
+		DuplicateTaskNameException(Task.Name name) {
 			super(String.format("Duplicate task name %s", name.toString().toLowerCase()));
 		}
 	}
 
 	public static class MissingMainTaskException extends RunfileBuildException {
-
-		public MissingMainTaskException() {
+		MissingMainTaskException() {
 			super("Missing main task");
 		}
 	}
 
 	public static class NonMainHasSubstitutions extends RunfileBuildException {
-
-		public NonMainHasSubstitutions() {
+		NonMainHasSubstitutions() {
 			super("Non main task is not allowed to have substitutions");
 		}
-
 	}
 
 	public static class InvalidVariableSubstitutionReferenceException extends RunfileBuildException {
-
-		public InvalidVariableSubstitutionReferenceException(String var) {
+		InvalidVariableSubstitutionReferenceException(String var) {
 			super(String.format("Invalid variable reference '%s' in substitution", var));
 		}
 	}
 
 	public static class ImplicitVariableConflict extends RunfileBuildException {
-
-		public ImplicitVariableConflict() {
+		ImplicitVariableConflict() {
 			super("Variable name conflicts with an implicit variable");
 		}
 	}
@@ -350,8 +351,8 @@ public class RunBuilder {
 		/* Check substitutions. */
 		Set<String> subVarNames = mainTask.commands.stream()
 				.flatMap(cmd -> cmd.normalise().stream()
-				.flatMap(arg -> arg.substitutions
-				.stream())).map(s -> s.variable()).collect(Collectors.toSet());
+						.flatMap(arg -> arg.substitutions
+								.stream())).map(s -> s.variable()).collect(Collectors.toSet());
 
 		subVarNames.removeAll(varNames);
 
@@ -398,7 +399,7 @@ public class RunBuilder {
 		return jobs;
 	}
 
-	public static List<List<Integer>> cartesianProduct(List<CompiledVariable> vars) {
+	private static List<List<Integer>> cartesianProduct(List<CompiledVariable> vars) {
 		/* Start with an empty combination */
 		List<List<Integer>> combinations = new ArrayList<>();
 		combinations.add(new ArrayList<>());
@@ -432,7 +433,7 @@ public class RunBuilder {
 		}
 
 		/* Check our supplied initial jobs are valid. */
-		checkJobs(vars, m_Jobs.stream().map(j -> j.build()).collect(Collectors.toList()));
+		checkJobs(vars, m_Jobs.stream().map(JobBuilder::build).collect(Collectors.toList()));
 
 		/* Apply the parameters to the jobs. */
 		List<CompiledJob> jobs = applyParameters(pars, m_Jobs);
@@ -441,7 +442,7 @@ public class RunBuilder {
 		checkJobs(allVars, jobs);
 		checkTasks(varNames);
 
-		return new CompiledRun(allVars, jobs, m_Tasks);
+		return new CompiledRun(allVars, new ArrayList<>(m_Results), jobs, m_Tasks);
 	}
 
 }
