@@ -74,6 +74,7 @@ public class Compile implements CLICommand {
 		if(!args.getBoolean("noout")) {
 			out.print(JsonUtils.toJson(rf).toString());
 		}
+		out.println("");
 		return 0;
 	}
 
