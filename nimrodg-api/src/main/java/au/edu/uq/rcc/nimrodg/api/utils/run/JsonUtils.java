@@ -24,41 +24,106 @@ import au.edu.uq.rcc.nimrodg.api.OnErrorCommand;
 import au.edu.uq.rcc.nimrodg.api.RedirectCommand;
 import au.edu.uq.rcc.nimrodg.api.Task;
 import au.edu.uq.rcc.nimrodg.api.utils.Substitution;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+
 import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonArrayBuilder;
-import javax.json.JsonNumber;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonString;
 import javax.json.JsonValue;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 public class JsonUtils {
 
-	public static JsonObject toJson(CompiledRun cr) {
+	/**
+	 * Build a JSON structure representing a compiled experiment.
+	 *
+	 * @param cr          The compiled experiment.
+	 * @param includeJobs Should the jobs be included? This is intended for batching, where the jobs will be added later.
+	 * @return A {@link JsonObject} representing a compiled experiment.
+	 */
+	public static JsonObject toJson(CompiledRun cr, boolean includeJobs) {
 		JsonObjectBuilder jb = Json.createObjectBuilder();
 
-		JsonArrayBuilder vb = Json.createArrayBuilder();
-		cr.variables.forEach(v -> {
-			vb.add(Json.createObjectBuilder()
-					.add("name", v.name)
-					.add("values", Json.createArrayBuilder(v.values).build())
-			);
-		});
-		jb.add("variables", vb.build());
-
+		jb.add("variables", Json.createArrayBuilder(cr.variables.stream().map(v -> v.name).collect(Collectors.toList())));
 		jb.add("tasks", toJson(cr.tasks));
 
-		if(!cr.tasks.isEmpty()) {
-			JsonArrayBuilder jab = Json.createArrayBuilder();
-			cr.jobs.forEach(j -> jab.add(Json.createArrayBuilder(Arrays.stream(j.indices).boxed().collect(Collectors.toList())).build()));
-			jb.add("jobs", jab.build());
+		if(!includeJobs) {
+			jb.add("jobs", JsonValue.EMPTY_JSON_ARRAY);
+		} else if(!cr.jobs.isEmpty()) {
+			jb.add("jobs", buildJobsJson(cr));
 		}
 		return jb.build();
+	}
+
+	public static JsonObject toJson(CompiledRun cr) {
+		return toJson(cr, true);
+	}
+
+	/**
+	 * Build a JSON array representing the list of jobs a compiled experiment.
+	 *
+	 * @param cr The compiled experiment.
+	 * @return A {@link JsonArray} representing the list of jobs a compiled experiment.
+	 */
+	public static JsonArray buildJobsJson(CompiledRun cr) {
+		JsonArrayBuilder jab = Json.createArrayBuilder();
+		cr.jobs.forEach(j -> {
+			JsonObjectBuilder job = Json.createObjectBuilder();
+			for(int i = 0; i < j.indices.length; ++i) {
+				job.add(cr.variables.get(i).name, cr.variables.get(i).values.get(j.indices[i]));
+			}
+			jab.add(job);
+		});
+		return jab.build();
+	}
+
+	public static JsonArray buildJobsJson(Collection<Map<String, String>> jobs) {
+		JsonArrayBuilder jab = Json.createArrayBuilder();
+		jobs.stream().map(JsonUtils::buildJobsJson).forEach(jab::add);
+		return jab.build();
+	}
+
+	public static JsonObject buildJobsJson(Map<String, String> job) {
+		JsonObjectBuilder jb = Json.createObjectBuilder();
+		job.forEach(jb::add);
+		return jb.build();
+	}
+
+	/**
+	 * For each set of batchSize jobs in a compiled experiment, invoke proc.
+	 *
+	 * @param cr        The compiled experiment.
+	 * @param batchSize The batch size. Must be >= 1.
+	 * @param proc      The procedure to call for each batch.
+	 */
+	public static void withJobBatches(CompiledRun cr, int batchSize, Consumer<JsonArray> proc) {
+		JsonArrayBuilder jab = Json.createArrayBuilder();
+		JsonObjectBuilder job = Json.createObjectBuilder();
+
+		int i = 0;
+		for(CompiledJob j : cr.jobs) {
+			for(int v = 0; v < j.indices.length; ++v) {
+				job.add(cr.variables.get(v).name, cr.variables.get(v).values.get(j.indices[v]));
+			}
+			jab.add(job.build());
+			++i;
+
+			if(i == batchSize) {
+				proc.accept(jab.build());
+				i = 0;
+			}
+		}
+
+		JsonArray last = jab.build();
+		if(!last.isEmpty()) {
+			proc.accept(last);
+		}
 	}
 
 	public static JsonObject toJson(List<CompiledTask> tasks) {
@@ -75,11 +140,11 @@ public class JsonUtils {
 	public static List<CompiledTask> taskListFromJson(JsonObject tasks) {
 		return tasks.keySet().stream().map(name
 				-> new CompiledTask(
-						Task.stringToTaskName(name),
-						tasks.getJsonArray(name).stream()
-								.map(a -> compiledCommandFromJson(a.asJsonObject()))
-								.collect(Collectors.toList())
-				)).collect(Collectors.toList());
+				Task.stringToTaskName(name),
+				tasks.getJsonArray(name).stream()
+						.map(a -> compiledCommandFromJson(a.asJsonObject()))
+						.collect(Collectors.toList())
+		)).collect(Collectors.toList());
 	}
 
 	public static JsonObject toJson(CompiledCommand cmd) {
@@ -194,7 +259,7 @@ public class JsonUtils {
 	}
 
 	public static List<String> stringListFromJson(JsonArray ja) {
-		return ja.getValuesAs(JsonString.class).stream().map(s -> s.getString()).collect(Collectors.toList());
+		return ja.getValuesAs(JsonString.class).stream().map(JsonString::getString).collect(Collectors.toList());
 	}
 
 	private static String coalesceToString(JsonValue jv) {
@@ -204,7 +269,7 @@ public class JsonUtils {
 			case TRUE:
 				return "true";
 			case NUMBER:
-				return ((JsonNumber)jv).toString();
+				return jv.toString();
 			case STRING:
 				return ((JsonString)jv).getString();
 		}
@@ -214,11 +279,15 @@ public class JsonUtils {
 
 	public static List<Map<String, String>> jobsFileFromJson(JsonArray ja) {
 		return ja.getValuesAs(JsonObject.class).stream()
-				.map(s -> s.entrySet().stream()
+				.map(JsonUtils::jobFromJson)
+				.collect(Collectors.toList());
+	}
+
+	public static Map<String, String> jobFromJson(JsonObject s) {
+		return s.entrySet().stream()
 				.collect(Collectors.toMap(
-						e -> e.getKey(),
+						Map.Entry::getKey,
 						v -> coalesceToString(v.getValue())
-				))
-				).collect(Collectors.toList());
+				));
 	}
 }

@@ -17,59 +17,6 @@
 -- See the License for the specific language governing permissions and
 -- limitations under the License.
 --
-/*
-** Given '["x", "y", "z"]', return
-**  idx | value
-** -----+------
-**    0 | "x"
-**    1 | "y"
-**    2 | "z"
-*/
-CREATE OR REPLACE FUNCTION _acr_array_value_unpack_with_index(_array JSONB) RETURNS TABLE(idx BIGINT, value JSONB) AS $$
-	SELECT (_idx - 1), _value FROM jsonb_array_elements(_array) WITH ORDINALITY AS t(_value, _idx);
-$$ LANGUAGE SQL IMMUTABLE;
-
-
-
-/*
-** Given a JSONB array of arrays '[[0,0],[1,0]]' (job 1 has indices [0, 0], job 2 has indices [1, 0]),
-** add the jobs to the experiment and return the job ids and indices as a JSONB array.
-**  job_id | job_index | value_indices
-** --------+-----------+---------------
-**     197 |         1 | [0, 0]
-**     198 |         2 | [1, 0]
-*/
-CREATE OR REPLACE FUNCTION _acr_add_jobs_and_map_indices(_exp_id BIGINT, _jobs JSONB) RETURNS TABLE(job_id BIGINT, job_index BIGINT, value_indices JSONB) AS $$
-	WITH job_info AS (
-		SELECT row_number() OVER() AS _job_index, _indices
-			FROM jsonb_array_elements(_jobs) AS _indices
-		/*
-		**	 job_index | indices
-		**	-----------+---------
-		**			 1 | [0, 0]
-		**			 2 | [1, 0]
-		*/
-	), jobs AS (
-		INSERT INTO nimrod_jobs(exp_id, job_index)
-		SELECT
-			_exp_id,
-			ji._job_index
-		FROM job_info AS ji
-		RETURNING nimrod_jobs.id AS _id, nimrod_jobs.job_index AS _job_index
-		/*
-		**	 job_id | job_index
-		**	--------+-----------
-		**		123 | 1
-		**		124 | 2
-		*/
-	)
-	SELECT j._id, j._job_index, ji._indices
-	FROM
-		jobs AS j,
-		job_info AS ji
-	WHERE
-		j._job_index = ji._job_index;
-$$ LANGUAGE SQL VOLATILE;
 
 CREATE OR REPLACE FUNCTION _acr_add_command_argument(_exp_id BIGINT, _command_id BIGINT, _arg_index BIGINT, _command JSONB) RETURNS VOID AS $$
 DECLARE
@@ -156,128 +103,79 @@ BEGIN
 	END LOOP;
 END $$ LANGUAGE 'plpgsql';
 
-CREATE OR REPLACE FUNCTION add_compiled_experiment_for_batch(_name TEXT, _work_dir TEXT, _file_token TEXT, _vars TEXT[], _tasks JSONB) RETURNS nimrod_full_experiments AS $$
+CREATE OR REPLACE FUNCTION add_compiled_experiment(_name TEXT, _work_dir TEXT, _file_token TEXT, _exp JSONB) RETURNS nimrod_full_experiments AS $$
 DECLARE
-	dummy BIGINT;
-    num_reserved BIGINT;
+	count_ BIGINT;
+
+	vars TEXT[];
 	eexp_id BIGINT;
 	exp_row nimrod_full_experiments;
 BEGIN
-	/* Check the experiment has no variables with reserved names. */
-    WITH names AS(
-		SELECT unnest(_vars) AS vars
-		INTERSECT ALL
-		SELECT name FROM nimrod_reserved_variables
-	)
-	SELECT COUNT(*) INTO num_reserved FROM names;
+	SELECT
+		array_agg(v.*) INTO vars
+	FROM
+		jsonb_array_elements_text(_exp->'variables') AS v
+	;
 
-    IF num_reserved != 0 THEN
+	-- Check for duplicate variable names.
+	SELECT
+		COUNT(a.*) INTO count_
+	FROM
+		(SELECT DISTINCT * FROM unnest(vars)) AS a
+	;
+
+	IF count_ != array_length(vars, 1) THEN
+		RAISE EXCEPTION 'Duplicate variable names';
+	END IF;
+
+	-- Check for reserved names.
+	SELECT
+		COUNT(a.*) INTO count_
+	FROM (
+		SELECT * FROM unnest(vars)
+		INTERSECT
+		SELECT name FROM nimrod_reserved_variables
+	) AS a
+	;
+
+    IF count_ != 0 THEN
 		RAISE EXCEPTION 'Experiment cannot have variables with reserved names.';
 	END IF;
 
-	SELECT array_cat(_vars, ARRAY['jobindex', 'jobname']::TEXT[]) INTO _vars;
-
+	-- Ensure we have a file token
 	IF _file_token IS NULL THEN
 		_file_token := _generate_random_token(32);
 	END IF;
 
-	/* Ensure work_dir is a directory. */
-	iF _work_dir NOT LIKE '%/' THEN
+	-- Ensure work_dir is a directory.
+	IF _work_dir NOT LIKE '%/' THEN
 		_work_dir := _work_dir || '/';
 	END IF;
 
-	/* Add the experiments */
-	INSERT INTO nimrod_experiments(name, work_dir, file_token, path)
-	VALUES(_name, _work_dir, _file_token, _name)
+	-- Add the experiment
+	INSERT INTO nimrod_full_experiments(name, work_dir, file_token, variables, path)
+	VALUES(_name, _work_dir, _file_token, vars, _name)
 	RETURNING id INTO eexp_id;
 
-	/* Add the variables */
+	-- Add the variables
 	INSERT INTO nimrod_variables(exp_id, name)
-	SELECT eexp_id, unnest(_vars);
+	SELECT eexp_id, unnest(vars);
 
-	/* Add the tasks */
+	-- Add the implicit variables
+	INSERT INTO nimrod_variables(exp_id, name)
+	SELECT eexp_id, rv.name FROM nimrod_reserved_variables AS rv;
+
+	-- Add the tasks
 	WITH tasks AS (
 		INSERT INTO nimrod_tasks(exp_id, name)
-			SELECT eexp_id, jsonb_object_keys(_tasks)::nimrod_task_name
+			SELECT eexp_id, jsonb_object_keys(_exp->'tasks')::nimrod_task_name
 		RETURNING id, name
 	)
-	SELECT COUNT(_acr_add_task_commands(eexp_id, t.id, _tasks->t.name::TEXT)) INTO dummy FROM tasks AS t;
+	SELECT COUNT(_acr_add_task_commands(eexp_id, t.id, _exp->'tasks'->t.name::TEXT)) INTO count_ FROM tasks AS t;
+
+	-- Add the jobs
+	PERFORM add_multiple_jobs(eexp_id, _exp->'jobs');
 
 	SELECT * INTO exp_row FROM nimrod_full_experiments WHERE id = eexp_id;
 	RETURN exp_row;
-END
-$$ LANGUAGE 'plpgsql' VOLATILE;
-
-CREATE OR REPLACE FUNCTION add_compiled_experiment(_name TEXT, _work_dir TEXT, _file_token TEXT, _exp JSONB) RETURNS nimrod_full_experiments AS $$
-DECLARE
-	experiment_row nimrod_full_experiments;
-	vars TEXT[];
-BEGIN
-	/* Convert the variables list to an array */
-	SELECT array_agg(value->>'name') INTO vars FROM jsonb_array_elements(_exp->'variables');
-
-	/* Add the experiment */
-	SELECT
-		* INTO experiment_row
-	FROM
-		add_compiled_experiment_for_batch(_name, _work_dir, _file_token, vars, _exp->'tasks')
-	;
-
-	/*
-	**  var_id | var_index | var_name
-	** --------+-----------+----------
-	**     170 |         0 | x
-	**     171 |         1 | y
-	*/
-	CREATE TEMPORARY TABLE varinfo(
-		var_id BIGINT NOT NULL PRIMARY KEY,
-		var_index BIGINT NOT NULL UNIQUE,
-		var_name nimrod_variable_identifier NOT NULL UNIQUE,
-		UNIQUE(var_index, var_name)
-	) ON COMMIT DROP;
-
-	WITH vvars AS(
-		SELECT * FROM unnest(vars) WITH ORDINALITY AS t(var_name, var_index)
-	)
-	INSERT INTO varinfo(var_id, var_index, var_name)
-	SELECT
-		v.id AS var_id,
-		vv.var_index - 1,
-		vv.var_name
-	FROM
-		vvars AS vv LEFT JOIN
-		nimrod_variables AS v ON v.name = vv.var_name
-	WHERE
-		v.exp_id = experiment_row.id
-	;
-
-	/* Add our jobs and their variables. */
-	WITH jobs AS (
-		SELECT job_id, job_index, value_indices FROM _acr_add_jobs_and_map_indices(experiment_row.id, _exp->'jobs')
-	)
-	INSERT INTO nimrod_job_variables(job_id, variable_id, value)
-	SELECT j.job_id, v.var_id, _exp->'variables'->v.var_index::INT->'values'->>k.value::TEXT::INT
-	FROM
-		jobs AS j,
-		varinfo AS v,
-		_acr_array_value_unpack_with_index(j.value_indices) AS k
-	WHERE v.var_index = k.idx;
-
-	-- TODO: Add a function, update_implicit_variables_for_job() that handles ALL of the implicit variables.
-	/* Add $jobindex and $jobname. */
-	INSERT INTO nimrod_job_variables(job_id, variable_id, value)
-	SELECT
-		j.id,
-		v.id,
-		j.job_index::TEXT
-	FROM
-		nimrod_jobs AS j CROSS JOIN
-		nimrod_variables AS v
-	WHERE
-		j.exp_id = experiment_row.id AND
-		v.exp_id = experiment_row.id AND
-		v.name IN ('jobindex', 'jobname')
-	;
-	RETURN experiment_row;
-END
-$$ LANGUAGE 'plpgsql' VOLATILE;
+END $$ LANGUAGE 'plpgsql' VOLATILE;

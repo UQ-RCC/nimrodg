@@ -19,7 +19,10 @@
  */
 package au.edu.uq.rcc.nimrodg.api.utils.run;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public final class CompiledRun {
 
@@ -37,5 +40,17 @@ public final class CompiledRun {
 		this.variables = List.copyOf(vars);
 		this.jobs = List.copyOf(jobs);
 		this.tasks = List.copyOf(tasks);
+	}
+
+	public List<Map<String, String>> buildJobsList() {
+		List<Map<String, String>> jobsList = new ArrayList<>(this.jobs.size());
+		this.jobs.forEach(j -> {
+			Map<String, String> job = new HashMap<>();
+			for(int i = 0; i < j.indices.length; ++i) {
+				job.put(this.variables.get(i).name, this.variables.get(i).values.get(j.indices[i]));
+			}
+			jobsList.add(job);
+		});
+		return jobsList;
 	}
 }

@@ -75,9 +75,6 @@ BEGIN
 		j.exp_id = _exp_id
 	;
 
-	/* Add $jobindex and $jobname to the variables. */
-	SELECT array_cat(_vars, ARRAY['jobindex', 'jobname']::TEXT[]) INTO _vars;
-
 	CREATE TEMPORARY TABLE IF NOT EXISTS variables(
 		var_id BIGINT UNIQUE,
 		var_index BIGINT NOT NULL UNIQUE,
@@ -123,12 +120,11 @@ BEGIN
 	--RAISE NOTICE 'next jobindex %', next_jobindex;
 	--RAISE NOTICE 'value_count = %', value_count;
 
-	/* Now add values for $jobindex and $jobname. */
 	INSERT INTO jobs(job_id, job_index, values)
 	SELECT
 		NULL,
 		ji,
-		(j.values || ji::TEXT || ji::TEXT)
+		j.values
 	FROM
 		_amj_unnest_2d_1d(_values) WITH ORDINALITY AS j(values, job_index)
 	LEFT JOIN
@@ -154,30 +150,6 @@ BEGIN
 	FROM j
 	WHERE jobs.job_index = j.job_index;
 
--- 	RAISE NOTICE '
--- %', (SELECT string_agg((v.*)::RECORD::TEXT, '
--- '::TEXT) FROM jobs AS v);
-
-	/* Add the jobs. */
-	INSERT INTO nimrod_job_variables(job_id, variable_id, value)
-	SELECT
-		j.job_id,
-		v.var_id,
-		COALESCE(j.values[vidx], '')
-	FROM
-		jobs AS j
-	CROSS JOIN
-		variables AS v
-	RIGHT JOIN
-		generate_series(1, var_count) AS vidx
-		ON vidx = v.var_index
-	--ORDER BY job_id, var_id
-	;
-
-	RAISE NOTICE '
-%', (SELECT string_agg((v.*)::RECORD::TEXT, '
-'::TEXT) FROM jobs AS v);
-
 	RETURN QUERY
 	SELECT
 		job_id
@@ -186,32 +158,3 @@ BEGIN
 	;
 END
 $$ LANGUAGE 'plpgsql' VOLATILE;
-
-/* NB: This will coalesce any NULL values to ''. */
-CREATE OR REPLACE FUNCTION add_multiple_jobs(_exp_id BIGINT, _vars TEXT[], _values TEXT[][]) RETURNS SETOF nimrod_full_jobs AS $$
-DECLARE
-	_ids BIGINT[];
-BEGIN
-	SELECT array_agg(j) INTO _ids FROM add_multiple_jobs_internal(_exp_id, _vars, _values) AS j;
-
-	RETURN QUERY
-	SELECT
-		*
-	FROM
-		nimrod_full_jobs
-	WHERE
-		id IN (SELECT unnest(_ids))
-	;
-END
-$$ LANGUAGE 'plpgsql' VOLATILE;
-
-/*
-** Helpers for Java as it doesn't like multidimensional arrays.
-*/
-CREATE OR REPLACE FUNCTION add_multiple_jobs_internal(_exp_id BIGINT, _vars TEXT[], _values JSONB) RETURNS SETOF BIGINT AS $$
-	SELECT * FROM add_multiple_jobs_internal(_exp_id, _vars, _amj_json_to_2darray(_values));
-$$ LANGUAGE SQL VOLATILE;
-
-CREATE OR REPLACE FUNCTION add_multiple_jobs(_exp_id BIGINT, _vars TEXT[], _values JSONB) RETURNS SETOF nimrod_full_jobs AS $$
-	SELECT * FROM add_multiple_jobs(_exp_id, _vars, _amj_json_to_2darray(_values));
-$$ LANGUAGE SQL VOLATILE;

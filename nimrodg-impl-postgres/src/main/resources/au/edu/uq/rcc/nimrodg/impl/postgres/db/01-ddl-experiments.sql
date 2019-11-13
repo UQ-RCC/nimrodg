@@ -31,6 +31,11 @@ CREATE TABLE nimrod_experiments(
 	work_dir TEXT NOT NULL UNIQUE,
 	created TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
 	file_token TEXT NOT NULL,
+	-- NB: The variables are stored twice:
+	-- - The first copy, here, is for quick lookups so we don't have to use nimrod_full_experiments.
+	-- - The second copy, in nimrod_variables, is used for substitution validation so it contains
+	--   the implicit ones too.
+	variables TEXT[] NOT NULL,
 	path nimrod_path NOT NULL UNIQUE
 );
 -- Use add_compiled_experiment() for adding. There is no facility for adding them manually.
@@ -56,6 +61,9 @@ CREATE TABLE nimrod_jobs(
 	exp_id BIGINT NOT NULL REFERENCES nimrod_experiments(id) ON DELETE CASCADE,
 	job_index BIGINT NOT NULL CHECK(job_index > 0),
 	created TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+	-- NB: This isn't validated by a trigger because it's too damned slow to do so.
+	-- Use add_compiled_experiment() or add_multiple_jobs()
+	variables JSONB NOT NULL,
 	path nimrod_path NOT NULL UNIQUE,
 	UNIQUE(exp_id, job_index)
 );
@@ -85,27 +93,6 @@ CREATE TABLE nimrod_variables(
 	exp_id BIGINT NOT NULL REFERENCES nimrod_experiments(id) ON DELETE CASCADE,
 	name nimrod_variable_identifier NOT NULL,
 	UNIQUE(exp_id, name)
-);
-
-/* Variables without implicit variables */
-DROP VIEW IF EXISTS nimrod_user_variables;
-CREATE VIEW nimrod_user_variables AS(
-	SELECT
-		v.*
-	FROM
-		nimrod_variables AS v LEFT JOIN
-		nimrod_reserved_variables AS rv ON v.name = rv.name
-	WHERE
-		rv.name IS NULL
-);
-
-DROP TABLE IF EXISTS nimrod_job_variables CASCADE;
-CREATE TABLE nimrod_job_variables(
-	id BIGSERIAL NOT NULL PRIMARY KEY,
-	job_id BIGINT NOT NULL REFERENCES nimrod_jobs(id) ON DELETE CASCADE,
-	variable_id BIGINT NOT NULL REFERENCES nimrod_variables(id) ON DELETE RESTRICT,
-	value TEXT NOT NULL,
-	UNIQUE(job_id, variable_id)
 );
 
 DROP TYPE IF EXISTS nimrod_task_name CASCADE;
@@ -390,22 +377,11 @@ CREATE VIEW nimrod_full_jobs AS
 	SELECT
 		j.*,
 		get_job_status(j.id) AS status,
-		vars.names AS var_names,
-		vars.vals AS var_values
+		(j.variables || jsonb_build_object('jobindex', j.job_index::TEXT, 'jobname', j.job_index::TEXT)) AS full_variables
 	FROM
-		nimrod_jobs AS j LEFT JOIN LATERAL (
-			SELECT
-				array_agg(v.name::TEXT) AS names,
-				array_agg(jv.value::TEXT) AS vals
-			FROM
-				nimrod_job_variables AS jv
-			INNER JOIN
-				nimrod_variables AS v
-				ON jv.variable_id = v.id
-			WHERE
-				jv.job_id = j.id
-		) vars ON true
+		nimrod_jobs AS j
 ;
+
 CREATE OR REPLACE FUNCTION filter_jobs(_exp_id BIGINT, _status nimrod_job_status[], _start BIGINT, _limit BIGINT) RETURNS SETOF nimrod_full_jobs AS $$
 	SELECT
 		*
@@ -509,3 +485,90 @@ CREATE OR REPLACE FUNCTION is_token_valid_for_experiment_storage(_exp_id BIGINT,
 	LIMIT 1
 	;
 $$ LANGUAGE SQL STABLE;
+
+-- Validate job key names, will throw if invalid
+CREATE OR REPLACE FUNCTION validate_jobs_json(_exp_id BIGINT, _jobs JSONB) RETURNS VOID AS $$
+DECLARE
+	count_ BIGINT;
+BEGIN
+	CREATE TEMPORARY TABLE tmp(
+		_keys TEXT[] UNIQUE
+	) ON COMMIT DROP;
+
+	-- Get all the unique sets of keys
+	INSERT INTO tmp(_keys)
+	SELECT DISTINCT
+		jk.keys
+	FROM
+		jsonb_array_elements(_jobs) AS ja
+	LEFT JOIN LATERAL(
+		SELECT array_agg(k) AS keys
+		FROM jsonb_object_keys(ja) AS k
+	) AS jk
+	ON TRUE
+	;
+
+	SELECT COUNT(*) INTO count_ FROM tmp;
+	IF count_ > 1 THEN
+		RAISE EXCEPTION 'Mismatched job variables %', _jobs;
+	END IF;
+
+	SELECT
+		(
+			(SELECT array_agg(x ORDER BY x) FROM unnest(e.variables) x)
+			=
+			(SELECT array_agg(x ORDER BY x) FROM unnest(tmp._keys) x)
+		)::INT INTO count_
+	FROM
+		tmp,
+		nimrod_experiments AS e
+	WHERE
+		e.id = _exp_id;
+
+	IF count_ = 0 THEN
+		RAISE EXCEPTION 'Mismatched job variables';
+	END IF;
+
+-- This isn't actually needed, as it'll be caught above, Keeping for reference
+-- 	SELECT COUNT(c.*) INTO count_
+-- 	FROM (
+-- 		SELECT DISTINCT unnest(_keys) FROM xxx
+-- 		INTERSECT
+-- 		SELECT name FROM nimrod_reserved_variables
+-- 	) AS c;
+--
+-- 	IF count_ != 0 THEN
+-- 		RAISE EXCEPTION 'Jobs cannot have variables with reserved names';
+-- 	END IF;
+	DROP TABLE tmp;
+END $$ LANGUAGE plpgsql;
+
+/*
+** Add a list of jobs to an experiment.
+** _jobs is expected to be like '[{"x": "1", "y": "2"}, {"x": "2", "y": "3"}]'
+*/
+CREATE OR REPLACE FUNCTION add_multiple_jobs_internal(_exp_id BIGINT, _jobs JSONB) RETURNS SETOF BIGINT AS $$
+	SELECT validate_jobs_json(_exp_id, _jobs);
+
+	INSERT INTO nimrod_jobs(exp_id, job_index, variables)
+	SELECT
+		_exp_id,
+		COALESCE(ji.job_index, 0) + j.index,
+		j.job
+	FROM
+		jsonb_array_elements(_jobs) WITH ORDINALITY AS j(job, index)
+	LEFT OUTER JOIN -- NB: There may be no jobs. There will be max one row, so this is fine.
+		(SELECT job_index FROM nimrod_jobs WHERE exp_id = _exp_id ORDER BY job_index DESC LIMIT 1) AS ji
+	ON TRUE
+	RETURNING id
+	;
+$$ LANGUAGE SQL VOLATILE;
+
+CREATE OR REPLACE FUNCTION add_multiple_jobs(_exp_id BIGINT, _jobs JSONB) RETURNS SETOF nimrod_full_jobs AS $$
+DECLARE
+	_ids BIGINT[];
+BEGIN
+	SELECT array_agg(j) INTO _ids FROM add_multiple_jobs_internal(_exp_id, _jobs) AS j;
+	RETURN QUERY SELECT * FROM nimrod_full_jobs WHERE id IN (SELECT unnest(_ids));
+END
+$$ LANGUAGE 'plpgsql' VOLATILE;

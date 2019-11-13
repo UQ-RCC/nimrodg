@@ -257,7 +257,7 @@ public abstract class APITests {
 
 		NetworkJob.ExecCommand cmd = (NetworkJob.ExecCommand)nj.commands.get(0);
 
-		Assert.assertEquals("echo value-x-0 value-y-0", cmd.arguments.get(0));
+		Assert.assertEquals("echo value-x-0 value-y-0 1 1", cmd.arguments.get(0));
 	}
 
 	@Test

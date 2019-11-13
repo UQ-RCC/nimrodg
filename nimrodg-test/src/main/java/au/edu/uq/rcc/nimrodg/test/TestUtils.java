@@ -67,7 +67,7 @@ public class TestUtils {
 				+ "	0001 0 0\n"
 				+ "endjobs\n"
 				+ "task main\n"
-				+ "	shexec \"echo $x $y\"\n"
+				+ "	shexec \"echo $x $y $jobindex $jobname\"\n"
 				+ "endtask").build();
 	}
 

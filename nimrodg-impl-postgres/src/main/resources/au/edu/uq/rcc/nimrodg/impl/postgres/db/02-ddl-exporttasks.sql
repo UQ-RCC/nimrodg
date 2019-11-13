@@ -139,17 +139,10 @@ DROP VIEW IF EXISTS nimrod_full_experiments CASCADE;
 CREATE VIEW nimrod_full_experiments AS(
 	SELECT
 		e.*,
-		v.vars AS vars_json,
+		array_to_json(e.variables) AS vars_json,
 		export_tasks(e.id) AS tasks_json
 	FROM
-		nimrod_experiments AS e LEFT JOIN LATERAL(
-			SELECT
-				jsonb_agg(name) AS vars
-			FROM
-				nimrod_user_variables
-			WHERE
-				exp_id = e.id
-		) v ON true
+		nimrod_experiments AS e
 );
 
 CREATE OR REPLACE FUNCTION get_experiment(_exp_id BIGINT) RETURNS SETOF nimrod_full_experiments AS $$

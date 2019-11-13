@@ -22,9 +22,8 @@ package au.edu.uq.rcc.nimrodg.impl.postgres;
 import au.edu.uq.rcc.nimrodg.api.CommandResult;
 import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.JobAttempt;
-import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledJob;
-import au.edu.uq.rcc.nimrodg.api.utils.run.JsonUtils;
 import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledRun;
+import au.edu.uq.rcc.nimrodg.api.utils.run.JsonUtils;
 import au.edu.uq.rcc.nimrodg.impl.base.db.BrokenDBInvariantException;
 import au.edu.uq.rcc.nimrodg.impl.base.db.DBBaseHelper;
 import au.edu.uq.rcc.nimrodg.impl.base.db.DBUtils;
@@ -32,6 +31,12 @@ import au.edu.uq.rcc.nimrodg.impl.base.db.TempCommandResult;
 import au.edu.uq.rcc.nimrodg.impl.base.db.TempExperiment;
 import au.edu.uq.rcc.nimrodg.impl.base.db.TempJob;
 import au.edu.uq.rcc.nimrodg.impl.base.db.TempJobAttempt;
+
+import javax.json.Json;
+import javax.json.JsonArrayBuilder;
+import javax.json.JsonObjectBuilder;
+import javax.json.JsonString;
+import javax.json.JsonValue;
 import java.sql.Array;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -41,20 +46,17 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import javax.json.Json;
-import javax.json.JsonArray;
-import javax.json.JsonArrayBuilder;
 
 /**
  * Put all boilerplate relating to experiments, etc. into here.
- *
+ * <p>
  * Rule of thumb: If it ends in -Impl, it doesn't belong in here.
  */
 public class DBExperimentHelpers extends DBBaseHelper {
@@ -83,7 +85,6 @@ public class DBExperimentHelpers extends DBBaseHelper {
 
 	/* Utility */
 	private final PreparedStatement qAddCompiledExperiment;
-	private final PreparedStatement qAddCompiledExperimentForBatch;
 	private final PreparedStatement qAddMultipleJobs;
 	private final PreparedStatement qAddMultipleJobsInternal;
 
@@ -115,9 +116,8 @@ public class DBExperimentHelpers extends DBBaseHelper {
 		this.qAddCommandResult = prepareStatement("SELECT * FROM add_command_result(?::BIGINT, ?::nimrod_command_result_status, ?::BIGINT, ?::REAL, ?::INT, ?::TEXT, ?::INT, ?::BOOLEAN)");
 
 		this.qAddCompiledExperiment = prepareStatement("SELECT * FROM add_compiled_experiment(?::TEXT, ?::TEXT, ?::TEXT, ?::jsonb)");
-		this.qAddCompiledExperimentForBatch = prepareStatement("SELECT * FROM add_compiled_experiment_for_batch(?::TEXT, ?::TEXT, ?::TEXT, ?::TEXT[], ?::jsonb)");
-		this.qAddMultipleJobs = prepareStatement("SELECT * FROM add_multiple_jobs(?::BIGINT, ?::TEXT[], ?::jsonb)");
-		this.qAddMultipleJobsInternal = prepareStatement("SELECT job_id FROM add_multiple_jobs_internal(?::BIGINT, ?::TEXT[], ?::JSONB) AS job_id");
+		this.qAddMultipleJobs = prepareStatement("SELECT * FROM add_multiple_jobs(?::BIGINT, ?::JSONB)");
+		this.qAddMultipleJobsInternal = prepareStatement("SELECT job_id FROM add_multiple_jobs_internal(?::BIGINT, ?::JSONB) AS job_id");
 
 		this.qIsTokenValidForStorage = prepareStatement("SELECT is_token_valid_for_experiment_storage(?::BIGINT, ?::TEXT) AS id");
 	}
@@ -174,14 +174,16 @@ public class DBExperimentHelpers extends DBBaseHelper {
 	}
 
 	/*
-	 * add_multiple_jobs() returns nimrod_full_jobs rows, these are extermely
+	 * add_multiple_jobs() returns nimrod_full_jobs rows, these are extremely
 	 * slow to fetch. the *_internal() variant just returns BIGINTs.
+	 *
+	 * It halves the insertion time.
 	 */
-	private void addMultipleJobsInternal(long expId, Array vars, String jsonValues) throws SQLException {
-		//long dbStart = System.currentTimeMillis();
+	private void addMultipleJobsInternalJson(long expId, List<JsonValue> jobs) throws SQLException {
 		qAddMultipleJobsInternal.setLong(1, expId);
-		qAddMultipleJobsInternal.setArray(2, vars);
-		qAddMultipleJobsInternal.setString(3, jsonValues);
+		qAddMultipleJobsInternal.setString(2, jobs.toString());
+
+		//long dbStart = System.currentTimeMillis();
 		try(ResultSet rs = qAddMultipleJobsInternal.executeQuery()) {
 			/* nop */
 		}
@@ -189,76 +191,51 @@ public class DBExperimentHelpers extends DBBaseHelper {
 		//System.err.printf("  DB took %f sec\n", dbsec);
 	}
 
-	private TempExperiment addCompiledExperimentBatched(String name, String workDir, String fileToken, CompiledRun exp) throws SQLException {
-		/* Add the base run */
-		qAddCompiledExperimentForBatch.setString(1, name);
-		qAddCompiledExperimentForBatch.setString(2, workDir);
-		qAddCompiledExperimentForBatch.setString(3, fileToken);
-		String[] varNames = exp.variables.stream().map(cv -> cv.name).toArray(String[]::new);
-		Array vars = conn.createArrayOf("TEXT", varNames);
-		qAddCompiledExperimentForBatch.setArray(4, vars);
-		qAddCompiledExperimentForBatch.setString(5, JsonUtils.toJson(exp.tasks).toString());
-
-		TempExperiment te;
-		try(ResultSet rs = qAddCompiledExperimentForBatch.executeQuery()) {
-			if(!rs.next()) {
-				throw new BrokenDBInvariantException("add_compiled_experiment_for_batch() returned no rows.");
-			}
-
-			te = expFromRow(rs);
-		}
-
-		/* Now add the jobs */
-		int batchSize = 100000;
-		int i = 0;
-		JsonArrayBuilder ja = Json.createArrayBuilder();
-		//long startTime = System.currentTimeMillis();
-		for(CompiledJob cj : exp.jobs) {
-			String[] values = new String[varNames.length];
-			for(int j = 0; j < values.length; ++j) {
-				values[j] = exp.variables.get(j).values.get(cj.indices[j]);
-			}
-
-			ja.add(Json.createArrayBuilder(List.of(values)));
-			++i;
-
-			if(i == batchSize) {
-				//System.err.printf("Batch done: %f sec\n", (System.currentTimeMillis() - startTime) / 1000.0f);
-				addMultipleJobsInternal(te.id, vars, ja.build().toString());
-				i = 0;
-				//startTime = System.currentTimeMillis();
-				ja = Json.createArrayBuilder();
-			}
-		}
-
-		//System.err.printf("TRAILING one\n");
-		JsonArray jaa = ja.build();
-		if(!jaa.isEmpty()) {
-			addMultipleJobsInternal(te.id, vars, jaa.toString());
-		}
-
-		return te;
-	}
-
 	public TempExperiment addCompiledExperiment(String name, String workDir, String fileToken, CompiledRun exp) throws SQLException {
-		/* If there's too many jobs to dump in one go, stream them in. */
-		if(exp.numJobs > 100000) {
-			return addCompiledExperimentBatched(name, workDir, fileToken, exp);
-		}
+		boolean batched = exp.numJobs > 100000;
+		int batchSize = 100000;
 
 		qAddCompiledExperiment.setString(1, name);
 		qAddCompiledExperiment.setString(2, workDir);
 		qAddCompiledExperiment.setString(3, fileToken);
-		qAddCompiledExperiment.setString(4, JsonUtils.toJson(exp).toString());
+		qAddCompiledExperiment.setString(4, JsonUtils.toJson(exp, !batched).toString());
 
+		TempExperiment te;
 		try(ResultSet rs = qAddCompiledExperiment.executeQuery()) {
 			if(!rs.next()) {
 				throw new BrokenDBInvariantException("add_compiled_experiment() returned no rows.");
 			}
 
-			return expFromRow(rs);
+			te = expFromRow(rs);
 		}
+
+		if(!batched) {
+			return te;
+		}
+
+		//AtomicLong startTime = new AtomicLong(System.currentTimeMillis());
+		try {
+			JsonUtils.withJobBatches(exp, batchSize, j -> {
+				try {
+					this.addMultipleJobsInternalJson(te.id, j);
+				} catch(SQLException e) {
+					throw new RuntimeException(e);
+				}
+
+				//System.err.printf("Batch done: %f sec\n", (System.currentTimeMillis() - startTime.get()) / 1000.0f);
+				//startTime.set(System.currentTimeMillis());
+			});
+		} catch(RuntimeException e) {
+			if(e.getCause() instanceof SQLException) {
+				throw (SQLException)e.getCause();
+			} else {
+				throw e;
+			}
+		}
+
+		return te;
 	}
+
 
 	public void updateExperimentState(long expId, Experiment.State state) throws SQLException {
 		qUpdateExperimentState.setLong(1, expId);
@@ -295,8 +272,8 @@ public class DBExperimentHelpers extends DBBaseHelper {
 	public List<TempJob> filterJobs(long expId, EnumSet<JobAttempt.Status> status, long start, long limit) throws SQLException {
 		qFilterJobs.setLong(1, expId);
 		qFilterJobs.setArray(2, conn.createArrayOf("nimrod_job_status", status.stream()
-				.filter(s -> s != null)
-				.map(s -> s.toString())
+				.filter(Objects::nonNull)
+				.map(Enum::toString)
 				.toArray()));
 		qFilterJobs.setObject(3, start < 0 ? null : start);
 		qFilterJobs.setObject(4, limit <= 0 ? null : limit);
@@ -331,24 +308,13 @@ public class DBExperimentHelpers extends DBBaseHelper {
 			return List.of();
 		}
 
-		Set<Set<String>> sss = jobs.stream().map(j -> j.keySet()).collect(Collectors.toSet());
+		Set<Set<String>> sss = jobs.stream().map(Map::keySet).collect(Collectors.toSet());
 		if(sss.size() != 1) {
 			throw new IllegalArgumentException("Mismatching key sets.");
 		}
 
-		String[] vars = sss.stream().flatMap(s -> s.stream()).toArray(String[]::new);
-
-		JsonArrayBuilder values = Json.createArrayBuilder();
-		jobs.stream()
-				.map(j -> Arrays.stream(vars).map(v -> j.get(v)).collect(Collectors.toList()))
-				.map(j -> Json.createArrayBuilder(j))
-				.forEach(j -> values.add(j));
-
-		Array varNames = conn.createArrayOf("TEXT", vars);
-
 		qAddMultipleJobs.setLong(1, expId);
-		qAddMultipleJobs.setArray(2, varNames);
-		qAddMultipleJobs.setString(3, values.build().toString());
+		qAddMultipleJobs.setString(2, JsonUtils.buildJobsJson(jobs).toString());
 
 		List<TempJob> _jobs = new ArrayList<>(jobs.size());
 		try(ResultSet rs = qAddMultipleJobs.executeQuery()) {
@@ -402,8 +368,8 @@ public class DBExperimentHelpers extends DBBaseHelper {
 	public List<TempJobAttempt> filterJobAttempts(long jobId, EnumSet<JobAttempt.Status> status) throws SQLException {
 		qFilterJobAttempts.setLong(1, jobId);
 		qFilterJobAttempts.setArray(2, conn.createArrayOf("nimrod_job_status", status.stream()
-				.filter(s -> s != null)
-				.map(s -> s.toString())
+				.filter(Objects::nonNull)
+				.map(Enum::toString)
 				.toArray()));
 
 		List<TempJobAttempt> atts = new ArrayList<>();
@@ -444,8 +410,8 @@ public class DBExperimentHelpers extends DBBaseHelper {
 	public List<TempJobAttempt> filterJobAttemptsByExperiment(long expId, EnumSet<JobAttempt.Status> status) throws SQLException {
 		qFilterJobAttemptsByExperiment.setLong(1, expId);
 		qFilterJobAttemptsByExperiment.setArray(2, conn.createArrayOf("nimrod_job_status", status.stream()
-				.filter(s -> s != null)
-				.map(s -> s.toString())
+				.filter(Objects::nonNull)
+				.map(Enum::toString)
 				.toArray()));
 
 		List<TempJobAttempt> atts = new ArrayList<>();
@@ -492,22 +458,14 @@ public class DBExperimentHelpers extends DBBaseHelper {
 	}
 
 	private static TempJob jobFromRow(ResultSet rs) throws SQLException {
-
-		String[] keys = (String[])rs.getArray("var_names").getArray();
-		String[] values = (String[])rs.getArray("var_values").getArray();
-
-		Map<String, String> vars = new HashMap<>();
-		for(int i = 0; i < keys.length; ++i) {
-			vars.put(keys[i], values[i]);
-		}
-
 		return new TempJob(
 				rs.getLong("id"),
 				rs.getLong("exp_id"),
 				rs.getLong("job_index"),
 				DBUtils.getInstant(rs, "created"),
 				rs.getString("path"),
-				vars
+				DBUtils.getJSONObject(rs, "full_variables").entrySet().stream()
+						.collect(Collectors.toMap(Map.Entry::getKey, e -> ((JsonString)e.getValue()).getString()))
 		);
 	}
 
