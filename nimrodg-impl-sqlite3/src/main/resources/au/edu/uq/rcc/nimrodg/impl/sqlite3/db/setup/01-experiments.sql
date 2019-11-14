@@ -34,20 +34,10 @@ CREATE TABLE nimrod_jobs(
 	exp_id INTEGER NOT NULL REFERENCES nimrod_experiments(id) ON DELETE CASCADE,
 	job_index BIGINT NOT NULL CHECK(job_index > 0),
 	created INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+	variables TEXT NOT NULL,
 	path TEXT NOT NULL UNIQUE,
 	UNIQUE(exp_id, job_index)
 );
-
-/*
-** When an experiment is deleted, delete its jobs first.
-** SQLite tries to delete the variable info first, which triggers the RESTRICT in nimrod_job_variables.
-*/
-DROP TRIGGER IF EXISTS t_delete_jobs_before_experiment;
-CREATE TRIGGER t_delete_jobs_before_experiment BEFORE DELETE ON nimrod_experiments FOR EACH ROW
-BEGIN
-	DELETE FROM nimrod_jobs WHERE exp_id = OLD.id;
-END;
-
 
 DROP TABLE IF EXISTS nimrod_variables;
 CREATE TABLE nimrod_variables(
@@ -66,26 +56,6 @@ CREATE VIEW nimrod_user_variables AS
 		nimrod_reserved_variables AS rv ON v.name = rv.name
 	WHERE
 		rv.name IS NULL
-;
-
-DROP TABLE IF EXISTS nimrod_job_variables;
-CREATE TABLE nimrod_job_variables(
-	id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-	job_id INTEGER NOT NULL REFERENCES nimrod_jobs(id) ON DELETE CASCADE,
-	variable_id INTEGER NOT NULL REFERENCES nimrod_variables(id) ON DELETE RESTRICT,
-	value TEXT NOT NULL,
-	UNIQUE(job_id, variable_id)
-);
-
-DROP VIEW IF EXISTS nimrod_full_job_variables;
-CREATE VIEW nimrod_full_job_variables AS
-SELECT
-	jv.*,
-	v.exp_id,
-	v.name AS var_name
-FROM
-	nimrod_job_variables AS jv INNER JOIN
-	nimrod_variables AS v ON jv.variable_id = v.id
 ;
 
 DROP TABLE IF EXISTS nimrod_tasks;

@@ -19,7 +19,6 @@
  */
 package au.edu.uq.rcc.nimrodg.impl.sqlite3;
 
-import au.edu.uq.rcc.nimrodg.impl.base.db.DBBaseHelper;
 import au.edu.uq.rcc.nimrodg.api.Command;
 import au.edu.uq.rcc.nimrodg.api.CommandResult;
 import au.edu.uq.rcc.nimrodg.api.Experiment;
@@ -29,17 +28,18 @@ import au.edu.uq.rcc.nimrodg.api.utils.Substitution;
 import au.edu.uq.rcc.nimrodg.api.utils.run.CommandArgumentBuilder;
 import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledArgument;
 import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledCommand;
-import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledJob;
 import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledRun;
 import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledTask;
-import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledVariable;
+import au.edu.uq.rcc.nimrodg.api.utils.run.JsonUtils;
 import au.edu.uq.rcc.nimrodg.api.utils.run.TaskBuilder;
 import au.edu.uq.rcc.nimrodg.impl.base.db.BrokenDBInvariantException;
+import au.edu.uq.rcc.nimrodg.impl.base.db.DBBaseHelper;
 import au.edu.uq.rcc.nimrodg.impl.base.db.DBUtils;
 import au.edu.uq.rcc.nimrodg.impl.base.db.TempCommandResult;
 import au.edu.uq.rcc.nimrodg.impl.base.db.TempExperiment;
 import au.edu.uq.rcc.nimrodg.impl.base.db.TempJob;
 import au.edu.uq.rcc.nimrodg.impl.base.db.TempJobAttempt;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -57,7 +57,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
@@ -75,12 +74,10 @@ public class DBExperimentHelpers extends DBBaseHelper {
 	private final PreparedStatement qInsertArgument;
 	private final PreparedStatement qInsertSubstitution;
 	private final PreparedStatement qInsertJob;
-	private final PreparedStatement qInsertJobVariable;
 
 	private final PreparedStatement qGetExperiments;
 	private final PreparedStatement qGetExperimentById;
 	private final PreparedStatement qGetExperimentByName;
-	private final PreparedStatement qGetExperimentVariables;
 	private final PreparedStatement qGetExperimentUserVariables;
 	private final PreparedStatement qGetExperimentTasks;
 	private final PreparedStatement qGetTaskCommands;
@@ -93,7 +90,6 @@ public class DBExperimentHelpers extends DBBaseHelper {
 	private final PreparedStatement qUpdateExperimentState;
 
 	private final PreparedStatement qGetSingleJob;
-	private final PreparedStatement qGetJobVariables;
 	private final PreparedStatement qGetJobAttempts;
 	private final PreparedStatement qFilterJobs;
 	private final PreparedStatement qGetNextJobId;
@@ -123,13 +119,11 @@ public class DBExperimentHelpers extends DBBaseHelper {
 				"INSERT INTO nimrod_substitutions(arg_id, variable_id, start_index, end_index, relative_start) VALUES(?, ?, ?, ?, ?)",
 				true
 		);
-		this.qInsertJob = prepareStatement("INSERT INTO nimrod_jobs(exp_id, job_index, created, path) VALUES(?, ?, ?, ?)", true);
-		this.qInsertJobVariable = prepareStatement("INSERT INTO nimrod_job_variables(job_id, variable_id, value) VALUES(?, ?, ?)");
+		this.qInsertJob = prepareStatement("INSERT INTO nimrod_jobs(exp_id, job_index, created, variables, path) VALUES(?, ?, ?, ?, ?)", true);
 
 		this.qGetExperiments = prepareStatement("SELECT * FROM nimrod_experiments");
 		this.qGetExperimentById = prepareStatement("SELECT * FROM nimrod_experiments WHERE id = ?");
 		this.qGetExperimentByName = prepareStatement("SELECT * FROM nimrod_experiments WHERE name = ?");
-		this.qGetExperimentVariables = prepareStatement("SELECT id, name FROM nimrod_variables WHERE exp_id = ?");
 		this.qGetExperimentUserVariables = prepareStatement("SELECT id, name FROM nimrod_user_variables WHERE exp_id = ?");
 		this.qGetExperimentTasks = prepareStatement("SELECT id, name FROM nimrod_tasks WHERE exp_id = ?");
 		this.qGetTaskCommands = prepareStatement("SELECT id, command_index, type FROM nimrod_commands WHERE task_id = ?");
@@ -142,7 +136,6 @@ public class DBExperimentHelpers extends DBBaseHelper {
 		this.qUpdateExperimentState = prepareStatement("UPDATE nimrod_experiments SET state = ? WHERE id = ?");
 
 		this.qGetSingleJob = prepareStatement("SELECT * FROM nimrod_jobs WHERE id = ?");
-		this.qGetJobVariables = prepareStatement("SELECT var_name, value FROM nimrod_full_job_variables WHERE job_id = ?");
 		this.qGetJobAttempts = prepareStatement("SELECT * FROM nimrod_job_attempts WHERE job_id = ?");
 
 		/* The finer-grained filtering is done application-side, row by row. */
@@ -282,10 +275,10 @@ public class DBExperimentHelpers extends DBBaseHelper {
 
 		for(Long l : taskBuilders.keySet()) {
 			TaskBuilder b = taskBuilders.get(l);
-			getTaskCommands(l).forEach(c -> b.addCommand(c));
+			getTaskCommands(l).forEach(b::addCommand);
 		}
 
-		return taskBuilders.values().stream().map(tb -> tb.build()).collect(Collectors.toList());
+		return taskBuilders.values().stream().map(TaskBuilder::build).collect(Collectors.toList());
 	}
 
 	public Optional<TempExperiment> getExperiment(long id) throws SQLException {
@@ -389,57 +382,8 @@ public class DBExperimentHelpers extends DBBaseHelper {
 			}
 		}
 
-		long[] jobIndices = exp.jobs.stream().map(cj -> cj.index).mapToLong(i -> i).toArray();
-		long[] jobIds = addJobs(expId, name, jobIndices);
-		addJobVariables(jobIds, jobIndices, buildVarMapping(exp.jobs, exp.variables), varLookupTable);
-
-		return getExperiment(expId).orElseThrow(() -> new IllegalStateException());
-	}
-
-	private ArrayList<Map<String, String>> buildVarMapping(List<CompiledJob> jobs, List<CompiledVariable> _vars) {
-		ArrayList<Map<String, String>> vv = new ArrayList<>();
-
-		CompiledVariable[] vars = _vars.stream().toArray(CompiledVariable[]::new);
-
-		jobs.forEach(cj -> vv.add(IntStream.range(0, vars.length).boxed()
-				.collect(Collectors.toMap(
-						v -> vars[v].name,
-						v -> vars[v].values.get(cj.indices[v])
-				))
-		));
-
-		return vv;
-	}
-
-	private void addJobVariables(long[] jobIds, long[] indices, ArrayList<Map<String, String>> jobVars, Map<String, Long> varLookup) throws SQLException {
-		for(int i = 0; i < jobIds.length; ++i) {
-			for(Map.Entry<String, String> vv : jobVars.get(i).entrySet()) {
-				qInsertJobVariable.setLong(1, jobIds[i]);
-				qInsertJobVariable.setLong(2, varLookup.get(vv.getKey()));
-				qInsertJobVariable.setString(3, vv.getValue());
-
-				if(qInsertJobVariable.executeUpdate() == 0) {
-					throw new SQLException("Creating job variable failed, no rows affected");
-				}
-			}
-
-			/* Add the reserved variables. */
-			String indexString = Long.toString(indices[i]);
-
-			qInsertJobVariable.setLong(1, jobIds[i]);
-			qInsertJobVariable.setLong(2, varLookup.get("jobindex"));
-			qInsertJobVariable.setString(3, indexString);
-			if(qInsertJobVariable.executeUpdate() == 0) {
-				throw new SQLException("Creating job variable failed, no rows affected");
-			}
-
-			qInsertJobVariable.setLong(1, jobIds[i]);
-			qInsertJobVariable.setLong(2, varLookup.get("jobname"));
-			qInsertJobVariable.setString(3, indexString);
-			if(qInsertJobVariable.executeUpdate() == 0) {
-				throw new SQLException("Creating job variable failed, no rows affected");
-			}
-		}
+		addJobs2(expId, name, exp.buildJobsList(), 1);
+		return getExperiment(expId).orElseThrow(IllegalStateException::new);
 	}
 
 	private Set<String> getReservedVariables() throws SQLException {
@@ -598,15 +542,19 @@ public class DBExperimentHelpers extends DBBaseHelper {
 		return subIds;
 	}
 
-	private long[] addJobs(long expId, String expPath, long[] indices) throws SQLException {
+	private long[] addJobs2(long expId, String expPath, Collection<Map<String, String>> jobs, long baseIndex) throws SQLException {
+		long[] indices = LongStream.range(baseIndex, baseIndex + jobs.size()).toArray();
 		long[] jobIds = new long[indices.length];
 		/* Don't let Sqlite add the instant here, the NOW value isn't consistent within a transaction. */
 		Instant now = Instant.now();
-		for(int i = 0; i < indices.length; ++i) {
+
+		int i = 0;
+		for(Map<String, String> job : jobs) {
 			qInsertJob.setLong(1, expId);
 			qInsertJob.setLong(2, indices[i]);
 			DBUtils.setLongInstant(qInsertJob, 3, now);
-			qInsertJob.setString(4, String.format("%s/%d", expPath, indices[i]));
+			qInsertJob.setString(4, JsonUtils.buildJobsJson(job).toString());
+			qInsertJob.setString(5, String.format("%s/%d", expPath, indices[i]));
 			if(qInsertJob.executeUpdate() == 0) {
 				throw new SQLException("Creating job failed, no rows affected");
 			}
@@ -618,6 +566,7 @@ public class DBExperimentHelpers extends DBBaseHelper {
 
 				jobIds[i] = rs.getLong(1);
 			}
+			++i;
 		}
 		return jobIds;
 	}
@@ -628,43 +577,22 @@ public class DBExperimentHelpers extends DBBaseHelper {
 		qUpdateExperimentState.executeUpdate();
 	}
 
-	private Map<String, Long> buildVarLookupTable(long expId) throws SQLException {
-		Map<String, Long> vars = new HashMap<>();
-		qGetExperimentVariables.setLong(1, expId);
-		try(ResultSet rs = qGetExperimentVariables.executeQuery()) {
-			while(rs.next()) {
-				vars.put(rs.getString("name"), rs.getLong("id"));
-			}
-		}
-
-		return vars;
-	}
-
-	private Map<String, String> getJobVariables(long jobId) throws SQLException {
-		Map<String, String> vals = new HashMap<>();
-		qGetJobVariables.setLong(1, jobId);
-		try(ResultSet rs = qGetJobVariables.executeQuery()) {
-			while(rs.next()) {
-				vals.put(rs.getString("var_name"), rs.getString("value"));
-			}
-		}
-
-		return vals;
-	}
-
 	public Optional<TempJob> getSingleJob(long jobId) throws SQLException {
-		Map<String, String> vars = getJobVariables(jobId);
-
 		qGetSingleJob.setLong(1, jobId);
 		try(ResultSet rs = qGetSingleJob.executeQuery()) {
 			if(!rs.next()) {
 				return Optional.empty();
 			}
 
+			long jobIndex = rs.getLong("job_index");
+			Map<String, String> vars = JsonUtils.jobFromJson(DBUtils.getJSONObject(rs, "variables"));
+			vars.put("jobindex", String.valueOf(jobIndex));
+			vars.put("jobname", String.valueOf(jobIndex));
+
 			return Optional.of(new TempJob(
 					jobId,
 					rs.getLong("exp_id"),
-					rs.getLong("job_index"),
+					jobIndex,
 					DBUtils.getLongInstant(rs, "created"),
 					rs.getString("path"),
 					vars
@@ -809,11 +737,7 @@ public class DBExperimentHelpers extends DBBaseHelper {
 			nextIndex = rs.getLong(1);
 		}
 
-		Map<String, Long> varTable = buildVarLookupTable(expId);
-
-		long[] indices = LongStream.range(nextIndex, nextIndex + jobs.size()).toArray();
-		long[] ids = addJobs(expId, expPath, indices);
-		addJobVariables(ids, indices, new ArrayList<>(jobs), varTable);
+		long[] ids = addJobs2(expId, expPath, jobs, nextIndex);
 
 		List<TempJob> jj = new ArrayList<>();
 		for(int i = 0; i < ids.length; ++i) {
