@@ -120,6 +120,11 @@
 			"minItems": 1,
 			"items": { "$ref": "base.json#/definitions/variable_identifier" }
 		},
+		"results": {
+			"type": "array",
+			"minItems": 1,
+			"items": { "$ref": "base.json#/definitions/variable_identifier" }
+		},
 		"tasks": {
 			"type": "object",
 			"properties": {
@@ -140,6 +145,6 @@
 			"minItems": 0
 		}
 	},
-	"required": [ "variables", "tasks", "jobs" ],
+	"required": [ "variables", "results", "tasks", "jobs" ],
 	"additionalProperties": false
 }

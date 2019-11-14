@@ -51,6 +51,7 @@ public class JsonUtils {
 		JsonObjectBuilder jb = Json.createObjectBuilder();
 
 		jb.add("variables", Json.createArrayBuilder(cr.variables.stream().map(v -> v.name).collect(Collectors.toList())));
+		jb.add("results", Json.createArrayBuilder(cr.results));
 		jb.add("tasks", toJson(cr.tasks));
 
 		if(!includeJobs) {
