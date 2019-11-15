@@ -411,7 +411,16 @@ public class Master implements MessageQueueListener, AutoCloseable {
 				}));
 
 		/* Resync the schedulers. */
-		runningJobs.values().stream().forEach(j -> jobScheduler.recordAttempt(j.att, j.job));
+		{
+			List<JobAttempt> atts = new ArrayList<>(runningJobs.size());
+			List<Job> jobs = new ArrayList<>(runningJobs.size());
+			runningJobs.values().forEach(rj -> {
+				atts.add(rj.att);
+				jobs.add(rj.job);
+			});
+			jobScheduler.recordAttempts(atts, jobs);
+		}
+
 		agentScheduler.resync(
 				allAgents.values().stream().map(ai -> ai.instance).collect(Collectors.toSet()),
 				runningJobs.values().stream().collect(Collectors.toSet())
