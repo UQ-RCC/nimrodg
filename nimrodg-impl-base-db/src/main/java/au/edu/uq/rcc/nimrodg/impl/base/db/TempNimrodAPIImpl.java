@@ -335,8 +335,14 @@ public abstract class TempNimrodAPIImpl implements NimrodAPI, NimrodMasterAPI, N
 	}
 
 	@Override
-	public JobAttempt createJobAttempt(Job j) {
-		return db.runSQL(() -> db.createJobAttempt(validateJob(j), UUID.randomUUID()));
+	public List<JobAttempt> createJobAttempts(Collection<Job> jobs) {
+		List<JobAttempt> atts = new ArrayList<>(jobs.size());
+		db.runSQLTransaction(() -> {
+			for(Job j : jobs) {
+				atts.add(db.createJobAttempt(validateJob(j), UUID.randomUUID()));
+			}
+		});
+		return atts;
 	}
 
 	@Override

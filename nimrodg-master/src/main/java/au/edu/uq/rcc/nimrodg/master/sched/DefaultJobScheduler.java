@@ -27,15 +27,21 @@ import au.edu.uq.rcc.nimrodg.api.JobAttempt;
 import au.edu.uq.rcc.nimrodg.api.JobAttempt.Status;
 import au.edu.uq.rcc.nimrodg.api.utils.NimrodUtils;
 import au.edu.uq.rcc.nimrodg.master.JobSchedulerFactory;
+
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -235,6 +241,8 @@ public class DefaultJobScheduler implements JobScheduler {
 
 	@Override
 	public boolean tick() {
+		long startTime = System.currentTimeMillis();
+		int n = 0;
 
 		/*
 		 * For any runs below the job threshold, check for any more jobs.
@@ -249,6 +257,7 @@ public class DefaultJobScheduler implements JobScheduler {
 					bufferSize - cccc
 			);
 
+			n += nj.size();
 			if(!(empty = nj.isEmpty())) {
 				highestIndex = nj.stream().mapToLong(Job::getIndex).max().getAsLong();
 			}
@@ -256,17 +265,36 @@ public class DefaultJobScheduler implements JobScheduler {
 			incomingJobs.addAll(nj);
 		}
 
-		Queue<Job> jobQueue = new LinkedList<>();
+		double taken = (System.currentTimeMillis() - startTime) / 1000.0;
+
+		LOGGER.trace("Queried {} jobs in {} seconds", n, taken);
+
 		/* Filter the incoming job messages */
-		incomingJobs.forEach(jobQueue::offer);
+		ArrayList<Job> jobQueue = new ArrayList<>(incomingJobs.size());
+		jobQueue.addAll(incomingJobs);
 		incomingJobs.clear();
 
+		startTime = System.currentTimeMillis();
+		n = jobQueue.size();
+
 		/* FIXME: Just schedule everything */
-		jobQueue.forEach(j -> {
-			LOGGER.info("Scheduling job '{}'", j.getPath());
-			JobAttempt att = ops.runJob(j);
-			recordAttempt(att, j);
-		});
+		Collection<JobAttempt> attempts = ops.runJobs(jobQueue);
+		assert attempts.size() == jobQueue.size();
+
+		int i = 0;
+		for(JobAttempt att : attempts) {
+			recordAttempt(att, jobQueue.get(i));
+		}
+//
+//		/* FIXME: Just schedule everything */
+//		jobQueue.forEach(j -> {
+//			//LOGGER.info("Scheduling job '{}'", j.getPath());
+//			JobAttempt att = ops.runJob(j);
+//			recordAttempt(att, j);
+//		});
+
+		taken = (System.currentTimeMillis() - startTime) / 1000.0;
+		LOGGER.trace("Created {} attempts in {} seconds", n, taken);
 
 		jobQueue.clear();
 

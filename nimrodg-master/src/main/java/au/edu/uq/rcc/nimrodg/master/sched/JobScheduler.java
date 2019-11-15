@@ -25,6 +25,8 @@ import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.Job;
 import au.edu.uq.rcc.nimrodg.api.JobAttempt;
 import au.edu.uq.rcc.nimrodg.master.sched.AgentScheduler.Operations.FailureReason;
+
+import java.util.Collection;
 import java.util.UUID;
 
 public interface JobScheduler {
@@ -33,13 +35,7 @@ public interface JobScheduler {
 
 		Experiment getExperiment();
 
-		/**
-		 * Run a job.
-		 *
-		 * @param j The job to run.
-		 * @return The attempt instance.
-		 */
-		JobAttempt runJob(Job j);
+		Collection<JobAttempt> runJobs(Collection<Job> jobs);
 
 		void cancelJob(JobAttempt att);
 
