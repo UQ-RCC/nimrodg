@@ -21,6 +21,8 @@ package au.edu.uq.rcc.nimrodg.cli.commands;
 
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
 import au.edu.uq.rcc.nimrodg.api.Experiment;
+import au.edu.uq.rcc.nimrodg.api.Job;
+import au.edu.uq.rcc.nimrodg.api.JobAttempt;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPIException;
 import au.edu.uq.rcc.nimrodg.api.NimrodMasterAPI;
@@ -42,8 +44,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.EnumSet;
 import java.util.UUID;
 import javax.json.Json;
 import javax.json.JsonObject;
@@ -249,6 +252,73 @@ public class Staging extends DefaultCLICommand {
 		nimrod.assignResource(wiener, exp1);
 	}
 
+	public void bigGet(UserConfig config, NimrodAPI nimrod, PrintStream out, PrintStream err, Path[] configDirs, String[] args) throws Exception {
+		Experiment exp1 = nimrod.getExperiment("exp1");
+		if(exp1 != null) {
+			nimrod.deleteExperiment(exp1);
+		}
+
+		CompiledRun cr = PARSE_API.parseRunToBuilder(
+			"parameter x integer range from 0 to 10000 step 1\n"
+					+ "task main\n"
+					+ "    onerror fail\n"
+					+ "endtask").build();
+
+		exp1 = nimrod.addExperiment("exp1", cr);
+
+		//benchFiltering(exp1, 10000, 0, 10000);
+
+		// Pre-optimisation, ~111 seconds on an NVME SSD, ~948 seconds on HDD
+		//benchAttemptCreation((NimrodMasterAPI)nimrod, exp1, 0, 10000);
+
+		// 0.73 seconds (⌐■_■)
+		benchAttemptCreationBatch((NimrodMasterAPI)nimrod, exp1, 0, 10000);
+	}
+
+	private void benchAttemptCreationBatch(NimrodMasterAPI nimrod, Experiment exp1, int start, int limit) {
+		Collection<Job> jobs = exp1.filterJobs(EnumSet.allOf(JobAttempt.Status.class), start, limit);
+
+		long startTime = System.currentTimeMillis();
+		Collection<JobAttempt> atts = nimrod.createJobAttempts(jobs);
+		long endTime = System.currentTimeMillis();
+		System.err.printf("Took %f seconds\n", (endTime - startTime) / 1000.0);
+
+		int x = 0;
+	}
+
+	private void benchAttemptCreation(NimrodMasterAPI nimrod, Experiment exp1, int start, int limit) {
+		Collection<Job> jobs = exp1.filterJobs(EnumSet.allOf(JobAttempt.Status.class), start, limit);
+
+		long totalTime = 0;
+		int i = 0;
+		for(Job j : jobs) {
+			long startTime = System.currentTimeMillis();
+			nimrod.createJobAttempt(j);
+			long endTime = System.currentTimeMillis();
+
+			totalTime += endTime - startTime;
+			++i;
+		}
+
+		System.err.printf("Took %f seconds\n", totalTime / 1000.0);
+	}
+
+	private void benchFiltering(Experiment exp1, int numTimes, int start, int limit) {
+		double secs = 0.0;
+		for(int i = 0; i < numTimes; ++i) {
+			long startTime = System.currentTimeMillis();
+
+			Collection<Job> jobs = exp1.filterJobs(EnumSet.allOf(JobAttempt.Status.class), start, limit);
+			long endTime = System.currentTimeMillis();
+
+			double time = (endTime - startTime) / 1000.0;
+			secs += time;
+			//System.err.printf("Took %f seconds\n", (endTime - startTime) / 1000.0f);
+		}
+
+		System.err.printf("Took %f seconds\n", secs / numTimes);
+	}
+
 	private class NullOps extends ActuatorOpsAdapter {
 		public NullOps(NimrodMasterAPI nimrod) {
 			super(nimrod);
@@ -261,7 +331,8 @@ public class Staging extends DefaultCLICommand {
 	}
 
 	public static void main(String[] args) throws Exception, Exception {
-		System.exit(NimrodCLI.cliMain(new String[]{"-d", "staging", "nAgentSleep", "6", "60"}));
+		//System.exit(NimrodCLI.cliMain(new String[]{"-d", "staging", "nAgentSleep", "6", "60"}));
+		System.exit(NimrodCLI.cliMain(new String[]{"-d", "staging", "bigGet"}));
 	}
 
 	private static final Path RCC_CLUSTER_KEY_PATH = Paths.get("/home/zane/.ssh/uqzvanim-tinaroo");
