@@ -27,15 +27,19 @@ import au.edu.uq.rcc.nimrodg.api.JobAttempt;
 import au.edu.uq.rcc.nimrodg.api.JobAttempt.Status;
 import au.edu.uq.rcc.nimrodg.api.utils.NimrodUtils;
 import au.edu.uq.rcc.nimrodg.master.JobSchedulerFactory;
+
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -104,11 +108,20 @@ public class DefaultJobScheduler implements JobScheduler {
 	}
 
 	@Override
-	public void recordAttempt(JobAttempt att, Job job) {
-		this.incomingJobs.remove(job);
+	public void recordAttempts(Collection<JobAttempt> atts, Collection<Job> jobs) {
+		if(atts.size() != jobs.size()) {
+			throw new IllegalArgumentException();
+		}
+
+		this.incomingJobs.removeAll(jobs);
+
 		/* NB: These guys are sets, they'll handle the duplicates themselves. */
-		NimrodUtils.getOrAddLazy(this.jobInfo, job, j -> new JobInfo(j)).attempts.add(att);
-		this.runningAttempts.add(att);
+		Iterator<JobAttempt> attit = atts.iterator();
+		Iterator<Job> jobit = jobs.iterator();
+		for(int i = 0; i < atts.size(); ++i) {
+			NimrodUtils.getOrAddLazy(this.jobInfo, jobit.next(), JobInfo::new).attempts.add(attit.next());
+		}
+		this.runningAttempts.addAll(atts);
 	}
 
 	@Override
@@ -235,6 +248,8 @@ public class DefaultJobScheduler implements JobScheduler {
 
 	@Override
 	public boolean tick() {
+		long startTime = System.currentTimeMillis();
+		int n = 0;
 
 		/*
 		 * For any runs below the job threshold, check for any more jobs.
@@ -249,6 +264,7 @@ public class DefaultJobScheduler implements JobScheduler {
 					bufferSize - cccc
 			);
 
+			n += nj.size();
 			if(!(empty = nj.isEmpty())) {
 				highestIndex = nj.stream().mapToLong(Job::getIndex).max().getAsLong();
 			}
@@ -256,17 +272,27 @@ public class DefaultJobScheduler implements JobScheduler {
 			incomingJobs.addAll(nj);
 		}
 
-		Queue<Job> jobQueue = new LinkedList<>();
+		double taken = (System.currentTimeMillis() - startTime) / 1000.0;
+
+		LOGGER.trace("Queried {} jobs in {} seconds", n, taken);
+
 		/* Filter the incoming job messages */
-		incomingJobs.forEach(jobQueue::offer);
+		ArrayList<Job> jobQueue = new ArrayList<>(incomingJobs.size());
+		jobQueue.addAll(incomingJobs);
 		incomingJobs.clear();
 
+		startTime = System.currentTimeMillis();
+		n = jobQueue.size();
+
+		/* FIXME: Keeping the behaviour for now. */
+		jobQueue.forEach(j -> LOGGER.info("Scheduling job '{}'", j.getPath()));
+
 		/* FIXME: Just schedule everything */
-		jobQueue.forEach(j -> {
-			LOGGER.info("Scheduling job '{}'", j.getPath());
-			JobAttempt att = ops.runJob(j);
-			recordAttempt(att, j);
-		});
+		Collection<JobAttempt> attempts = ops.runJobs(jobQueue);
+		recordAttempts(attempts, jobQueue);
+
+		taken = (System.currentTimeMillis() - startTime) / 1000.0;
+		LOGGER.trace("Created {} attempts in {} seconds", n, taken);
 
 		jobQueue.clear();
 

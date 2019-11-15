@@ -25,6 +25,7 @@ import au.edu.uq.rcc.nimrodg.setup.UserConfig;
 import au.edu.uq.rcc.nimrodg.test.APITests;
 import au.edu.uq.rcc.nimrodg.test.TestConfig;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.After;

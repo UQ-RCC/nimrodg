@@ -90,8 +90,8 @@ public class DBExperimentHelpers extends DBBaseHelper {
 	private final PreparedStatement qUpdateExperimentState;
 
 	private final PreparedStatement qGetSingleJob;
+	private final PreparedStatement qGetJobRange;
 	private final PreparedStatement qGetJobAttempts;
-	private final PreparedStatement qFilterJobs;
 	private final PreparedStatement qGetNextJobId;
 
 	private final PreparedStatement qCreateJobAttempt;
@@ -136,10 +136,10 @@ public class DBExperimentHelpers extends DBBaseHelper {
 		this.qUpdateExperimentState = prepareStatement("UPDATE nimrod_experiments SET state = ? WHERE id = ?");
 
 		this.qGetSingleJob = prepareStatement("SELECT * FROM nimrod_jobs WHERE id = ?");
+		this.qGetJobRange = prepareStatement("SELECT * FROM nimrod_jobs WHERE exp_id = ? AND job_index >= COALESCE(?, 0) ORDER BY job_index ASC LIMIT ?");
 		this.qGetJobAttempts = prepareStatement("SELECT * FROM nimrod_job_attempts WHERE job_id = ?");
 
 		/* The finer-grained filtering is done application-side, row by row. */
-		this.qFilterJobs = prepareStatement("SELECT id FROM nimrod_jobs WHERE exp_id = ? AND job_index >= COALESCE(?, 0) ORDER BY job_index ASC LIMIT ?");
 		this.qGetNextJobId = prepareStatement("SELECT COALESCE(MAX(job_index) + 1, 1) FROM nimrod_jobs WHERE exp_id = ?");
 
 		this.qCreateJobAttempt = prepareStatement("INSERT INTO nimrod_job_attempts(job_id, uuid, token, path) VALUES(?, ?, ?, ?)", true);
@@ -543,18 +543,17 @@ public class DBExperimentHelpers extends DBBaseHelper {
 	}
 
 	private long[] addJobs2(long expId, String expPath, Collection<Map<String, String>> jobs, long baseIndex) throws SQLException {
-		long[] indices = LongStream.range(baseIndex, baseIndex + jobs.size()).toArray();
-		long[] jobIds = new long[indices.length];
+		long[] jobIds = new long[jobs.size()];
 		/* Don't let Sqlite add the instant here, the NOW value isn't consistent within a transaction. */
 		Instant now = Instant.now();
 
 		int i = 0;
 		for(Map<String, String> job : jobs) {
 			qInsertJob.setLong(1, expId);
-			qInsertJob.setLong(2, indices[i]);
+			qInsertJob.setLong(2, baseIndex + i);
 			DBUtils.setLongInstant(qInsertJob, 3, now);
 			qInsertJob.setString(4, JsonUtils.buildJobsJson(job).toString());
-			qInsertJob.setString(5, String.format("%s/%d", expPath, indices[i]));
+			qInsertJob.setString(5, String.format("%s/%d", expPath, baseIndex + i));
 			if(qInsertJob.executeUpdate() == 0) {
 				throw new SQLException("Creating job failed, no rows affected");
 			}
@@ -568,6 +567,7 @@ public class DBExperimentHelpers extends DBBaseHelper {
 			}
 			++i;
 		}
+
 		return jobIds;
 	}
 
@@ -575,6 +575,39 @@ public class DBExperimentHelpers extends DBBaseHelper {
 		qUpdateExperimentState.setString(1, Experiment.stateToString(state));
 		qUpdateExperimentState.setLong(2, expId);
 		qUpdateExperimentState.executeUpdate();
+	}
+
+	public List<TempJob> getJobRange(long expId, long start, long limit) throws SQLException {
+		if(limit > Integer.MAX_VALUE) {
+			throw new IllegalArgumentException();
+		} else if(limit <= 0) {
+			limit = Integer.MAX_VALUE;
+		}
+
+		qGetJobRange.setLong(1, expId);
+		qGetJobRange.setLong(2, start <= 0 ? 1 : start);
+		qGetJobRange.setLong(3, limit);
+
+		List<TempJob> jobs = new ArrayList<>();
+		try(ResultSet rs = qGetJobRange.executeQuery()) {
+			while(rs.next()) {
+				long jobIndex = rs.getLong("job_index");
+				Map<String, String> vars = JsonUtils.jobFromJson(DBUtils.getJSONObject(rs, "variables"));
+				vars.put("jobindex", String.valueOf(jobIndex));
+				vars.put("jobname", String.valueOf(jobIndex));
+
+				jobs.add(new TempJob(
+						rs.getLong("id"),
+						rs.getLong("exp_id"),
+						jobIndex,
+						DBUtils.getLongInstant(rs, "created"),
+						rs.getString("path"),
+						vars
+				));
+			}
+		}
+
+		return jobs;
 	}
 
 	public Optional<TempJob> getSingleJob(long jobId) throws SQLException {
@@ -666,55 +699,18 @@ public class DBExperimentHelpers extends DBBaseHelper {
 	}
 
 	public List<TempJob> filterJobs(long expId, EnumSet<JobAttempt.Status> status, long start, long limit) throws SQLException {
-		if(limit > Integer.MAX_VALUE) {
-			throw new IllegalArgumentException();
-		} else if(limit <= 0) {
-			limit = Integer.MAX_VALUE;
+		List<TempJob> tempJobs = getJobRange(expId, start, limit);
+
+		List<TempJob> jobs = new ArrayList<>(tempJobs.size());
+		for(TempJob j : tempJobs) {
+			JobCounts c = getJobCounts(j.id);
+
+			if(status.contains(c.status)) {
+				jobs.add(j);
+			}
 		}
 
-		List<Long> jobs = new ArrayList<>();
-
-		long _start = start <= 0 ? 1 : start;
-		while(jobs.size() < limit) {
-			int queryCount = (int)limit - jobs.size();
-			if(queryCount > 1000) {
-				queryCount = 1000;
-			}
-
-			qFilterJobs.setLong(1, expId);
-			qFilterJobs.setObject(2, _start);
-			qFilterJobs.setLong(3, queryCount);
-			List<Long> ids = new ArrayList<>();
-			try(ResultSet rs = qFilterJobs.executeQuery()) {
-				while(rs.next()) {
-					ids.add(rs.getLong("id"));
-				}
-			}
-
-			if(ids.isEmpty()) {
-				break;
-			}
-
-			for(Long l : ids) {
-				JobCounts c = getJobCounts(l);
-				if(status.contains(c.status)) {
-					jobs.add(l);
-
-					if(jobs.size() >= limit) {
-						break;
-					}
-				}
-			}
-
-			_start += ids.size();
-		}
-
-		List<TempJob> _jobs = new ArrayList<>(jobs.size());
-		for(Long l : jobs) {
-			_jobs.add(getSingleJob(l).get());
-		}
-
-		return _jobs;
+		return jobs;
 	}
 
 	public List<TempJob> getJobsById(long[] ids) throws SQLException {
@@ -738,12 +734,7 @@ public class DBExperimentHelpers extends DBBaseHelper {
 		}
 
 		long[] ids = addJobs2(expId, expPath, jobs, nextIndex);
-
-		List<TempJob> jj = new ArrayList<>();
-		for(int i = 0; i < ids.length; ++i) {
-			jj.add(getSingleJob(ids[i]).get());
-		}
-		return jj;
+		return getJobRange(expId, nextIndex, ids.length);
 	}
 
 	public TempJobAttempt createJobAttempt(long jobId, String jobPath, UUID uuid) throws SQLException {

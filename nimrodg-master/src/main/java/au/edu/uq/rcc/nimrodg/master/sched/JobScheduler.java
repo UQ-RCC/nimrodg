@@ -25,6 +25,9 @@ import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.Job;
 import au.edu.uq.rcc.nimrodg.api.JobAttempt;
 import au.edu.uq.rcc.nimrodg.master.sched.AgentScheduler.Operations.FailureReason;
+
+import java.util.Collection;
+import java.util.Collections;
 import java.util.UUID;
 
 public interface JobScheduler {
@@ -33,13 +36,7 @@ public interface JobScheduler {
 
 		Experiment getExperiment();
 
-		/**
-		 * Run a job.
-		 *
-		 * @param j The job to run.
-		 * @return The attempt instance.
-		 */
-		JobAttempt runJob(Job j);
+		Collection<JobAttempt> runJobs(Collection<Job> jobs);
 
 		void cancelJob(JobAttempt att);
 
@@ -74,12 +71,11 @@ public interface JobScheduler {
 	void setJobOperations(Operations ops) throws IllegalArgumentException;
 
 	/**
-	 * Record a job attempt without actually launching it. This should only be used for state recovery purposes.
-	 *
-	 * @param att The job attempt.
-	 * @param job The attempt's job.
+	 * Record job attempts without actually launching them. This should only be used for state recovery purposes.
+	 * @param atts The collection of job attempts.
+	 * @param jobs The collection of jobs.
 	 */
-	void recordAttempt(JobAttempt att, Job job);
+	void recordAttempts(Collection<JobAttempt> atts, Collection<Job> jobs);
 
 	void onJobAdd(Job job);
 
