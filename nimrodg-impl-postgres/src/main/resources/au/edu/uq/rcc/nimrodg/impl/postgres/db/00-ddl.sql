@@ -20,11 +20,11 @@
 DROP DOMAIN IF EXISTS nimrod_identifier CASCADE;
 CREATE DOMAIN nimrod_identifier AS TEXT CHECK (VALUE ~ '^[a-zA-Z0-9_]+$');
 DROP DOMAIN IF EXISTS nimrod_variable_identifier CASCADE;
-CREATE DOMAIN nimrod_variable_identifier AS TEXT CHECK (VALUE ~ '^[a-zA-Z_](?:[a-zA-Z0-9_])*$');
+CREATE DOMAIN nimrod_variable_identifier AS TEXT CHECK (VALUE ~ '^[a-zA-Z_][a-zA-Z0-9_]*$');
 DROP DOMAIN IF EXISTS nimrod_kv_config_key CASCADE;
-CREATE DOMAIN nimrod_kv_config_key AS TEXT CHECK (VALUE ~ '^[a-zA-Z0-9_]+(?:(?:\.[a-zA-Z0-9_]+)+)?$');
+CREATE DOMAIN nimrod_kv_config_key AS TEXT CHECK (VALUE ~ '^[a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+)*');
 DROP DOMAIN IF EXISTS nimrod_path CASCADE;
-CREATE DOMAIN nimrod_path AS TEXT CHECK (VALUE ~ '^[a-zA-Z0-9_]+(?:(?:\/[a-zA-Z0-9_]+)+)?$');
+CREATE DOMAIN nimrod_path AS TEXT CHECK (VALUE ~ '^[a-zA-Z0-9_]+(?:\/[a-zA-Z0-9_]+)*$');
 
 /*
 ** Create a random hex token of a specified length.

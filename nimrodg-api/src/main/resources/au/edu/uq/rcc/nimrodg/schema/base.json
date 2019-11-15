@@ -1,5 +1,5 @@
 {
-	"$schema": "http://json-schema.org/draft-04/schema#",
+	"$schema": "http://json-schema.org/draft-07/schema#",
 	"definitions": {
 		"identifier": {
 			"type": "string",
@@ -7,33 +7,12 @@
 		},
 		"variable_identifier": {
 			"type": "string",
-			"pattern": "^[a-zA-Z_](?:[a-zA-Z0-9_])*$"
+			"pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
 		},
 		"config_key": {
 			"type": "string",
-			"pattern": "^[a-zA-Z0-9_]+(?:(?:\\.[a-zA-Z0-9_]+)+)?$"
+			"pattern": "^[a-zA-Z0-9_]+(?:\\.[a-zA-Z0-9_]+)*"
 		},
-		"resource_path": {
-			"type": "string",
-			"pattern": "^[a-zA-Z0-9_]+(?:(?:/[a-zA-Z0-9_]+)+)?$"
-		},
-		"variable_definition": {
-			"type": "object",
-			"properties": {
-				"name": {
-					"type": "string",
-					"pattern": "^[a-zA-Z_](?:[a-zA-Z0-9_])*$"
-				},
-				"values": {
-					"type": "array",
-					"minItems": 1,
-					"items": { "type": "string" }
-				}
-			},
-			"minProperties": 1,
-			"additionalProperties": false
-		},
-		"run_name": { "$ref": "#/definitions/identifier" },
 		"experiment_name": { "$ref": "#/definitions/identifier" },
 		"resource_name": { "$ref": "#/definitions/identifier" }
 	}
