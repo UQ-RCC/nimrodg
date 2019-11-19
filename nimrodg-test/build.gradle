@@ -8,4 +8,6 @@ dependencies {
 	implementation group: 'org.apache.logging.log4j', name: 'log4j-1.2-api', version: LOG4J_VERSION
 	runtimeOnly group: 'org.apache.logging.log4j', name: 'log4j-jul', version: LOG4J_VERSION
 	runtimeOnly group: 'org.apache.logging.log4j', name: 'log4j-slf4j-impl', version: LOG4J_VERSION
+
+	runtimeOnly group: 'org.glassfish', name: 'javax.json', version: JAVAX_JSON_VERSION
 }

@@ -140,6 +140,7 @@ CREATE VIEW nimrod_full_experiments AS(
 	SELECT
 		e.*,
 		array_to_json(e.variables) AS vars_json,
+		array_to_json(e.results) AS results_json,
 		export_tasks(e.id) AS tasks_json
 	FROM
 		nimrod_experiments AS e

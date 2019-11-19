@@ -38,6 +38,8 @@ public class TestUtils {
 		return PARSE_API.parseRunToBuilder(
 				"variable x index 0 list \"value-x-0\" \"value-x-1\" \"2\" \"a\" \"za\" \"sf\" \"a\" \"s\" \"a\" \"sdfa\" \"sd\" \"asdfasd\" \"\\x20\"\n"
 				+ "variable y index 1 list \"value-y-0\" \"value-y-1\" \"10\"\n"
+				+ "result z\n"
+				+ "result w\n"
 				+ "\n"
 				+ "jobs\n"
 				+ "	0001 0 0\n"

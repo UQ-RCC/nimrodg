@@ -453,6 +453,7 @@ public class DBExperimentHelpers extends DBBaseHelper {
 				rs.getString("file_token"),
 				rs.getString("path"),
 				JsonUtils.stringListFromJson(DBUtils.getJSONArray(rs, "vars_json")),
+				JsonUtils.stringListFromJson(DBUtils.getJSONArray(rs, "results_json")),
 				JsonUtils.taskListFromJson(DBUtils.getJSONObject(rs, "tasks_json"))
 		);
 	}

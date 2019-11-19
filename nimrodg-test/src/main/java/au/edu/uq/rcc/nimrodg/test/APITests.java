@@ -108,6 +108,11 @@ public abstract class APITests {
 
 		Assert.assertEquals(exp, exp2);
 
+		Assert.assertEquals(Set.of("x", "y"), exp.getVariables());
+		Assert.assertEquals(Set.of("z", "w"), exp.getResultVariables());
+		Assert.assertEquals(Set.of("x", "y"), exp2.getVariables());
+		Assert.assertEquals(Set.of("z", "w"), exp2.getResultVariables());
+
 		Map<Task.Name, Task> tasks = exp.getTasks();
 
 		Job newJob = api.addSingleJob(exp, Map.of("x", "xxx", "y", "yyy"));
@@ -139,10 +144,7 @@ public abstract class APITests {
 		Collection<String> vars = exp.getVariables();
 
 		/* Make sure we don't contain any of our implicit variables. */
-		Assert.assertEquals(2, vars.size());
-		Assert.assertTrue(vars.contains("x"));
-		Assert.assertTrue(vars.contains("y"));
-
+		Assert.assertEquals(Set.of("x", "y"), vars);
 	}
 
 	@Test

@@ -36,6 +36,7 @@ CREATE TABLE nimrod_experiments(
 	-- - The second copy, in nimrod_variables, is used for substitution validation so it contains
 	--   the implicit ones too.
 	variables TEXT[] NOT NULL,
+	results TEXT[] NOT NULL,
 	path nimrod_path NOT NULL UNIQUE
 );
 -- Use add_compiled_experiment() for adding. There is no facility for adding them manually.

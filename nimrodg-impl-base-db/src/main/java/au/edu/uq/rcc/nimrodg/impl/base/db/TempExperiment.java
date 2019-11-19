@@ -42,13 +42,14 @@ public final class TempExperiment {
 	public final String fileToken;
 	public final String path;
 	public final Set<String> variables;
+	public final Set<String> resultVariables;
 
 	/* TODO: These are rarely used, if ever. It might be worth getting them on-demand once and caching it,
 	 * as it's expensive to generate DB-side.
 	 */
 	public final Map<Task.Name, CompiledTask> tasks;
 
-	public TempExperiment(long id, String name, String workDir, Experiment.State state, Instant created, String fileToken, String path, Collection<String> variables, Collection<CompiledTask> tasks) {
+	public TempExperiment(long id, String name, String workDir, Experiment.State state, Instant created, String fileToken, String path, Collection<String> variables, Collection<String> resultVariables, Collection<CompiledTask> tasks) {
 		this.id = id;
 		this.name = name;
 		this.workDir = workDir;
@@ -57,6 +58,7 @@ public final class TempExperiment {
 		this.fileToken = fileToken;
 		this.path = path;
 		this.variables = Set.copyOf(variables);
+		this.resultVariables = Set.copyOf(resultVariables);
 		this.tasks = Map.copyOf(tasks.stream().collect(Collectors.toMap(ct -> ct.name, ct -> ct)));
 	}
 
@@ -100,6 +102,11 @@ public final class TempExperiment {
 		@Override
 		public Set<String> getVariables() {
 			return variables;
+		}
+
+		@Override
+		public Set<String> getResultVariables() {
+			return resultVariables;
 		}
 
 		@Override

@@ -40,6 +40,9 @@ import au.edu.uq.rcc.nimrodg.impl.base.db.TempExperiment;
 import au.edu.uq.rcc.nimrodg.impl.base.db.TempJob;
 import au.edu.uq.rcc.nimrodg.impl.base.db.TempJobAttempt;
 
+import javax.json.Json;
+import javax.json.JsonArray;
+import javax.json.JsonString;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -47,6 +50,7 @@ import java.sql.SQLException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -110,7 +114,7 @@ public class DBExperimentHelpers extends DBBaseHelper {
 
 		this.qGetReservedVariables = prepareStatement("SELECT name FROM nimrod_reserved_variables");
 
-		this.qInsertExperiment = prepareStatement("INSERT INTO nimrod_experiments(name, work_dir, file_token, path) VALUES(?, ?, ?, ?)", true);
+		this.qInsertExperiment = prepareStatement("INSERT INTO nimrod_experiments(name, work_dir, file_token, results, path) VALUES(?, ?, ?, ?, ?)", true);
 		this.qInsertVariable = prepareStatement("INSERT INTO nimrod_variables(exp_id, name) VALUES(?, ?)", true);
 		this.qInsertTask = prepareStatement("INSERT INTO nimrod_tasks(exp_Id, name) VALUES(?, ?)", true);
 		this.qInsertCommand = prepareStatement("INSERT INTO nimrod_commands(command_index, task_id, type) VALUES(?, ?, ?)", true);
@@ -347,7 +351,7 @@ public class DBExperimentHelpers extends DBBaseHelper {
 			workDir = workDir + "/";
 		}
 
-		long expId = addExperiment(name, workDir, fileToken);
+		long expId = addExperiment(name, workDir, fileToken, exp.results);
 
 		/* Add the variables and build a lookup table. */
 		long[] varIds = addVariables(expId, names);
@@ -397,12 +401,13 @@ public class DBExperimentHelpers extends DBBaseHelper {
 		return r;
 	}
 
-	private long addExperiment(String name, String workDir, String fileToken) throws SQLException {
+	private long addExperiment(String name, String workDir, String fileToken, Collection<String> results) throws SQLException {
 		/* Add the experiment */
 		qInsertExperiment.setString(1, name);
 		qInsertExperiment.setString(2, workDir);
 		qInsertExperiment.setString(3, fileToken);
-		qInsertExperiment.setString(4, name); // path
+		qInsertExperiment.setString(4, Json.createArrayBuilder(results).build().toString());
+		qInsertExperiment.setString(5, name); // path
 
 		int upd = qInsertExperiment.executeUpdate();
 		if(upd == 0) {
@@ -878,6 +883,9 @@ public class DBExperimentHelpers extends DBBaseHelper {
 				rs.getString("file_token"),
 				rs.getString("path"),
 				getExperimentUserVars(expId),
+				DBUtils.getJSONArray(rs, "results").stream()
+						.map(a -> ((JsonString)a).getString())
+						.collect(Collectors.toList()),
 				getExperimentTasks(expId)
 		);
 	}

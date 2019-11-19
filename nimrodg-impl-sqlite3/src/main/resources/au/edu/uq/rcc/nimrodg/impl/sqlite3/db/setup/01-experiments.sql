@@ -25,6 +25,7 @@ CREATE TABLE nimrod_experiments(
 	work_dir TEXT NOT NULL UNIQUE,
 	created INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
 	file_token TEXT NOT NULL,
+	results TEXT NOT NULL,
 	path TEXT NOT NULL UNIQUE
 );
 

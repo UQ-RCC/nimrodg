@@ -43,6 +43,8 @@ public interface Experiment extends NimrodEntity {
 
 	Set<String> getVariables();
 
+	Set<String> getResultVariables();
+
 	/**
 	 * Get a list of jobs that satisfy the given criteria.
 	 *

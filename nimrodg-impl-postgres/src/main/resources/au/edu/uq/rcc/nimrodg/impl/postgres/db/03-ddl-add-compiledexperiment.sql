@@ -108,9 +108,11 @@ DECLARE
 	count_ BIGINT;
 
 	vars TEXT[];
+	rvars TEXT[];
 	eexp_id BIGINT;
 	exp_row nimrod_full_experiments;
 BEGIN
+	-- Validate "variables"
 	SELECT
 		array_agg(v.*) INTO vars
 	FROM
@@ -142,6 +144,24 @@ BEGIN
 		RAISE EXCEPTION 'Experiment cannot have variables with reserved names.';
 	END IF;
 
+
+	-- Validate "results"
+	SELECT
+		COALESCE(array_agg(v.*), ARRAY[]::TEXT[]) INTO rvars
+	FROM
+		jsonb_array_elements_text(_exp->'results') AS v
+	;
+
+	SELECT
+		COUNT(a.*) INTO count_
+	FROM
+		(SELECT DISTINCT * FROM unnest(rvars)) AS a
+	;
+
+	IF count_ != array_length(rvars, 1) THEN
+		RAISE EXCEPTION 'Duplicate result names';
+	END IF;
+
 	-- Ensure we have a file token
 	IF _file_token IS NULL THEN
 		_file_token := _generate_random_token(32);
@@ -153,8 +173,8 @@ BEGIN
 	END IF;
 
 	-- Add the experiment
-	INSERT INTO nimrod_full_experiments(name, work_dir, file_token, variables, path)
-	VALUES(_name, _work_dir, _file_token, vars, _name)
+	INSERT INTO nimrod_full_experiments(name, work_dir, file_token, variables, results, path)
+	VALUES(_name, _work_dir, _file_token, vars, rvars, _name)
 	RETURNING id INTO eexp_id;
 
 	-- Add the variables
