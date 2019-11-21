@@ -102,5 +102,7 @@ public interface NimrodMasterAPI extends NimrodAPI {
 	 */
 	CommandResult addCommandResult(JobAttempt att, CommandResult.CommandResultStatus status, long index, float time, int retval, String message, int errcode, boolean stop);
 
+	//void addJobResults(Job job, Collection<Map<String, String>> results);
+
 	Collection<NimrodMasterEvent> pollMasterEvents();
 }

@@ -82,4 +82,6 @@ public interface Job extends NimrodEntity {
 	 * @return The status of the job.
 	 */
 	JobAttempt.Status getStatus();
+
+	Collection<Map<String, String>> getResults();
 }

@@ -268,6 +268,17 @@ CREATE OR REPLACE FUNCTION add_command_result(
 	RETURNING *;
 $$ LANGUAGE SQL VOLATILE;
 
+-- These are "owned" by the command, but need to be looked-up by the job and attempts
+DROP TABLE IF EXISTS nimrod_job_results;
+CREATE TABLE nimrod_job_results(
+	id			BIGSERIAL NOT NULL PRIMARY KEY,
+	command_id	BIGINT NOT NULL REFERENCES nimrod_command_results(id) ON DELETE CASCADE,
+	attempt_id	BIGINT REFERENCES nimrod_job_attempts(id) ON DELETE SET NULL,
+	job_id		BIGINT REFERENCES nimrod_jobs(id) ON DELETE SET NULL,
+	results		JSONB NOT NULL,
+);
+
+CREATE OR REPLACE FUNCTION add_job_result()
 CREATE OR REPLACE FUNCTION create_job_attempt(_job_id BIGINT, _uuid UUID) RETURNS SETOF nimrod_job_attempts AS $$
 	INSERT INTO nimrod_job_attempts(job_id, uuid)
 	VALUES (_job_id, _uuid)

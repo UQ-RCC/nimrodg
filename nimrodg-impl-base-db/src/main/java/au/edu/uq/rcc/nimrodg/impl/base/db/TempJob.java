@@ -22,10 +22,12 @@ package au.edu.uq.rcc.nimrodg.impl.base.db;
 import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.Job;
 import au.edu.uq.rcc.nimrodg.api.JobAttempt;
+
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Map;
 
 public class TempJob {
@@ -90,6 +92,11 @@ public class TempJob {
 		@Override
 		public JobAttempt.Status getStatus() {
 			return m_DB.runSQL(() -> m_DB.getJobStatus(this));
+		}
+
+		@Override
+		public Collection<Map<String, String>> getResults() {
+			return List.of();
 		}
 
 		@Override
