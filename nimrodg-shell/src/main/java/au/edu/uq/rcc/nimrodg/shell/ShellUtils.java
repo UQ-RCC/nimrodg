@@ -29,7 +29,7 @@ public class ShellUtils {
 
     public static PublicKey parseAuthorizedKeyEntry(String s) throws IOException, GeneralSecurityException {
         return AuthorizedKeyEntry.parseAuthorizedKeyEntry(s)
-                .resolvePublicKey(PublicKeyEntryResolver.FAILING);
+                .resolvePublicKey(null, PublicKeyEntryResolver.FAILING);
     }
     public static Optional<String> getUriUser(URI uri) {
         return getUriUser(Optional.ofNullable(uri));
