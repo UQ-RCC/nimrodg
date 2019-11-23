@@ -41,6 +41,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -73,18 +74,18 @@ public class LocalActuator implements Actuator {
 		DISCONNECTED
 	}
 
-	private class LocalAgent {
+	private static class LocalAgent {
 
-		public final UUID uuid;
-		public final Path workRoot;
-		public final Optional<Path> outputPath;
-		public final ProcessBuilder builder;
-		public Process process;
-		public ProcessHandle handle;
-		public CompletableFuture<Void> future;
-		public LocalState state;
+		final UUID uuid;
+		final Path workRoot;
+		final Optional<Path> outputPath;
+		final ProcessBuilder builder;
+		Process process;
+		ProcessHandle handle;
+		CompletableFuture<Void> future;
+		LocalState state;
 
-		public LocalAgent(UUID uuid, Path workRoot, Optional<Path> outputPath, ProcessBuilder builder) {
+		private LocalAgent(UUID uuid, Path workRoot, Optional<Path> outputPath, ProcessBuilder builder) {
 			this.uuid = uuid;
 			this.workRoot = workRoot;
 			this.outputPath = outputPath;
@@ -255,6 +256,7 @@ public class LocalActuator implements Actuator {
 
 		if(captureMode == CaptureMode.COPY) {
 			Path logPath = tmpRoot.resolve(String.format("agent-%s.txt", la.uuid));
+			assert la.outputPath.isPresent();
 			try {
 				Files.move(la.outputPath.get(), logPath);
 			} catch(IOException e) {
@@ -323,7 +325,7 @@ public class LocalActuator implements Actuator {
 			results[i] = new LaunchResult(node, null, null, Json.createObjectBuilder()
 					.add("pid", la.handle.pid())
 					.add("work_root", la.workRoot.toString())
-					.add("output_path", la.outputPath.map(p -> p.toString()).orElse(""))
+					.add("output_path", la.outputPath.map(Path::toString).orElse(""))
 					.build()
 			);
 			LOGGER.info("Launched agent {} with PID {}", la.uuid, la.handle.pid());
@@ -342,8 +344,8 @@ public class LocalActuator implements Actuator {
 		LocalAgent[] las;
 		synchronized(agents) {
 			las = Arrays.stream(uuid)
-					.map(u -> agents.remove(u))
-					.filter(la -> la != null)
+					.map(agents::remove)
+					.filter(Objects::nonNull)
 					.toArray(LocalAgent[]::new);
 		}
 
@@ -365,7 +367,7 @@ public class LocalActuator implements Actuator {
 	}
 
 	@Override
-	public void close() throws IOException {
+	public void close() {
 		if(isClosed) {
 			return;
 		}
@@ -484,7 +486,7 @@ public class LocalActuator implements Actuator {
 		}
 
 		Optional<Path> outputPath = Optional.ofNullable(data.getJsonString("output_path"))
-				.map(js -> js.getString())
+				.map(JsonString::getString)
 				.filter(s -> !s.isEmpty())
 				.map(s -> Paths.get(s));
 

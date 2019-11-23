@@ -25,6 +25,7 @@ import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.api.Resource;
 import au.edu.uq.rcc.nimrodg.api.ResourceFullException;
 import au.edu.uq.rcc.nimrodg.resource.SSHResourceType;
+
 import java.io.IOException;
 import java.security.cert.Certificate;
 import java.time.Instant;
@@ -165,13 +166,13 @@ public class RemoteActuator extends POSIXActuator<SSHResourceType.SSHConfig> {
 	}
 
 	@Override
-	protected void close(RemoteShell shell) throws IOException {
+	protected void close(RemoteShell shell) {
 		kill(shell, agents.values().stream().mapToInt(ra -> ra.pid).toArray());
 	}
 
-	private boolean kill(RemoteShell shell, int[] pids) {
+	private void kill(RemoteShell shell, int[] pids) {
 		if(pids.length == 0) {
-			return true;
+			return;
 		}
 
 		String[] spids = IntStream.of(pids).mapToObj(String::valueOf).toArray(String[]::new);
@@ -179,12 +180,10 @@ public class RemoteActuator extends POSIXActuator<SSHResourceType.SSHConfig> {
 
 		try {
 			shell.runCommand(args);
-			return true;
 		} catch(IOException e) {
 			if(LOGGER.isErrorEnabled()) {
 				LOGGER.error(String.format("Unable to execute kill for jobs '%s'", String.join(",", args)), e);
 			}
-			return false;
 		}
 	}
 

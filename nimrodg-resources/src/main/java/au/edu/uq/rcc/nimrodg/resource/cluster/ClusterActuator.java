@@ -54,6 +54,7 @@ import javax.json.JsonString;
 
 public abstract class ClusterActuator<C extends ClusterConfig> extends POSIXActuator<C> {
 
+	@SuppressWarnings("WeakerAccess")
 	protected static class TempBatch {
 
 		public final UUID batchUuid;
@@ -65,7 +66,7 @@ public abstract class ClusterActuator<C extends ClusterConfig> extends POSIXActu
 		public final int to;
 		public final UUID[] uuids;
 
-		public TempBatch(UUID batchUuid, String scriptPath, String script, String stdoutPath, String stderrPath, int from, int to, UUID[] uuids) {
+		TempBatch(UUID batchUuid, String scriptPath, String script, String stdoutPath, String stderrPath, int from, int to, UUID[] uuids) {
 			this.batchUuid = batchUuid;
 			this.scriptPath = scriptPath;
 			this.script = script;
@@ -79,18 +80,18 @@ public abstract class ClusterActuator<C extends ClusterConfig> extends POSIXActu
 
 	protected static final class Batch {
 
-		public final String jobId;
-		public final LaunchResult[] results;
-		public final UUID[] uuids;
+		final String jobId;
+		final LaunchResult[] results;
+		final UUID[] uuids;
 
-		public Batch(String jobId, int size) {
+		Batch(String jobId, int size) {
 			this.jobId = jobId;
 			this.results = new LaunchResult[size];
 			this.uuids = new UUID[size];
 		}
 	}
 
-	protected final ConcurrentHashMap<UUID, Batch> jobNames;
+	private final ConcurrentHashMap<UUID, Batch> jobNames;
 
 	public ClusterActuator(Operations ops, Resource node, NimrodURI amqpUri, Certificate[] certs, C cfg) throws IOException {
 		super(ops, node, amqpUri, certs, cfg);
@@ -192,9 +193,9 @@ public abstract class ClusterActuator<C extends ClusterConfig> extends POSIXActu
 	@Override
 	public final void forceTerminateAgent(RemoteShell shell, UUID[] uuids) {
 		/* Filter whole batches. */
-		Map<Batch, List<UUID>> batches = NimrodUtils.mapToParent(Arrays.stream(uuids), u -> jobNames.get(u)).entrySet().stream()
+		Map<Batch, List<UUID>> batches = NimrodUtils.mapToParent(Arrays.stream(uuids), jobNames::get).entrySet().stream()
 				.filter(e -> Set.of(e.getKey().uuids).equals(new HashSet<>(e.getValue())))
-				.collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
+				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
 		String[] jobs = batches.keySet().stream().map(b -> b.jobId).distinct().toArray(String[]::new);
 		if(jobs.length > 0 && !killJobs(shell, jobs)) {

@@ -41,7 +41,7 @@ import javax.json.JsonStructure;
 
 public abstract class ClusterResourceType extends SSHResourceType {
 
-	public final String argsName;
+	private final String argsName;
 
 	public ClusterResourceType(String name, String displayName, String argsName) {
 		super(name, displayName);
