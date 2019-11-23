@@ -17,9 +17,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package au.edu.uq.rcc.nimrodg.resource;
+package au.edu.uq.rcc.nimrodg.shell;
 
-import au.edu.uq.rcc.nimrodg.resource.act.ActuatorUtils;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -107,7 +106,7 @@ public class OneShotCommand implements Command {
 
 	@Override
 	public void start(Environment arg0) throws IOException {
-		String[] argv = ActuatorUtils.translateCommandline(this.command);
+		String[] argv = ShellUtils.translateCommandline(this.command);
 		int ret = execCommand(argv);
 		if(onExit != null) {
 			onExit.onExit(ret);

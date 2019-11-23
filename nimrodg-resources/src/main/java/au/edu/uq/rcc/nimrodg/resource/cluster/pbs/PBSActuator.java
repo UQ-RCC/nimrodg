@@ -22,15 +22,16 @@ package au.edu.uq.rcc.nimrodg.resource.cluster.pbs;
 import java.io.IOException;
 import java.security.cert.Certificate;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
-import au.edu.uq.rcc.nimrodg.resource.ssh.RemoteShell;
 import java.util.UUID;
+
+import au.edu.uq.rcc.nimrodg.shell.RemoteShell;
+import au.edu.uq.rcc.nimrodg.shell.ShellUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import au.edu.uq.rcc.nimrodg.api.Resource;
-import au.edu.uq.rcc.nimrodg.resource.act.ActuatorUtils;
 import au.edu.uq.rcc.nimrodg.resource.cluster.LegacyClusterActuator;
 import au.edu.uq.rcc.nimrodg.resource.cluster.LegacyClusterResourceType.DialectConfig;
-import au.edu.uq.rcc.nimrodg.resource.ssh.SSHClient;
+import au.edu.uq.rcc.nimrodg.shell.SshdClient;
 import java.util.Arrays;
 import java.util.stream.Stream;
 
@@ -45,13 +46,13 @@ public class PBSActuator extends LegacyClusterActuator {
 	@Override
 	protected void applyBatchedSubmissionArguments(StringBuilder sb, UUID[] uuids, String[] processedArgs, String out, String err) {
 		sb.append(String.format("#PBS %s\n", String.join(" ", processedArgs)));
-		sb.append(String.format("#PBS -o %s\n", ActuatorUtils.posixQuoteArgument(out)));
-		sb.append(String.format("#PBS -e %s\n\n", ActuatorUtils.posixQuoteArgument(err)));
+		sb.append(String.format("#PBS -o %s\n", ShellUtils.quoteArgument(out)));
+		sb.append(String.format("#PBS -e %s\n\n", ShellUtils.quoteArgument(err)));
 	}
 
 	@Override
 	protected String submitBatch(RemoteShell shell, TempBatch batch) throws IOException {
-		SSHClient.CommandResult qsub = shell.runCommand("qsub", batch.scriptPath);
+		SshdClient.CommandResult qsub = shell.runCommand("qsub", batch.scriptPath);
 		if(qsub.status != 0) {
 			throw new IOException("qsub command failed.");
 		}

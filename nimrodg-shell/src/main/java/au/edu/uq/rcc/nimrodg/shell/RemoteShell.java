@@ -17,7 +17,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package au.edu.uq.rcc.nimrodg.resource.ssh;
+package au.edu.uq.rcc.nimrodg.shell;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -33,7 +33,7 @@ import java.util.Collection;
  */
 public interface RemoteShell extends Closeable {
 
-	public static final class CommandResult {
+	final class CommandResult {
 
 		public final String commandLine;
 		public final int status;

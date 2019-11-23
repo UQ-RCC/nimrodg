@@ -11,6 +11,7 @@ include 'nimrodg-impl-base-db'
 include 'nimrodg-impl-postgres'
 include 'nimrodg-impl-sqlite3'
 
+include 'nimrodg-shell'
 include 'nimrodg-resources'
 include 'nimrodg-cli'
 

@@ -20,7 +20,9 @@
 package au.edu.uq.rcc.nimrodg.resource.ssh;
 
 import java.io.IOException;
-import org.apache.sshd.client.session.ClientSession;
+
+import au.edu.uq.rcc.nimrodg.shell.RemoteShell;
+import au.edu.uq.rcc.nimrodg.shell.SshdClient;
 
 /* http://pubs.opengroup.org/onlinepubs/9699919799/utilities/uname.html */
 public class SystemInformation {
@@ -31,7 +33,7 @@ public class SystemInformation {
 	public final String kernelName;
 	public final String kernelVersion;
 
-	private SystemInformation(SSHClient.CommandResult m, SSHClient.CommandResult n, SSHClient.CommandResult r, SSHClient.CommandResult s, SSHClient.CommandResult v) {
+	private SystemInformation(SshdClient.CommandResult m, SshdClient.CommandResult n, SshdClient.CommandResult r, SshdClient.CommandResult s, SshdClient.CommandResult v) {
 		this.machine = m.stdout.trim();
 		this.node = n.stdout.trim();
 		this.kernelRelease = r.stdout.trim();
@@ -46,16 +48,6 @@ public class SystemInformation {
 				<version>, <machine>
 		 */
 		return String.format("%s %s %s %s %s", kernelName, node, kernelRelease, kernelVersion, machine);
-	}
-
-	public static SystemInformation getSystemInformation(ClientSession ses) throws IOException {
-		return new SystemInformation(
-				SSHClient.runCommand(ses, "uname", "-m"),
-				SSHClient.runCommand(ses, "uname", "-n"),
-				SSHClient.runCommand(ses, "uname", "-r"),
-				SSHClient.runCommand(ses, "uname", "-s"),
-				SSHClient.runCommand(ses, "uname", "-v")
-		);
 	}
 
 	public static SystemInformation getSystemInformation(RemoteShell shell) throws IOException {

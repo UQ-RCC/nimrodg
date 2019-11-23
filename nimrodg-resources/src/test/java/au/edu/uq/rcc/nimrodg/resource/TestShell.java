@@ -1,8 +1,8 @@
 package au.edu.uq.rcc.nimrodg.resource;
 
-import au.edu.uq.rcc.nimrodg.resource.act.ActuatorUtils;
-import au.edu.uq.rcc.nimrodg.resource.ssh.RemoteShell;
 import au.edu.uq.rcc.nimrodg.resource.ssh.TransportFactory;
+import au.edu.uq.rcc.nimrodg.shell.RemoteShell;
+import au.edu.uq.rcc.nimrodg.shell.ShellUtils;
 
 import javax.json.JsonObject;
 import javax.json.JsonValue;
@@ -21,10 +21,10 @@ import java.util.Optional;
 
 public class TestShell implements RemoteShell {
 
-	public final Path home;
-	public final FileSystem fs;
+	private final Path home;
+	private final FileSystem fs;
 
-	public TestShell(Path home) {
+	private TestShell(Path home) {
 		this.home = home;
 		this.fs = home.getFileSystem();
 	}
@@ -35,7 +35,7 @@ public class TestShell implements RemoteShell {
 			throw new IllegalArgumentException();
 		}
 
-		String cmdline = ActuatorUtils.posixBuildEscapedCommandLine(args);
+		String cmdline = ShellUtils.buildEscapedCommandLine(args);
 
 		switch(args[0]) {
 			case "env":
@@ -80,11 +80,11 @@ public class TestShell implements RemoteShell {
 
 	}
 
-	public static TestShellFactory createFactory(Path home) {
+	static TestShellFactory createFactory(Path home) {
 		return new TestShellFactory(home);
 	}
 
-	public static TransportFactory.Config createConfig() {
+	static TransportFactory.Config createConfig() {
 		return new TransportFactory.Config(
 				Optional.empty(),
 				Optional.empty(),
@@ -102,7 +102,7 @@ public class TestShell implements RemoteShell {
 		}
 
 		@Override
-		public RemoteShell create(Config cfg, Path workDir) throws IOException {
+		public RemoteShell create(Config cfg, Path workDir) {
 			return new TestShell(home);
 		}
 
@@ -112,7 +112,7 @@ public class TestShell implements RemoteShell {
 		}
 
 		@Override
-		public Config resolveConfiguration(Config cfg) throws IOException {
+		public Config resolveConfiguration(Config cfg) {
 			return cfg;
 		}
 

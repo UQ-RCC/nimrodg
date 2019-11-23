@@ -19,6 +19,8 @@
  */
 package au.edu.uq.rcc.nimrodg.resource.ssh;
 
+import au.edu.uq.rcc.nimrodg.shell.RemoteShell;
+
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
@@ -32,7 +34,7 @@ import javax.json.JsonValue;
 
 public interface TransportFactory {
 
-	public static class Config {
+	class Config {
 
 		public final Optional<URI> uri;
 		public final Optional<String> user;

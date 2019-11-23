@@ -19,13 +19,12 @@
  */
 package au.edu.uq.rcc.nimrodg.resource.act;
 
-import au.edu.uq.rcc.nimrodg.resource.ssh.SSHClient;
+import au.edu.uq.rcc.nimrodg.shell.RemoteShell;
+import au.edu.uq.rcc.nimrodg.shell.SshdClient;
 import au.edu.uq.rcc.nimrodg.api.Actuator;
-import au.edu.uq.rcc.nimrodg.api.NimrodMasterAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.api.Resource;
 import au.edu.uq.rcc.nimrodg.resource.SSHResourceType.SSHConfig;
-import au.edu.uq.rcc.nimrodg.resource.ssh.RemoteShell;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -42,7 +41,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.sshd.common.SshException;
 
 public abstract class POSIXActuator<C extends SSHConfig> implements Actuator {
 
@@ -56,10 +54,7 @@ public abstract class POSIXActuator<C extends SSHConfig> implements Actuator {
 	protected final String routingKey;
 	protected final Certificate[] certs;
 	public final C config;
-	private final String homeDir;
-	private final UUID m_UUID;
 	protected final String nimrodHomeDir;
-	protected final Path agentPath;
 	protected final String remoteAgentPath;
 	protected final Optional<String> remoteCertPath;
 	protected final Map<String, String> remoteEnvironment;
@@ -99,19 +94,23 @@ public abstract class POSIXActuator<C extends SSHConfig> implements Actuator {
 		CleanupStage cs = CleanupStage.Client;
 		try(RemoteShell client = makeClient()) {
 			try {
-				agentPath = Paths.get(config.agentInfo.getPath());
+				Path agentPath = Paths.get(config.agentInfo.getPath());
 
 				remoteEnvironment = readEnv(client);
-				if((homeDir = remoteEnvironment.get("HOME")) == null) {
-					throw new SshException(String.format("Error retrieving home directory"));
+
+				String homeDir = remoteEnvironment.get("HOME");
+				if(homeDir == null) {
+					throw new IOException("Error retrieving home directory");
 				}
 
-				m_UUID = UUID.randomUUID();
-				nimrodHomeDir = ActuatorUtils.posixJoinPaths(homeDir, ".nimrod", m_UUID.toString());
+				nimrodHomeDir = ActuatorUtils.posixJoinPaths(
+						homeDir, ".nimrod",
+						String.format("act-%s-%d", this.getClass().getSimpleName(), (long)uri.hashCode() & 0xFFFFFFFFL)
+				);
 
-				SSHClient.CommandResult mkdir = client.runCommand("mkdir", "-p", nimrodHomeDir);
+				SshdClient.CommandResult mkdir = client.runCommand("mkdir", "-p", nimrodHomeDir);
 				if(mkdir.status != 0) {
-					throw new SshException(String.format("Error creating working directory"));
+					throw new IOException("Error creating working directory");
 				}
 
 				cs = CleanupStage.TmpDir;
@@ -138,11 +137,11 @@ public abstract class POSIXActuator<C extends SSHConfig> implements Actuator {
 		this.isClosed = false;
 	}
 
-	private static Map<String, String> readEnv(RemoteShell client) throws SshException, IOException {
+	private static Map<String, String> readEnv(RemoteShell client) throws IOException {
 		Map<String, String> envs = new HashMap<>();
-		SSHClient.CommandResult env = client.runCommand("env");
+		SshdClient.CommandResult env = client.runCommand("env");
 		if(env.status != 0) {
-			throw new SshException("Error retrieving environment");
+			throw new IOException("Error retrieving environment");
 		}
 
 		String[] lines = env.stdout.split("[\\r\\n]+");
@@ -150,7 +149,7 @@ public abstract class POSIXActuator<C extends SSHConfig> implements Actuator {
 		for(String l : lines) {
 			Matcher m = ENV_PATTERN.matcher(l);
 			if(!m.matches()) {
-				//throw new SshException("Error retrieving environment, malformed 'env' output");
+				//throw new IOException("Error retrieving environment, malformed 'env' output");
 
 				/*
 				 * Tell me this isn't horrible. This was on Flashlite.

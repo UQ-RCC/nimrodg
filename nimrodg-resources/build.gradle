@@ -1,10 +1,5 @@
 dependencies {
 	implementation group: 'net.sourceforge.argparse4j', name: 'argparse4j', version: '0.7.0'
-	implementation group: 'org.apache.sshd', name: 'sshd-core', version: '2.0.0'
-	compileOnly group: 'org.apache.sshd', name: 'sshd-core', version: '2.0.0', classifier: 'sources'
-
-	implementation group: 'org.apache.sshd', name: 'sshd-scp', version: '2.0.0'
-	compileOnly group: 'org.apache.sshd', name: 'sshd-scp', version: '2.0.0', classifier: 'sources'
 
 	implementation group: 'org.bouncycastle', name: 'bcprov-jdk15on', version: '1.60'
 	implementation group: 'org.bouncycastle', name: 'bcpkix-jdk15on', version: '1.60'
@@ -18,6 +13,7 @@ dependencies {
 
 	implementation project(':nimrodg-internal-api')
 	implementation project(':nimrodg-utils')
+	implementation project(':nimrodg-shell')
 	testImplementation project(':nimrodg-test')
 	testImplementation group: 'com.google.jimfs', name: 'jimfs', version: '1.1'
 

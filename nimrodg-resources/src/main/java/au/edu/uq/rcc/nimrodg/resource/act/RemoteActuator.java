@@ -25,8 +25,6 @@ import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.api.Resource;
 import au.edu.uq.rcc.nimrodg.api.ResourceFullException;
 import au.edu.uq.rcc.nimrodg.resource.SSHResourceType;
-import au.edu.uq.rcc.nimrodg.resource.ssh.RemoteShell;
-import au.edu.uq.rcc.nimrodg.resource.ssh.RemoteShell.CommandResult;
 import java.io.IOException;
 import java.security.cert.Certificate;
 import java.time.Instant;
@@ -34,6 +32,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.IntStream;
@@ -42,6 +41,8 @@ import javax.json.Json;
 import javax.json.JsonNumber;
 import javax.json.JsonObject;
 import javax.json.JsonString;
+
+import au.edu.uq.rcc.nimrodg.shell.RemoteShell;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -55,14 +56,14 @@ public class RemoteActuator extends POSIXActuator<SSHResourceType.SSHConfig> {
 		DISCONNECTED
 	}
 
-	private class RemoteAgent {
+	private static class RemoteAgent {
 
-		public final UUID uuid;
-		public final int pid;
-		public final String workRoot;
+		final UUID uuid;
+		final int pid;
+		final String workRoot;
 		public RemoteState state;
 
-		public RemoteAgent(UUID uuid, int pid, String workRoot) {
+		RemoteAgent(UUID uuid, int pid, String workRoot) {
 			this.uuid = uuid;
 			this.pid = pid;
 			this.workRoot = workRoot;
@@ -125,7 +126,7 @@ public class RemoteActuator extends POSIXActuator<SSHResourceType.SSHConfig> {
 			);
 
 			String[] _args = args.stream().toArray(String[]::new);
-			CommandResult cr = shell.runCommand(_args);
+			RemoteShell.CommandResult cr = shell.runCommand(_args);
 			if(cr.status != 0) {
 				results[i] = new LaunchResult(null, new IOException(String.format("Remote command execution failed: %s", cr.stderr.trim())));
 				continue;
@@ -156,8 +157,8 @@ public class RemoteActuator extends POSIXActuator<SSHResourceType.SSHConfig> {
 	@Override
 	protected void forceTerminateAgent(RemoteShell shell, UUID[] uuids) {
 		kill(shell, Arrays.stream(uuids)
-				.map(u -> agents.remove(u))
-				.filter(ra -> ra != null)
+				.map(agents::remove)
+				.filter(Objects::nonNull)
 				.mapToInt(ra -> ra.pid)
 				.toArray()
 		);
@@ -173,7 +174,7 @@ public class RemoteActuator extends POSIXActuator<SSHResourceType.SSHConfig> {
 			return true;
 		}
 
-		String[] args = Stream.concat(Stream.of("kill", "-9"), IntStream.of(pids).mapToObj(i -> String.valueOf(i)))
+		String[] args = Stream.concat(Stream.of("kill", "-9"), IntStream.of(pids).mapToObj(String::valueOf))
 				.toArray(String[]::new);
 
 		try {

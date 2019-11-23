@@ -23,9 +23,9 @@ import au.edu.uq.rcc.nimrodg.agent.AgentState;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.api.Resource;
 import au.edu.uq.rcc.nimrodg.resource.HPCResourceType.HPCConfig;
-import au.edu.uq.rcc.nimrodg.resource.act.ActuatorUtils;
-import au.edu.uq.rcc.nimrodg.resource.ssh.RemoteShell;
-import au.edu.uq.rcc.nimrodg.resource.ssh.SSHClient;
+import au.edu.uq.rcc.nimrodg.shell.RemoteShell;
+import au.edu.uq.rcc.nimrodg.shell.ShellUtils;
+import au.edu.uq.rcc.nimrodg.shell.SshdClient;
 import com.hubspot.jinjava.Jinjava;
 import com.hubspot.jinjava.interpret.JinjavaInterpreter;
 import com.hubspot.jinjava.lib.filter.Filter;
@@ -101,7 +101,7 @@ public class HPCActuator extends ClusterActuator<HPCConfig> {
 	@Override
 	protected String submitBatch(RemoteShell shell, TempBatch batch) throws IOException {
 		String[] args = Stream.concat(Arrays.stream(config.hpc.submit), Stream.of(batch.scriptPath)).toArray(String[]::new);
-		SSHClient.CommandResult qsub = shell.runCommand(args);
+		SshdClient.CommandResult qsub = shell.runCommand(args);
 		if(qsub.status != 0) {
 			throw new IOException("submission command failed");
 		}
@@ -149,7 +149,7 @@ public class HPCActuator extends ClusterActuator<HPCConfig> {
 				if(o == null) {
 					return null;
 				}
-				return ActuatorUtils.posixQuoteArgument(o.toString());
+				return ShellUtils.quoteArgument(o.toString());
 			}
 
 			@Override

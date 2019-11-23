@@ -20,17 +20,17 @@
 package au.edu.uq.rcc.nimrodg.resource.cluster.slurm;
 
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
-import au.edu.uq.rcc.nimrodg.resource.ssh.SSHClient;
-import au.edu.uq.rcc.nimrodg.resource.ssh.RemoteShell;
 import java.io.IOException;
 import java.security.cert.Certificate;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import au.edu.uq.rcc.nimrodg.shell.RemoteShell;
+import au.edu.uq.rcc.nimrodg.shell.ShellUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import au.edu.uq.rcc.nimrodg.api.Resource;
-import au.edu.uq.rcc.nimrodg.resource.act.ActuatorUtils;
 import au.edu.uq.rcc.nimrodg.resource.cluster.LegacyClusterActuator;
 import au.edu.uq.rcc.nimrodg.resource.cluster.LegacyClusterResourceType.DialectConfig;
 import java.util.Arrays;
@@ -49,13 +49,13 @@ public class SLURMActuator extends LegacyClusterActuator {
 	@Override
 	protected void applyBatchedSubmissionArguments(StringBuilder sb, UUID[] uuids, String[] processedArgs, String out, String err) {
 		sb.append(String.format("#SBATCH %s\n", String.join(" ", processedArgs)));
-		sb.append(String.format("#SBATCH --output %s\n", ActuatorUtils.posixQuoteArgument(out)));
-		sb.append(String.format("#SBATCH --error %s\n\n", ActuatorUtils.posixQuoteArgument(err)));
+		sb.append(String.format("#SBATCH --output %s\n", ShellUtils.quoteArgument(out)));
+		sb.append(String.format("#SBATCH --error %s\n\n", ShellUtils.quoteArgument(err)));
 	}
 
 	@Override
 	protected String submitBatch(RemoteShell shell, TempBatch batch) throws IOException {
-		SSHClient.CommandResult sbatch = shell.runCommand("sbatch", batch.scriptPath);
+		RemoteShell.CommandResult sbatch = shell.runCommand("sbatch", batch.scriptPath);
 		if(sbatch.status != 0) {
 			throw new IOException("sbatch command failed.");
 		}

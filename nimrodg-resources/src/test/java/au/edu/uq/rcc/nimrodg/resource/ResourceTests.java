@@ -41,7 +41,6 @@ import java.util.stream.Stream;
 import javax.json.Json;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
-import javax.json.JsonPatch;
 import javax.json.JsonReader;
 import javax.json.JsonStructure;
 import javax.json.JsonValue;
@@ -50,7 +49,8 @@ import au.edu.uq.rcc.nimrodg.api.ResourceType;
 import au.edu.uq.rcc.nimrodg.api.utils.NimrodUtils;
 import au.edu.uq.rcc.nimrodg.resource.cluster.ClusterActuator;
 import au.edu.uq.rcc.nimrodg.resource.cluster.ClusterResourceType;
-import au.edu.uq.rcc.nimrodg.resource.ssh.RemoteShell;
+import au.edu.uq.rcc.nimrodg.resource.ssh.ClientFactories;
+import au.edu.uq.rcc.nimrodg.shell.RemoteShell;
 import au.edu.uq.rcc.nimrodg.test.TestAgentProvider;
 import au.edu.uq.rcc.nimrodg.test.TestNimrodConfig;
 import au.edu.uq.rcc.nimrodg.test.TestResource;
@@ -64,8 +64,6 @@ import au.edu.uq.rcc.nimrodg.resource.act.ActuatorUtils;
 import au.edu.uq.rcc.nimrodg.resource.cluster.HPCActuator;
 import au.edu.uq.rcc.nimrodg.resource.cluster.pbs.PBSProDialect;
 import au.edu.uq.rcc.nimrodg.resource.cluster.slurm.SLURMDialect;
-import au.edu.uq.rcc.nimrodg.resource.ssh.OpenSSHClient;
-import au.edu.uq.rcc.nimrodg.resource.ssh.SSHClient;
 import au.edu.uq.rcc.nimrodg.resource.ssh.TransportFactory;
 import au.edu.uq.rcc.nimrodg.test.TestUtils;
 import com.hubspot.jinjava.Jinjava;
@@ -235,7 +233,7 @@ public class ResourceTests {
 
 	private static class _TestClusterActuator extends ClusterActuator<ClusterResourceType.ClusterConfig> {
 
-		public _TestClusterActuator(Operations ops, Resource node, NimrodURI amqpUri, Certificate[] certs, ClusterResourceType.ClusterConfig cfg) throws IOException {
+		_TestClusterActuator(Operations ops, Resource node, NimrodURI amqpUri, Certificate[] certs, ClusterResourceType.ClusterConfig cfg) throws IOException {
 			super(ops, node, amqpUri, certs, cfg);
 		}
 
@@ -247,8 +245,8 @@ public class ResourceTests {
 		@Override
 		protected String buildSubmissionScript(UUID batchUuid, UUID[] agentUuids, String out, String err) {
 			JsonArrayBuilder jab = Json.createArrayBuilder();
-			for(int i = 0; i < agentUuids.length; ++i) {
-				jab.add(agentUuids[i].toString());
+			for(UUID agentUuid : agentUuids) {
+				jab.add(agentUuid.toString());
 			}
 
 			return Json.createObjectBuilder()
@@ -266,7 +264,7 @@ public class ResourceTests {
 	}
 
 	private static class _TestSSHResourceType extends SSHResourceType {
-		public _TestSSHResourceType(String name, String displayName) {
+		_TestSSHResourceType(String name, String displayName) {
 			super(name, displayName);
 		}
 
@@ -280,7 +278,7 @@ public class ResourceTests {
 
 		private ClusterConfig config;
 
-		public _TestClusterResourceType(String name, String displayName, String argsName, ClusterConfig config) {
+		_TestClusterResourceType(String name, String displayName, String argsName, ClusterConfig config) {
 			super(name, displayName, argsName);
 			this.config = config;
 		}
@@ -316,7 +314,7 @@ public class ResourceTests {
 			Assert.assertEquals(DEFAULT_AGENT, cfg.getString("agent_platform"));
 
 			List<String> errors = new ArrayList<>();
-			Optional<TransportFactory.Config> topt = SSHClient.FACTORY.validateConfiguration(cfg.getJsonObject("transport"), errors);
+			Optional<TransportFactory.Config> topt = ClientFactories.SSHD_FACTORY.validateConfiguration(cfg.getJsonObject("transport"), errors);
 			Assert.assertTrue(topt.isPresent());
 
 			TransportFactory.Config tcfg = topt.get();
@@ -349,7 +347,7 @@ public class ResourceTests {
 			Assert.assertEquals(DEFAULT_AGENT, cfg.getString("agent_platform"));
 
 			List<String> errors = new ArrayList<>();
-			Optional<TransportFactory.Config> topt = OpenSSHClient.FACTORY.validateConfiguration(cfg.getJsonObject("transport"), errors);
+			Optional<TransportFactory.Config> topt = ClientFactories.OPENSSH_FACTORY.validateConfiguration(cfg.getJsonObject("transport"), errors);
 			Assert.assertTrue(topt.isPresent());
 
 			TransportFactory.Config tcfg = topt.get();
@@ -661,7 +659,7 @@ public class ResourceTests {
 
 		String renderedTemplate = jj.render(def.template, vars);
 		Set<String> hash = Arrays.stream(renderedTemplate.split("\n"))
-				.map(l -> l.trim())
+				.map(String::trim)
 				.filter(l -> l.startsWith(marker))
 				.collect(Collectors.toSet());
 

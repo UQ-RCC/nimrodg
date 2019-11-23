@@ -17,7 +17,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package au.edu.uq.rcc.nimrodg.resource;
+package au.edu.uq.rcc.nimrodg.shell;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -87,7 +87,7 @@ public class EchoCommand implements Command, Runnable {
 	}
 
 	@Override
-	public void start(Environment env) throws IOException {
+	public void start(Environment env) {
 		Thread thread = new Thread(this);
 		thread.setDaemon(true);
 		thread.start();

@@ -25,7 +25,6 @@ import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.api.ResourceFullException;
 import au.edu.uq.rcc.nimrodg.resource.act.ActuatorUtils;
 import au.edu.uq.rcc.nimrodg.resource.cluster.ClusterResourceType.ClusterConfig;
-import au.edu.uq.rcc.nimrodg.resource.ssh.RemoteShell;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -42,6 +41,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import au.edu.uq.rcc.nimrodg.api.Resource;
 import au.edu.uq.rcc.nimrodg.api.utils.NimrodUtils;
 import au.edu.uq.rcc.nimrodg.resource.act.POSIXActuator;
+import au.edu.uq.rcc.nimrodg.shell.RemoteShell;
 
 import java.util.HashSet;
 import java.util.List;

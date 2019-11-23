@@ -85,7 +85,7 @@ public abstract class ClusterResourceType extends SSHResourceType {
 		this.buildParserBeforeSubmissionArgs(argparser);
 
 		argparser.addArgument(argsName)
-				.help(String.format("%s submission arguments.", displayName))
+				.help(String.format("%s submission arguments.", this.getDisplayName()))
 				.nargs("*");
 	}
 

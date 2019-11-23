@@ -24,15 +24,14 @@ import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.api.Actuator;
 import au.edu.uq.rcc.nimrodg.api.AgentProvider;
 import au.edu.uq.rcc.nimrodg.resource.act.ActuatorUtils;
+import au.edu.uq.rcc.nimrodg.resource.ssh.ClientFactories;
 import au.edu.uq.rcc.nimrodg.resource.ssh.SystemInformation;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
-import java.security.KeyPair;
 import java.security.PublicKey;
 import java.security.cert.Certificate;
 import java.util.ArrayList;
@@ -40,20 +39,18 @@ import java.util.List;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonStructure;
+
+import au.edu.uq.rcc.nimrodg.shell.RemoteShell;
+import au.edu.uq.rcc.nimrodg.shell.ShellUtils;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.Namespace;
-import org.apache.sshd.common.config.keys.AuthorizedKeyEntry;
-import org.apache.sshd.common.config.keys.PublicKeyEntryResolver;
 import au.edu.uq.rcc.nimrodg.api.Resource;
-import au.edu.uq.rcc.nimrodg.resource.ssh.LocalShell;
-import au.edu.uq.rcc.nimrodg.resource.ssh.OpenSSHClient;
-import au.edu.uq.rcc.nimrodg.resource.ssh.RemoteShell;
-import au.edu.uq.rcc.nimrodg.resource.ssh.SSHClient;
 import au.edu.uq.rcc.nimrodg.resource.ssh.TransportFactory;
 import java.nio.file.Files;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.EnumSet;
+import java.util.Map;
 import java.util.Optional;
 import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.FeatureControl;
@@ -62,8 +59,8 @@ public abstract class SSHResourceType extends BaseResourceType {
 
 	private static final String DEFAULT_SCHEMA = "resource_ssh.json";
 
-	public final String name;
-	public final String displayName;
+	private final String name;
+	private final String displayName;
 
 	protected SSHResourceType(String name, String displayName) {
 		this.name = name;
@@ -97,12 +94,12 @@ public abstract class SSHResourceType extends BaseResourceType {
 		Optional<URI> uri = Optional.ofNullable(ns.getString("uri")).map(u -> ActuatorUtils.validateUriString(u, errors));
 
 		if(!errors.isEmpty()) {
-			errors.forEach(e -> err.println(e));
+			errors.forEach(err::println);
 			return false;
 		}
 
 		/* This is checked by validateUri. */
-		Optional<String> user = ActuatorUtils.getUriUser(uri);
+		Optional<String> user = ShellUtils.getUriUser(uri);
 
 		String transport = ns.getString("transport");
 		TransportFactory tf = createTransportFactory(transport);
@@ -126,7 +123,7 @@ public abstract class SSHResourceType extends BaseResourceType {
 			try {
 				ActuatorUtils.readPEMKey(keyFile.get());
 			} catch(IOException e) {
-				err.printf("Unable to read private key.\n");
+				err.println("Unable to read private key.");
 				e.printStackTrace(err);
 				valid = false;
 			}
@@ -134,9 +131,8 @@ public abstract class SSHResourceType extends BaseResourceType {
 
 		Optional<PublicKey> hkk = Optional.empty();
 		if(!detectHostKey) {
-			AuthorizedKeyEntry ak = AuthorizedKeyEntry.parseAuthorizedKeyEntry(hostKey);
 			try {
-				hkk = Optional.of(ak.resolvePublicKey(PublicKeyEntryResolver.FAILING));
+				hkk = Optional.of(ShellUtils.parseAuthorizedKeyEntry(hostKey));
 			} catch(IOException | GeneralSecurityException e) {
 				e.printStackTrace(err);
 				valid = false;
@@ -168,7 +164,7 @@ public abstract class SSHResourceType extends BaseResourceType {
 			}
 
 			if(platform == null) {
-				err.printf("Unable to detect agent platform\n");
+				err.println("Unable to detect agent platform");
 				return false;
 			}
 		}
@@ -250,17 +246,14 @@ public abstract class SSHResourceType extends BaseResourceType {
 		return DEFAULT_SCHEMA;
 	}
 
-	private static TransportFactory createTransportFactory(String name) {
-		switch(name) {
-			case SSHClient.TRANSPORT_NAME:
-				return SSHClient.FACTORY;
-			case OpenSSHClient.TRANSPORT_NAME:
-				return OpenSSHClient.FACTORY;
-			case LocalShell.TRANSPORT_NAME:
-				return LocalShell.FACTORY;
-		}
+	private static final Map<String, TransportFactory> FACTORIES = Map.of(
+			ClientFactories.OPENSSH_TRANSPORT_NAME, ClientFactories.OPENSSH_FACTORY,
+			ClientFactories.LOCAL_TRANSPORT_NAME, ClientFactories.LOCAL_FACTORY,
+			ClientFactories.SSHD_TRANSPORT_NAME, ClientFactories.SSHD_FACTORY
+	);
 
-		return null;
+	private static TransportFactory createTransportFactory(String name) {
+		return FACTORIES.get(name);
 	}
 
 	@Override
