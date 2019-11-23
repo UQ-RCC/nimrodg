@@ -29,6 +29,9 @@ import au.edu.uq.rcc.nimrodg.shell.SshdClient;
 import com.hubspot.jinjava.Jinjava;
 import com.hubspot.jinjava.interpret.JinjavaInterpreter;
 import com.hubspot.jinjava.lib.filter.Filter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.cert.Certificate;
@@ -39,12 +42,10 @@ import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class HPCActuator extends ClusterActuator<HPCConfig> {
 
-	private static final Logger LOGGER = LogManager.getLogger(HPCActuator.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(HPCActuator.class);
 	private final Jinjava jj;
 	private final Pattern jobRegex;
 
@@ -134,8 +135,9 @@ public class HPCActuator extends ClusterActuator<HPCConfig> {
 		try {
 			shell.runCommand(args);
 		} catch(IOException ex) {
-			LOGGER.warn("Unable to kill jobs '{}'", String.join(",", jobIds));
-			LOGGER.catching(ex);
+			if(LOGGER.isWarnEnabled()) {
+				LOGGER.warn(String.format("Unable to kill jobs '%s'", String.join(",", jobIds)), ex);
+			}
 			return false;
 		}
 		return true;

@@ -23,7 +23,6 @@ import au.edu.uq.rcc.nimrodg.agent.Agent;
 import au.edu.uq.rcc.nimrodg.agent.AgentState;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
 import au.edu.uq.rcc.nimrodg.api.AgentInfo;
-import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPIException;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.api.Actuator;
@@ -47,9 +46,10 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import au.edu.uq.rcc.nimrodg.api.Resource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Optional;
 import javax.json.Json;
 import javax.json.JsonNumber;
@@ -58,7 +58,7 @@ import javax.json.JsonString;
 
 public class LocalActuator implements Actuator {
 
-	private static final Logger LOGGER = LogManager.getLogger(LocalActuator.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(LocalActuator.class);
 
 	public enum CaptureMode {
 		OFF,
@@ -213,8 +213,9 @@ public class LocalActuator implements Actuator {
 
 	private Void agentShutdownHandler(LocalAgent la, Throwable t) {
 		if(t != null) {
-			LOGGER.info("Agent {} future failed exceptionally.");
-			LOGGER.catching(t);
+			if(LOGGER.isWarnEnabled()) {
+				LOGGER.warn(String.format("Agent %s future failed exceptionally.", la.uuid), t);
+			}
 			ops.reportAgentFailure(this, la.uuid, AgentShutdown.Reason.HostSignal, 9);
 		} else {
 			int ret;
@@ -257,16 +258,17 @@ public class LocalActuator implements Actuator {
 			try {
 				Files.move(la.outputPath.get(), logPath);
 			} catch(IOException e) {
-				LOGGER.error("Error copying agent output back.");
-				LOGGER.catching(e);
+				LOGGER.error("Error copying agent output back.", e);
 			}
 		}
 
 		try {
 			NimrodUtils.deltree(la.workRoot);
 		} catch(IOException e) {
-			LOGGER.error("Error cleaning up after agent {}.", la.uuid);
-			LOGGER.catching(e);
+			if(LOGGER.isErrorEnabled()) {
+				LOGGER.error(String.format("Error cleaning up after agent %s.", la.uuid), e);
+			}
+
 		}
 
 		synchronized(agents) {
@@ -386,8 +388,7 @@ public class LocalActuator implements Actuator {
 			} catch(InterruptedException | TimeoutException e) {
 				/* nop */
 			} catch(ExecutionException e) {
-				LOGGER.error("Error waiting for local agents to die.");
-				LOGGER.catching(e);
+				LOGGER.error("Error waiting for local agents to die.", e);
 				break;
 			}
 

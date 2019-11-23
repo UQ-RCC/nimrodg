@@ -25,6 +25,9 @@ import au.edu.uq.rcc.nimrodg.api.Actuator;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.api.Resource;
 import au.edu.uq.rcc.nimrodg.resource.SSHResourceType.SSHConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -39,12 +42,10 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public abstract class POSIXActuator<C extends SSHConfig> implements Actuator {
 
-	private static final Logger LOGGER = LogManager.getLogger(POSIXActuator.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(POSIXActuator.class);
 
 	private static final Pattern ENV_PATTERN = Pattern.compile("^([a-zA-Z0-9_]+)=(.*)$");
 
@@ -235,12 +236,10 @@ public abstract class POSIXActuator<C extends SSHConfig> implements Actuator {
 			return;
 		}
 
-		try {
-			try(RemoteShell client = makeClient()) {
-				forceTerminateAgent(client, uuids);
-			}
+		try(RemoteShell client = makeClient()) {
+			forceTerminateAgent(client, uuids);
 		} catch(IOException e) {
-			LOGGER.catching(e);
+			LOGGER.error("Unable to force terminate agents", e);
 		}
 	}
 

@@ -43,12 +43,12 @@ import javax.json.JsonObject;
 import javax.json.JsonString;
 
 import au.edu.uq.rcc.nimrodg.shell.RemoteShell;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class RemoteActuator extends POSIXActuator<SSHResourceType.SSHConfig> {
 
-	private static final Logger LOGGER = LogManager.getLogger(RemoteActuator.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(RemoteActuator.class);
 
 	public enum RemoteState {
 		NOT_CONNECTED,
@@ -174,14 +174,16 @@ public class RemoteActuator extends POSIXActuator<SSHResourceType.SSHConfig> {
 			return true;
 		}
 
-		String[] args = Stream.concat(Stream.of("kill", "-9"), IntStream.of(pids).mapToObj(String::valueOf))
-				.toArray(String[]::new);
+		String[] spids = IntStream.of(pids).mapToObj(String::valueOf).toArray(String[]::new);
+		String[] args = Stream.concat(Stream.of("kill", "-9"), Arrays.stream(spids)).toArray(String[]::new);
 
 		try {
 			shell.runCommand(args);
 			return true;
 		} catch(IOException e) {
-			LOGGER.catching(e);
+			if(LOGGER.isErrorEnabled()) {
+				LOGGER.error(String.format("Unable to execute kill for jobs '%s'", String.join(",", args)), e);
+			}
 			return false;
 		}
 	}

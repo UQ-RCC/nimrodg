@@ -26,18 +26,19 @@ import java.util.UUID;
 
 import au.edu.uq.rcc.nimrodg.shell.RemoteShell;
 import au.edu.uq.rcc.nimrodg.shell.ShellUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import au.edu.uq.rcc.nimrodg.api.Resource;
 import au.edu.uq.rcc.nimrodg.resource.cluster.LegacyClusterActuator;
 import au.edu.uq.rcc.nimrodg.resource.cluster.LegacyClusterResourceType.DialectConfig;
 import au.edu.uq.rcc.nimrodg.shell.SshdClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Arrays;
 import java.util.stream.Stream;
 
 public class PBSActuator extends LegacyClusterActuator {
 
-	private static final Logger LOGGER = LogManager.getLogger(PBSActuator.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(PBSActuator.class);
 
 	public PBSActuator(Operations ops, Resource node, NimrodURI amqpUri, Certificate[] certs, DialectConfig cfg) throws IOException {
 		super(ops, node, amqpUri, certs, cfg);
@@ -85,8 +86,9 @@ public class PBSActuator extends LegacyClusterActuator {
 		try {
 			shell.runCommand(cmd);
 		} catch(IOException ex) {
-			LOGGER.warn("Unable to execute qdel for jobs '{}'", String.join(",", jobIds));
-			LOGGER.catching(ex);
+			if(LOGGER.isWarnEnabled()) {
+				LOGGER.warn(String.format("Unable to execute qdel for jobs '%s'", String.join(",", jobIds)), ex);
+			}
 			return false;
 		}
 		return true;
