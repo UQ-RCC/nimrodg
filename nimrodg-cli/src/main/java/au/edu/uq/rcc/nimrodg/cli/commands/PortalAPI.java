@@ -189,10 +189,6 @@ public class PortalAPI extends NimrodCLICommand {
 				pln.getBytes(StandardCharsets.UTF_8),
 				StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE
 		);
-		try(CSVPrinter csv = new CSVPrinter(out, CSVFormat.RFC4180)) {
-			writeExperimentHeader(csv);
-			writeExperiment(rootDir, exp, csv);
-		}
 		return 0;
 	}
 
