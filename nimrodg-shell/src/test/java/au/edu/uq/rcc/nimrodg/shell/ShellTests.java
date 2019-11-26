@@ -3,7 +3,9 @@ package au.edu.uq.rcc.nimrodg.shell;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.server.SshServer;
+import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.command.CommandFactory;
 import org.apache.sshd.server.scp.ScpCommandFactory;
@@ -102,7 +104,7 @@ public class ShellTests {
         }
 
         @Override
-        public Command createCommand(String cmd) {
+        public Command createCommand(ChannelSession channel, String cmd) throws IOException {
             String[] argv = ShellUtils.translateCommandline(cmd);
             if(argv.length == 0) {
                 return new UnknownCommand(cmd);
@@ -110,7 +112,7 @@ public class ShellTests {
 
             switch(argv[0]) {
                 case "scp":
-                    return scpFactory.createCommand(cmd);
+                    return scpFactory.createCommand(channel, cmd);
                 default:
                     return new OneShotCommand(cmd, fs);
             }
@@ -150,7 +152,7 @@ public class ShellTests {
         /* Get a random, non-privileged port and hope it's not taken. */
         int port = (int)(Math.random() * (65535 - 1024)) + 1024;
         sshd.setPort(port);
-        sshd.setKeyPairProvider(KeyPairProvider.wrap(keyPair));
+        sshd.setKeyPairProvider(KeyPairProvider.wrap(hostKey));
         sshd.setPublickeyAuthenticator((user, key, ses) -> user.equals("user") && key.equals(keyPair.getPublic()));
         sshd.setCommandFactory(new _CommandFactory(memFs));
         sshd.setFileSystemFactory(new FileSystemFactoryWrapper(memFs));

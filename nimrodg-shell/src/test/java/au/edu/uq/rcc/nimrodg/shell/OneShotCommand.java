@@ -27,6 +27,7 @@ import java.nio.file.FileSystem;
 import java.util.Arrays;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
+import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.command.Command;
 
 public class OneShotCommand implements Command {
@@ -105,7 +106,7 @@ public class OneShotCommand implements Command {
 	}
 
 	@Override
-	public void start(Environment arg0) throws IOException {
+	public void start(ChannelSession channel, Environment env) throws IOException {
 		String[] argv = ShellUtils.translateCommandline(this.command);
 		int ret = execCommand(argv);
 		if(onExit != null) {
@@ -114,7 +115,7 @@ public class OneShotCommand implements Command {
 	}
 
 	@Override
-	public void destroy() {
+	public void destroy(ChannelSession channel) {
 
 	}
 }

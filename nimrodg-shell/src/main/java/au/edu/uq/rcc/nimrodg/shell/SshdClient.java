@@ -99,10 +99,16 @@ public class SshdClient implements RemoteShell {
 		String[] userPass = userInfo.split(":", 1);
 		assert userPass.length <= 2;
 
-		Set<PublicKey> pks = Arrays.stream(hostKeys).collect(Collectors.toSet());
-
 		client = ClientBuilder.builder()
-				.serverKeyVerifier((ClientSession arg0, SocketAddress arg1, PublicKey key) -> pks.contains(key))
+				.serverKeyVerifier((ClientSession arg0, SocketAddress arg1, PublicKey key) -> {
+
+					for(int i = 0; i < hostKeys.length; ++i) {
+						if(hostKeys[i].equals(key)) {
+							return true;
+						}
+					}
+					return false;
+				})
 				.build();
 		client.getProperties().put(ClientFactoryManager.HEARTBEAT_INTERVAL, TimeUnit.SECONDS.toMillis(2));
 		client.start();
