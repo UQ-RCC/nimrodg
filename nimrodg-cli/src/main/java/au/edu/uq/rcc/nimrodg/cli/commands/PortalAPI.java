@@ -45,6 +45,10 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -52,9 +56,13 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import javax.json.Json;
 import javax.json.JsonArray;
+import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonReader;
+import javax.json.JsonString;
 import javax.json.JsonStructure;
+import javax.json.JsonValue;
+
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
 import org.apache.commons.csv.CSVFormat;
@@ -63,7 +71,6 @@ import au.edu.uq.rcc.nimrodg.api.Resource;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.EnumSet;
-import java.util.Optional;
 
 public class PortalAPI extends NimrodCLICommand {
 
@@ -76,7 +83,7 @@ public class PortalAPI extends NimrodCLICommand {
 		try {
 			return this.getClass().getDeclaredMethod(name, String[].class, NimrodAPI.class, PrintStream.class, PrintStream.class);
 		} catch(NoSuchMethodException | SecurityException e) {
-
+			/* nop */
 		}
 		return null;
 	}
@@ -120,7 +127,6 @@ public class PortalAPI extends NimrodCLICommand {
 		Collection<Experiment> exps = nimrod.getExperiments();
 		String rootDir = nimrod.getConfig().getRootStore();
 		try(CSVPrinter csv = new CSVPrinter(out, CSVFormat.RFC4180)) {
-			writeExperimentHeader(csv);
 			for(Experiment exp : exps) {
 				writeExperiment(rootDir, exp, csv);
 			}
@@ -133,8 +139,6 @@ public class PortalAPI extends NimrodCLICommand {
 		Collection<Resource> roots = nimrod.getResources();
 
 		try(CSVPrinter csv = new CSVPrinter(out, CSVFormat.RFC4180)) {
-			writeResourceHeader(csv);
-
 			for(Resource root : roots) {
 				writeResource(root, csv);
 			}
@@ -143,16 +147,29 @@ public class PortalAPI extends NimrodCLICommand {
 	}
 
 	public int addexperiment(String[] args, NimrodAPI nimrod, PrintStream out, PrintStream err) throws IOException {
-		if(args.length < 1) {
+		JsonObject payload;
+		try(JsonReader r = Json.createReader(System.in)) {
+			payload = r.readObject();
+		}
+
+		String expname = getJsonString(payload, "expname");
+		if(expname == null) {
 			return 2;
 		}
+
+		String b64pln = getJsonString(payload, "pln");
+		if(b64pln == null) {
+			return 2;
+		}
+
+		String pln = new String(Base64.getDecoder().decode(b64pln), StandardCharsets.UTF_8);
 
 		NimrodParseAPI parseApi = ANTLR4ParseAPIImpl.INSTANCE;
 		RunBuilder b;
 		try {
-			b = parseApi.parseRunToBuilder(System.in);
+			b = parseApi.parseRunToBuilder(pln);
 		} catch(PlanfileParseException e) {
-			e.printStackTrace(System.err);
+			e.printStackTrace(err);
 			return 1;
 		}
 
@@ -165,7 +182,13 @@ public class PortalAPI extends NimrodCLICommand {
 		}
 
 		String rootDir = nimrod.getConfig().getRootStore();
-		Experiment exp = nimrod.addExperiment(args[0], cr);
+		Experiment exp = nimrod.addExperiment(expname, cr);
+
+		Files.write(
+				Paths.get(rootDir).resolve(exp.getWorkingDirectory()).resolve(String.format("%s.pln", expname)),
+				pln.getBytes(StandardCharsets.UTF_8),
+				StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE
+		);
 		try(CSVPrinter csv = new CSVPrinter(out, CSVFormat.RFC4180)) {
 			writeExperimentHeader(csv);
 			writeExperiment(rootDir, exp, csv);
@@ -193,15 +216,15 @@ public class PortalAPI extends NimrodCLICommand {
 
 		/* Do some quick validation before hitting the db. */
 		Set<Set<String>> sss = jjobs.stream()
-				.map(j -> j.keySet())
+				.map(Map::keySet)
 				.collect(Collectors.toSet());
 		if(sss.size() != 1) {
-			err.printf("Mismatched variable names.\n");
+			err.print("Mismatched variable names.\n");
 			return 1;
 		}
 
 		if(!sss.stream().findFirst().get().equals(exp.getVariables())) {
-			err.printf("Job variables don't match run variables.\n");
+			err.print("Job variables don't match run variables.\n");
 			return 1;
 		}
 
@@ -216,12 +239,31 @@ public class PortalAPI extends NimrodCLICommand {
 		return 0;
 	}
 
+	private static String getJsonString(JsonObject jo, String key) {
+		if(!jo.containsKey(key)) {
+			return null;
+		}
+
+		JsonValue val = jo.get(key);
+		if(val.getValueType() != JsonValue.ValueType.STRING) {
+			return null;
+		}
+
+		return ((JsonString)val).getString();
+	}
+
 	public int deleteexperiment(String[] args, NimrodAPI nimrod, PrintStream out, PrintStream err) throws IOException {
-		if(args.length < 1) {
+		JsonObject payload;
+		try(JsonReader r = Json.createReader(System.in)) {
+			payload = r.readObject();
+		}
+
+		String expname = getJsonString(payload, "expname");
+		if(expname == null) {
 			return 2;
 		}
 
-		Experiment exp = nimrod.getExperiment(args[0]);
+		Experiment exp = nimrod.getExperiment(expname);
 		if(exp == null) {
 			return 0;
 		}
@@ -238,13 +280,13 @@ public class PortalAPI extends NimrodCLICommand {
 
 		String path = args[0];
 		if(path.contains("/")) {
-			err.printf("Only root resources are supported.\n");
+			err.print("Only root resources are supported.\n");
 			return 1;
 		}
 
 		Resource node = nimrod.getResource(path);
 		if(node != null) {
-			err.printf("Resource already exists.\n");
+			err.print("Resource already exists.\n");
 			return 1;
 		}
 
@@ -328,7 +370,7 @@ public class PortalAPI extends NimrodCLICommand {
 		}
 
 		if(!nimrod.getAPICaps().master) {
-			err.printf("Implementation doesn't have master capabilities.\n");
+			err.print("Implementation doesn't have master capabilities.\n");
 			return 1;
 		}
 
@@ -382,18 +424,18 @@ public class PortalAPI extends NimrodCLICommand {
 		return 0;
 	}
 
-	public int deleteresource(String[] args, NimrodAPI nimrod, PrintStream out, PrintStream err) throws IOException {
-		if(args.length < 1) {
+	public int deleteresource(String[] args, NimrodAPI nimrod, PrintStream out, PrintStream err) {
+		JsonObject payload;
+		try(JsonReader r = Json.createReader(System.in)) {
+			payload = r.readObject();
+		}
+
+		String resname = getJsonString(payload, "resname");
+		if(resname == null) {
 			return 2;
 		}
 
-		String path = args[0];
-		if(path.contains("/")) {
-			err.printf("Only root resources are supported.\n");
-			return 1;
-		}
-
-		Resource node = nimrod.getResource(path);
+		Resource node = nimrod.getResource(resname);
 		if(node == null) {
 			return 0;
 		}
@@ -403,20 +445,31 @@ public class PortalAPI extends NimrodCLICommand {
 		return 0;
 	}
 
-	public int assign(String[] args, NimrodAPI nimrod, PrintStream out, PrintStream err) throws IOException {
-		if(args.length < 2) {
+	public int assign(String[] args, NimrodAPI nimrod, PrintStream out, PrintStream err) {
+		JsonObject payload;
+		try(JsonReader r = Json.createReader(System.in)) {
+			payload = r.readObject();
+		}
+
+		String expname = getJsonString(payload, "expname");
+		if(expname == null) {
 			return 2;
 		}
 
-		Resource node = nimrod.getResource(args[0]);
+		String resname = getJsonString(payload, "resname");
+		if(resname == null) {
+			return 2;
+		}
+
+		Resource node = nimrod.getResource(resname);
 		if(node == null) {
-			err.printf("No such resource '%s'\n", args[0]);
+			err.printf("No such resource '%s'\n", resname);
 			return 1;
 		}
 
-		Experiment exp = nimrod.getExperiment(args[1]);
+		Experiment exp = nimrod.getExperiment(expname);
 		if(exp == null) {
-			err.printf("No such experiment '%s'\n", args[1]);
+			err.printf("No such experiment '%s'\n", expname);
 			return 1;
 		}
 
@@ -424,20 +477,31 @@ public class PortalAPI extends NimrodCLICommand {
 		return 0;
 	}
 
-	public int unassign(String[] args, NimrodAPI nimrod, PrintStream out, PrintStream err) throws IOException {
-		if(args.length < 2) {
+	public int unassign(String[] args, NimrodAPI nimrod, PrintStream out, PrintStream err) {
+		JsonObject payload;
+		try(JsonReader r = Json.createReader(System.in)) {
+			payload = r.readObject();
+		}
+
+		String expname = getJsonString(payload, "expname");
+		if(expname == null) {
 			return 2;
 		}
 
-		Resource node = nimrod.getResource(args[0]);
+		String resname = getJsonString(payload, "resname");
+		if(resname == null) {
+			return 2;
+		}
+
+		Resource node = nimrod.getResource(resname);
 		if(node == null) {
-			err.printf("No such resource '%s'\n", args[0]);
+			err.printf("No such resource '%s'\n", resname);
 			return 1;
 		}
 
-		Experiment exp = nimrod.getExperiment(args[1]);
+		Experiment exp = nimrod.getExperiment(expname);
 		if(exp == null) {
-			err.printf("No such experiment '%s'\n", args[1]);
+			err.printf("No such experiment '%s'\n", expname);
 			return 1;
 		}
 
@@ -446,20 +510,25 @@ public class PortalAPI extends NimrodCLICommand {
 	}
 
 	public int getassignments(String[] args, NimrodAPI nimrod, PrintStream out, PrintStream err) throws IOException {
-		if(args.length < 1) {
+		JsonObject payload;
+		try(JsonReader r = Json.createReader(System.in)) {
+			payload = r.readObject();
+		}
+
+		String expname = getJsonString(payload, "expname");
+		if(expname == null) {
 			return 2;
 		}
 
-		Experiment exp = nimrod.getExperiment(args[0]);
+		Experiment exp = nimrod.getExperiment(expname);
 		if(exp == null) {
-			err.printf("No such experiment '%s'\n", args[0]);
+			err.printf("No such experiment '%s'\n", expname);
 			return 1;
 		}
 
 		Collection<Resource> ress = nimrod.getAssignedResources(exp);
 
 		try(CSVPrinter csv = new CSVPrinter(out, CSVFormat.RFC4180)) {
-			writeResourceHeader(csv);
 			for(Resource n : ress) {
 				writeResource(n, csv);
 			}
@@ -468,9 +537,17 @@ public class PortalAPI extends NimrodCLICommand {
 	}
 
 	public int compile(String[] args, NimrodAPI nimrod, PrintStream out, PrintStream err) throws IOException {
-		if(args.length != 0) {
+		JsonObject payload;
+		try(JsonReader r = Json.createReader(System.in)) {
+			payload = r.readObject();
+		}
+
+		String b64pln = getJsonString(payload, "pln");
+		if(b64pln == null) {
 			return 2;
 		}
+
+		String pln = new String(Base64.getDecoder().decode(b64pln), StandardCharsets.UTF_8);
 
 		NimrodParseAPI parseApi = ANTLR4ParseAPIImpl.INSTANCE;
 		try(CSVPrinter csv = new CSVPrinter(out, CSVFormat.RFC4180)) {
@@ -478,7 +555,7 @@ public class PortalAPI extends NimrodCLICommand {
 
 			RunBuilder b;
 			try {
-				b = parseApi.parseRunToBuilder(System.in);
+				b = parseApi.parseRunToBuilder(pln);
 			} catch(PlanfileParseException ex) {
 				for(PlanfileParseException.ParseError e : ex.getErrors()) {
 					csv.print(e.line);
@@ -558,7 +635,7 @@ public class PortalAPI extends NimrodCLICommand {
 		csv.print(j.getStatus());
 
 		JsonObjectBuilder vars = Json.createObjectBuilder();
-		j.getVariables().entrySet().forEach(e -> vars.add(e.getKey(), e.getValue()));
+		j.getVariables().forEach(vars::add);
 
 		csv.print(vars.build().toString());
 		csv.println();
