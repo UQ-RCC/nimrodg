@@ -77,6 +77,8 @@ public class OpenSSHClient implements RemoteShell {
         List<String> commonArgs = Stream.concat(Stream.of(
                 "-q",
                 "-oPasswordAuthentication=no",
+                "-oKbdInteractiveAuthentication=no",
+                "-oChallengeResponseAuthentication=no",
                 "-oBatchMode=yes",
                 "-oControlMaster=auto",
                 "-oControlPersist=yes",
