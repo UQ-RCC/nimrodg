@@ -21,25 +21,8 @@ PIDS=""
 ##
 {{ agent_binary|quote }} \
 	--uuid {{ agent_uuids[i]|quote }} \
-	--amqp-uri {{ agent_args.amqp_uri|quote }} \
-	--amqp-routing-key {{ agent_args.amqp_routing_key|quote }} \
-	{% if agent_args.amqp_no_verify_peer|default(false) -%}
-	--no-verify-peer \
-	{% endif -%}
-	{% if agent_args.amqp_no_verify_host|default(false) -%}
-	--no-verify-host \
-	{% endif -%}
-	{% if agent_args.cacert is defined -%}
-	--cacert {{ agent_args.cacert|quote }} \
-	{% endif -%}
-	{% if agent_args.caenc is defined -%}
-	--caenc {{ agent_args.caenc|quote }} \
-	{% endif -%}
-	{%- if agent_args.no_ca_delete|default(false) -%}
-	--no-ca-delete \
-	{% endif -%}
 	--work-root ${TMPDIR} \
-	--output workroot &
+	--config {{ config_path|quote }} &
 PIDS="$PIDS $!"
 {% endfor %}
 
