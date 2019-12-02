@@ -42,6 +42,8 @@ import au.edu.uq.rcc.nimrodg.api.Resource;
 import au.edu.uq.rcc.nimrodg.api.utils.NimrodUtils;
 import au.edu.uq.rcc.nimrodg.resource.act.POSIXActuator;
 import au.edu.uq.rcc.nimrodg.shell.RemoteShell;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
 import java.util.List;
@@ -91,11 +93,29 @@ public abstract class ClusterActuator<C extends ClusterConfig> extends POSIXActu
 		}
 	}
 
+	private static final Logger LOGGER = LoggerFactory.getLogger(POSIXActuator.class);
+
 	private final ConcurrentHashMap<UUID, Batch> jobNames;
+	protected final String remoteConfigPath;
 
 	public ClusterActuator(Operations ops, Resource node, NimrodURI amqpUri, Certificate[] certs, C cfg) throws IOException {
 		super(ops, node, amqpUri, certs, cfg);
 		this.jobNames = new ConcurrentHashMap<>();
+
+		byte[] config = ActuatorUtils.buildBaseAgentConfig(
+				amqpUri,
+				this.routingKey,
+				this.remoteCertPath,
+				false,
+				true,
+				false
+		).build().toString().getBytes(StandardCharsets.UTF_8);
+
+		/* Upload the configuration file, it's the same for all of them. */
+		try(RemoteShell shell = makeClient()) {
+			this.remoteConfigPath = ActuatorUtils.posixJoinPaths(this.nimrodHomeDir, "config.json");
+			shell.upload(this.remoteConfigPath, config, O600, Instant.now());
+		}
 	}
 
 	protected abstract String submitBatch(RemoteShell shell, TempBatch batch) throws IOException;
@@ -161,6 +181,7 @@ public abstract class ClusterActuator<C extends ClusterConfig> extends POSIXActu
 
 		/* Now do things that can actually fail. */
 		Instant utcNow = Instant.now(Clock.systemUTC());
+
 		for(TempBatch tb : batches) {
 			shell.upload(tb.scriptPath, tb.script.getBytes(StandardCharsets.UTF_8), EnumSet.of(PosixFilePermission.OWNER_READ), utcNow);
 
@@ -216,6 +237,14 @@ public abstract class ClusterActuator<C extends ClusterConfig> extends POSIXActu
 
 	@Override
 	protected final void close(RemoteShell shell) {
+		try {
+			shell.runCommand("rm", "-f", this.remoteConfigPath);
+		} catch(IOException e) {
+			if(LOGGER.isWarnEnabled()) {
+				LOGGER.warn(String.format("Unable to remove configuration file %s", this.remoteConfigPath), e);
+			}
+		}
+
 		String[] jobs = jobNames.values().stream().map(b -> b.jobId).distinct().toArray(String[]::new);
 		if(jobs.length > 0)
 			killJobs(shell, jobs);

@@ -28,6 +28,8 @@ import au.edu.uq.rcc.nimrodg.resource.SSHResourceType.SSHConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.json.Json;
+import javax.json.JsonObjectBuilder;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -84,7 +86,7 @@ public abstract class POSIXActuator<C extends SSHConfig> implements Actuator {
 			PosixFilePermission.OWNER_WRITE
 	);
 
-	public POSIXActuator(Operations ops, Resource node, NimrodURI amqpUri, Certificate[] certs, C config) throws IOException {
+	protected POSIXActuator(Operations ops, Resource node, NimrodURI amqpUri, Certificate[] certs, C config) throws IOException {
 		this.ops = ops;
 		this.config = config;
 		this.node = node;
@@ -179,7 +181,7 @@ public abstract class POSIXActuator<C extends SSHConfig> implements Actuator {
 		Max
 	}
 
-	private RemoteShell makeClient() throws IOException {
+	protected final RemoteShell makeClient() throws IOException {
 		return config.transportFactory.create(config.transportConfig, Paths.get(ops.getConfig().getWorkDir()));
 	}
 

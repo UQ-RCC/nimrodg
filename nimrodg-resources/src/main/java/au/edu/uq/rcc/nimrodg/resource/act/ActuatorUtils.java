@@ -199,6 +199,7 @@ public class ActuatorUtils {
 		return FilenameUtils.separatorsToUnix(path);
 	}
 
+	@Deprecated
 	public static ArrayList<String> posixBuildLaunchCommand(String agentPath, UUID uuid, String workRoot, NimrodURI uri, String routingKey, Optional<String> certPath, boolean b64cert, boolean keepCerts, boolean batch) {
 		ArrayList<String> args = new ArrayList<>();
 		args.add(agentPath);
@@ -246,6 +247,7 @@ public class ActuatorUtils {
 		return args;
 	}
 
+	@Deprecated
 	public static JsonObject buildAgentConfig(UUID uuid, String workRoot, NimrodURI uri, String routingKey, Optional<String> certPath, boolean b64cert, boolean keepCerts, boolean batch) {
 		JsonObjectBuilder cfg = Json.createObjectBuilder()
 				.add("uuid", uuid.toString())
@@ -273,6 +275,33 @@ public class ActuatorUtils {
 		}
 
 		return cfg.build();
+	}
+
+	public static JsonObjectBuilder buildBaseAgentConfig(NimrodURI uri, String routingKey, Optional<String> certPath, boolean b64cert, boolean keepCerts, boolean batch) {
+		JsonObjectBuilder cfg = Json.createObjectBuilder()
+				.add("amqp", Json.createObjectBuilder()
+						.add("uri", uri.uri.toString())
+						.add("routing_key", routingKey)
+				).add("no_verify_peer", uri.noVerifyPeer)
+				.add("no_verify_host", uri.noVerifyHost);
+
+
+		certPath.ifPresent(s -> cfg.add("ca", Json.createObjectBuilder()
+				.add("cert", s)
+				.add("encoding", b64cert ? "base64" : "plain")
+				.add("no_delete", keepCerts)));
+
+		String scheme = uri.uri.getScheme().toLowerCase(Locale.ENGLISH);
+		if(!"amqps".equals(scheme) && !"amqp".equals(scheme)) {
+			throw new IllegalArgumentException("Invalid URI scheme");
+		}
+
+		cfg.add("batch", batch);
+		if(batch) {
+			cfg.add("output", "workroot");
+		}
+
+		return cfg;
 	}
 
 	@FunctionalInterface

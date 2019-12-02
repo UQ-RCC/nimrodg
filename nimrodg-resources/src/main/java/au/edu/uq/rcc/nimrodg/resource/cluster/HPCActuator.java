@@ -84,6 +84,7 @@ public class HPCActuator extends ClusterActuator<HPCConfig> {
 		vars.put("agent_binary", this.remoteAgentPath);
 		vars.put("agent_uuids", agentUuids);
 		vars.put("agent_args", agentVars);
+		vars.put("config_path", this.remoteConfigPath);
 		return jj.render(config.hpc.template, vars);
 	}
 
@@ -197,6 +198,7 @@ public class HPCActuator extends ClusterActuator<HPCConfig> {
 				"caenc", "b64",
 				"no_ca_delete", true
 		));
+		vars.put("config_path", "/path/to/remote/config.json");
 		return vars;
 	}
 

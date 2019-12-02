@@ -77,12 +77,14 @@ public class RemoteActuator extends POSIXActuator<SSHResourceType.SSHConfig> {
 	private final int limit;
 	private final String tmpDir;
 	private final Map<UUID, RemoteAgent> agents;
+	private final String[] agentCommand;
 
 	public RemoteActuator(Operations ops, Resource node, NimrodURI amqpUri, Certificate[] certs, int limit, String tmpDir, SSHResourceType.SSHConfig config) throws IOException {
 		super(ops, node, amqpUri, certs, config);
 		this.limit = limit;
 		this.tmpDir = tmpDir;
 		this.agents = new HashMap<>();
+		this.agentCommand = new String[]{this.remoteAgentPath, "-c", "-"};
 	}
 
 	@Override
@@ -114,20 +116,18 @@ public class RemoteActuator extends POSIXActuator<SSHResourceType.SSHConfig> {
 				shell.upload(certPath.get(), bcert, O600, Instant.now());
 			}
 
-			/* Generate the agent configuration. */
-			byte[] input = ActuatorUtils.buildAgentConfig(
-					uuids[i],
-					workRoot,
+			/* Generate the agent configuration. It's dumped straight to stdin and doesn't touch the disk. */
+			byte[] input = ActuatorUtils.buildBaseAgentConfig(
 					uri,
 					routingKey,
 					certPath,
 					false,
 					false,
 					true
-			).toString().getBytes(StandardCharsets.UTF_8);
+			).add("uuid", uuids[i].toString()).add("work_root", workRoot)
+					.build().toString().getBytes(StandardCharsets.UTF_8);
 
-			String[] _args = new String[]{this.remoteAgentPath, "-c", "-"};
-			RemoteShell.CommandResult cr = shell.runCommand(_args, input);
+			RemoteShell.CommandResult cr = shell.runCommand(agentCommand, input);
 			if(cr.status != 0) {
 				results[i] = new LaunchResult(null, new IOException(String.format("Remote command execution failed: %s", cr.stderr.trim())));
 				continue;
