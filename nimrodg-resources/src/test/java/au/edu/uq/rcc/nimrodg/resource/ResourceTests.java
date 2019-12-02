@@ -215,7 +215,8 @@ public class ResourceTests {
 				new SSHResourceType.SSHConfig(
 						agentProvider.lookupAgentByPlatform(DEFAULT_AGENT),
 						TestShell.createFactory(fsRoot.resolve("home")),
-						TestShell.createConfig()
+						TestShell.createConfig(),
+						List.of()
 				),
 				10,
 				"TMPDIR",
@@ -310,7 +311,7 @@ public class ResourceTests {
 
 			JsonObject cfg = js.asJsonObject();
 
-			Assert.assertEquals(Set.of("transport", "agent_platform"), cfg.keySet());
+			Assert.assertEquals(Set.of("transport", "agent_platform", "forwarded_environment"), cfg.keySet());
 			Assert.assertEquals(DEFAULT_AGENT, cfg.getString("agent_platform"));
 
 			List<String> errors = new ArrayList<>();
@@ -343,7 +344,7 @@ public class ResourceTests {
 
 			JsonObject cfg = js.asJsonObject();
 
-			Assert.assertEquals(Set.of("transport", "agent_platform"), cfg.keySet());
+			Assert.assertEquals(Set.of("transport", "agent_platform", "forwarded_environment"), cfg.keySet());
 			Assert.assertEquals(DEFAULT_AGENT, cfg.getString("agent_platform"));
 
 			List<String> errors = new ArrayList<>();
@@ -427,7 +428,8 @@ public class ResourceTests {
 						.add("keyfile", "file:///path/to/key")
 						.add("hostkeys", Json.createArrayBuilder()
 								.add("ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQDMIAQc5QFZfdjImP2T9FNGe9r6l89binb5uH/vxzlnhAtHxesD8B7WXFBN/GxOplb3ih/vadT9gWliXUayvMn+ZMO7iBScnZwdmcMeKP3K80Czlrio+eI3jU77RQPYXBtcD8CBRT94r7nd29I+lMWxOD1U+LBA43kxAbyXqkQ0PQ=="))
-				).build();
+				).add("forwarded_environment", JsonValue.EMPTY_JSON_ARRAY)
+				.build();
 
 		PBSProResourceType pbs = new PBSProResourceType();
 		URI sshUri = URI.create("ssh://user@pbscluster.com");
@@ -511,7 +513,8 @@ public class ResourceTests {
 						.add("keyfile", "file:///path/to/key")
 						.add("hostkeys", Json.createArrayBuilder()
 								.add("ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQDMIAQc5QFZfdjImP2T9FNGe9r6l89binb5uH/vxzlnhAtHxesD8B7WXFBN/GxOplb3ih/vadT9gWliXUayvMn+ZMO7iBScnZwdmcMeKP3K80Czlrio+eI3jU77RQPYXBtcD8CBRT94r7nd29I+lMWxOD1U+LBA43kxAbyXqkQ0PQ=="))
-				).build();
+				).add("forwarded_environment", JsonValue.EMPTY_JSON_ARRAY)
+				.build();
 
 		SLURMResourceType slurm = new SLURMResourceType();
 		URI sshUri = URI.create("ssh://user@pbscluster.com");
@@ -558,10 +561,27 @@ public class ResourceTests {
 
 	@Test
 	public void pbsParserTest() {
-		JsonObject expected;
-		try(JsonReader p = Json.createReader(new StringReader("{\"agent_platform\":\"x86_64-pc-linux-musl\",\"transport\":{\"name\":\"sshd\",\"uri\":\"ssh://user@pbscluster.com\",\"keyfile\":\"file:///path/to/key\",\"hostkeys\":[\"ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQDMIAQc5QFZfdjImP2T9FNGe9r6l89binb5uH/vxzlnhAtHxesD8B7WXFBN/GxOplb3ih/vadT9gWliXUayvMn+ZMO7iBScnZwdmcMeKP3K80Czlrio+eI3jU77RQPYXBtcD8CBRT94r7nd29I+lMWxOD1U+LBA43kxAbyXqkQ0PQ==\"]},\"tmpvar\":\"TMPDIR\",\"pbsargs\":[\"-A\",\"ACCOUNTSTRING\",\"-l\",\"select=1:ncpus=1,pmem=1gb\",\"-l\",\"walltime=10:00:00\"],\"limit\":100,\"max_batch_size\":10,\"batch_config\":[]}"))) {
-			expected = p.readObject();
-		}
+		JsonObject expected = Json.createObjectBuilder()
+				.add("agent_platform", DEFAULT_AGENT)
+				.add("transport", Json.createObjectBuilder()
+						.add("name", "sshd")
+						.add("uri", "ssh://user@pbscluster.com")
+						.add("keyfile", "file:///path/to/key")
+						.add("hostkeys", Json.createArrayBuilder()
+								.add("ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQDMIAQc5QFZfdjImP2T9FNGe9r6l89binb5uH/vxzlnhAtHxesD8B7WXFBN/GxOplb3ih/vadT9gWliXUayvMn+ZMO7iBScnZwdmcMeKP3K80Czlrio+eI3jU77RQPYXBtcD8CBRT94r7nd29I+lMWxOD1U+LBA43kxAbyXqkQ0PQ=="))
+				).add("tmpvar", "TMPDIR")
+				.add("pbsargs", Json.createArrayBuilder()
+						.add("-A")
+						.add("ACCOUNTSTRING")
+						.add("-l")
+						.add("select=1:ncpus=1,pmem=1gb")
+						.add("-l")
+						.add("walltime=10:00:00")
+				).add("limit", 100)
+				.add("max_batch_size", 10)
+				.add("batch_config", JsonValue.EMPTY_JSON_ARRAY)
+				.add("forwarded_environment", JsonValue.EMPTY_JSON_ARRAY)
+				.build();
 
 		PBSProResourceType pbs = new PBSProResourceType();
 		URI sshUri = URI.create("ssh://user@pbscluster.com");
