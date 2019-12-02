@@ -248,7 +248,7 @@ public class DefaultJobScheduler implements JobScheduler {
 
 	@Override
 	public boolean tick() {
-		long startTime = System.currentTimeMillis();
+		//long startTime = System.currentTimeMillis();
 		int n = 0;
 
 		/*
@@ -272,16 +272,15 @@ public class DefaultJobScheduler implements JobScheduler {
 			incomingJobs.addAll(nj);
 		}
 
-		double taken = (System.currentTimeMillis() - startTime) / 1000.0;
-
-		LOGGER.trace("Queried {} jobs in {} seconds", n, taken);
+		//double taken = (System.currentTimeMillis() - startTime) / 1000.0;
+		//LOGGER.trace("Queried {} jobs in {} seconds", n, taken);
 
 		/* Filter the incoming job messages */
 		ArrayList<Job> jobQueue = new ArrayList<>(incomingJobs.size());
 		jobQueue.addAll(incomingJobs);
 		incomingJobs.clear();
 
-		startTime = System.currentTimeMillis();
+		//startTime = System.currentTimeMillis();
 		n = jobQueue.size();
 
 		/* FIXME: Keeping the behaviour for now. */
@@ -291,8 +290,8 @@ public class DefaultJobScheduler implements JobScheduler {
 		Collection<JobAttempt> attempts = ops.runJobs(jobQueue);
 		recordAttempts(attempts, jobQueue);
 
-		taken = (System.currentTimeMillis() - startTime) / 1000.0;
-		LOGGER.trace("Created {} attempts in {} seconds", n, taken);
+		//taken = (System.currentTimeMillis() - startTime) / 1000.0;
+		//LOGGER.trace("Created {} attempts in {} seconds", n, taken);
 
 		jobQueue.clear();
 
