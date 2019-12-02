@@ -123,7 +123,8 @@ public class RemoteActuator extends POSIXActuator<SSHResourceType.SSHConfig> {
 					certPath,
 					false,
 					false,
-					true
+					true,
+					ActuatorUtils.resolveEnvironment(this.config.forwardedEnvironment)
 			).add("uuid", uuids[i].toString()).add("work_root", workRoot)
 					.build().toString().getBytes(StandardCharsets.UTF_8);
 

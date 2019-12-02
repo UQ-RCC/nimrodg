@@ -1,6 +1,10 @@
 {
 	"$schema": "http://json-schema.org/draft-04/schema#",
 	"definitions": {
+		"environment_variable": {
+			"type": "string",
+			"pattern": "^[A-Za-z_][A-Za-z0-9_+]*$"
+		},
 		"ssh_resource": {
 			"type": "object",
 			"properties": {
@@ -44,9 +48,13 @@
 							"required": [ "name" ]
 						}
 					]
+				},
+				"forwarded_environment": {
+					"type": "array",
+					"items": { "$ref": "#/definitions/environment_variable"}
 				}
 			},
-			"required": ["agent_platform", "transport"]
+			"required": ["agent_platform", "transport", "forwarded_environment"]
 		},
 		"cluster_resource": {
 			"allOf": [
@@ -55,10 +63,7 @@
 					"type": "object",
 					"properties": {
 						"limit": { "type": "integer", "minimum": 1 },
-						"tmpvar": {
-							"type": "string",
-							"pattern": "^([A-Z_][A-Z0-9+]*)$"
-						},
+						"tmpvar": { "$ref": "#/definitions/environment_variable" },
 						"max_batch_size": { "type": "integer", "minimum": 1 }
 					},
 					"required": ["limit", "tmpvar", "max_batch_size"]

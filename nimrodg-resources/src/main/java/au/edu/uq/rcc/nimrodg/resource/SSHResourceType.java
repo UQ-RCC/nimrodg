@@ -36,8 +36,10 @@ import java.security.PublicKey;
 import java.security.cert.Certificate;
 import java.util.ArrayList;
 import java.util.List;
+import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
+import javax.json.JsonString;
 import javax.json.JsonStructure;
 
 import au.edu.uq.rcc.nimrodg.shell.RemoteShell;
@@ -52,6 +54,9 @@ import java.nio.file.attribute.PosixFilePermissions;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
+
 import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.FeatureControl;
 
@@ -169,9 +174,14 @@ public abstract class SSHResourceType extends BaseResourceType {
 			}
 		}
 
+		List<String> envs = ns.getList("forward_env");
+		if(envs == null) {
+			envs = List.of();
+		}
+
 		jb.add("agent_platform", platform);
 		jb.add("transport", tf.buildJsonConfiguration(cfg));
-
+		jb.add("forwarded_environment", Json.createArrayBuilder(envs));
 		return valid;
 	}
 
@@ -233,6 +243,13 @@ public abstract class SSHResourceType extends BaseResourceType {
 				.type(String.class)
 				.help("Path to the OpenSSH executable. Ignored if not using OpenSSH transport.")
 				.setDefault("ssh");
+
+		parser.addArgument("--forward-env")
+				.dest("forward_env")
+				.type(String.class)
+				.help("Forward an environment variable through to agents spawned on the remote system. Can be specified multiple times.")
+				.required(false)
+				.action(Arguments.append());
 
 		/* Hidden argument mainly used for testing. Don't attempt to load the private key if set. */
 		parser.addArgument("--no-validate-private-key")
@@ -312,8 +329,11 @@ public abstract class SSHResourceType extends BaseResourceType {
 			throw new IOException(errors.get(0));
 		}
 
-		return createActuator(ops, node, amqpUri, certs, new SSHConfig(ai.get(), tf, transConfig.get()));
 
+		return createActuator(ops, node, amqpUri, certs, new SSHConfig(ai.get(), tf, transConfig.get(), cfg.getJsonArray("forwarded_environment").stream()
+				.map(jv -> ((JsonString)jv).getString())
+				.collect(Collectors.toList()))
+		);
 	}
 
 	protected abstract Actuator createActuator(Actuator.Operations ops, Resource node, NimrodURI amqpUri, Certificate[] certs, SSHConfig sshConfig) throws IOException;
@@ -323,15 +343,17 @@ public abstract class SSHResourceType extends BaseResourceType {
 		public final AgentInfo agentInfo;
 		public final TransportFactory transportFactory;
 		public final TransportFactory.Config transportConfig;
+		public final List<String> forwardedEnvironment;
 
-		public SSHConfig(AgentInfo ai, TransportFactory transportFactory, TransportFactory.Config transportConfig) {
+		public SSHConfig(AgentInfo ai, TransportFactory transportFactory, TransportFactory.Config transportConfig, List<String> forwardedEnvironment) {
 			this.agentInfo = ai;
 			this.transportFactory = transportFactory;
 			this.transportConfig = transportConfig;
+			this.forwardedEnvironment = forwardedEnvironment;
 		}
 
 		protected SSHConfig(SSHConfig cfg) {
-			this(cfg.agentInfo, cfg.transportFactory, cfg.transportConfig);
+			this(cfg.agentInfo, cfg.transportFactory, cfg.transportConfig, cfg.forwardedEnvironment);
 		}
 	}
 }

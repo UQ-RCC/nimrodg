@@ -108,7 +108,8 @@ public abstract class ClusterActuator<C extends ClusterConfig> extends POSIXActu
 				this.remoteCertPath,
 				false,
 				true,
-				false
+				false,
+				ActuatorUtils.resolveEnvironment(cfg.forwardedEnvironment)
 		).build().toString().getBytes(StandardCharsets.UTF_8);
 
 		/* Upload the configuration file, it's the same for all of them. */

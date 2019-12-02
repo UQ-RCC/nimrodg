@@ -49,7 +49,7 @@ public abstract class POSIXActuator<C extends SSHConfig> implements Actuator {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(POSIXActuator.class);
 
-	private static final Pattern ENV_PATTERN = Pattern.compile("^([a-zA-Z0-9_]+)=(.*)$");
+	private static final Pattern ENV_PATTERN = Pattern.compile("^([A-Za-z_][A-Za-z0-9_+]*)=(.*)$");
 
 	protected final Operations ops;
 	protected final Resource node;

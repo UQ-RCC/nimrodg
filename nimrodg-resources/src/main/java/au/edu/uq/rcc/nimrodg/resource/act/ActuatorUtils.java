@@ -50,11 +50,14 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.json.Json;
+import javax.json.JsonArray;
+import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonStructure;
@@ -247,11 +250,8 @@ public class ActuatorUtils {
 		return args;
 	}
 
-	@Deprecated
-	public static JsonObject buildAgentConfig(UUID uuid, String workRoot, NimrodURI uri, String routingKey, Optional<String> certPath, boolean b64cert, boolean keepCerts, boolean batch) {
+	public static JsonObjectBuilder buildBaseAgentConfig(NimrodURI uri, String routingKey, Optional<String> certPath, boolean b64cert, boolean keepCerts, boolean batch, Map<String, String> environment) {
 		JsonObjectBuilder cfg = Json.createObjectBuilder()
-				.add("uuid", uuid.toString())
-				.add("work_root", workRoot)
 				.add("amqp", Json.createObjectBuilder()
 						.add("uri", uri.uri.toString())
 						.add("routing_key", routingKey)
@@ -274,34 +274,17 @@ public class ActuatorUtils {
 			cfg.add("output", "workroot");
 		}
 
-		return cfg.build();
+		JsonObjectBuilder envs = Json.createObjectBuilder();
+		environment.forEach(envs::add);
+		cfg.add("environment", envs);
+		return cfg;
 	}
 
-	public static JsonObjectBuilder buildBaseAgentConfig(NimrodURI uri, String routingKey, Optional<String> certPath, boolean b64cert, boolean keepCerts, boolean batch) {
-		JsonObjectBuilder cfg = Json.createObjectBuilder()
-				.add("amqp", Json.createObjectBuilder()
-						.add("uri", uri.uri.toString())
-						.add("routing_key", routingKey)
-				).add("no_verify_peer", uri.noVerifyPeer)
-				.add("no_verify_host", uri.noVerifyHost);
-
-
-		certPath.ifPresent(s -> cfg.add("ca", Json.createObjectBuilder()
-				.add("cert", s)
-				.add("encoding", b64cert ? "base64" : "plain")
-				.add("no_delete", keepCerts)));
-
-		String scheme = uri.uri.getScheme().toLowerCase(Locale.ENGLISH);
-		if(!"amqps".equals(scheme) && !"amqp".equals(scheme)) {
-			throw new IllegalArgumentException("Invalid URI scheme");
-		}
-
-		cfg.add("batch", batch);
-		if(batch) {
-			cfg.add("output", "workroot");
-		}
-
-		return cfg;
+	public static Map<String, String> resolveEnvironment(List<String> keys) {
+		return keys.stream()
+				.map(k -> Map.entry(k, System.getenv(k)))
+				.filter(e -> e.getValue() != null)
+				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 	}
 
 	@FunctionalInterface
