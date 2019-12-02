@@ -36,8 +36,8 @@ public class LocalShell implements RemoteShell {
 	private static final Logger LOGGER = LoggerFactory.getLogger(LocalShell.class);
 
 	@Override
-	public CommandResult runCommand(String... args) throws IOException {
-		return ShellUtils.doProcessOneshot(args, LOGGER);
+	public CommandResult runCommand(String[] args, byte[] stdin) throws IOException {
+		return ShellUtils.doProcessOneshot(args, stdin, LOGGER);
 	}
 
 	@Override

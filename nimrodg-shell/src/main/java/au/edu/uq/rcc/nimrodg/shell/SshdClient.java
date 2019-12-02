@@ -19,25 +19,6 @@
  */
 package au.edu.uq.rcc.nimrodg.shell;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InterruptedIOException;
-import java.net.SocketAddress;
-import java.net.URI;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.attribute.PosixFilePermission;
-import java.security.KeyPair;
-import java.security.PublicKey;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
 import org.apache.sshd.client.ClientBuilder;
 import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.SshClient;
@@ -53,6 +34,25 @@ import org.apache.sshd.common.scp.ScpTimestamp;
 import org.apache.sshd.common.signature.BuiltinSignatures;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InterruptedIOException;
+import java.net.SocketAddress;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.attribute.PosixFilePermission;
+import java.security.KeyPair;
+import java.security.PublicKey;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class SshdClient implements RemoteShell {
 
@@ -159,8 +159,8 @@ public class SshdClient implements RemoteShell {
 	}
 
 	@Override
-	public CommandResult runCommand(String... args) throws IOException {
-		return runCommand(session, args);
+	public CommandResult runCommand(String[] args, byte[] stdin) throws IOException {
+		return runCommand(session, args, stdin);
 	}
 
 	@Override
@@ -174,9 +174,11 @@ public class SshdClient implements RemoteShell {
 		runCommand("chmod", Integer.toString(operms, 8), destPath);
 	}
 
-	public static CommandResult runCommand(ClientSession ses, String... args) throws IOException {
+	public static CommandResult runCommand(ClientSession ses, String[] args, byte[] stdin) throws IOException {
 		ByteArrayOutputStream baosout = new ByteArrayOutputStream();
 		ByteArrayOutputStream baoserr = new ByteArrayOutputStream();
+		ByteArrayInputStream baisin = new ByteArrayInputStream(stdin);
+
 		int ret;
 		String cmdline = ShellUtils.buildEscapedCommandLine(args);
 
@@ -187,6 +189,7 @@ public class SshdClient implements RemoteShell {
 			ch.setEnv("LC_ALL", "POSIX");
 			ch.setOut(baosout);
 			ch.setErr(baoserr);
+			ch.setIn(baisin);
 			OpenFuture of = ch.open();
 			if(!of.await()) {
 				throw new IOException(of.getException());

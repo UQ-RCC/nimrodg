@@ -70,7 +70,7 @@ public class ShellUtils {
         return doProcessOneshot(p, args, new byte[0]);
     }
 
-    private static RemoteShell.CommandResult doProcessOneshot(String[] args, byte[] input, Logger logger) throws IOException {
+    public static RemoteShell.CommandResult doProcessOneshot(String[] args, byte[] input, Logger logger) throws IOException {
         ProcessBuilder pb = new ProcessBuilder(args);
         pb.redirectOutput(ProcessBuilder.Redirect.PIPE);
         pb.redirectError(ProcessBuilder.Redirect.PIPE);

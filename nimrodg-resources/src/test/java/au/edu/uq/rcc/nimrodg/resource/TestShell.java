@@ -30,7 +30,7 @@ public class TestShell implements RemoteShell {
 	}
 
 	@Override
-	public CommandResult runCommand(String... args) throws IOException {
+	public CommandResult runCommand(String[] args, byte[] stdin) throws IOException {
 		if(args == null || args.length == 0) {
 			throw new IllegalArgumentException();
 		}

@@ -48,7 +48,11 @@ public interface RemoteShell extends Closeable {
 		}
 	}
 
-	CommandResult runCommand(String... args) throws IOException;
+	default CommandResult runCommand(String... args) throws IOException {
+		return this.runCommand(args, new byte[0]);
+	}
+
+	CommandResult runCommand(String[] args, byte[] stdin) throws IOException;
 
 	void upload(String destPath, byte[] bytes, Collection<PosixFilePermission> perms, Instant timestamp) throws IOException;
 

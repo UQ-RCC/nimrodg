@@ -192,8 +192,8 @@ public class OpenSSHClient implements RemoteShell {
     }
 
     @Override
-    public CommandResult runCommand(String... args) throws IOException {
-        return runCommandInternal(args, new byte[0]);
+    public CommandResult runCommand(String[] args, byte[] stdin) throws IOException {
+        return this.runSsh(args, p -> ShellUtils.doProcessOneshot(p, args, stdin));
     }
 
     @FunctionalInterface
@@ -233,10 +233,6 @@ public class OpenSSHClient implements RemoteShell {
             throw new IOException("OpenSSH execution failed");
         }
         return cr;
-    }
-
-    private CommandResult runCommandInternal(String[] args, byte[] input) throws IOException {
-        return this.runSsh(args, p -> ShellUtils.doProcessOneshot(p, args, input));
     }
 
     private String readNextLine(InputStream is) throws IOException {
