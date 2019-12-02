@@ -27,6 +27,7 @@ import au.edu.uq.rcc.nimrodg.api.ResourceFullException;
 import au.edu.uq.rcc.nimrodg.resource.SSHResourceType;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.security.cert.Certificate;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -113,9 +114,8 @@ public class RemoteActuator extends POSIXActuator<SSHResourceType.SSHConfig> {
 				shell.upload(certPath.get(), bcert, O600, Instant.now());
 			}
 
-			/* Build the agent launch command line */
-			ArrayList<String> args = ActuatorUtils.posixBuildLaunchCommand(
-					this.remoteAgentPath,
+			/* Generate the agent configuration. */
+			byte[] input = ActuatorUtils.buildAgentConfig(
 					uuids[i],
 					workRoot,
 					uri,
@@ -124,10 +124,10 @@ public class RemoteActuator extends POSIXActuator<SSHResourceType.SSHConfig> {
 					false,
 					false,
 					true
-			);
+			).toString().getBytes(StandardCharsets.UTF_8);
 
-			String[] _args = args.stream().toArray(String[]::new);
-			RemoteShell.CommandResult cr = shell.runCommand(_args);
+			String[] _args = new String[]{this.remoteAgentPath, "-c", "-"};
+			RemoteShell.CommandResult cr = shell.runCommand(_args, input);
 			if(cr.status != 0) {
 				results[i] = new LaunchResult(null, new IOException(String.format("Remote command execution failed: %s", cr.stderr.trim())));
 				continue;
