@@ -33,6 +33,7 @@ import java.io.PrintStream;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import javax.json.Json;
@@ -86,7 +87,7 @@ public class ResourceCmd extends NimrodCLICommand {
 
 	}
 
-	private int executeAdd(NimrodAPI api, Namespace args, PrintStream out, PrintStream err, Path[] configDirs) throws IOException, NimrodAPIException {
+	private int executeAdd(NimrodAPI api, Namespace args, PrintStream out, PrintStream err, Path[] configDirs) throws NimrodAPIException {
 		String name = args.getString("resource_name");
 
 		Resource node = api.getResource(name);
@@ -97,7 +98,7 @@ public class ResourceCmd extends NimrodCLICommand {
 
 		String type = args.getString("type");
 		if(type == null) {
-			err.printf("No type specified.\n");
+			err.print("No type specified.\n");
 			return 1;
 		}
 
@@ -125,21 +126,21 @@ public class ResourceCmd extends NimrodCLICommand {
 		return 0;
 	}
 
-	private int executeRemove(NimrodAPI api, Namespace args, PrintStream out, PrintStream err) throws IOException, NimrodAPIException {
+	private int executeRemove(NimrodAPI api, Namespace args, PrintStream out, PrintStream err) throws NimrodAPIException {
 		args.getList("resource_name").stream()
 				.distinct()
 				.map(r -> api.getResource((String)r))
-				.filter(r -> r != null)
-				.forEach(r -> api.deleteResource(r));
+				.filter(Objects::nonNull)
+				.forEach(api::deleteResource);
 		return 0;
 	}
 
-	private int executeList(NimrodAPI api, Namespace args, PrintStream out, PrintStream err) throws IOException, NimrodAPIException {
+	private int executeList(NimrodAPI api, Namespace args, PrintStream out, PrintStream err) throws NimrodAPIException {
 		Pattern p;
 		try {
 			p = Pattern.compile(args.getString("pathspec"));
 		} catch(PatternSyntaxException e) {
-			err.printf("Error compiling pattern.\n");
+			err.print("Error compiling pattern.\n");
 			e.printStackTrace(err);
 			return 1;
 		}
@@ -155,33 +156,31 @@ public class ResourceCmd extends NimrodCLICommand {
 		}
 	}
 
-	private int executeQuery(NimrodAPI api, Namespace args, PrintStream out, PrintStream err) throws IOException, NimrodAPIException {
+	private int executeQuery(NimrodAPI api, Namespace args, PrintStream out, PrintStream err) throws NimrodAPIException {
 		Resource n = api.getResource(args.get("resource_name"));
 
 		if(n == null) {
-			err.printf("No such resource.\n");
+			err.print("No such resource.\n");
 			return 0;
 		}
 
-		out.printf("Resource Information:\n");
+		out.print("Resource Information:\n");
 		out.printf("  Name:   %s\n", n.getName());
 		out.printf("  Type:   %s\n", n.getTypeName());
 
-		out.printf("Config:");
+		out.print("Config:");
 		prettyPrint(n.getConfig(), out);
+		out.println();
 		return 0;
 	}
 
 	public static void prettyPrint(JsonStructure json, PrintStream ps) {
 		Map<String, Boolean> ops = new HashMap<>();
 		ops.put(JsonGenerator.PRETTY_PRINTING, true);
-
-		try(JsonWriter w = Json.createWriterFactory(ops).createWriter(ps)) {
-			w.write(json);
-		}
+		Json.createWriterFactory(ops).createWriter(ps).write(json);
 	}
 
-	private int executeAssign(NimrodAPI api, Namespace args, PrintStream out, PrintStream err) throws IOException, NimrodAPIException {
+	private int executeAssign(NimrodAPI api, Namespace args, PrintStream out, PrintStream err) throws NimrodAPIException {
 		String expName = args.getString("exp_name");
 
 		Experiment exp = api.getExperiment(expName);
@@ -207,7 +206,7 @@ public class ResourceCmd extends NimrodCLICommand {
 		return failed ? 1 : 0;
 	}
 
-	private int executeUnassign(NimrodAPI api, Namespace args, PrintStream out, PrintStream err) throws IOException, NimrodAPIException {
+	private int executeUnassign(NimrodAPI api, Namespace args, PrintStream out, PrintStream err) throws NimrodAPIException {
 
 		String expName = args.getString("exp_name");
 		Experiment exp = api.getExperiment(expName);
@@ -219,7 +218,7 @@ public class ResourceCmd extends NimrodCLICommand {
 		args.getList("resource_name").stream()
 				.distinct()
 				.map(r -> api.getResource((String)r))
-				.filter(r -> r != null)
+				.filter(Objects::nonNull)
 				.forEach(r -> api.unassignResource(r, exp));
 
 		return 0;
