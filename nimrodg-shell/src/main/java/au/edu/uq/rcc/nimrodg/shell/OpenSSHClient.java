@@ -19,31 +19,32 @@
  */
 package au.edu.uq.rcc.nimrodg.shell;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.ByteBuffer;
+import java.nio.channels.ByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.PosixFilePermission;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * A wrapper around OpenSSH. This entire class is a glorious hack.
@@ -97,7 +98,11 @@ public class OpenSSHClient implements RemoteShell {
         if(privateKey.isPresent()) {
             /* The key may be on another filesystem, so make a "local" copy of it. */
             this.privateKey = Optional.of(workDir.resolve(String.format("openssh-%d-key", (long)uri.hashCode() & 0xFFFFFFFFL)));
-            copyPrivateKey(privateKey.get(), this.privateKey.get());
+
+            try(ByteChannel c = ShellUtils.newByteChannelSafe(this.privateKey.get(), EnumSet.of(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE))) {
+                c.write(ByteBuffer.wrap(Files.readAllBytes(privateKey.get())));
+            }
+
             ssh.add("-i");
             ssh.add(this.privateKey.get().toString());
         } else {
@@ -246,7 +251,7 @@ public class OpenSSHClient implements RemoteShell {
     }
 
     @Override
-    public void upload(String destPath, byte[] bytes, Collection<PosixFilePermission> perms, Instant timestamp) throws IOException {
+    public void upload(String destPath, byte[] bytes, Set<PosixFilePermission> perms, Instant timestamp) throws IOException {
         int operms = ShellUtils.permissionsToInt(perms);
 
         this.runSsh(new String[]{
@@ -320,29 +325,6 @@ public class OpenSSHClient implements RemoteShell {
             }
         }
         ShellUtils.doProcessOneshot(closeArgs, LOGGER);
-    }
-
-    private static void copyPrivateKey(Path src, Path dest) throws IOException {
-        Files.deleteIfExists(dest);
-        Files.createFile(dest);
-
-        try {
-            Files.setPosixFilePermissions(dest, EnumSet.of(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE));
-        } catch(UnsupportedOperationException e) {
-            LOGGER.warn("Unable to secure private key, POSIX permissions not supported", e);
-        }
-
-        try(OutputStream os = Files.newOutputStream(dest, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE)) {
-            os.write(Files.readAllBytes(src));
-        }
-
-		/*
-		try(ByteChannel c = Files.newByteChannel(dest,
-				EnumSet.of(StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE),
-				PosixFilePermissions.asFileAttribute(perms))) {
-			c.write(ByteBuffer.wrap(Files.readAllBytes(src)));
-		}
-		*/
     }
 
     public static void main(String[] args) throws IOException {

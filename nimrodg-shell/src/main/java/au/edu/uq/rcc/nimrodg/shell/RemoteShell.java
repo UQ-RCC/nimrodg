@@ -25,11 +25,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
 import java.time.Instant;
-import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.Set;
 
 /**
  * A small interface around a remote system. Used so there can be multiple transports, i.e. Mina SSHD and a local ssh
@@ -58,9 +55,9 @@ public interface RemoteShell extends Closeable {
 
 	CommandResult runCommand(String[] args, byte[] stdin) throws IOException;
 
-	void upload(String destPath, byte[] bytes, Collection<PosixFilePermission> perms, Instant timestamp) throws IOException;
+	void upload(String destPath, byte[] bytes, Set<PosixFilePermission> perms, Instant timestamp) throws IOException;
 
-	default void upload(String destPath, Path path, Collection<PosixFilePermission> perms, Instant timestamp) throws IOException {
+	default void upload(String destPath, Path path, Set<PosixFilePermission> perms, Instant timestamp) throws IOException {
 		upload(destPath, Files.readAllBytes(path), perms, timestamp);
 	}
 

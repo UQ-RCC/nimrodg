@@ -19,20 +19,22 @@
  */
 package au.edu.uq.rcc.nimrodg.shell;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.ByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.PosixFilePermission;
 import java.time.Instant;
-import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class LocalShell implements RemoteShell {
 
@@ -44,10 +46,13 @@ public class LocalShell implements RemoteShell {
 	}
 
 	@Override
-	public void upload(String destPath, byte[] bytes, Collection<PosixFilePermission> perms, Instant timestamp) throws IOException {
+	public void upload(String destPath, byte[] bytes, Set<PosixFilePermission> perms, Instant timestamp) throws IOException {
 		Path path = Paths.get(destPath);
-		Files.write(path, bytes);
-		Files.setPosixFilePermissions(path, new HashSet<>(perms));
+
+		try(ByteChannel c = ShellUtils.newByteChannelSafe(path, perms)) {
+			c.write(ByteBuffer.wrap(bytes));
+		}
+
 		Files.setLastModifiedTime(path, FileTime.from(timestamp));
 	}
 

@@ -14,10 +14,9 @@ import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.PosixFilePermission;
 import java.security.PublicKey;
 import java.time.Instant;
-import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 public class TestShell implements RemoteShell {
 
@@ -60,18 +59,10 @@ public class TestShell implements RemoteShell {
 	}
 
 	@Override
-	public void upload(String destPath, byte[] bytes, Collection<PosixFilePermission> perms, Instant timestamp) throws IOException {
+	public void upload(String destPath, byte[] bytes, Set<PosixFilePermission> perms, Instant timestamp) throws IOException {
 		Path dp = fs.getPath(destPath);
 		Files.write(dp, bytes);
-		Files.setPosixFilePermissions(dp, new HashSet<>(perms));
-		Files.setLastModifiedTime(dp, FileTime.from(timestamp));
-	}
-
-	@Override
-	public void upload(String destPath, Path path, Collection<PosixFilePermission> perms, Instant timestamp) throws IOException {
-		Path dp = fs.getPath(destPath);
-		Files.copy(fs.getPath(path.toString()), dp);
-		Files.setPosixFilePermissions(dp, new HashSet<>(perms));
+		Files.setPosixFilePermissions(dp, perms);
 		Files.setLastModifiedTime(dp, FileTime.from(timestamp));
 	}
 

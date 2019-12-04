@@ -1,18 +1,31 @@
 package au.edu.uq.rcc.nimrodg.shell;
 
+import org.apache.commons.exec.CommandLine;
+import org.apache.commons.exec.DefaultExecutor;
+import org.apache.commons.exec.ExecuteException;
+import org.apache.commons.exec.Executor;
+import org.apache.commons.exec.PumpStreamHandler;
+import org.apache.commons.exec.util.StringUtils;
 import org.apache.sshd.common.config.keys.AuthorizedKeyEntry;
 import org.apache.sshd.common.config.keys.PublicKeyEntryResolver;
 import org.slf4j.Logger;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
+import java.nio.channels.ByteChannel;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.OpenOption;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.security.GeneralSecurityException;
 import java.security.PublicKey;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -20,10 +33,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.StringTokenizer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
+/**
+ * Various utility functions.
+ *
+ * Some of these are thin wrappers around commons-exec to avoid exposing the dependency.
+ */
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public class ShellUtils {
 
@@ -44,21 +62,16 @@ public class ShellUtils {
     }
 
     public static RemoteShell.CommandResult doProcessOneshot(Process p, String[] args, byte[] input) throws IOException {
-        BufferedOutputStream stdin = new BufferedOutputStream(p.getOutputStream());
-        BufferedInputStream stdout = new BufferedInputStream(p.getInputStream());
-        BufferedInputStream stderr = new BufferedInputStream(p.getErrorStream());
+        ByteArrayInputStream stdin = new ByteArrayInputStream(input);
+        ByteArrayOutputStream stdout = new ByteArrayOutputStream();
+        ByteArrayOutputStream stderr = new ByteArrayOutputStream();
 
-        /* TODO: Do this properly in threads to avoid blocking. */
-        if(input.length > 0) {
-            stdin.write(input);
-        }
-        stdin.close();
+        PumpStreamHandler psh = new PumpStreamHandler(stdout, stderr, stdin);
+        psh.setProcessOutputStream(p.getInputStream());
+        psh.setProcessErrorStream(p.getErrorStream());
+        psh.setProcessInputStream(p.getOutputStream());
 
-        byte[] out = stdout.readAllBytes();
-        byte[] err = stderr.readAllBytes();
-
-        String output = new String(out, StandardCharsets.UTF_8);
-        String error = new String(err, StandardCharsets.UTF_8).trim();
+        psh.start();
 
         while(p.isAlive()) {
             try {
@@ -67,30 +80,57 @@ public class ShellUtils {
                 /* nop */
             }
         }
-        return new RemoteShell.CommandResult(buildEscapedCommandLine(args), p.exitValue(), output, error);
+
+        psh.stop();
+
+        return new RemoteShell.CommandResult(
+                buildEscapedCommandLine(args),
+                p.exitValue(),
+                stdout.toString(StandardCharsets.UTF_8),
+                stderr.toString(StandardCharsets.UTF_8)
+        );
     }
 
-    public static RemoteShell.CommandResult doProcessOneshot(Process p, String[] args) throws IOException {
-        return doProcessOneshot(p, args, new byte[0]);
+    public static RemoteShell.CommandResult doProcessOneshot(CommandLine cmd, byte[] input, Logger logger) throws IOException {
+        String cmdline = buildEscapedCommandLine(cmd.toStrings());
+        logger.trace("Executing command: {}", cmdline);
+
+        ByteArrayInputStream stdin = new ByteArrayInputStream(input);
+        ByteArrayOutputStream stdout = new ByteArrayOutputStream();
+        ByteArrayOutputStream stderr = new ByteArrayOutputStream();
+
+        Executor exec = new DefaultExecutor();
+        exec.setStreamHandler(new PumpStreamHandler(stdout, stderr, stdin));
+        exec.setExitValues(null);
+
+        int rv;
+        try {
+            rv = exec.execute(cmd);
+        } catch(ExecuteException e) {
+            Throwable t = e.getCause();
+            if(t != null) {
+                if(t instanceof IOException) {
+                    throw (IOException)t;
+                }
+                throw new IOException(t);
+            }
+            rv = e.getExitValue();
+        }
+
+        return new RemoteShell.CommandResult(cmdline, rv, stdout.toString(StandardCharsets.UTF_8), stderr.toString(StandardCharsets.UTF_8));
     }
 
     public static RemoteShell.CommandResult doProcessOneshot(String[] args, byte[] input, Logger logger) throws IOException {
-        ProcessBuilder pb = new ProcessBuilder(args);
-        pb.redirectOutput(ProcessBuilder.Redirect.PIPE);
-        pb.redirectError(ProcessBuilder.Redirect.PIPE);
-        pb.redirectInput(ProcessBuilder.Redirect.PIPE);
-
-        logger.trace("Executing command: {}", buildEscapedCommandLine(args));
-
-        Process p = pb.start();
-        try {
-            return doProcessOneshot(p, args, input);
-        } catch(IOException e) {
-            logger.error(new String(p.getErrorStream().readAllBytes(), StandardCharsets.UTF_8));
-            throw e;
-        } finally {
-            p.destroyForcibly();
+        if(args.length == 0) {
+            throw new IllegalArgumentException();
         }
+
+        CommandLine cmd = new CommandLine(args[0]);
+        for(int i = 1; i < args.length; ++i) {
+            cmd.addArgument(args[i]);
+        }
+
+        return doProcessOneshot(cmd, input, logger);
     }
 
     public static RemoteShell.CommandResult doProcessOneshot(String[] args, Logger logger) throws IOException {
@@ -98,20 +138,11 @@ public class ShellUtils {
     }
 
     public static String buildEscapedCommandLine(List<String> args) {
-        return buildEscapedCommandLine(args.toArray(new String[args.size()]));
+        return args.stream().map(ShellUtils::quoteArgument).collect(Collectors.joining(" "));
     }
 
     public static String buildEscapedCommandLine(String... args) {
-        StringBuilder sb = new StringBuilder();
-
-        for(int i = 0; i < args.length; ++i) {
-            sb.append(quoteArgument(args[i]));
-            if(i != args.length - 1) {
-                sb.append(' ');
-            }
-        }
-
-        return sb.toString();
+        return Arrays.stream(args).map(ShellUtils::quoteArgument).collect(Collectors.joining(" "));
     }
 
     private static final Pattern ENV_PATTERN = Pattern.compile("^([A-Za-z_][A-Za-z0-9_+]*)=(.*)$");
@@ -227,126 +258,34 @@ public class ShellUtils {
         return operms;
     }
 
-    /**
-     * Put quotes around the given String if necessary.
-     * <p>
-     * If the argument doesn't include spaces or quotes, return it as is. If it contains double quotes, use single
-     * quotes - else surround the argument by double quotes.
-     * </p>
-     *
-     * @param argument the argument to be quoted
-     * @return the quoted argument
-     * @throws IllegalArgumentException If argument contains both types of quotes
-     *                                  <p>
-     *                                  Ripped from Apache commons-exec
-     *                                  https://github.com/apache/commons-exec/blob/trunk/src/main/java/org/apache/commons/exec/util/StringUtils.java
-     *                                  <p>
-     *                                  NOTICE: Apache Commons Exec Copyright 2005-2016 The Apache Software Foundation
-     *                                  <p>
-     *                                  This product includes software developed at The Apache Software Foundation (http://www.apache.org/).
-     */
     public static String quoteArgument(final String argument) {
-
-        final String SINGLE_QUOTE = "\'";
-        final String DOUBLE_QUOTE = "\"";
-
-        String cleanedArgument = argument.trim();
-
-        // strip the quotes from both ends
-        while(cleanedArgument.startsWith(SINGLE_QUOTE) || cleanedArgument.startsWith(DOUBLE_QUOTE)) {
-            cleanedArgument = cleanedArgument.substring(1);
-        }
-
-        while(cleanedArgument.endsWith(SINGLE_QUOTE) || cleanedArgument.endsWith(DOUBLE_QUOTE)) {
-            cleanedArgument = cleanedArgument.substring(0, cleanedArgument.length() - 1);
-        }
-
-        final StringBuilder buf = new StringBuilder();
-        if(cleanedArgument.contains(DOUBLE_QUOTE)) {
-            if(cleanedArgument.contains(SINGLE_QUOTE)) {
-                throw new IllegalArgumentException("Can't handle single and double quotes in same argument");
-            }
-            return buf.append(SINGLE_QUOTE).append(cleanedArgument).append(SINGLE_QUOTE).toString();
-        } else if(cleanedArgument.contains(SINGLE_QUOTE) || cleanedArgument.contains(" ")) {
-            return buf.append(DOUBLE_QUOTE).append(cleanedArgument).append(DOUBLE_QUOTE).toString();
-        } else {
-            return cleanedArgument;
-        }
+        return StringUtils.quoteArgument(argument);
     }
 
-
-    /**
-     * Crack a command line.
-     *
-     * @param toProcess the command line to process.
-     * @return the command line broken into strings. An empty or null toProcess parameter results in a zero sized array.
-     * <p>
-     * Taken from https://github.com/apache/ant/blob/master/src/main/org/apache/tools/ant/types/Commandline.java
-     * Revision 790e27474ff11b42f1d3f355fa8b0d34be10e321 Changed to throw IllegalArgumentException instead of
-     * BuildException
-     * <p>
-     * NOTICE: Apache Ant Copyright 1999-2018 The Apache Software Foundation
-     * <p>
-     * This product includes software developed at The Apache Software Foundation (http://www.apache.org/).
-     */
     public static String[] translateCommandline(String toProcess) {
-        if(toProcess == null || toProcess.isEmpty()) {
-            //no command? no string
-            return new String[0];
-        }
-        // parse with a simple finite state machine
+        return CommandLine.parse(toProcess).toStrings();
+    }
 
-        final int normal = 0;
-        final int inQuote = 1;
-        final int inDoubleQuote = 2;
-        int state = normal;
-        final StringTokenizer tok = new StringTokenizer(toProcess, "\"\' ", true);
-        final ArrayList<String> result = new ArrayList<>();
-        final StringBuilder current = new StringBuilder();
-        boolean lastTokenHasBeenQuoted = false;
+    /* Sheer and utter paranoia. */
+    public static ByteChannel newByteChannelSafe(Path path, Set<PosixFilePermission> perms) throws IOException {
+        Set<OpenOption> opts = Set.of(StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
 
-        while(tok.hasMoreTokens()) {
-            String nextTok = tok.nextToken();
-            switch(state) {
-                case inQuote:
-                    if("\'".equals(nextTok)) {
-                        lastTokenHasBeenQuoted = true;
-                        state = normal;
-                    } else {
-                        current.append(nextTok);
-                    }
-                    break;
-                case inDoubleQuote:
-                    if("\"".equals(nextTok)) {
-                        lastTokenHasBeenQuoted = true;
-                        state = normal;
-                    } else {
-                        current.append(nextTok);
-                    }
-                    break;
-                default:
-                    if("\'".equals(nextTok)) {
-                        state = inQuote;
-                    } else if("\"".equals(nextTok)) {
-                        state = inDoubleQuote;
-                    } else if(" ".equals(nextTok)) {
-                        if(lastTokenHasBeenQuoted || current.length() > 0) {
-                            result.add(current.toString());
-                            current.setLength(0);
-                        }
-                    } else {
-                        current.append(nextTok);
-                    }
-                    lastTokenHasBeenQuoted = false;
-                    break;
-            }
+        FileAttribute[] atts;
+        if(path.getFileSystem().supportedFileAttributeViews().contains("posix")) {
+            atts = new FileAttribute[]{ PosixFilePermissions.asFileAttribute(perms) };
+        } else {
+            /* TODO: Convert perms to what they should be. */
+            atts = new FileAttribute[0];
         }
-        if(lastTokenHasBeenQuoted || current.length() > 0) {
-            result.add(current.toString());
-        }
-        if(state == inQuote || state == inDoubleQuote) {
-            throw new IllegalArgumentException("unbalanced quotes in " + toProcess);
-        }
-        return result.toArray(new String[result.size()]);
+
+        /*
+         * Explicitly delete the file, as Files.newByteChannel() doesn't apply the attributes if it does.
+         * Also, an adversary may already have an open file handle.
+         *
+         * There is a *slight* race here, but Java doesn't provide a way to do this atomically.
+         * If the race does happen, and someone's created a file in the same place, this will throw.
+         */
+        Files.deleteIfExists(path);
+        return Files.newByteChannel(path, opts, atts);
     }
 }

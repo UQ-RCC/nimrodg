@@ -48,9 +48,9 @@ import java.security.PublicKey;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -101,7 +101,6 @@ public class SshdClient implements RemoteShell {
 
 		client = ClientBuilder.builder()
 				.serverKeyVerifier((ClientSession arg0, SocketAddress arg1, PublicKey key) -> {
-
 					for(int i = 0; i < hostKeys.length; ++i) {
 						if(hostKeys[i].equals(key)) {
 							return true;
@@ -164,7 +163,7 @@ public class SshdClient implements RemoteShell {
 	}
 
 	@Override
-	public void upload(String destPath, byte[] bytes, Collection<PosixFilePermission> perms, Instant timestamp) throws IOException {
+	public void upload(String destPath, byte[] bytes, Set<PosixFilePermission> perms, Instant timestamp) throws IOException {
 		long ms = timestamp.getEpochSecond();
 		scp.upload(bytes, destPath, perms, new ScpTimestamp(ms, ms));
 
