@@ -1,0 +1,35 @@
+language: java
+jdk: openjdk11
+dist: bionic
+addons:
+  apt:
+    packages:
+      - debhelper
+      - make
+      - fakeroot
+before_cache:
+  - rm -f $TRAVIS_BUILD_DIR/.citemp/caches/modules-2/modules-2.lock
+  - rm -rf $TRAVIS_BUILD_DIR/.citemp/caches/*/plugin-resolution/
+cache:
+  directories:
+    - $TRAVIS_BUILD_DIR/.citemp/caches/
+    - $TRAVIS_BUILD_DIR/.citemp/wrapper
+
+script:
+  - ./gradlew --quiet -g .citemp --no-daemon distTar
+  - make -f Makefile.deb all
+
+install: true
+deploy:
+  provider: releases
+  api_key:
+    secure: V+Y+PcH2ttQsPF0/b+36nM96F3rRfMW/qLEFqxkLTi8gN8Z2ZGdZc7xm2rxJDlMRFcrv6rGCpzdkQ65VZQNHXZaXsU6wSETYNnU2Gqu54pg9UcjaN6FEw7mcXGoZP2VF90j7N1w5fIILdd5LMVkxJhUTXhP2eV/mfU2OCq+DBq9gLlTcyrU14NQ/Hs25vD13cunbZ/CvfJ8XtvHZp21fKOygTGPgzPdWVKJ57hBqG1BTUWr5zWeMznoTzydtEjPdHkvs2vgYnMg9EdW2nTEpT0NektWp++VoY0KnI+p+g7nY/CrHuhoqhgDENGG1IOw3L9LYJtrLQar1rQ3N4JOEiG/E+FC9fDb2tBEaZL25t0MFX/gx2vDrLRMBC9C7iJEf9pYjOSiLgtBIsaBYIk3NiZ4AneazSH89jr8eSssz/IG1wkgmL2yVQPZF2IPDo4fiiEFxIA7kEqKQyvygiiM6/SXBt6UE/brK6aE3zk4bwP2SLhChaNWNDFTbaIUfvHHvX6mZRVrymJ7IN49rIgtVMu9nROYZC3DcUgoikOfQncvn199WPQpeY+LatOrpzNOvjHu2bqkiEUVw2nSVEZ2YUcI4D6ZUVeBt2GwURkyz7ONJ15MdXSf4X140E4E1bZ5bKrIzSYlD9Vt1FO79iA/VsWhg8xeZxVNFq89W/THyZDc=
+  skip_cleanup: true
+  file_glob: true
+  file:
+    - build/distributions/nimrod-portal-backend-*.tar.gz
+    - nimrod-portal-backend_*_all.deb
+  draft: false
+  overwrite: true
+  on:
+    tags: true
