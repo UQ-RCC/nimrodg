@@ -1,0 +1,45 @@
+server:
+  port: 8082
+  servlet:
+    contextPath: /nimrod
+
+nimrod:
+  rabbitmq:
+    user: nimrod-portal
+    password: password
+    api: https://amqp.example.com:15671/
+    cacert: /etc/ssl/certs/ca-certificates.crt
+  resource:
+    api: https://resourceserver.example.com/resource/
+    cacert: /etc/ssl/certs/ca-certificates.crt
+  remote:
+    rabbit_uritemplate: amqps://{username}:{amqp_password}@{amqp_host}/{username}
+    postgres_uritemplate: postgresql://{pg_host}/nimrod_portal?currentSchema={username}&ssl=true&sslmode=verify-ca&sslrootcert={ssl_cacert}
+    vars:
+      ssl_cacert: /etc/ssl/certs/ca-certificates.crt
+      amqp_host: amqp.example.com
+      pg_host: db.example.com
+      # These are provided by the implementation
+      #pg_username:
+      #pg_password:
+      #amqp_username:
+      #amqp_password:
+      #amqp_routing_key:
+      #jdbc_url:
+      #amqp_url:
+
+spring:
+  datasource:
+    url: jdbc:postgresql://db.example.com:5432/nimrod_portal
+    username: nimrod-portal
+    password: password
+    driver: org.postgresql.Driver
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: https://keycloak.example.com/auth/realms/example-realm1/protocol/openid-connect/certs
+          issuer-uri: https://keycloak.example.com/auth/realms/example-realm1
+          client-id: example-realm1-client
+          client-secret: 00000000-0000-0000-0000-000000000000
+          audience-id: audience-id

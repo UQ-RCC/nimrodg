@@ -1,0 +1,19 @@
+#!/bin/sh
+
+set -e
+
+if [ "${1}" = "purge" ] ; then
+	if [ -d /var/lib/nimrod-portal-backend ]; then
+		rm -rf /var/lib/nimrod-portal-backend
+	fi
+	if [ -d /var/log/nimrod-portal-backend ]; then
+		rm -rf /var/log/nimrod-portal-backend
+	fi
+	if [ -d /etc/nimrod-portal-backend ]; then
+		rm -rf /etc/nimrod-portal-backend
+	fi
+fi
+
+#DEBHELPER#
+
+exit 0

@@ -1,0 +1,15 @@
+**/logs/
+**/build/
+/.gradle/
+/.idea/
+/src/main/resources/application.yml
+/src/main/resources/logback-spring.xml
+/debian/*.log
+/debian/*.debhelper
+/debian/changelog
+/debian/files
+/debian/package/
+/debian/nimrod-portal-backend/
+/debian/nimrod-portal-backend.substvars
+/debian/debhelper-build-stamp
+/.citemp/
