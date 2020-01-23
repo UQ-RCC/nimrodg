@@ -22,8 +22,7 @@
 --DROP DATABASE IF EXISTS nimrod_portal;
 --CREATE DATABASE nimrod_portal;
 
-DROP TABLE IF EXISTS portal_users CASCADE;
-CREATE TABLE portal_users(
+CREATE TABLE IF NOT EXISTS portal_users(
     id				BIGSERIAL NOT NULL PRIMARY KEY,
     username		NAME NOT NULL UNIQUE,
     -- NB: Not actually being used as a hash, so this is fine
@@ -32,8 +31,7 @@ CREATE TABLE portal_users(
     amqp_password	TEXT NOT NULL DEFAULT(MD5(random()::text) || MD5(random()::text))
 );
 
-DROP VIEW IF EXISTS portal_user_status CASCADE;
-CREATE VIEW portal_user_status AS
+CREATE OR REPLACE VIEW portal_user_status AS
 SELECT
     pu.*,
     (
@@ -50,8 +48,7 @@ FROM
 
 
 -- User's need to be able to see their own stuff
-DROP VIEW IF EXISTS current_portal_user;
-CREATE VIEW current_portal_user AS
+CREATE OR REPLACE VIEW current_portal_user AS
 SELECT
     *
 FROM
