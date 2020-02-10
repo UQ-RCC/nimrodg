@@ -1,0 +1,3 @@
+[submodule "nimrodg"]
+	path = nimrodg
+	url = https://github.com/UQ-RCC/nimrodg

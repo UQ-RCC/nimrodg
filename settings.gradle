@@ -1,1 +1,43 @@
 rootProject.name = 'nimrod-portal-backend'
+
+//include ':nimrodg'
+//project(':nimrodg').projectDir = new File('nimrodg')
+//
+//include ':nimrodg-api'
+//project(':nimrodg-api').projectDir = new File('nimrodg/nimrodg-api')
+//
+//include ':nimrodg-agent'
+//project(':nimrodg-agent').projectDir = new File('nimrodg/nimrodg-agent')
+//
+//include ':nimrodg-internal-api'
+//project(':nimrodg-internal-api').projectDir = new File('nimrodg/nimrodg-internal-api')
+//
+//include ':nimrodg-utils'
+//project(':nimrodg-utils').projectDir = new File('nimrodg/nimrodg-utils')
+//
+//include ':nimrodg-impl-base-db'
+//project(':nimrodg-impl-base-db').projectDir = new File('nimrodg/nimrodg-impl-base-db')
+//
+//include ':nimrodg-impl-postgres'
+//project(':nimrodg-impl-postgres').projectDir = new File('nimrodg/nimrodg-impl-postgres')
+//
+////include ':nimrodg:nimrodg-api'
+////include ':nimrodg:nimrodg-internal-api'
+////include ':nimrodg:nimrodg-impl-base-db'
+////include ':nimrodg:nimrodg-impl-postgres'
+//
+////project(':nimrodg').projectDir = new File('../nimrodg')
+
+//sourceControl {
+//    gitRepository('https://github.com/UQ-RCC/nimrodg') {
+//        producesModule('au.edu.uq.rcc.nimrodg:nimrodg-api')
+//    }
+//}
+
+includeBuild('nimrodg') {
+    dependencySubstitution {
+        substitute(module('au.edu.uq.rcc.nimrodg:nimrodg-api')).with(project(':nimrodg-api'))
+        substitute(module('au.edu.uq.rcc.nimrodg:nimrodg-internal-api')).with(project(':nimrodg-internal-api'))
+        substitute(module('au.edu.uq.rcc.nimrodg:nimrodg-impl-postgres')).with(project(':nimrodg-impl-postgres'))
+    }
+}

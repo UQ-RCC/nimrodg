@@ -54,6 +54,10 @@ dependencies {
 	implementation group: 'org.postgresql', name: 'postgresql', version: '42.2.8'
 	implementation group: 'org.apache.httpcomponents', name: 'httpclient', version: '+'
 	implementation group: 'com.hubspot.jinjava', name: 'jinjava', version: '2.5.1'
+
+	implementation('au.edu.uq.rcc.nimrodg:nimrodg-api')
+	implementation('au.edu.uq.rcc.nimrodg:nimrodg-internal-api')
+	implementation('au.edu.uq.rcc.nimrodg:nimrodg-impl-postgres')
 }
 
 distributions {

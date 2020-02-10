@@ -19,7 +19,19 @@
  */
 package au.edu.uq.rcc.nimrodg.portal;
 
+import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
+import au.edu.uq.rcc.nimrodg.api.NimrodURI;
+import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledTask;
+import au.edu.uq.rcc.nimrodg.api.utils.run.JsonUtils;
+import au.edu.uq.rcc.nimrodg.impl.postgres.NimrodAPIFactoryImpl;
+import au.edu.uq.rcc.nimrodg.setup.NimrodSetupAPI;
+import au.edu.uq.rcc.nimrodg.setup.UserConfig;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.hubspot.jinjava.Jinjava;
+import org.apache.coyote.Response;
 import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.impl.client.HttpClientBuilder;
@@ -48,6 +60,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.context.annotation.RequestScope;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.DefaultUriBuilderFactory;
 import org.springframework.web.util.UriBuilder;
 
@@ -57,6 +70,7 @@ import javax.net.ssl.TrustManagerFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.lang.reflect.Array;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -101,7 +115,37 @@ public class NimrodPortalEndpoints {
 	@Autowired
 	private ResourceClient resource;
 
+	@Autowired
+	private ObjectMapper objectMapper;
+
 	private Map<String, String> remoteVars;
+
+//	@Autowired
+//	@Value("${nimrod.remote.setup}")
+//	private String nimrodSetup;
+
+//	@Autowired
+//	private SetupConfigBuilder nimrodConfig;
+
+
+	public static class UserState {
+		public final String username;
+		public final String dbUser;
+		public final String dbPass;
+
+		public final String amqpUser;
+		public final String amqpPass;
+		public final boolean initialised;
+
+		public UserState(String username, String dbUser, String dbPass, String amqpUser, String amqpPass, boolean initialised) {
+			this.username = username;
+			this.dbUser = dbUser;
+			this.dbPass = dbPass;
+			this.amqpUser = amqpUser;
+			this.amqpPass = amqpPass;
+			this.initialised = initialised;
+		}
+	}
 
 	public NimrodPortalEndpoints() {
 		this.jinJava = new Jinjava();
@@ -117,46 +161,29 @@ public class NimrodPortalEndpoints {
 		} catch(IOException e) {
 			throw new UncheckedIOException(e);
 		}
-
 	}
 
 	@RequestMapping(method = {RequestMethod.PUT}, value = "/api/provision/{username}")
 	@ResponseBody
 	public ResponseEntity<Void> provisionUser(@PathVariable String username, JwtAuthenticationToken jwt) {
-		if(jwt == null) {
-			LOGGER.warn("No JWT for user {}", username);
+		UserState userState = getUserState(jwt);
+		if(!userState.username.equals(username)) {
+			LOGGER.warn("User {} attempted to provision {}", userState.username, username);
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
 		}
-
-		String preferred_username = jwt.getToken().getClaimAsString("preferred_username");
-		if(!username.equals(preferred_username)) {
-			LOGGER.warn("User {} attempted to provision {}", preferred_username, username);
-			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-		}
-
-		SqlRowSet rs = jdbc.queryForRowSet("SELECT pg_password, amqp_password, initialised FROM portal_create_user(?)", username);
-		if(!rs.next()) {
-			/* Hopefully, should never happen. */
-			LOGGER.error("portal_create_user({}) returned no rows.", username);
-			return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
-		}
-
-		String pgPass = rs.getString("pg_password");
-		String amqpPass = rs.getString("amqp_password");
-		boolean initialised = rs.getBoolean("initialised");
 
 		try {
-			HttpStatus code = rabbit.addUser(username, amqpPass).getStatusCode();
+			HttpStatus code = rabbit.addUser(userState.amqpUser, userState.amqpPass).getStatusCode();
 			if(!HttpStatus.CREATED.equals(code) && !HttpStatus.NO_CONTENT.equals(code)) {
 				return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
 			}
 
-			code = rabbit.addVHost(username).getStatusCode();
+			code = rabbit.addVHost(userState.amqpUser).getStatusCode();
 			if(!HttpStatus.CREATED.equals(code) && !HttpStatus.NO_CONTENT.equals(code)) {
 				return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
 			}
 
-			code = rabbit.addPermissions(username, username, ".*", ".*", ".*").getStatusCode();
+			code = rabbit.addPermissions(userState.amqpUser, userState.amqpUser, ".*", ".*", ".*").getStatusCode();
 			if(!HttpStatus.CREATED.equals(code) && !HttpStatus.NO_CONTENT.equals(code)) {
 				return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
 			}
@@ -165,23 +192,23 @@ public class NimrodPortalEndpoints {
 			return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
 		}
 
-
 		Map<String, Object> vars = new HashMap<>(remoteVars);
 		vars.put("username", username);
-		vars.put("pg_username", username);
-		vars.put("pg_password", pgPass);
-		vars.put("amqp_username", username);
-		vars.put("amqp_password", amqpPass);
-		vars.put("amqp_routing_key", username);
+		vars.put("pg_username", userState.dbUser);
+		vars.put("pg_password", userState.dbPass);
+		vars.put("amqp_username", userState.amqpUser);
+		vars.put("amqp_password", userState.amqpPass);
+		vars.put("amqp_routing_key", userState.amqpUser);
 		vars.put("jdbc_url", postgresUriBuilder.build(vars));
 		vars.put("amqp_url", rabbitUriBuilder.build(vars));
 
+		// TODO: Change this to use NimrodSetupAPI
 		ResponseEntity<String> jo;
 		try {
 			jo = resource.executeJob("setuserconfiguration", Map.of(
 					"config", jinJava.render(nimrodIniTemplate, vars),
 					"setup_config", jinJava.render(setupIniTemplate, vars),
-					"initialise", initialised ? "0" : "1"
+					"initialise", userState.initialised ? "0" : "1"
 			));
 		} catch(HttpStatusCodeException e) {
 			/* If we 401, pass that back to the user so they can refresh the token. */
@@ -198,6 +225,97 @@ public class NimrodPortalEndpoints {
 		}
 
 		return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+	}
+
+	@RequestMapping(method = {RequestMethod.GET}, value = "/api/experiments")
+	@ResponseBody
+	public ResponseEntity<JsonNode> getExperiments(JwtAuthenticationToken jwt) {
+		UserState userState = getUserState(jwt);
+
+		ArrayNode exps = objectMapper.createArrayNode();
+
+		try(NimrodAPI nimrod = createNimrod(userState.dbUser, userState.dbPass)) {
+			nimrod.getExperiments().forEach(exp -> {
+				ArrayNode vars = objectMapper.createArrayNode();
+				exp.getVariables().forEach(vars::add);
+
+				ObjectNode on = objectMapper.createObjectNode()
+						.put("name", exp.getName())
+						.put("state", exp.getState().toString())
+						.put("working_directory", exp.getWorkingDirectory())
+						.put("creation_time", exp.getCreationTime().toString())
+						.put("token", exp.getToken())
+						.put("is_persistent", exp.isPersistent())
+						.put("is_active", exp.isActive());
+
+				//exp.getTasks().
+				on.set("variables", vars);
+				on.set("tasks", "")
+
+				exps.add(on);
+			});
+		} catch(Exception e) {
+			//TODO: Log
+			return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+		}
+
+		return ResponseEntity.status(HttpStatus.OK).body(exps);
+	}
+
+	private static UserConfig buildUserConfig(String dbUser, String dbPass) {
+		return new UserConfig() {
+			@Override
+			public String factory() {
+				return NimrodAPIFactoryImpl.class.getCanonicalName();
+			}
+
+			@Override
+			public Map<String, Map<String, String>> config() {
+				return Map.of("postgres", Map.of(
+						"user", dbUser,
+						"password", dbPass,
+						"driver", "org.postgresql.Driver"
+				));
+			}
+		};
+	}
+
+
+	private UserState getUserState(JwtAuthenticationToken jwt) throws ResponseStatusException {
+		if(jwt == null) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+		}
+
+		String preferred_username = jwt.getToken().getClaimAsString("preferred_username");
+		if(preferred_username == null) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+		}
+
+		return getUserState(preferred_username);
+
+	}
+
+	private UserState getUserState(String username) throws ResponseStatusException {
+		SqlRowSet rs = jdbc.queryForRowSet("SELECT pg_password, amqp_password, initialised FROM portal_create_user(?)", username);
+		if(!rs.next()) {
+			/* Hopefully, should never happen. */
+			LOGGER.error("portal_create_user({}) returned no rows.", username);
+			throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE);
+		}
+
+		return new UserState(
+				username,
+				username,
+				rs.getString("pg_password"),
+				username,
+				rs.getString("amqp_password"),
+				rs.getBoolean("initialised")
+		);
+	}
+
+
+	private NimrodAPI createNimrod(String dbUser, String dbPass) throws Exception {
+		return new NimrodAPIFactoryImpl().createNimrod(buildUserConfig(dbUser, dbPass));
 	}
 
 	@SuppressWarnings("WeakerAccess")
