@@ -21,18 +21,18 @@ package au.edu.uq.rcc.nimrodg.api;
 
 public interface RedirectCommand extends Command {
 
-	public enum Stream {
+	enum Stream {
 		Stdout,
 		Stderr
 	}
 
-	public Stream getStream();
+	Stream getStream();
 
-	public boolean getAppend();
+	boolean getAppend();
 
-	public CommandArgument getFile();
+	CommandArgument getFile();
 
-	public static String streamToString(Stream s) {
+	static String streamToString(Stream s) {
 		switch(s) {
 			case Stdout:
 				return "stdout";
@@ -43,7 +43,7 @@ public interface RedirectCommand extends Command {
 		throw new IllegalArgumentException();
 	}
 
-	public static Stream stringToStream(String s) {
+	static Stream stringToStream(String s) {
 		switch(s) {
 			case "stdout":
 				return Stream.Stdout;

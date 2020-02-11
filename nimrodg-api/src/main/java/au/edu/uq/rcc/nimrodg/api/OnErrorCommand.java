@@ -21,14 +21,14 @@ package au.edu.uq.rcc.nimrodg.api;
 
 public interface OnErrorCommand extends Command {
 
-	public enum Action {
+	enum Action {
 		Fail,
 		Ignore
 	}
 
-	public Action getAction();
+	Action getAction();
 
-	public static String actionToString(Action a) {
+	static String actionToString(Action a) {
 		switch(a) {
 			case Fail:
 				return "fail";
@@ -39,7 +39,7 @@ public interface OnErrorCommand extends Command {
 		throw new IllegalArgumentException();
 	}
 
-	public static Action stringToAction(String s) {
+	static Action stringToAction(String s) {
 		if(s == null) {
 			throw new IllegalArgumentException();
 		}

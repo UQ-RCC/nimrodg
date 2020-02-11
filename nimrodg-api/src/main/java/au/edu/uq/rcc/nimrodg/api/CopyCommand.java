@@ -21,20 +21,20 @@ package au.edu.uq.rcc.nimrodg.api;
 
 public interface CopyCommand extends Command {
 
-	public enum Context {
+	enum Context {
 		Root,
 		Node
 	}
 
-	public Context getSourceContext();
+	Context getSourceContext();
 
-	public CommandArgument getSourcePath();
+	CommandArgument getSourcePath();
 
-	public Context getDestinationContext();
+	Context getDestinationContext();
 
-	public CommandArgument getDestinationPath();
+	CommandArgument getDestinationPath();
 
-	public static String contextToString(Context ctx) {
+	static String contextToString(Context ctx) {
 		switch(ctx) {
 			case Node:
 				return "node";
@@ -45,7 +45,7 @@ public interface CopyCommand extends Command {
 		throw new IllegalArgumentException();
 	}
 
-	public static Context stringToContext(String s) {
+	static Context stringToContext(String s) {
 		if(s == null) {
 			throw new IllegalArgumentException();
 		}

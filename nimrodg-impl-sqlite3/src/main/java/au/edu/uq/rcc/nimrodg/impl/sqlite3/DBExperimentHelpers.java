@@ -23,8 +23,9 @@ import au.edu.uq.rcc.nimrodg.api.Command;
 import au.edu.uq.rcc.nimrodg.api.CommandResult;
 import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.JobAttempt;
+import au.edu.uq.rcc.nimrodg.api.Substitution;
 import au.edu.uq.rcc.nimrodg.api.Task;
-import au.edu.uq.rcc.nimrodg.api.utils.Substitution;
+import au.edu.uq.rcc.nimrodg.api.utils.CompiledSubstitution;
 import au.edu.uq.rcc.nimrodg.api.utils.run.CommandArgumentBuilder;
 import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledArgument;
 import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledCommand;
@@ -57,7 +58,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 /**
@@ -246,7 +246,7 @@ public class DBExperimentHelpers extends DBBaseHelper {
 				qGetArgumentSubstitutions.setLong(1, cid);
 				try(ResultSet rs = qGetArgumentSubstitutions.executeQuery()) {
 					while(rs.next()) {
-						cb.addSubstitution(new Substitution(
+						cb.addSubstitution(new CompiledSubstitution(
 								rs.getString("name"),
 								rs.getInt("start_index"),
 								rs.getInt("end_index"),
@@ -374,7 +374,7 @@ public class DBExperimentHelpers extends DBBaseHelper {
 					/* Add the substitutions */
 					int k = 0;
 					for(CompiledArgument arg : normArgs) {
-						addSubstitutions(argIds[k++], varLookupTable, arg.substitutions);
+						addSubstitutions(argIds[k++], varLookupTable, arg.getSubstitutions());
 					}
 					++j;
 				}
@@ -496,7 +496,7 @@ public class DBExperimentHelpers extends DBBaseHelper {
 		for(CompiledArgument arg : args) {
 			qInsertArgument.setLong(1, cmdId);
 			qInsertArgument.setLong(2, i);
-			qInsertArgument.setString(3, arg.text);
+			qInsertArgument.setString(3, arg.getText());
 
 			if(qInsertArgument.executeUpdate() == 0) {
 				throw new SQLException("Creating argument failed, no rows affected");
@@ -521,10 +521,10 @@ public class DBExperimentHelpers extends DBBaseHelper {
 		int i = 0;
 		for(Substitution sub : subs) {
 			qInsertSubstitution.setLong(1, argId);
-			qInsertSubstitution.setLong(2, varMap.get(sub.variable()));
-			qInsertSubstitution.setInt(3, sub.startIndex());
-			qInsertSubstitution.setInt(4, sub.endIndex());
-			qInsertSubstitution.setInt(5, sub.relativeStartIndex());
+			qInsertSubstitution.setLong(2, varMap.get(sub.getVariable()));
+			qInsertSubstitution.setInt(3, sub.getStartIndex());
+			qInsertSubstitution.setInt(4, sub.getEndIndex());
+			qInsertSubstitution.setInt(5, sub.getRelativeStartIndex());
 
 			if(qInsertSubstitution.executeUpdate() == 0) {
 				throw new SQLException("Creating substitution failed, no rows affected");

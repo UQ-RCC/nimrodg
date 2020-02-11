@@ -19,20 +19,18 @@
  */
 package au.edu.uq.rcc.nimrodg.api;
 
-public abstract interface Command {
+public interface Command {
 
-	public enum Type {
+	enum Type {
 		OnError,
 		Redirect,
 		Copy,
 		Exec
 	}
 
-	public Task getTask();
+	Type getType();
 
-	public Type getType();
-
-	public static String commandTypeToString(Command.Type type) {
+	static String commandTypeToString(Command.Type type) {
 		switch(type) {
 			case OnError:
 				return "onerror";
@@ -47,7 +45,7 @@ public abstract interface Command {
 		throw new IllegalArgumentException();
 	}
 
-	public static Command.Type stringToCommandType(String s) {
+	static Command.Type stringToCommandType(String s) {
 		switch(s) {
 			case "onerror":
 				return Command.Type.OnError;

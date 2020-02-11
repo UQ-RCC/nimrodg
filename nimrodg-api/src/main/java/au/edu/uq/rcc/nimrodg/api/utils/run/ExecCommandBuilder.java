@@ -19,8 +19,9 @@
  */
 package au.edu.uq.rcc.nimrodg.api.utils.run;
 
+import au.edu.uq.rcc.nimrodg.api.Substitution;
 import au.edu.uq.rcc.nimrodg.api.utils.StringUtils;
-import au.edu.uq.rcc.nimrodg.api.utils.Substitution;
+import au.edu.uq.rcc.nimrodg.api.utils.CompiledSubstitution;
 import au.edu.uq.rcc.nimrodg.api.utils.SubstitutionException;
 import java.util.ArrayList;
 import java.util.List;
@@ -59,8 +60,7 @@ public class ExecCommandBuilder {
 		List<CompiledArgument> args = new ArrayList<>(arguments.size());
 		
 		for(String arg : arguments) {
-			List<Substitution> subs = StringUtils.findSubstitutions(arg);
-			args.add(new CompiledArgument(arg, subs));
+			args.add(new CompiledArgument(arg, StringUtils.findSubstitutions(arg)));
 		}
 		
 		return new CompiledExecCommand(program, args, searchPath);

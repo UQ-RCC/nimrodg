@@ -20,11 +20,12 @@
 package au.edu.uq.rcc.nimrodg.api.utils.run;
 
 import au.edu.uq.rcc.nimrodg.api.Command;
+import au.edu.uq.rcc.nimrodg.api.CommandArgument;
 import au.edu.uq.rcc.nimrodg.api.CopyCommand;
 import au.edu.uq.rcc.nimrodg.api.CopyCommand.Context;
 import java.util.List;
 
-public final class CompiledCopyCommand extends CompiledCommand {
+public final class CompiledCopyCommand extends CompiledCommand implements CopyCommand {
 
 	public final Context sourceContext;
 	public final CompiledArgument sourcePath;
@@ -38,6 +39,26 @@ public final class CompiledCopyCommand extends CompiledCommand {
 		this.sourcePath = srcPath;
 		this.destContext = dstCtx;
 		this.destPath = dstPath;
+	}
+
+	@Override
+	public Context getSourceContext() {
+		return sourceContext;
+	}
+
+	@Override
+	public CommandArgument getSourcePath() {
+		return sourcePath;
+	}
+
+	@Override
+	public Context getDestinationContext() {
+		return destContext;
+	}
+
+	@Override
+	public CommandArgument getDestinationPath() {
+		return destPath;
 	}
 
 	public CompiledArgument sourceContextAsArgument() {
@@ -64,9 +85,9 @@ public final class CompiledCopyCommand extends CompiledCommand {
 		}
 
 		return new CompiledCopyCommand(
-				CopyCommand.stringToContext(args.get(0).text),
+				CopyCommand.stringToContext(args.get(0).getText()),
 				args.get(1),
-				CopyCommand.stringToContext(args.get(2).text),
+				CopyCommand.stringToContext(args.get(2).getText()),
 				args.get(3)
 		);
 	}

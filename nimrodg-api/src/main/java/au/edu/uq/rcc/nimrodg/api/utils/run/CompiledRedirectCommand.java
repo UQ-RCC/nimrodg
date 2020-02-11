@@ -20,12 +20,13 @@
 package au.edu.uq.rcc.nimrodg.api.utils.run;
 
 import au.edu.uq.rcc.nimrodg.api.Command;
+import au.edu.uq.rcc.nimrodg.api.CommandArgument;
 import au.edu.uq.rcc.nimrodg.api.RedirectCommand;
 import au.edu.uq.rcc.nimrodg.api.RedirectCommand.Stream;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CompiledRedirectCommand extends CompiledCommand {
+public class CompiledRedirectCommand extends CompiledCommand implements RedirectCommand {
 
 	public final Stream stream;
 
@@ -37,6 +38,21 @@ public class CompiledRedirectCommand extends CompiledCommand {
 		this.stream = stream;
 		this.append = append;
 		this.file = file;
+	}
+
+	@Override
+	public Stream getStream() {
+		return stream;
+	}
+
+	@Override
+	public boolean getAppend() {
+		return append;
+	}
+
+	@Override
+	public CommandArgument getFile() {
+		return file;
 	}
 
 	public CompiledArgument streamAsArgument() {
@@ -62,8 +78,8 @@ public class CompiledRedirectCommand extends CompiledCommand {
 		}
 
 		return new CompiledRedirectCommand(
-				RedirectCommand.stringToStream(args.get(0).text),
-				Boolean.parseBoolean(args.get(1).text),
+				RedirectCommand.stringToStream(args.get(0).getText()),
+				Boolean.parseBoolean(args.get(1).getText()),
 				args.get(2)
 		);
 	}

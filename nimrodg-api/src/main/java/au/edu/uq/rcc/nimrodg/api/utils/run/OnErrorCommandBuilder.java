@@ -34,7 +34,7 @@ public class OnErrorCommandBuilder {
 		return this;
 	}
 
-	public CompiledCommand build() {
+	public CompiledOnErrorCommand build() {
 		if(action == null) {
 			throw new IllegalStateException();
 		}

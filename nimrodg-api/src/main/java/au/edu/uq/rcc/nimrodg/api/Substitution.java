@@ -21,13 +21,13 @@ package au.edu.uq.rcc.nimrodg.api;
 
 public interface Substitution {
 
-	public int getStartIndex();
+	int getStartIndex();
 
-	public int getEndIndex();
+	int getEndIndex();
 
-	public int getLength();
+	int getLength();
 
-	public int getRelativeStartIndex();
+	int getRelativeStartIndex();
 
-	public String getVariable();
+	String getVariable();
 }

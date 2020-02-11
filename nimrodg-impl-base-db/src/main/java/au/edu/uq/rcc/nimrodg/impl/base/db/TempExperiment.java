@@ -68,13 +68,10 @@ public final class TempExperiment {
 
 		private final NimrodDBAPI db;
 		public final TempExperiment base;
-		private final Map<Task.Name, TaskImpl> tasks;
 
 		private Impl(NimrodDBAPI db) {
 			this.db = db;
 			this.base = TempExperiment.this;
-			this.tasks = base.tasks.entrySet().stream()
-					.collect(Collectors.toMap(e -> e.getKey(), e -> new TaskImpl(this, e.getValue())));
 		}
 
 		@Override
@@ -84,7 +81,7 @@ public final class TempExperiment {
 
 		@Override
 		public State getState() {
-			return db.runSQL(() -> db.getTempExp(id)).map(e -> e.state).orElseThrow(() -> new IllegalStateException());
+			return db.runSQL(() -> db.getTempExp(id)).map(e -> e.state).orElseThrow(IllegalStateException::new);
 		}
 
 		@Override
@@ -113,8 +110,8 @@ public final class TempExperiment {
 		}
 
 		@Override
-		public TaskImpl getTask(Task.Name name) {
-			return tasks.get(name);
+		public Task getTask(Task.Name name) {
+			return base.tasks.get(name);
 		}
 
 		@Override

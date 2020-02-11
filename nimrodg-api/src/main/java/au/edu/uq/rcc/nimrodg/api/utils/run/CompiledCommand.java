@@ -22,12 +22,17 @@ package au.edu.uq.rcc.nimrodg.api.utils.run;
 import au.edu.uq.rcc.nimrodg.api.Command;
 import java.util.List;
 
-public abstract class CompiledCommand {
+public abstract class CompiledCommand implements Command {
 
 	public final Command.Type type;
 
 	protected CompiledCommand(Command.Type type) {
 		this.type = type;
+	}
+
+	@Override
+	public Type getType() {
+		return type;
 	}
 
 	/**
@@ -45,7 +50,7 @@ public abstract class CompiledCommand {
 	 * @return A command instance that represents the supplied arguments.
 	 * @throws IllegalArgumentException if the supplied arguments don't represent a command of the given type.
 	 */
-	public static final CompiledCommand resolve(Command.Type type, List<CompiledArgument> args) throws IllegalArgumentException {
+	public static CompiledCommand resolve(Command.Type type, List<CompiledArgument> args) throws IllegalArgumentException {
 		switch(type) {
 			case OnError:
 				return CompiledOnErrorCommand.resolveArguments(args);

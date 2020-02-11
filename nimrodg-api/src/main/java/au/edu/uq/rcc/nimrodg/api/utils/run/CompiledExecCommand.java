@@ -20,11 +20,15 @@
 package au.edu.uq.rcc.nimrodg.api.utils.run;
 
 import au.edu.uq.rcc.nimrodg.api.Command;
+import au.edu.uq.rcc.nimrodg.api.CommandArgument;
+import au.edu.uq.rcc.nimrodg.api.ExecCommand;
+
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import static java.util.stream.Collectors.toList;
 
-public final class CompiledExecCommand extends CompiledCommand {
+public final class CompiledExecCommand extends CompiledCommand implements ExecCommand {
 
 	/**
 	 * The name of the program to execute. If null, use the system's default shell.
@@ -51,6 +55,21 @@ public final class CompiledExecCommand extends CompiledCommand {
 		this.searchPath = searchPath;
 	}
 
+	@Override
+	public boolean searchPath() {
+		return searchPath;
+	}
+
+	@Override
+	public String getProgram() {
+		return program;
+	}
+
+	@Override
+	public List<CommandArgument> getArguments() {
+		return Collections.unmodifiableList(arguments);
+	}
+
 	public CompiledArgument programAsArgument() {
 		return new CompiledArgument(program);
 	}
@@ -74,9 +93,9 @@ public final class CompiledExecCommand extends CompiledCommand {
 		}
 
 		return new CompiledExecCommand(
-				args.get(1).text,
+				args.get(1).getText(),
 				args.stream().skip(2).collect(toList()),
-				Boolean.parseBoolean(args.get(0).text)
+				Boolean.parseBoolean(args.get(0).getText())
 		);
 	}
 }

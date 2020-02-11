@@ -50,9 +50,8 @@ import java.util.stream.Collectors;
 
 public class MsgUtils {
 
-	public static NetworkJob resolveNonSubstitutionTask(UUID uuid, Task task, URI txuri) throws NimrodAPIException {
-		Experiment e = task.getExperiment();
-		return new NetworkJob(uuid, -1, txuri.toString(), e.getToken(), buildCommandList(task, new HashMap<>()), new HashMap<>());
+	public static NetworkJob resolveNonSubstitutionTask(UUID uuid, Task task, String token, URI txuri) throws NimrodAPIException {
+		return new NetworkJob(uuid, -1, txuri.toString(), token, buildCommandList(task, new HashMap<>()), new HashMap<>());
 	}
 
 	private static Map<String, String> buildEnvironment(String expName, String jobPath, UUID jobUuid, long jobIndex, String txuri, String authToken, Map<String, String> vars) {
@@ -137,7 +136,7 @@ public class MsgUtils {
 					ExecCommand ccmd = (ExecCommand)command;
 					List<String> arguments = new ArrayList<>(ccmd.getArguments().size());
 					ccmd.getArguments().forEach(arg -> arguments.add(resolveArgument(arg, subs)));
-					commands.add(new NetworkJob.ExecCommand(resolveArgument(ccmd.getProgram(), subs), arguments, ccmd.searchPath()));
+					commands.add(new NetworkJob.ExecCommand(ccmd.getProgram(), arguments, ccmd.searchPath()));
 					break;
 				}
 			}
@@ -246,19 +245,14 @@ public class MsgUtils {
 	}
 
 	private static String resolveArgument(CompiledArgument arg, Map<String, String> subs) {
-		return StringUtils.applySubstitutions(arg.text, arg.substitutions, subs);
+		return StringUtils.applySubstitutions(arg.getText(), arg.getSubstitutions(), subs);
 	}
 
 	private static String resolveArgument(CommandArgument arg, Map<String, String> subs) {
-		List<Substitution> _subs = arg.getSubstitutions()
-				.stream()
-				.map(s -> toSubstitution(s))
-				.collect(Collectors.toList());
-
-		return StringUtils.applySubstitutions(arg.getText(), _subs, subs);
+		return StringUtils.applySubstitutions(arg.getText(), arg.getSubstitutions(), subs);
 	}
 
-	private static Substitution toSubstitution(au.edu.uq.rcc.nimrodg.api.Substitution s) {
-		return new Substitution(s.getVariable(), s.getStartIndex(), s.getEndIndex(), s.getRelativeStartIndex());
+	private static CompiledSubstitution toSubstitution(au.edu.uq.rcc.nimrodg.api.Substitution s) {
+		return new CompiledSubstitution(s.getVariable(), s.getStartIndex(), s.getEndIndex(), s.getRelativeStartIndex());
 	}
 }

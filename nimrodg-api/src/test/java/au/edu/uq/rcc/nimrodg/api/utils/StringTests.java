@@ -19,12 +19,13 @@
  */
 package au.edu.uq.rcc.nimrodg.api.utils;
 
-import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+
+import au.edu.uq.rcc.nimrodg.api.Substitution;
 import junit.framework.Assert;
 import org.junit.Test;
 

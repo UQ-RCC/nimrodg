@@ -19,10 +19,14 @@
  */
 package au.edu.uq.rcc.nimrodg.api.utils.run;
 
+import au.edu.uq.rcc.nimrodg.api.Command;
+import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.Task;
+
+import java.util.Collections;
 import java.util.List;
 
-public final class CompiledTask {
+public final class CompiledTask implements Task {
 
 	public final Task.Name name;
 	public final List<CompiledCommand> commands;
@@ -30,5 +34,15 @@ public final class CompiledTask {
 	CompiledTask(Task.Name name, List<CompiledCommand> commands) {
 		this.name = name;
 		this.commands = List.copyOf(commands);
+	}
+
+	@Override
+	public Name getName() {
+		return name;
+	}
+
+	@Override
+	public List<Command> getCommands() {
+		return Collections.unmodifiableList(commands);
 	}
 }

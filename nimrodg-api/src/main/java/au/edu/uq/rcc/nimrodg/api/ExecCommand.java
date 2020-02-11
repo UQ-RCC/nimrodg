@@ -22,9 +22,9 @@ package au.edu.uq.rcc.nimrodg.api;
 import java.util.List;
 
 public interface ExecCommand extends Command {
-	public boolean searchPath();
+	boolean searchPath();
 
-	public CommandArgument getProgram();
+	String getProgram();
 
-	public List<CommandArgument> getArguments();
+	List<CommandArgument> getArguments();
 }

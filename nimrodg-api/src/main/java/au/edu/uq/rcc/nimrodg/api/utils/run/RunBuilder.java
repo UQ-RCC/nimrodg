@@ -328,17 +328,17 @@ public class RunBuilder {
 					case OnError:
 						continue;
 					case Copy:
-						if(!((CompiledCopyCommand)ccmd).destPath.substitutions.isEmpty()) {
+						if(!((CompiledCopyCommand)ccmd).destPath.getSubstitutions().isEmpty()) {
 							throw new NonMainHasSubstitutions();
 						}
 
-						if(!((CompiledCopyCommand)ccmd).sourcePath.substitutions.isEmpty()) {
+						if(!((CompiledCopyCommand)ccmd).sourcePath.getSubstitutions().isEmpty()) {
 							throw new NonMainHasSubstitutions();
 						}
 						break;
 					case Exec:
 						for(CompiledArgument arg : ((CompiledExecCommand)ccmd).arguments) {
-							if(!arg.substitutions.isEmpty()) {
+							if(!arg.getSubstitutions().isEmpty()) {
 								throw new NonMainHasSubstitutions();
 							}
 						}
@@ -350,8 +350,8 @@ public class RunBuilder {
 		/* Check substitutions. */
 		Set<String> subVarNames = mainTask.commands.stream()
 				.flatMap(cmd -> cmd.normalise().stream()
-				.flatMap(arg -> arg.substitutions
-				.stream())).map(s -> s.variable()).collect(Collectors.toSet());
+				.flatMap(arg -> arg.getSubstitutions()
+				.stream())).map(s -> s.getVariable()).collect(Collectors.toSet());
 
 		subVarNames.removeAll(varNames);
 

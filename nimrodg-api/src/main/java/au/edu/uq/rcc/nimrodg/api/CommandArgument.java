@@ -23,11 +23,7 @@ import java.util.List;
 
 public interface CommandArgument {
 
-	public Command getCommand();
+	String getText();
 
-	public String getText();
-
-	public int getIndex();
-
-	public List<Substitution> getSubstitutions();
+	List<Substitution> getSubstitutions();
 }

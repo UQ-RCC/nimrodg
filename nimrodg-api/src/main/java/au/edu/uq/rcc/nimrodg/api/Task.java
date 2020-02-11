@@ -23,18 +23,16 @@ import java.util.List;
 
 public interface Task {
 
-	public enum Name {
+	enum Name {
 		NodeStart,
 		Main
 	}
 
-	public Experiment getExperiment();
+	Name getName();
 
-	public Name getName();
+	List<Command> getCommands();
 
-	public List<Command> getCommands();
-
-	public static String taskNameToString(Task.Name name) {
+	static String taskNameToString(Task.Name name) {
 		switch(name) {
 			case NodeStart:
 				return "nodestart";
@@ -45,7 +43,7 @@ public interface Task {
 		throw new IllegalArgumentException();
 	}
 
-	public static Task.Name stringToTaskName(String s) {
+	static Task.Name stringToTaskName(String s) {
 		switch(s) {
 			case "nodestart":
 				return Task.Name.NodeStart;

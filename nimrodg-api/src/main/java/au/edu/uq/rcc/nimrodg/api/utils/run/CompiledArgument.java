@@ -19,16 +19,20 @@
  */
 package au.edu.uq.rcc.nimrodg.api.utils.run;
 
-import au.edu.uq.rcc.nimrodg.api.utils.Substitution;
+import au.edu.uq.rcc.nimrodg.api.CommandArgument;
+import au.edu.uq.rcc.nimrodg.api.Substitution;
+import au.edu.uq.rcc.nimrodg.api.utils.CompiledSubstitution;
+
+import java.util.Collections;
 import java.util.List;
 import javax.json.Json;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 
-public final class CompiledArgument {
+public final class CompiledArgument implements CommandArgument {
 
-	public final String text;
-	public final List<Substitution> substitutions;
+	private final String text;
+	private final List<Substitution> substitutions;
 
 	CompiledArgument(String text) {
 		this(text, List.of());
@@ -39,12 +43,13 @@ public final class CompiledArgument {
 		this.substitutions = List.copyOf(subs);
 	}
 
-	public JsonObject toJson() {
-		JsonArrayBuilder ja = Json.createArrayBuilder();
-		substitutions.forEach(s -> ja.add(s.toJson()));
-		return Json.createObjectBuilder()
-				.add("text", text)
-				.add("substitutions", ja.build())
-				.build();
+	@Override
+	public String getText() {
+		return text;
+	}
+
+	@Override
+	public List<Substitution> getSubstitutions() {
+		return substitutions;
 	}
 }

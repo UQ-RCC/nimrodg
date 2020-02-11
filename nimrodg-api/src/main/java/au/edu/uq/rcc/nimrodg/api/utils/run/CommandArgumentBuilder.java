@@ -19,14 +19,15 @@
  */
 package au.edu.uq.rcc.nimrodg.api.utils.run;
 
-import au.edu.uq.rcc.nimrodg.api.utils.Substitution;
+import au.edu.uq.rcc.nimrodg.api.utils.CompiledSubstitution;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class CommandArgumentBuilder {
 
 	private String text;
-	private final List<Substitution> subs;
+	private final List<CompiledSubstitution> subs;
 
 	public CommandArgumentBuilder() {
 		this("");
@@ -37,7 +38,7 @@ public class CommandArgumentBuilder {
 		this.subs = new ArrayList<>();
 	}
 
-	public CommandArgumentBuilder(String text, List<Substitution> subs) {
+	public CommandArgumentBuilder(String text, List<CompiledSubstitution> subs) {
 		this.text = text;
 		this.subs = new ArrayList<>(subs);
 	}
@@ -47,13 +48,13 @@ public class CommandArgumentBuilder {
 		return this;
 	}
 	
-	public CommandArgumentBuilder addSubstitution(Substitution s) {
+	public CommandArgumentBuilder addSubstitution(CompiledSubstitution s) {
 		this.subs.add(s);
 		return this;
 	}
 
 	public CompiledArgument build() {
-		return new CompiledArgument(text, subs);
+		return new CompiledArgument(text, Collections.unmodifiableList(subs));
 	}
 
 }

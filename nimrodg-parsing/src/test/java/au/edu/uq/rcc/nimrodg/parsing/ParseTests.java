@@ -23,7 +23,7 @@ import au.edu.uq.rcc.nimrodg.api.Command;
 import au.edu.uq.rcc.nimrodg.api.CopyCommand;
 import au.edu.uq.rcc.nimrodg.api.Task;
 import au.edu.uq.rcc.nimrodg.api.utils.run.JsonUtils;
-import au.edu.uq.rcc.nimrodg.api.utils.Substitution;
+import au.edu.uq.rcc.nimrodg.api.utils.CompiledSubstitution;
 import au.edu.uq.rcc.nimrodg.api.utils.SubstitutionException;
 import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledArgument;
 import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledCommand;
@@ -185,9 +185,9 @@ public class ParseTests {
 			List<CompiledArgument> args = ccmd.arguments;
 			Assert.assertEquals(1, args.size());
 
-			Assert.assertEquals(0, args.get(0).substitutions.size());
+			Assert.assertEquals(0, args.get(0).getSubstitutions().size());
 
-			Assert.assertEquals(arg1, args.get(0).text);
+			Assert.assertEquals(arg1, args.get(0).getText());
 			return null;
 		};
 
@@ -243,26 +243,26 @@ public class ParseTests {
 
 		class CArg {
 
-			public CArg(String text, Substitution sub) {
+			public CArg(String text, CompiledSubstitution sub) {
 				this.text = text;
 				this.sub = sub;
 			}
 			public final String text;
-			public final Substitution sub;
+			public final CompiledSubstitution sub;
 		}
 
 		CArg[] cargs = new CArg[]{
-			new CArg("$x", new Substitution("x", 0, 2, 0)),
-			new CArg("${x}", new Substitution("x", 0, 4, 0)),
-			new CArg("/path/to/${x}/asdf", new Substitution("x", 9, 13, 9)),
-			new CArg("/path/to/$x/asdf", new Substitution("x", 9, 11, 9)),
-			new CArg("/path/to/asdf${x}/asdf", new Substitution("x", 13, 17, 13)),
-			new CArg("/path/to/asdf$x/asdf", new Substitution("x", 13, 15, 13)),
-			new CArg("/path/to/asdf${x}asdf/asdf", new Substitution("x", 13, 17, 13)),
-			new CArg("quoted$x", new Substitution("x", 6, 8, 6)),
-			new CArg("quoted$x quoted", new Substitution("x", 6, 8, 6)),
-			new CArg("quoted${x}", new Substitution("x", 6, 10, 6)),
-			new CArg("quoted${x}quoted", new Substitution("x", 6, 10, 6)),};
+			new CArg("$x", new CompiledSubstitution("x", 0, 2, 0)),
+			new CArg("${x}", new CompiledSubstitution("x", 0, 4, 0)),
+			new CArg("/path/to/${x}/asdf", new CompiledSubstitution("x", 9, 13, 9)),
+			new CArg("/path/to/$x/asdf", new CompiledSubstitution("x", 9, 11, 9)),
+			new CArg("/path/to/asdf${x}/asdf", new CompiledSubstitution("x", 13, 17, 13)),
+			new CArg("/path/to/asdf$x/asdf", new CompiledSubstitution("x", 13, 15, 13)),
+			new CArg("/path/to/asdf${x}asdf/asdf", new CompiledSubstitution("x", 13, 17, 13)),
+			new CArg("quoted$x", new CompiledSubstitution("x", 6, 8, 6)),
+			new CArg("quoted$x quoted", new CompiledSubstitution("x", 6, 8, 6)),
+			new CArg("quoted${x}", new CompiledSubstitution("x", 6, 10, 6)),
+			new CArg("quoted${x}quoted", new CompiledSubstitution("x", 6, 10, 6)),};
 
 		List<CompiledCommand> commands = task.commands;
 
@@ -280,9 +280,9 @@ public class ParseTests {
 			Assert.assertEquals(1, args.size());
 
 			CompiledArgument arg = args.get(0);
-			Assert.assertEquals(cargs[i].text, arg.text);
-			Assert.assertEquals(1, arg.substitutions.size());
-			Assert.assertEquals(cargs[i].sub, arg.substitutions.get(0));
+			Assert.assertEquals(cargs[i].text, arg.getText());
+			Assert.assertEquals(1, arg.getSubstitutions().size());
+			Assert.assertEquals(cargs[i].sub, arg.getSubstitutions().get(0));
 		}
 	}
 
@@ -302,9 +302,9 @@ public class ParseTests {
 		CompiledCopyCommand ccmd = (CompiledCopyCommand)cmd;
 
 		Assert.assertEquals(srcCtx, ccmd.sourceContext);
-		Assert.assertEquals(srcPath, ccmd.sourcePath.text);
+		Assert.assertEquals(srcPath, ccmd.sourcePath.getText());
 		Assert.assertEquals(dstCtx, ccmd.destContext);
-		Assert.assertEquals(dstPath, ccmd.destPath.text);
+		Assert.assertEquals(dstPath, ccmd.destPath.getText());
 	}
 
 	@Test
@@ -364,7 +364,7 @@ public class ParseTests {
 			"/path/to/script.py"
 		};
 
-		Assert.assertArrayEquals(expectedArgs, cmd.arguments.stream().map(a -> a.text).toArray());
+		Assert.assertArrayEquals(expectedArgs, cmd.arguments.stream().map(a -> a.getText()).toArray());
 	}
 
 	@Test(expected = RunBuilder.InvalidVariableSubstitutionReferenceException.class)

@@ -19,11 +19,15 @@
  */
 package au.edu.uq.rcc.nimrodg.api.utils.run;
 
+import au.edu.uq.rcc.nimrodg.api.Command;
+import au.edu.uq.rcc.nimrodg.api.CommandArgument;
 import au.edu.uq.rcc.nimrodg.api.CopyCommand;
+import au.edu.uq.rcc.nimrodg.api.ExecCommand;
 import au.edu.uq.rcc.nimrodg.api.OnErrorCommand;
 import au.edu.uq.rcc.nimrodg.api.RedirectCommand;
+import au.edu.uq.rcc.nimrodg.api.Substitution;
 import au.edu.uq.rcc.nimrodg.api.Task;
-import au.edu.uq.rcc.nimrodg.api.utils.Substitution;
+import au.edu.uq.rcc.nimrodg.api.utils.CompiledSubstitution;
 
 import javax.json.Json;
 import javax.json.JsonArray;
@@ -33,6 +37,7 @@ import javax.json.JsonObjectBuilder;
 import javax.json.JsonString;
 import javax.json.JsonValue;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -51,7 +56,7 @@ public class JsonUtils {
 		JsonObjectBuilder jb = Json.createObjectBuilder();
 
 		jb.add("variables", Json.createArrayBuilder(cr.variables.stream().map(v -> v.name).collect(Collectors.toList())));
-		jb.add("tasks", toJson(cr.tasks));
+		jb.add("tasks", toJson(Collections.unmodifiableList(cr.tasks)));
 
 		if(!includeJobs) {
 			jb.add("jobs", JsonValue.EMPTY_JSON_ARRAY);
@@ -126,13 +131,13 @@ public class JsonUtils {
 		}
 	}
 
-	public static JsonObject toJson(List<CompiledTask> tasks) {
+	public static JsonObject toJson(List<Task> tasks) {
 		JsonObjectBuilder tb = Json.createObjectBuilder();
 
 		tasks.forEach(t -> {
 			JsonArrayBuilder ja = Json.createArrayBuilder();
-			t.commands.forEach(c -> ja.add(toJson(c)));
-			tb.add(Task.taskNameToString(t.name), ja.build());
+			t.getCommands().forEach(c -> ja.add(toJson(c)));
+			tb.add(Task.taskNameToString(t.getName()), ja.build());
 		});
 		return tb.build();
 	}
@@ -147,41 +152,41 @@ public class JsonUtils {
 		)).collect(Collectors.toList());
 	}
 
-	public static JsonObject toJson(CompiledCommand cmd) {
+	public static JsonObject toJson(Command cmd) {
 		JsonObjectBuilder jb = Json.createObjectBuilder();
 
-		switch(cmd.type) {
+		switch(cmd.getType()) {
 			case OnError: {
-				CompiledOnErrorCommand ccmd = (CompiledOnErrorCommand)cmd;
+				OnErrorCommand ccmd = (OnErrorCommand)cmd;
 				jb.add("type", "onerror");
-				jb.add("action", OnErrorCommand.actionToString(ccmd.action));
+				jb.add("action", OnErrorCommand.actionToString(ccmd.getAction()));
 				break;
 			}
 			case Redirect: {
-				CompiledRedirectCommand ccmd = (CompiledRedirectCommand)cmd;
+				RedirectCommand ccmd = (RedirectCommand)cmd;
 				jb.add("type", "redirect");
-				jb.add("stream", RedirectCommand.streamToString(ccmd.stream));
-				jb.add("append", ccmd.append);
-				jb.add("file", toJson(ccmd.file));
+				jb.add("stream", RedirectCommand.streamToString(ccmd.getStream()));
+				jb.add("append", ccmd.getAppend());
+				jb.add("file", toJson(ccmd.getFile()));
 				break;
 			}
 			case Copy: {
-				CompiledCopyCommand ccmd = (CompiledCopyCommand)cmd;
+				CopyCommand ccmd = (CopyCommand)cmd;
 				jb.add("type", "copy");
-				jb.add("source_context", CopyCommand.contextToString(ccmd.sourceContext));
-				jb.add("source_path", toJson(ccmd.sourcePath));
-				jb.add("destination_context", CopyCommand.contextToString(ccmd.destContext));
-				jb.add("destination_path", toJson(ccmd.destPath));
+				jb.add("source_context", CopyCommand.contextToString(ccmd.getSourceContext()));
+				jb.add("source_path", toJson(ccmd.getSourcePath()));
+				jb.add("destination_context", CopyCommand.contextToString(ccmd.getDestinationContext()));
+				jb.add("destination_path", toJson(ccmd.getDestinationPath()));
 				break;
 			}
 			case Exec: {
-				CompiledExecCommand ccmd = (CompiledExecCommand)cmd;
+				ExecCommand ccmd = (ExecCommand)cmd;
 				jb.add("type", "exec");
-				jb.add("program", ccmd.program == null ? "" : ccmd.program);
-				jb.add("search_path", ccmd.searchPath);
+				jb.add("program", ccmd.getProgram() == null ? "" : ccmd.getProgram());
+				jb.add("search_path", ccmd.searchPath());
 
 				JsonArrayBuilder ja = Json.createArrayBuilder();
-				ccmd.arguments.forEach(c -> ja.add(toJson(c)));
+				ccmd.getArguments().forEach(c -> ja.add(toJson(c)));
 				jb.add("arguments", ja.build());
 				break;
 			}
@@ -221,12 +226,12 @@ public class JsonUtils {
 		}
 	}
 
-	public static JsonObject toJson(CompiledArgument arg) {
+	public static JsonObject toJson(CommandArgument arg) {
 		JsonObjectBuilder jb = Json.createObjectBuilder();
-		jb.add("text", arg.text);
+		jb.add("text", arg.getText());
 
 		JsonArrayBuilder ja = Json.createArrayBuilder();
-		arg.substitutions.forEach(s -> ja.add(toJson(s)));
+		arg.getSubstitutions().forEach(s -> ja.add(toJson(s)));
 		jb.add("substitutions", ja.build());
 		return jb.build();
 	}
@@ -242,15 +247,15 @@ public class JsonUtils {
 
 	public static JsonObject toJson(Substitution sub) {
 		return Json.createObjectBuilder()
-				.add("name", sub.variable())
-				.add("start", sub.startIndex())
-				.add("end", sub.endIndex())
-				.add("relative", sub.relativeStartIndex())
+				.add("name", sub.getVariable())
+				.add("start", sub.getStartIndex())
+				.add("end", sub.getEndIndex())
+				.add("relative", sub.getRelativeStartIndex())
 				.build();
 	}
 
-	public static Substitution substitutionFromJson(JsonObject jo) {
-		return new Substitution(
+	public static CompiledSubstitution substitutionFromJson(JsonObject jo) {
+		return new CompiledSubstitution(
 				jo.getString("name"),
 				jo.getInt("start"),
 				jo.getInt("end"),

@@ -24,13 +24,18 @@ import au.edu.uq.rcc.nimrodg.api.OnErrorCommand;
 import java.util.ArrayList;
 import java.util.List;
 
-public final class CompiledOnErrorCommand extends CompiledCommand {
+public final class CompiledOnErrorCommand extends CompiledCommand implements OnErrorCommand {
 
 	public final OnErrorCommand.Action action;
 
 	CompiledOnErrorCommand(OnErrorCommand.Action act) {
 		super(Command.Type.OnError);
 		action = act;
+	}
+
+	@Override
+	public Action getAction() {
+		return action;
 	}
 
 	public CompiledArgument actionAsArgument() {
@@ -49,6 +54,6 @@ public final class CompiledOnErrorCommand extends CompiledCommand {
 			throw new IllegalArgumentException();
 		}
 
-		return new CompiledOnErrorCommand(OnErrorCommand.stringToAction(args.get(0).text));
+		return new CompiledOnErrorCommand(OnErrorCommand.stringToAction(args.get(0).getText()));
 	}
 }

@@ -19,6 +19,8 @@
  */
 package au.edu.uq.rcc.nimrodg.api.utils;
 
+import au.edu.uq.rcc.nimrodg.api.Substitution;
+
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
@@ -292,11 +294,11 @@ public class StringUtils {
 					braceFlag = false;
 					d.poll();
 					++pos;
-					subs.add(new Substitution(name, start, pos, start - prevEnd));
+					subs.add(new CompiledSubstitution(name, start, pos, start - prevEnd));
 					mode = 0;
 					prevEnd = pos;
 				} else {
-					subs.add(new Substitution(name, start, pos, start - prevEnd));
+					subs.add(new CompiledSubstitution(name, start, pos, start - prevEnd));
 					mode = 0;
 					prevEnd = pos;
 				}
@@ -339,9 +341,9 @@ public class StringUtils {
 		StringBuilder sb = new StringBuilder();
 		int start = 0;
 		for(Substitution sub : subs) {
-			sb.append(s, start, start + sub.relativeStartIndex());
-			sb.append(vals.get(sub.variable()));
-			start = sub.startIndex() + sub.length();
+			sb.append(s, start, start + sub.getRelativeStartIndex());
+			sb.append(vals.get(sub.getVariable()));
+			start = sub.getStartIndex() + sub.getLength();
 		}
 
 		sb.append(s, start, s.length());
