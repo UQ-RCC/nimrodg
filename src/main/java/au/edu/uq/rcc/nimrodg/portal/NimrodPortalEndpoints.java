@@ -23,12 +23,9 @@ import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.Job;
 import au.edu.uq.rcc.nimrodg.api.JobAttempt;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
-import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.api.Resource;
-import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledTask;
 import au.edu.uq.rcc.nimrodg.api.utils.run.JsonUtils;
 import au.edu.uq.rcc.nimrodg.impl.postgres.NimrodAPIFactoryImpl;
-import au.edu.uq.rcc.nimrodg.setup.NimrodSetupAPI;
 import au.edu.uq.rcc.nimrodg.setup.UserConfig;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -36,7 +33,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.hubspot.jinjava.Jinjava;
-import org.apache.coyote.Response;
 import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.impl.client.HttpClientBuilder;
@@ -59,6 +55,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -75,7 +72,6 @@ import javax.net.ssl.TrustManagerFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.lang.reflect.Array;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -95,6 +91,7 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @Controller
 @ConfigurationProperties(prefix = "nimrod.remote")
@@ -298,34 +295,169 @@ public class NimrodPortalEndpoints {
 	public ResponseEntity<JsonNode> getResources(JwtAuthenticationToken jwt) {
 		UserState userState = getUserState(jwt);
 
-		ArrayNode ress = objectMapper.createArrayNode();
 		try(NimrodAPI nimrod = createNimrod(userState.jdbcUrl, userState.dbUser, userState.dbPass)) {
-			for(Resource res : nimrod.getResources()) {
-				ObjectNode on = objectMapper.createObjectNode()
-						.put("name", res.getName())
-						.put("type", res.getTypeName());
+			return ResponseEntity.status(HttpStatus.OK).body(toJson(nimrod.getResources()));
+		} catch(Exception e) {
+			//TODO: Log
+			return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+		}
+	}
 
-				on.set("config", objectMapper.readTree(res.getConfig().toString()));
-				on.putObject("amqp")
-						.put("uri", res.getAMQPUri().uri.toString())
-						.put("cert", res.getAMQPUri().certPath)
-						.put("no_verify_peer", res.getAMQPUri().noVerifyPeer)
-						.put("no_verify_host", res.getAMQPUri().noVerifyHost);
-				on.putObject("tx")
-						.put("uri", res.getTransferUri().uri.toString())
-						.put("cert", res.getTransferUri().certPath)
-						.put("no_verify_peer", res.getTransferUri().noVerifyPeer)
-						.put("no_verify_host", res.getTransferUri().noVerifyHost);
-				ress.add(on);
+	@RequestMapping(method = {RequestMethod.GET}, value = "/api/experiments/{expName}")
+	@ResponseBody
+	public ResponseEntity<JsonNode> getExperiment(JwtAuthenticationToken jwt, @PathVariable String expName) {
+		UserState userState = getUserState(jwt);
+
+		try(NimrodAPI nimrod = createNimrod(userState.jdbcUrl, userState.dbUser, userState.dbPass)) {
+			Experiment exp = nimrod.getExperiment(expName);
+			if(exp == null) {
+				return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
 			}
+
+			return ResponseEntity.status(HttpStatus.OK).body(toJson(exp));
 
 		} catch(Exception e) {
 			//TODO: Log
 			return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
 		}
-
-		return ResponseEntity.status(HttpStatus.OK).body(ress);
 	}
+
+	@RequestMapping(method = {RequestMethod.GET}, value = "/api/experiments/{expName}/resources")
+	@ResponseBody
+	public ResponseEntity<JsonNode> getAssignments(JwtAuthenticationToken jwt, @PathVariable String expName) {
+		UserState userState = getUserState(jwt);
+
+		try(NimrodAPI nimrod = createNimrod(userState.jdbcUrl, userState.dbUser, userState.dbPass)) {
+			Experiment exp = nimrod.getExperiment(expName);
+			if(exp == null) {
+				return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+			}
+
+			ArrayNode arr = objectMapper.createArrayNode();
+			nimrod.getAssignedResources(exp).stream()
+					.map(Resource::getName)
+					.forEach(arr::add);
+			return ResponseEntity.status(HttpStatus.OK).body(arr);
+
+		} catch(Exception e) {
+			//TODO: Log
+			return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+		}
+	}
+
+	@RequestMapping(method = {RequestMethod.PUT}, value = "/api/experiments/{expName}/resources")
+	@ResponseBody
+	public ResponseEntity<JsonNode> setAssignments(JwtAuthenticationToken jwt, @PathVariable String expName, @RequestBody List<String> ds) {
+		UserState userState = getUserState(jwt);
+
+		try(NimrodAPI nimrod = createNimrod(userState.jdbcUrl, userState.dbUser, userState.dbPass)) {
+			Experiment exp = nimrod.getExperiment(expName);
+			if(exp == null) {
+				return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+			}
+
+			nimrod.getAssignedResources(exp)
+					.forEach(r -> nimrod.unassignResource(r, exp));
+
+			ds.stream()
+					.map(nimrod::getResource)
+					.filter(Objects::nonNull)
+					.forEach(r -> nimrod.assignResource(r, exp));
+
+			return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+
+		} catch(Exception e) {
+			//TODO: Log
+			return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+		}
+	}
+
+	/* FIXME: These should be in Nimrod proper */
+	private ArrayNode toJsonExp(Collection<Experiment> expList) {
+		ArrayNode ress = objectMapper.createArrayNode();
+		for(Experiment exp : expList) {
+			ress.add(toJson(exp));
+		}
+		return ress;
+	}
+
+	private ObjectNode toJson(Experiment exp) {
+		ArrayNode vars = objectMapper.createArrayNode();
+		exp.getVariables().forEach(vars::add);
+
+		ObjectNode on = objectMapper.createObjectNode()
+				.put("name", exp.getName())
+				.put("state", exp.getState().toString())
+				.put("working_directory", exp.getWorkingDirectory())
+				.put("creation_time", exp.getCreationTime().toString())
+				.put("token", exp.getToken())
+				.put("is_persistent", exp.isPersistent())
+				.put("is_active", exp.isActive());
+
+		on.set("variables", vars);
+		try {
+			on.set("tasks", objectMapper.readTree(JsonUtils.toJson(exp.getTasks().values()).toString()));
+		} catch(JsonProcessingException e) {
+			throw new IllegalStateException(e);
+		}
+
+		Collection<Job> jobs = exp.filterJobs(EnumSet.allOf(JobAttempt.Status.class), 0, -1);
+		int nComplete = 0, nFailed = 0, nPending = 0, nRunning = 0;
+		for(Job j : jobs) {
+			switch(j.getStatus()) {
+				case COMPLETED:
+					++nComplete;
+					break;
+				case RUNNING:
+					++nRunning;
+					break;
+				case FAILED:
+					++nFailed;
+					break;
+				case NOT_RUN:
+					++nPending;
+					break;
+			}
+		}
+		on.put("total_jobs", jobs.size());
+		on.put("completed_jobs", nComplete);
+		on.put("running_jobs", nRunning);
+		on.put("failed_jobs", nFailed);
+		on.put("pending_jobs", nPending);
+		return on;
+	}
+
+	private ArrayNode toJson(Collection<? extends Resource> resList) {
+		ArrayNode ress = objectMapper.createArrayNode();
+		for(Resource res : resList) {
+			ress.add(toJson(res));
+		}
+		return ress;
+	}
+
+	private ObjectNode toJson(Resource res) {
+		ObjectNode on = objectMapper.createObjectNode()
+				.put("name", res.getName())
+				.put("type", res.getTypeName());
+
+		try {
+			on.set("config", objectMapper.readTree(res.getConfig().toString()));
+		} catch(JsonProcessingException e) {
+			throw new IllegalStateException(e);
+		}
+		on.putObject("amqp")
+				.put("uri", res.getAMQPUri().uri.toString())
+				.put("cert", res.getAMQPUri().certPath)
+				.put("no_verify_peer", res.getAMQPUri().noVerifyPeer)
+				.put("no_verify_host", res.getAMQPUri().noVerifyHost);
+		on.putObject("tx")
+				.put("uri", res.getTransferUri().uri.toString())
+				.put("cert", res.getTransferUri().certPath)
+				.put("no_verify_peer", res.getTransferUri().noVerifyPeer)
+				.put("no_verify_host", res.getTransferUri().noVerifyHost);
+		return on;
+	}
+
 
 	private UserConfig buildUserConfig(String uri, String dbUser, String dbPass) {
 		return new UserConfig() {
