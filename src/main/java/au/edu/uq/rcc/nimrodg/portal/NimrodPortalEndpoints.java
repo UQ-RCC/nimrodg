@@ -19,13 +19,18 @@
  */
 package au.edu.uq.rcc.nimrodg.portal;
 
+import au.edu.uq.rcc.nimrodg.api.Experiment;
+import au.edu.uq.rcc.nimrodg.api.Job;
+import au.edu.uq.rcc.nimrodg.api.JobAttempt;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
+import au.edu.uq.rcc.nimrodg.api.Resource;
 import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledTask;
 import au.edu.uq.rcc.nimrodg.api.utils.run.JsonUtils;
 import au.edu.uq.rcc.nimrodg.impl.postgres.NimrodAPIFactoryImpl;
 import au.edu.uq.rcc.nimrodg.setup.NimrodSetupAPI;
 import au.edu.uq.rcc.nimrodg.setup.UserConfig;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -85,7 +90,10 @@ import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
+import java.util.Collection;
+import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Controller
@@ -137,13 +145,21 @@ public class NimrodPortalEndpoints {
 		public final String amqpPass;
 		public final boolean initialised;
 
-		public UserState(String username, String dbUser, String dbPass, String amqpUser, String amqpPass, boolean initialised) {
+		public final String jdbcUrl;
+		public final String amqpUrl;
+
+		public final Map<String, String> vars;
+
+		public UserState(String username, String dbUser, String dbPass, String amqpUser, String amqpPass, boolean initialised, String jdbcUrl, String amqpUrl, Map<String, String> vars) {
 			this.username = username;
 			this.dbUser = dbUser;
 			this.dbPass = dbPass;
 			this.amqpUser = amqpUser;
 			this.amqpPass = amqpPass;
 			this.initialised = initialised;
+			this.jdbcUrl = jdbcUrl;
+			this.amqpUrl = amqpUrl;
+			this.vars = Map.copyOf(vars);
 		}
 	}
 
@@ -192,22 +208,12 @@ public class NimrodPortalEndpoints {
 			return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
 		}
 
-		Map<String, Object> vars = new HashMap<>(remoteVars);
-		vars.put("username", username);
-		vars.put("pg_username", userState.dbUser);
-		vars.put("pg_password", userState.dbPass);
-		vars.put("amqp_username", userState.amqpUser);
-		vars.put("amqp_password", userState.amqpPass);
-		vars.put("amqp_routing_key", userState.amqpUser);
-		vars.put("jdbc_url", postgresUriBuilder.build(vars));
-		vars.put("amqp_url", rabbitUriBuilder.build(vars));
-
 		// TODO: Change this to use NimrodSetupAPI
 		ResponseEntity<String> jo;
 		try {
 			jo = resource.executeJob("setuserconfiguration", Map.of(
-					"config", jinJava.render(nimrodIniTemplate, vars),
-					"setup_config", jinJava.render(setupIniTemplate, vars),
+					"config", jinJava.render(nimrodIniTemplate, userState.vars),
+					"setup_config", jinJava.render(setupIniTemplate, userState.vars),
 					"initialise", userState.initialised ? "0" : "1"
 			));
 		} catch(HttpStatusCodeException e) {
@@ -227,6 +233,7 @@ public class NimrodPortalEndpoints {
 		return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
 	}
 
+
 	@RequestMapping(method = {RequestMethod.GET}, value = "/api/experiments")
 	@ResponseBody
 	public ResponseEntity<JsonNode> getExperiments(JwtAuthenticationToken jwt) {
@@ -234,8 +241,8 @@ public class NimrodPortalEndpoints {
 
 		ArrayNode exps = objectMapper.createArrayNode();
 
-		try(NimrodAPI nimrod = createNimrod(userState.dbUser, userState.dbPass)) {
-			nimrod.getExperiments().forEach(exp -> {
+		try(NimrodAPI nimrod = createNimrod(userState.jdbcUrl, userState.dbUser, userState.dbPass)) {
+			for(Experiment exp : nimrod.getExperiments()) {
 				ArrayNode vars = objectMapper.createArrayNode();
 				exp.getVariables().forEach(vars::add);
 
@@ -248,12 +255,35 @@ public class NimrodPortalEndpoints {
 						.put("is_persistent", exp.isPersistent())
 						.put("is_active", exp.isActive());
 
-				//exp.getTasks().
 				on.set("variables", vars);
-				on.set("tasks", "")
+				on.set("tasks", objectMapper.readTree(JsonUtils.toJson(exp.getTasks().values()).toString()));
+
+				Collection<Job> jobs = exp.filterJobs(EnumSet.allOf(JobAttempt.Status.class), 0, -1);
+				int nComplete = 0, nFailed = 0, nPending = 0, nRunning = 0;
+				for(Job j : jobs) {
+					switch(j.getStatus()) {
+						case COMPLETED:
+							++nComplete;
+							break;
+						case RUNNING:
+							++nRunning;
+							break;
+						case FAILED:
+							++nFailed;
+							break;
+						case NOT_RUN:
+							++nPending;
+							break;
+					}
+				}
+				on.put("total_jobs", jobs.size());
+				on.put("completed_jobs", nComplete);
+				on.put("running_jobs", nRunning);
+				on.put("failed_jobs", nFailed);
+				on.put("pending_jobs", nPending);
 
 				exps.add(on);
-			});
+			}
 		} catch(Exception e) {
 			//TODO: Log
 			return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
@@ -262,7 +292,42 @@ public class NimrodPortalEndpoints {
 		return ResponseEntity.status(HttpStatus.OK).body(exps);
 	}
 
-	private static UserConfig buildUserConfig(String dbUser, String dbPass) {
+
+	@RequestMapping(method = {RequestMethod.GET}, value = "/api/resources")
+	@ResponseBody
+	public ResponseEntity<JsonNode> getResources(JwtAuthenticationToken jwt) {
+		UserState userState = getUserState(jwt);
+
+		ArrayNode ress = objectMapper.createArrayNode();
+		try(NimrodAPI nimrod = createNimrod(userState.jdbcUrl, userState.dbUser, userState.dbPass)) {
+			for(Resource res : nimrod.getResources()) {
+				ObjectNode on = objectMapper.createObjectNode()
+						.put("name", res.getName())
+						.put("type", res.getTypeName());
+
+				on.set("config", objectMapper.readTree(res.getConfig().toString()));
+				on.putObject("amqp")
+						.put("uri", res.getAMQPUri().uri.toString())
+						.put("cert", res.getAMQPUri().certPath)
+						.put("no_verify_peer", res.getAMQPUri().noVerifyPeer)
+						.put("no_verify_host", res.getAMQPUri().noVerifyHost);
+				on.putObject("tx")
+						.put("uri", res.getTransferUri().uri.toString())
+						.put("cert", res.getTransferUri().certPath)
+						.put("no_verify_peer", res.getTransferUri().noVerifyPeer)
+						.put("no_verify_host", res.getTransferUri().noVerifyHost);
+				ress.add(on);
+			}
+
+		} catch(Exception e) {
+			//TODO: Log
+			return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+		}
+
+		return ResponseEntity.status(HttpStatus.OK).body(ress);
+	}
+
+	private UserConfig buildUserConfig(String uri, String dbUser, String dbPass) {
 		return new UserConfig() {
 			@Override
 			public String factory() {
@@ -272,7 +337,8 @@ public class NimrodPortalEndpoints {
 			@Override
 			public Map<String, Map<String, String>> config() {
 				return Map.of("postgres", Map.of(
-						"user", dbUser,
+						"url", uri,
+						"username", dbUser,
 						"password", dbPass,
 						"driver", "org.postgresql.Driver"
 				));
@@ -303,19 +369,40 @@ public class NimrodPortalEndpoints {
 			throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE);
 		}
 
+		String pgPass = rs.getString("pg_password");
+		String amqpPass = rs.getString("amqp_password");
+
+		Map<String, String> vars = new HashMap<>(remoteVars);
+		vars.put("username", username);
+		vars.put("pg_username", username);
+		vars.put("pg_password", pgPass);
+		vars.put("amqp_username", username);
+		vars.put("amqp_password", amqpPass);
+		vars.put("amqp_routing_key", username);
+
+		String jdbcUrl = String.format("jdbc:%s", postgresUriBuilder.build(vars));
+		String amqpUrl = rabbitUriBuilder.build(vars).toString();
+
+		vars.put("jdbc_url", jdbcUrl);
+		vars.put("amqp_url", amqpUrl);
+
 		return new UserState(
 				username,
 				username,
 				rs.getString("pg_password"),
 				username,
 				rs.getString("amqp_password"),
-				rs.getBoolean("initialised")
+				rs.getBoolean("initialised"),
+				jdbcUrl,
+				amqpUrl,
+				vars
 		);
 	}
 
 
-	private NimrodAPI createNimrod(String dbUser, String dbPass) throws Exception {
-		return new NimrodAPIFactoryImpl().createNimrod(buildUserConfig(dbUser, dbPass));
+	private NimrodAPI createNimrod(String uri, String dbUser, String dbPass) throws Exception {
+		/* TODO: Make this use Spring's Hikari pool somehow. */
+		return new NimrodAPIFactoryImpl().createNimrod(buildUserConfig(uri, dbUser, dbPass));
 	}
 
 	@SuppressWarnings("WeakerAccess")

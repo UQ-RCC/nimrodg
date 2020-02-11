@@ -56,8 +56,12 @@ dependencies {
 	implementation group: 'com.hubspot.jinjava', name: 'jinjava', version: '2.5.1'
 
 	implementation('au.edu.uq.rcc.nimrodg:nimrodg-api')
+	// FIXME: This capability should be moved into nimrodg-api
 	implementation('au.edu.uq.rcc.nimrodg:nimrodg-internal-api')
 	implementation('au.edu.uq.rcc.nimrodg:nimrodg-impl-postgres')
+
+	// FIXME: For Nimrod
+	runtimeOnly group: 'org.glassfish', name: 'javax.json', version: '1.1'
 }
 
 distributions {
