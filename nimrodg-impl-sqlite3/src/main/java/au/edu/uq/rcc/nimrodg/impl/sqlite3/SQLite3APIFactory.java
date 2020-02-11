@@ -20,6 +20,7 @@
 package au.edu.uq.rcc.nimrodg.impl.sqlite3;
 
 import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
+import au.edu.uq.rcc.nimrodg.api.NimrodAPIException;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPIFactory;
 import au.edu.uq.rcc.nimrodg.setup.NimrodSetupAPI;
 import au.edu.uq.rcc.nimrodg.setup.UserConfig;
@@ -34,8 +35,22 @@ import java.util.Properties;
 public class SQLite3APIFactory implements NimrodAPIFactory {
 
 	@Override
+	public NimrodAPI createNimrod(Connection conn) throws SQLException {
+		return new SQLite3NimrodAPI(conn);
+	}
+
+	@Override
 	public NimrodAPI createNimrod(UserConfig config) throws Exception {
-		return new SQLite3NimrodAPI(createConnection(config, true));
+		return createNimrod(createConnection(config, true));
+	}
+
+	@Override
+	public NimrodSetupAPI getSetupAPI(Connection conn) throws NimrodSetupAPI.SetupException, SQLException {
+		try {
+			return new SQLite3SetupAPI(conn);
+		} catch(IOException e) {
+			throw new NimrodSetupAPI.SetupException(e);
+		}
 	}
 
 	private static Connection createConnection(UserConfig config, boolean foreignKeys) throws SQLException, ReflectiveOperationException {
@@ -61,8 +76,8 @@ public class SQLite3APIFactory implements NimrodAPIFactory {
 	@Override
 	public NimrodSetupAPI getSetupAPI(UserConfig config) throws NimrodSetupAPI.SetupException {
 		try {
-			return new SQLite3SetupAPI(createConnection(config, false));
-		} catch(IOException | SQLException | ReflectiveOperationException e) {
+			return getSetupAPI(createConnection(config, false));
+		} catch(SQLException | ReflectiveOperationException e) {
 			throw new NimrodSetupAPI.SetupException(e);
 		}
 	}

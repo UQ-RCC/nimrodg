@@ -33,8 +33,18 @@ import java.util.Properties;
 public class NimrodAPIFactoryImpl implements NimrodAPIFactory {
 
 	@Override
+	public NimrodAPI createNimrod(Connection conn) throws SQLException {
+		return new NimrodAPIImpl(conn);
+	}
+
+	@Override
 	public NimrodAPI createNimrod(UserConfig config) throws SQLException, ReflectiveOperationException {
-		return new NimrodAPIImpl(createConnection(config));
+		return createNimrod(createConnection(config));
+	}
+
+	@Override
+	public NimrodSetupAPI getSetupAPI(Connection conn) throws SQLException {
+		return new SetupAPIImpl(conn);
 	}
 
 	private static Connection createConnection(UserConfig config) throws SQLException, ReflectiveOperationException {
@@ -55,7 +65,7 @@ public class NimrodAPIFactoryImpl implements NimrodAPIFactory {
 	@Override
 	public NimrodSetupAPI getSetupAPI(UserConfig config) throws SetupException {
 		try {
-			return new SetupAPIImpl(createConnection(config));
+			return getSetupAPI(createConnection(config));
 		} catch(SQLException|ReflectiveOperationException e) {
 			throw new SetupException(e);
 		}

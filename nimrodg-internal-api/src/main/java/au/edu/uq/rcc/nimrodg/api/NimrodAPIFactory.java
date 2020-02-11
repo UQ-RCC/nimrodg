@@ -23,7 +23,12 @@ import au.edu.uq.rcc.nimrodg.setup.NimrodSetupAPI;
 import au.edu.uq.rcc.nimrodg.setup.NimrodSetupAPI.SetupException;
 import au.edu.uq.rcc.nimrodg.setup.UserConfig;
 
+import java.sql.Connection;
+import java.sql.SQLException;
+
 public interface NimrodAPIFactory {
+
+	NimrodAPI createNimrod(Connection conn) throws SQLException;
 
 	/**
 	 * Create an instance of the Nimrod API.
@@ -34,6 +39,7 @@ public interface NimrodAPIFactory {
 	 */
 	NimrodAPI createNimrod(UserConfig config) throws Exception;
 
+	NimrodSetupAPI getSetupAPI(Connection conn) throws SetupException, SQLException;
 	NimrodSetupAPI getSetupAPI(UserConfig config) throws SetupException;
 
 }
