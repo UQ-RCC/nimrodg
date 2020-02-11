@@ -69,6 +69,7 @@ import org.springframework.web.util.UriBuilder;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
+import javax.sql.DataSource;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -86,6 +87,9 @@ import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -124,14 +128,6 @@ public class NimrodPortalEndpoints {
 	private ObjectMapper objectMapper;
 
 	private Map<String, String> remoteVars;
-
-//	@Autowired
-//	@Value("${nimrod.remote.setup}")
-//	private String nimrodSetup;
-
-//	@Autowired
-//	private SetupConfigBuilder nimrodConfig;
-
 
 	public static class UserState {
 		public final String username;
@@ -238,7 +234,7 @@ public class NimrodPortalEndpoints {
 
 		ArrayNode exps = objectMapper.createArrayNode();
 
-		try(NimrodAPI nimrod = createNimrod(userState.jdbcUrl, userState.dbUser, userState.dbPass)) {
+		try(NimrodAPI nimrod = createNimrod(userState.username)) {
 			for(Experiment exp : nimrod.getExperiments()) {
 				ArrayNode vars = objectMapper.createArrayNode();
 				exp.getVariables().forEach(vars::add);
@@ -295,7 +291,7 @@ public class NimrodPortalEndpoints {
 	public ResponseEntity<JsonNode> getResources(JwtAuthenticationToken jwt) {
 		UserState userState = getUserState(jwt);
 
-		try(NimrodAPI nimrod = createNimrod(userState.jdbcUrl, userState.dbUser, userState.dbPass)) {
+		try(NimrodAPI nimrod = createNimrod(userState.username)) {
 			return ResponseEntity.status(HttpStatus.OK).body(toJson(nimrod.getResources()));
 		} catch(Exception e) {
 			//TODO: Log
@@ -308,7 +304,7 @@ public class NimrodPortalEndpoints {
 	public ResponseEntity<JsonNode> getExperiment(JwtAuthenticationToken jwt, @PathVariable String expName) {
 		UserState userState = getUserState(jwt);
 
-		try(NimrodAPI nimrod = createNimrod(userState.jdbcUrl, userState.dbUser, userState.dbPass)) {
+		try(NimrodAPI nimrod = createNimrod(userState.username)) {
 			Experiment exp = nimrod.getExperiment(expName);
 			if(exp == null) {
 				return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
@@ -322,12 +318,15 @@ public class NimrodPortalEndpoints {
 		}
 	}
 
+	@Autowired
+	private DataSource ds;
+
 	@RequestMapping(method = {RequestMethod.GET}, value = "/api/experiments/{expName}/resources")
 	@ResponseBody
-	public ResponseEntity<JsonNode> getAssignments(JwtAuthenticationToken jwt, @PathVariable String expName) {
+	public ResponseEntity<JsonNode> getAssignments(JwtAuthenticationToken jwt, @PathVariable String expName) throws SQLException {
 		UserState userState = getUserState(jwt);
 
-		try(NimrodAPI nimrod = createNimrod(userState.jdbcUrl, userState.dbUser, userState.dbPass)) {
+		try(NimrodAPI nimrod = createNimrod(userState.username)) {
 			Experiment exp = nimrod.getExperiment(expName);
 			if(exp == null) {
 				return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
@@ -350,7 +349,7 @@ public class NimrodPortalEndpoints {
 	public ResponseEntity<JsonNode> setAssignments(JwtAuthenticationToken jwt, @PathVariable String expName, @RequestBody List<String> ds) {
 		UserState userState = getUserState(jwt);
 
-		try(NimrodAPI nimrod = createNimrod(userState.jdbcUrl, userState.dbUser, userState.dbPass)) {
+		try(NimrodAPI nimrod = createNimrod(userState.username)) {
 			Experiment exp = nimrod.getExperiment(expName);
 			if(exp == null) {
 				return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
@@ -494,7 +493,7 @@ public class NimrodPortalEndpoints {
 	}
 
 	private UserState getUserState(String username) throws ResponseStatusException {
-		SqlRowSet rs = jdbc.queryForRowSet("SELECT pg_password, amqp_password, initialised FROM portal_create_user(?)", username);
+		SqlRowSet rs = jdbc.queryForRowSet("SELECT pg_password, amqp_password, initialised FROM public.portal_create_user(?)", username);
 		if(!rs.next()) {
 			/* Hopefully, should never happen. */
 			LOGGER.error("portal_create_user({}) returned no rows.", username);
@@ -532,9 +531,20 @@ public class NimrodPortalEndpoints {
 	}
 
 
-	private NimrodAPI createNimrod(String uri, String dbUser, String dbPass) throws Exception {
-		/* TODO: Make this use Spring's Hikari pool somehow. */
-		return new NimrodAPIFactoryImpl().createNimrod(buildUserConfig(uri, dbUser, dbPass));
+	private NimrodAPI createNimrod(String username) throws Exception {
+		/* NB: Can't use try-with-resources here. */
+		Connection c = ds.getConnection();
+		try {
+			/* ...Also can't use prepareStatement() with SET. The username should always be safe regardless. */
+			try(Statement stmt = c.createStatement()) {
+				stmt.execute(String.format("SET search_path = %s", username));
+			}
+		} catch(SQLException e) {
+			c.close();
+			throw e;
+		}
+
+		return new NimrodAPIFactoryImpl().createNimrod(c);
 	}
 
 	@SuppressWarnings("WeakerAccess")
