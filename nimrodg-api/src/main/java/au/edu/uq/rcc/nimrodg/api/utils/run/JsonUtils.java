@@ -131,7 +131,7 @@ public class JsonUtils {
 		}
 	}
 
-	public static JsonObject toJson(List<Task> tasks) {
+	public static JsonObject toJson(Collection<Task> tasks) {
 		JsonObjectBuilder tb = Json.createObjectBuilder();
 
 		tasks.forEach(t -> {
