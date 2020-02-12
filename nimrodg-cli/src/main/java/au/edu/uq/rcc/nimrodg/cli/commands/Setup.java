@@ -20,9 +20,12 @@
 package au.edu.uq.rcc.nimrodg.cli.commands;
 
 import au.edu.uq.rcc.nimrodg.api.NimrodAPIFactory;
+import au.edu.uq.rcc.nimrodg.setup.AMQPConfigBuilder;
 import au.edu.uq.rcc.nimrodg.setup.NimrodSetupAPI;
+import au.edu.uq.rcc.nimrodg.setup.SetupConfig;
+import au.edu.uq.rcc.nimrodg.setup.SetupConfigBuilder;
+import au.edu.uq.rcc.nimrodg.setup.TransferConfigBuilder;
 import au.edu.uq.rcc.nimrodg.setup.UserConfig;
-import au.edu.uq.rcc.nimrodg.cli.ArgumentsSetupConfig;
 import au.edu.uq.rcc.nimrodg.cli.CommandEntry;
 import au.edu.uq.rcc.nimrodg.cli.DefaultCLICommand;
 import au.edu.uq.rcc.nimrodg.cli.IniSetupConfig;
@@ -32,6 +35,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.io.UncheckedIOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -41,6 +45,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 import net.sourceforge.argparse4j.impl.Arguments;
@@ -100,7 +105,7 @@ public class Setup extends DefaultCLICommand {
 						args.getBoolean("skip_system")
 				);
 
-				IniSetupConfig cfg = new IniSetupConfig(ini, config.configPath());
+				SetupConfig cfg = IniSetupConfig.parseToBuilder(ini, config.configPath()).build();
 				try(NimrodSetupAPI api = fact.getSetupAPI(config)) {
 					api.reset();
 					api.setup(cfg);
@@ -108,7 +113,23 @@ public class Setup extends DefaultCLICommand {
 				return 0;
 			}
 			case "init2": {
-				ArgumentsSetupConfig cfg = new ArgumentsSetupConfig(args);
+				SetupConfig cfg = new SetupConfigBuilder()
+						.workDir(args.getString("workdir"))
+						.storeDir(args.getString("storedir"))
+						.amqp(new AMQPConfigBuilder()
+								.uri(URI.create(args.getString("amqp_uri")))
+								.routingKey(args.getString("amqp_routing_key"))
+								.certPath(args.getString("amqp_cert"))
+								.noVerifyPeer(Objects.requireNonNullElse(args.getBoolean("amqp_no_verify_peer"), false))
+								.noVerifyHost(Objects.requireNonNullElse(args.getBoolean("amqp_no_verify_host"), false))
+								.build())
+						.transfer(new TransferConfigBuilder()
+								.uri(URI.create(args.getString("tx_uri")))
+								.certPath(args.getString("tx_cert"))
+								.noVerifyPeer(Objects.requireNonNullElse(args.getBoolean("tx_no_verify_peer"), false))
+								.noVerifyHost(Objects.requireNonNullElse(args.getBoolean("tx_no_verify_host"), false))
+								.build())
+						.build();
 				try(NimrodSetupAPI api = fact.getSetupAPI(config)) {
 					api.reset();
 					api.setup(cfg);

@@ -25,6 +25,7 @@ import au.edu.uq.rcc.nimrodg.agent.DefaultAgentState;
 import au.edu.uq.rcc.nimrodg.agent.ReferenceAgent;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentHello;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
+import au.edu.uq.rcc.nimrodg.api.AgentProvider;
 import au.edu.uq.rcc.nimrodg.api.Command;
 import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.Job;
@@ -52,6 +53,7 @@ import au.edu.uq.rcc.nimrodg.api.utils.run.RunBuilder;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Path;
 import java.security.cert.Certificate;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -66,6 +68,11 @@ import java.util.stream.Collectors;
 import javax.json.JsonValue;
 
 import au.edu.uq.rcc.nimrodg.api.ActuatorOpsAdapter;
+import au.edu.uq.rcc.nimrodg.setup.AMQPConfigBuilder;
+import au.edu.uq.rcc.nimrodg.setup.MachinePair;
+import au.edu.uq.rcc.nimrodg.setup.SetupConfig;
+import au.edu.uq.rcc.nimrodg.setup.SetupConfigBuilder;
+import au.edu.uq.rcc.nimrodg.setup.TransferConfigBuilder;
 import org.junit.Test;
 import au.edu.uq.rcc.nimrodg.api.Resource;
 
@@ -720,5 +727,41 @@ public abstract class APITests {
 		Assert.assertEquals(nuri, cfg.getAmqpUri());
 		Assert.assertEquals(nuri, cfg.getTransferUri());
 		Assert.assertEquals("string", cfg.getAmqpRoutingKey());
+	}
+
+	public static SetupConfig getTestSetupConfig(Path root) {
+		TestNimrodConfig nimcfg = new TestNimrodConfig(root);
+		AgentProvider ap = new TestAgentProvider(root);
+
+		SetupConfigBuilder b = new SetupConfigBuilder()
+				.workDir(nimcfg.getWorkDir())
+				.storeDir(nimcfg.getRootStore())
+				.amqp(new AMQPConfigBuilder()
+						.uri(nimcfg.getAmqpUri().uri)
+						.routingKey(nimcfg.getAmqpRoutingKey())
+						.certPath(nimcfg.getAmqpUri().certPath)
+						.noVerifyPeer(nimcfg.getAmqpUri().noVerifyPeer)
+						.noVerifyHost(nimcfg.getAmqpUri().noVerifyHost)
+						.build())
+				.transfer(new TransferConfigBuilder()
+						.uri(nimcfg.getTransferUri().uri)
+						.certPath(nimcfg.getTransferUri().certPath)
+						.noVerifyPeer(nimcfg.getTransferUri().noVerifyPeer)
+						.noVerifyHost(nimcfg.getTransferUri().noVerifyHost)
+						.build())
+				.resourceType("dummy", DummyResourceType.class)
+				.property("nimrod.sched.default.launch_penalty", -10)
+				.property("nimrod.sched.default.spawn_cap", 10)
+				.property("nimrod.sched.default.job_buf_size", 1000)
+				.property("nimrod.sched.default.job_buf_refill_threshold", 100)
+				.property("nimrod.master.run_rescan_interval", 60);
+
+
+		ap.lookupAgents().forEach((p, ai) -> {
+			b.agent(p, ai.getPath());
+			ai.posixMappings().forEach(e -> b.agentMapping(e.getKey(), e.getValue(), p));
+		});
+
+		return b.build();
 	}
 }

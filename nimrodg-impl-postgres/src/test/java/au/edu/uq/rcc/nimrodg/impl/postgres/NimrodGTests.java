@@ -23,7 +23,6 @@ import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
 import au.edu.uq.rcc.nimrodg.setup.NimrodSetupAPI;
 import au.edu.uq.rcc.nimrodg.setup.UserConfig;
 import au.edu.uq.rcc.nimrodg.test.APITests;
-import au.edu.uq.rcc.nimrodg.test.TestConfig;
 import java.nio.file.Path;
 import java.util.Map;
 import org.junit.After;
@@ -74,7 +73,7 @@ public class NimrodGTests extends APITests {
 		NimrodAPIFactoryImpl fimpl = new NimrodAPIFactoryImpl();
 		try(NimrodSetupAPI api = fimpl.getSetupAPI(ucfg)) {
 			api.reset();
-			api.setup(new TestConfig(root));
+			api.setup(APITests.getTestSetupConfig(root));
 		}
 
 		nimrod = fimpl.createNimrod(ucfg);

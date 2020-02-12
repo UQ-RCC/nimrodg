@@ -19,6 +19,8 @@
  */
 package au.edu.uq.rcc.nimrodg.impl.sqlite3;
 
+import au.edu.uq.rcc.nimrodg.setup.AMQPConfig;
+import au.edu.uq.rcc.nimrodg.setup.MachinePair;
 import au.edu.uq.rcc.nimrodg.setup.NimrodSetupAPI;
 import au.edu.uq.rcc.nimrodg.setup.NimrodSetupAPI.SetupException;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
@@ -26,6 +28,8 @@ import au.edu.uq.rcc.nimrodg.setup.SetupConfig;
 import au.edu.uq.rcc.nimrodg.impl.base.db.DBUtils;
 import au.edu.uq.rcc.nimrodg.impl.base.db.SQLUUUUU;
 import au.edu.uq.rcc.nimrodg.impl.base.db.TempConfig;
+import au.edu.uq.rcc.nimrodg.setup.TransferConfig;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -86,7 +90,7 @@ public class SQLite3SetupAPI extends SQLUUUUU<SetupException> implements NimrodS
 				}
 			}
 
-			dbData = baos.toString("UTF-8");
+			dbData = baos.toString(StandardCharsets.UTF_8);
 		} catch(IOException e) {
 			throw new SetupException(e);
 		}
@@ -109,8 +113,8 @@ public class SQLite3SetupAPI extends SQLUUUUU<SetupException> implements NimrodS
 			}
 		}
 
-		SetupConfig.AMQPConfig amqp = cfg.amqp();
-		SetupConfig.TransferConfig tx = cfg.transfer();
+		AMQPConfig amqp = cfg.amqp();
+		TransferConfig tx = cfg.transfer();
 
 		TempConfig newCfg = new TempConfig(
 				cfg.workDir(),
@@ -173,9 +177,9 @@ public class SQLite3SetupAPI extends SQLUUUUU<SetupException> implements NimrodS
 
 		{
 			/* Agent mappings */
-			Map<SetupConfig.MachinePair, String> map = cfg.agentMappings();
+			Map<MachinePair, String> map = cfg.agentMappings();
 			try(PreparedStatement ps = prepareMapAgent()) {
-				for(Map.Entry<SetupConfig.MachinePair, String> m : map.entrySet()) {
+				for(Map.Entry<MachinePair, String> m : map.entrySet()) {
 					ps.setString(1, m.getKey().system());
 					ps.setString(2, m.getKey().machine());
 					ps.setString(3, m.getValue());

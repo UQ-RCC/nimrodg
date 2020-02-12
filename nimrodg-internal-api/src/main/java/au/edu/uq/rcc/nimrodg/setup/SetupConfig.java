@@ -19,55 +19,59 @@
  */
 package au.edu.uq.rcc.nimrodg.setup;
 
-import java.net.URI;
 import java.util.Map;
 
-public interface SetupConfig {
+public final class SetupConfig {
 
-	public interface AMQPConfig {
+	private final String workDir;
+	private final String storeDir;
+	private final AMQPConfig amqp;
+	private final TransferConfig tx;
+	private final Map<String, String> agents;
+	private final Map<MachinePair, String> agentMappings;
+	private final Map<String, String> resourceTypes;
+	private final Map<String, String> properties;
 
-		URI uri();
-
-		String routingKey();
-
-		String certPath();
-
-		boolean noVerifyPeer();
-
-		boolean noVerifyHost();
+	SetupConfig(String workDir, String storeDir, AMQPConfig amqp, TransferConfig tx, Map<String, String> agents, Map<MachinePair, String> agentMappings, Map<String, String> resourceTypes, Map<String, String> properties) {
+		this.workDir = workDir;
+		this.storeDir = storeDir;
+		this.amqp = amqp;
+		this.tx = tx;
+		this.agents = Map.copyOf(agents);
+		this.agentMappings = Map.copyOf(agentMappings);
+		this.resourceTypes = Map.copyOf(resourceTypes);
+		this.properties = Map.copyOf(properties);
 	}
 
-	public interface TransferConfig {
-
-		URI uri();
-
-		String certPath();
-
-		boolean noVerifyPeer();
-
-		boolean noVerifyHost();
+	public String workDir() {
+		return this.workDir;
 	}
 
-	public interface MachinePair {
-
-		String system();
-
-		String machine();
+	public String storeDir() {
+		return this.storeDir;
 	}
 
-	String workDir();
+	public AMQPConfig amqp() {
+		return this.amqp;
+	}
 
-	String storeDir();
+	public TransferConfig transfer() {
+		return this.tx;
+	}
 
-	AMQPConfig amqp();
+	public Map<String, String> agents() {
+		return this.agents;
+	}
 
-	TransferConfig transfer();
+	public Map<MachinePair, String> agentMappings() {
+		return this.agentMappings;
+	}
 
-	Map<String, String> agents();
+	public Map<String, String> resourceTypes() {
+		return this.resourceTypes;
+	}
 
-	Map<MachinePair, String> agentMappings();
-
-	Map<String, String> resourceTypes();
-
-	Map<String, String> properties();
+	public Map<String, String> properties() {
+		return this.properties;
+	}
 }

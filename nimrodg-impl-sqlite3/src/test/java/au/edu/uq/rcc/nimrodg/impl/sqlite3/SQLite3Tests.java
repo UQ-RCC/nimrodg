@@ -23,15 +23,13 @@ import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
 import au.edu.uq.rcc.nimrodg.setup.NimrodSetupAPI;
 import au.edu.uq.rcc.nimrodg.setup.UserConfig;
 import au.edu.uq.rcc.nimrodg.test.APITests;
-import au.edu.uq.rcc.nimrodg.test.TestConfig;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.Map;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
+
+import java.nio.file.Path;
+import java.util.Map;
 
 public class SQLite3Tests extends APITests {
 
@@ -68,7 +66,7 @@ public class SQLite3Tests extends APITests {
 		SQLite3APIFactory fimpl = new SQLite3APIFactory();
 		try(NimrodSetupAPI api = fimpl.getSetupAPI(ucfg)) {
 			api.reset();
-			api.setup(new TestConfig(root));
+			api.setup(APITests.getTestSetupConfig(root));
 		}
 
 		return fimpl.createNimrod(ucfg);
