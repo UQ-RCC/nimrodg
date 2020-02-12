@@ -30,6 +30,8 @@ import au.edu.uq.rcc.nimrodg.api.utils.run.JsonUtils;
 import au.edu.uq.rcc.nimrodg.api.utils.run.RunBuilder;
 import au.edu.uq.rcc.nimrodg.impl.postgres.NimrodAPIFactoryImpl;
 import au.edu.uq.rcc.nimrodg.parsing.ANTLR4ParseAPIImpl;
+import au.edu.uq.rcc.nimrodg.setup.NimrodSetupAPI;
+import au.edu.uq.rcc.nimrodg.setup.SetupConfigBuilder;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -134,6 +136,9 @@ public class NimrodPortalEndpoints {
 
 	private Map<String, String> remoteVars;
 
+	@Autowired
+	DefaultSetupConfig setupConfig;
+
 	public NimrodPortalEndpoints() {
 		this.jinJava = new Jinjava();
 
@@ -159,47 +164,55 @@ public class NimrodPortalEndpoints {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
 		}
 
-		try {
-			HttpStatus code = rabbit.addUser(userState.amqpUser, userState.amqpPass).getStatusCode();
-			if(!HttpStatus.CREATED.equals(code) && !HttpStatus.NO_CONTENT.equals(code)) {
-				return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
-			}
+//		try {
+//			HttpStatus code = rabbit.addUser(userState.amqpUser, userState.amqpPass).getStatusCode();
+//			if(!HttpStatus.CREATED.equals(code) && !HttpStatus.NO_CONTENT.equals(code)) {
+//				return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+//			}
+//
+//			code = rabbit.addVHost(userState.amqpUser).getStatusCode();
+//			if(!HttpStatus.CREATED.equals(code) && !HttpStatus.NO_CONTENT.equals(code)) {
+//				return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+//			}
+//
+//			code = rabbit.addPermissions(userState.amqpUser, userState.amqpUser, ".*", ".*", ".*").getStatusCode();
+//			if(!HttpStatus.CREATED.equals(code) && !HttpStatus.NO_CONTENT.equals(code)) {
+//				return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+//			}
+//		} catch(HttpStatusCodeException e) {
+//			//TODO: Log
+//			return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+//		}
 
-			code = rabbit.addVHost(userState.amqpUser).getStatusCode();
-			if(!HttpStatus.CREATED.equals(code) && !HttpStatus.NO_CONTENT.equals(code)) {
-				return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
-			}
-
-			code = rabbit.addPermissions(userState.amqpUser, userState.amqpUser, ".*", ".*", ".*").getStatusCode();
-			if(!HttpStatus.CREATED.equals(code) && !HttpStatus.NO_CONTENT.equals(code)) {
-				return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
-			}
-		} catch(HttpStatusCodeException e) {
+		// TODO: Change this to use NimrodSetupAPI
+		try(NimrodSetupAPI setup = createNimrodSetup(userState.username)) {
+			SetupConfigBuilder b = setupConfig.toBuilder(userState.vars);
+			setup.reset();
+			setup.setup(b.build());
+		} catch(Exception e) {
 			//TODO: Log
 			return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
 		}
-
-		// TODO: Change this to use NimrodSetupAPI
-		ResponseEntity<String> jo;
-		try {
-			jo = resource.executeJob("setuserconfiguration", Map.of(
-					"config", jinJava.render(nimrodIniTemplate, userState.vars),
-					"setup_config", jinJava.render(setupIniTemplate, userState.vars),
-					"initialise", userState.initialised ? "0" : "1"
-			));
-		} catch(HttpStatusCodeException e) {
-			/* If we 401, pass that back to the user so they can refresh the token. */
-			if(e.getStatusCode() == org.springframework.http.HttpStatus.FORBIDDEN) {
-				return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-			}
-
-			return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
-		}
-
-		if(!HttpStatus.OK.equals(jo.getStatusCode())) {
-			// TODO: log
-			return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
-		}
+//		ResponseEntity<String> jo;
+//		try {
+//			jo = resource.executeJob("setuserconfiguration", Map.of(
+//					"config", jinJava.render(nimrodIniTemplate, userState.vars),
+//					"setup_config", jinJava.render(setupIniTemplate, userState.vars),
+//					"initialise", userState.initialised ? "0" : "1"
+//			));
+//		} catch(HttpStatusCodeException e) {
+//			/* If we 401, pass that back to the user so they can refresh the token. */
+//			if(e.getStatusCode() == org.springframework.http.HttpStatus.FORBIDDEN) {
+//				return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+//			}
+//
+//			return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+//		}
+//
+//		if(!HttpStatus.OK.equals(jo.getStatusCode())) {
+//			// TODO: log
+//			return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+//		}
 
 		return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
 	}
@@ -542,6 +555,22 @@ public class NimrodPortalEndpoints {
 		}
 
 		return new NimrodAPIFactoryImpl().createNimrod(c);
+	}
+
+	private NimrodSetupAPI createNimrodSetup(String username) throws Exception {
+		/* NB: Can't use try-with-resources here. */
+		Connection c = ds.getConnection();
+		try {
+			/* ...Also can't use prepareStatement() with SET. The username should always be safe regardless. */
+			try(Statement stmt = c.createStatement()) {
+				stmt.execute(String.format("SET search_path = %s", username));
+			}
+		} catch(SQLException e) {
+			c.close();
+			throw e;
+		}
+
+		return new NimrodAPIFactoryImpl().getSetupAPI(c);
 	}
 
 	@SuppressWarnings("WeakerAccess")
