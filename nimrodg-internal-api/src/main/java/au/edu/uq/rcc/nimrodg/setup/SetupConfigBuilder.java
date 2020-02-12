@@ -19,6 +19,7 @@
  */
 package au.edu.uq.rcc.nimrodg.setup;
 
+import au.edu.uq.rcc.nimrodg.api.MachinePair;
 import au.edu.uq.rcc.nimrodg.api.ResourceType;
 
 import java.util.HashMap;

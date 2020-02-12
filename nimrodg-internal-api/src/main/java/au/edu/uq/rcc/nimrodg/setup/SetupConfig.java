@@ -19,6 +19,8 @@
  */
 package au.edu.uq.rcc.nimrodg.setup;
 
+import au.edu.uq.rcc.nimrodg.api.MachinePair;
+
 import java.util.Map;
 
 public final class SetupConfig {

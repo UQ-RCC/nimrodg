@@ -23,6 +23,7 @@ import au.edu.uq.rcc.nimrodg.agent.AgentState;
 import au.edu.uq.rcc.nimrodg.api.CommandResult;
 import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.JobAttempt;
+import au.edu.uq.rcc.nimrodg.api.MachinePair;
 import au.edu.uq.rcc.nimrodg.api.NimrodConfig;
 import au.edu.uq.rcc.nimrodg.api.NimrodEntity;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
@@ -240,7 +241,7 @@ public class SQLite3DB extends SQLUUUUU<NimrodSQLException> implements NimrodDBA
 		String path = null;
 		Long id = null;
 
-		Set<Map.Entry<String, String>> mappings = new HashSet<>();
+		Set<MachinePair> mappings = new HashSet<>();
 		while(rs.next()) {
 			if(id == null) {
 				id = rs.getLong("id");
@@ -254,7 +255,7 @@ public class SQLite3DB extends SQLUUUUU<NimrodSQLException> implements NimrodDBA
 				path = rs.getString("path");
 			}
 
-			mappings.add(new AbstractMap.SimpleImmutableEntry<>(rs.getString("system"), rs.getString("machine")));
+			mappings.add(MachinePair.of(rs.getString("system"), rs.getString("machine")));
 		}
 
 		if(id == null) {

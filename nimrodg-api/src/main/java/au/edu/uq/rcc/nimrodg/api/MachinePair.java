@@ -17,7 +17,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package au.edu.uq.rcc.nimrodg.setup;
+package au.edu.uq.rcc.nimrodg.api;
 
 import java.util.Objects;
 

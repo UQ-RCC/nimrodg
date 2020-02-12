@@ -69,7 +69,6 @@ import javax.json.JsonValue;
 
 import au.edu.uq.rcc.nimrodg.api.ActuatorOpsAdapter;
 import au.edu.uq.rcc.nimrodg.setup.AMQPConfigBuilder;
-import au.edu.uq.rcc.nimrodg.setup.MachinePair;
 import au.edu.uq.rcc.nimrodg.setup.SetupConfig;
 import au.edu.uq.rcc.nimrodg.setup.SetupConfigBuilder;
 import au.edu.uq.rcc.nimrodg.setup.TransferConfigBuilder;
@@ -759,7 +758,7 @@ public abstract class APITests {
 
 		ap.lookupAgents().forEach((p, ai) -> {
 			b.agent(p, ai.getPath());
-			ai.posixMappings().forEach(e -> b.agentMapping(e.getKey(), e.getValue(), p));
+			ai.posixMappings().forEach(e -> b.agentMapping(e, p));
 		});
 
 		return b.build();

@@ -2,6 +2,7 @@ package au.edu.uq.rcc.nimrodg.test;
 
 import au.edu.uq.rcc.nimrodg.api.AgentInfo;
 import au.edu.uq.rcc.nimrodg.api.AgentProvider;
+import au.edu.uq.rcc.nimrodg.api.MachinePair;
 
 import java.nio.file.Path;
 import java.util.Map;
@@ -29,10 +30,10 @@ public class TestAgentProvider implements AgentProvider {
 					}
 
 					@Override
-					public Set<Map.Entry<String, String>> posixMappings() {
+					public Set<MachinePair> posixMappings() {
 						return Set.of(
-								Map.entry("Linux", "x86_64"),
-								Map.entry("Linux", "k10m")
+								MachinePair.of("Linux", "x86_64"),
+								MachinePair.of("Linux", "k10m")
 						);
 					}
 				},
@@ -48,8 +49,8 @@ public class TestAgentProvider implements AgentProvider {
 					}
 
 					@Override
-					public Set<Map.Entry<String, String>> posixMappings() {
-						return Set.of(Map.entry("Linux", "i686"));
+					public Set<MachinePair> posixMappings() {
+						return Set.of(MachinePair.of("Linux", "i686"));
 					}
 				},
 				"noop", new AgentInfo() {
@@ -64,7 +65,7 @@ public class TestAgentProvider implements AgentProvider {
 					}
 
 					@Override
-					public Set<Map.Entry<String, String>> posixMappings() {
+					public Set<MachinePair> posixMappings() {
 						return Set.of();
 					}
 				}
@@ -79,7 +80,7 @@ public class TestAgentProvider implements AgentProvider {
 	@Override
 	public AgentInfo lookupAgentByPosix(String system, String machine) {
 		return this.lookupAgents().values().stream()
-				.filter(ai -> ai.posixMappings().contains(Map.entry(system, machine)))
+				.filter(ai -> ai.posixMappings().contains(MachinePair.of(system, machine)))
 				.findFirst()
 				.orElse(null);
 	}

@@ -20,7 +20,7 @@
 package au.edu.uq.rcc.nimrodg.impl.sqlite3;
 
 import au.edu.uq.rcc.nimrodg.setup.AMQPConfig;
-import au.edu.uq.rcc.nimrodg.setup.MachinePair;
+import au.edu.uq.rcc.nimrodg.api.MachinePair;
 import au.edu.uq.rcc.nimrodg.setup.NimrodSetupAPI;
 import au.edu.uq.rcc.nimrodg.setup.NimrodSetupAPI.SetupException;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;

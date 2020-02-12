@@ -19,6 +19,7 @@
  */
 package au.edu.uq.rcc.nimrodg.impl.postgres;
 
+import au.edu.uq.rcc.nimrodg.api.MachinePair;
 import au.edu.uq.rcc.nimrodg.impl.base.db.DBBaseHelper;
 import au.edu.uq.rcc.nimrodg.impl.base.db.TempAgentInfo;
 import java.sql.Connection;
@@ -90,7 +91,7 @@ public class DBAgentHelpers extends DBBaseHelper {
 				rs.getString("path"),
 				Arrays.stream((Object[])rs.getArray("mappings").getArray())
 						.map(o -> (String[])o)
-						.map(s -> Map.entry(s[0], s[1]))
+						.map(s -> MachinePair.of(s[0], s[1]))
 						.collect(Collectors.toSet())
 		);
 	}
