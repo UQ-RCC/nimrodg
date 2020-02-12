@@ -23,9 +23,13 @@ import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.Job;
 import au.edu.uq.rcc.nimrodg.api.JobAttempt;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
+import au.edu.uq.rcc.nimrodg.api.PlanfileParseException;
 import au.edu.uq.rcc.nimrodg.api.Resource;
+import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledRun;
 import au.edu.uq.rcc.nimrodg.api.utils.run.JsonUtils;
+import au.edu.uq.rcc.nimrodg.api.utils.run.RunBuilder;
 import au.edu.uq.rcc.nimrodg.impl.postgres.NimrodAPIFactoryImpl;
+import au.edu.uq.rcc.nimrodg.parsing.ANTLR4ParseAPIImpl;
 import au.edu.uq.rcc.nimrodg.setup.UserConfig;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -47,6 +51,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -69,6 +74,7 @@ import org.springframework.web.util.UriBuilder;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
+import javax.servlet.http.HttpServletResponse;
 import javax.sql.DataSource;
 import java.io.IOException;
 import java.io.InputStream;
@@ -128,33 +134,6 @@ public class NimrodPortalEndpoints {
 	private ObjectMapper objectMapper;
 
 	private Map<String, String> remoteVars;
-
-	public static class UserState {
-		public final String username;
-		public final String dbUser;
-		public final String dbPass;
-
-		public final String amqpUser;
-		public final String amqpPass;
-		public final boolean initialised;
-
-		public final String jdbcUrl;
-		public final String amqpUrl;
-
-		public final Map<String, String> vars;
-
-		public UserState(String username, String dbUser, String dbPass, String amqpUser, String amqpPass, boolean initialised, String jdbcUrl, String amqpUrl, Map<String, String> vars) {
-			this.username = username;
-			this.dbUser = dbUser;
-			this.dbPass = dbPass;
-			this.amqpUser = amqpUser;
-			this.amqpPass = amqpPass;
-			this.initialised = initialised;
-			this.jdbcUrl = jdbcUrl;
-			this.amqpUrl = amqpUrl;
-			this.vars = Map.copyOf(vars);
-		}
-	}
 
 	public NimrodPortalEndpoints() {
 		this.jinJava = new Jinjava();
@@ -249,7 +228,7 @@ public class NimrodPortalEndpoints {
 						.put("is_active", exp.isActive());
 
 				on.set("variables", vars);
-				on.set("tasks", objectMapper.readTree(JsonUtils.toJson(exp.getTasks().values()).toString()));
+				on.set("tasks", javaxJsonToJackson(JsonUtils.toJson(exp.getTasks().values())));
 
 				Collection<Job> jobs = exp.filterJobs(EnumSet.allOf(JobAttempt.Status.class), 0, -1);
 				int nComplete = 0, nFailed = 0, nPending = 0, nRunning = 0;
@@ -285,6 +264,54 @@ public class NimrodPortalEndpoints {
 		return ResponseEntity.status(HttpStatus.OK).body(exps);
 	}
 
+	@RequestMapping(method = {RequestMethod.POST}, value = "/api/compile", consumes = MediaType.TEXT_PLAIN_VALUE)
+	@ResponseBody
+	public JsonNode compilePlanfile(HttpServletResponse httpResponse, @RequestBody String planfile) {
+		httpResponse.setHeader("Cache-Control", "no-cache, no-store, max-age=0, must-revalidate");
+
+		ArrayNode errors = objectMapper.createArrayNode();
+		ObjectNode response = objectMapper.createObjectNode();
+		response.set("result", objectMapper.nullNode());
+		response.set("errors", errors);
+
+		RunBuilder rb;
+		try {
+			rb = ANTLR4ParseAPIImpl.INSTANCE.parseRunToBuilder(planfile);
+		} catch(PlanfileParseException ex) {
+			for(PlanfileParseException.ParseError e : ex.getErrors()) {
+				errors.add(objectMapper.createObjectNode()
+						.put("line", e.line)
+						.put("position", e.position)
+						.put("message", e.message)
+				);
+			}
+
+			return response;
+		}
+
+		CompiledRun rf;
+		try {
+			rf = rb.build();
+		} catch(RunBuilder.RunfileBuildException e) {
+			errors.add(objectMapper.createObjectNode()
+					.put("line", -1)
+					.put("position", -1)
+					.put("message", e.getMessage())
+			);
+			return response;
+		}
+
+		response.set("result", javaxJsonToJackson(JsonUtils.toJson(rf)));
+		return response;
+	}
+
+	private JsonNode javaxJsonToJackson(javax.json.JsonValue jv) {
+		try {
+			return objectMapper.readTree(jv.toString());
+		} catch(JsonProcessingException e) {
+			throw new IllegalStateException();
+		}
+	}
 
 	@RequestMapping(method = {RequestMethod.GET}, value = "/api/resources")
 	@ResponseBody
@@ -394,11 +421,7 @@ public class NimrodPortalEndpoints {
 				.put("is_active", exp.isActive());
 
 		on.set("variables", vars);
-		try {
-			on.set("tasks", objectMapper.readTree(JsonUtils.toJson(exp.getTasks().values()).toString()));
-		} catch(JsonProcessingException e) {
-			throw new IllegalStateException(e);
-		}
+		on.set("tasks", javaxJsonToJackson(JsonUtils.toJson(exp.getTasks().values())));
 
 		Collection<Job> jobs = exp.filterJobs(EnumSet.allOf(JobAttempt.Status.class), 0, -1);
 		int nComplete = 0, nFailed = 0, nPending = 0, nRunning = 0;
@@ -439,11 +462,7 @@ public class NimrodPortalEndpoints {
 				.put("name", res.getName())
 				.put("type", res.getTypeName());
 
-		try {
-			on.set("config", objectMapper.readTree(res.getConfig().toString()));
-		} catch(JsonProcessingException e) {
-			throw new IllegalStateException(e);
-		}
+		on.set("config", javaxJsonToJackson(res.getConfig()));
 		on.putObject("amqp")
 				.put("uri", res.getAMQPUri().uri.toString())
 				.put("cert", res.getAMQPUri().certPath)
@@ -456,27 +475,6 @@ public class NimrodPortalEndpoints {
 				.put("no_verify_host", res.getTransferUri().noVerifyHost);
 		return on;
 	}
-
-
-	private UserConfig buildUserConfig(String uri, String dbUser, String dbPass) {
-		return new UserConfig() {
-			@Override
-			public String factory() {
-				return NimrodAPIFactoryImpl.class.getCanonicalName();
-			}
-
-			@Override
-			public Map<String, Map<String, String>> config() {
-				return Map.of("postgres", Map.of(
-						"url", uri,
-						"username", dbUser,
-						"password", dbPass,
-						"driver", "org.postgresql.Driver"
-				));
-			}
-		};
-	}
-
 
 	private UserState getUserState(JwtAuthenticationToken jwt) throws ResponseStatusException {
 		if(jwt == null) {

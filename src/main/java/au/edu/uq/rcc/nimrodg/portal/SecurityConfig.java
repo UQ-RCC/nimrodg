@@ -67,7 +67,10 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter  {
 			return authorities;
 		});
 
+		http.csrf().ignoringAntMatchers("/api/compile");
+
 		http.authorizeRequests()
+				.antMatchers("/api/compile").permitAll()
 				.anyRequest().hasAuthority("USER")
 				.and()
 				.oauth2ResourceServer()

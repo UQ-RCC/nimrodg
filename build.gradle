@@ -59,6 +59,7 @@ dependencies {
 	// FIXME: This capability should be moved into nimrodg-api
 	implementation('au.edu.uq.rcc.nimrodg:nimrodg-internal-api')
 	implementation('au.edu.uq.rcc.nimrodg:nimrodg-impl-postgres')
+	implementation('au.edu.uq.rcc.nimrodg:nimrodg-parsing')
 
 	// FIXME: For Nimrod
 	runtimeOnly group: 'org.glassfish', name: 'javax.json', version: '1.1'
