@@ -30,7 +30,6 @@ import au.edu.uq.rcc.nimrodg.api.utils.run.JsonUtils;
 import au.edu.uq.rcc.nimrodg.api.utils.run.RunBuilder;
 import au.edu.uq.rcc.nimrodg.impl.postgres.NimrodAPIFactoryImpl;
 import au.edu.uq.rcc.nimrodg.parsing.ANTLR4ParseAPIImpl;
-import au.edu.uq.rcc.nimrodg.setup.UserConfig;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -51,7 +50,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -63,6 +61,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
@@ -264,9 +263,9 @@ public class NimrodPortalEndpoints {
 		return ResponseEntity.status(HttpStatus.OK).body(exps);
 	}
 
-	@RequestMapping(method = {RequestMethod.POST}, value = "/api/compile", consumes = MediaType.TEXT_PLAIN_VALUE)
+	@RequestMapping(method = {RequestMethod.GET}, value = "/api/compile")
 	@ResponseBody
-	public JsonNode compilePlanfile(HttpServletResponse httpResponse, @RequestBody String planfile) {
+	public JsonNode compilePlanfile(HttpServletResponse httpResponse, @RequestParam(name = "planfile") String planfile) {
 		httpResponse.setHeader("Cache-Control", "no-cache, no-store, max-age=0, must-revalidate");
 
 		ArrayNode errors = objectMapper.createArrayNode();
