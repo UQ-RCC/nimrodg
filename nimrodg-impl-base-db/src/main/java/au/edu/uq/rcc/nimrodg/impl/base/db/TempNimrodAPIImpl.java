@@ -19,49 +19,45 @@
  */
 package au.edu.uq.rcc.nimrodg.impl.base.db;
 
+import au.edu.uq.rcc.nimrodg.agent.AgentState;
+import au.edu.uq.rcc.nimrodg.api.Actuator;
+import au.edu.uq.rcc.nimrodg.api.AgentInfo;
+import au.edu.uq.rcc.nimrodg.api.CommandResult;
 import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.Job;
 import au.edu.uq.rcc.nimrodg.api.JobAttempt;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
-import au.edu.uq.rcc.nimrodg.api.NimrodException;
-import au.edu.uq.rcc.nimrodg.api.ResourceTypeInfo;
-import au.edu.uq.rcc.nimrodg.api.Actuator;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.sql.SQLException;
-import java.util.Collection;
-import java.util.Map;
-import java.util.UUID;
-import javax.json.JsonStructure;
-import au.edu.uq.rcc.nimrodg.agent.AgentState;
-import au.edu.uq.rcc.nimrodg.api.AgentInfo;
-import au.edu.uq.rcc.nimrodg.api.CommandResult;
 import au.edu.uq.rcc.nimrodg.api.NimrodConfig;
 import au.edu.uq.rcc.nimrodg.api.NimrodEntity;
+import au.edu.uq.rcc.nimrodg.api.NimrodException;
 import au.edu.uq.rcc.nimrodg.api.NimrodMasterAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodServeAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
-import au.edu.uq.rcc.nimrodg.api.events.NimrodMasterEvent;
-import au.edu.uq.rcc.nimrodg.api.ResourceType;
-import au.edu.uq.rcc.nimrodg.api.utils.NimrodUtils;
-import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledRun;
-import java.security.cert.Certificate;
-import java.util.ArrayList;
-import java.util.List;
 import au.edu.uq.rcc.nimrodg.api.Resource;
-import java.io.UncheckedIOException;
+import au.edu.uq.rcc.nimrodg.api.ResourceType;
+import au.edu.uq.rcc.nimrodg.api.ResourceTypeInfo;
+import au.edu.uq.rcc.nimrodg.api.events.NimrodMasterEvent;
+import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledRun;
+
+import javax.json.JsonStructure;
+import java.io.IOException;
+import java.security.cert.Certificate;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 public abstract class TempNimrodAPIImpl implements NimrodAPI, NimrodMasterAPI, NimrodServeAPI {
 
 	protected final NimrodDBAPI db;
 
-	public TempNimrodAPIImpl(NimrodDBAPI db) throws SQLException {
+	public TempNimrodAPIImpl(NimrodDBAPI db) {
 		this.db = db;
 	}
 
@@ -108,7 +104,7 @@ public abstract class TempNimrodAPIImpl implements NimrodAPI, NimrodMasterAPI, N
 
 	@Override
 	public NimrodConfig getConfig() {
-		return db.runSQL(() -> db.getConfig());
+		return db.runSQL(db::getConfig);
 	}
 
 	@Override
@@ -128,7 +124,7 @@ public abstract class TempNimrodAPIImpl implements NimrodAPI, NimrodMasterAPI, N
 
 	@Override
 	public Map<String, String> getProperties() {
-		return db.runSQL(() -> db.getProperties());
+		return db.runSQL(db::getProperties);
 	}
 
 	@Override
@@ -233,7 +229,7 @@ public abstract class TempNimrodAPIImpl implements NimrodAPI, NimrodMasterAPI, N
 	}
 
 	private static TempExperiment.Impl validateExperiment(Experiment exp) {
-		if(exp == null || !(exp instanceof TempExperiment.Impl)) {
+		if(!(exp instanceof TempExperiment.Impl)) {
 			throw new IllegalArgumentException();
 		}
 
@@ -241,7 +237,7 @@ public abstract class TempNimrodAPIImpl implements NimrodAPI, NimrodMasterAPI, N
 	}
 
 	private static TempResource.Impl validateResource(Resource res) {
-		if(res == null || !(res instanceof TempResource.Impl)) {
+		if(!(res instanceof TempResource.Impl)) {
 			throw new IllegalArgumentException();
 		}
 
@@ -249,7 +245,7 @@ public abstract class TempNimrodAPIImpl implements NimrodAPI, NimrodMasterAPI, N
 	}
 
 	private static TempJob.Impl validateJob(Job job) {
-		if(job == null || !(job instanceof TempJob.Impl)) {
+		if(!(job instanceof TempJob.Impl)) {
 			throw new IllegalArgumentException();
 		}
 
@@ -257,7 +253,7 @@ public abstract class TempNimrodAPIImpl implements NimrodAPI, NimrodMasterAPI, N
 	}
 
 	private static TempJobAttempt.Impl validateJobAttempt(JobAttempt att) {
-		if(att == null || !(att instanceof TempJobAttempt.Impl)) {
+		if(!(att instanceof TempJobAttempt.Impl)) {
 			throw new IllegalArgumentException();
 		}
 
@@ -345,7 +341,7 @@ public abstract class TempNimrodAPIImpl implements NimrodAPI, NimrodMasterAPI, N
 	public Map<Job, Collection<JobAttempt>> filterJobAttempts(Experiment _exp, EnumSet<JobAttempt.Status> status) {
 		return db.runSQLTransaction(() -> db.filterJobAttempts(validateExperiment(_exp), status))
 				.entrySet().stream()
-				.collect(Collectors.toMap(e -> e.getKey(), e -> Collections.unmodifiableCollection(e.getValue())));
+				.collect(Collectors.toMap(Map.Entry::getKey, e -> Collections.unmodifiableCollection(e.getValue())));
 	}
 
 	@Override
@@ -356,7 +352,7 @@ public abstract class TempNimrodAPIImpl implements NimrodAPI, NimrodMasterAPI, N
 	@Override
 	public Collection<NimrodMasterEvent> pollMasterEvents() {
 		/* Holy hell, don't run this outside of a transaction. */
-		return db.runSQLTransaction(() -> db.pollMasterEventsT());
+		return db.runSQLTransaction(db::pollMasterEventsT);
 	}
 
 	@Override
