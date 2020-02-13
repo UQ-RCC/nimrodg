@@ -30,6 +30,7 @@ import au.edu.uq.rcc.nimrodg.api.Command;
 import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.Job;
 import au.edu.uq.rcc.nimrodg.api.JobAttempt;
+import au.edu.uq.rcc.nimrodg.api.MachinePair;
 import au.edu.uq.rcc.nimrodg.api.NetworkJob;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodException;
@@ -573,7 +574,7 @@ public abstract class APITests {
 		Assert.assertNotNull(ai);
 		Assert.assertEquals("x86_64-pc-linux-musl", ai.getPlatformString());
 
-		Assert.assertEquals(Set.of(Map.entry("Linux", "x86_64"), Map.entry("Linux", "k10m")), ai.posixMappings());
+		Assert.assertEquals(Set.of(MachinePair.of("Linux", "x86_64"), MachinePair.of("Linux", "k10m")), ai.posixMappings());
 
 		AgentInfo ai2 = api.lookupAgentByPosix("Linux", "x86_64");
 		Assert.assertNotNull(ai2);

@@ -255,7 +255,12 @@ public class SQLite3DB extends SQLUUUUU<NimrodSQLException> implements NimrodDBA
 				path = rs.getString("path");
 			}
 
-			mappings.add(MachinePair.of(rs.getString("system"), rs.getString("machine")));
+			/* These may be null if there's no mappings. */
+			String system = rs.getString("system");
+			String machine = rs.getString("machine");
+			if(system != null && machine != null) {
+				mappings.add(MachinePair.of(system, machine));
+			}
 		}
 
 		if(id == null) {
