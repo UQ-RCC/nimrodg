@@ -21,16 +21,15 @@ package au.edu.uq.rcc.nimrodg.resource.act;
 
 import au.edu.uq.rcc.nimrodg.agent.Agent;
 import au.edu.uq.rcc.nimrodg.agent.AgentState;
+import au.edu.uq.rcc.nimrodg.api.NimrodException;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.api.Resource;
-import au.edu.uq.rcc.nimrodg.api.ResourceFullException;
 import au.edu.uq.rcc.nimrodg.resource.SSHResourceType;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.cert.Certificate;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -90,7 +89,7 @@ public class RemoteActuator extends POSIXActuator<SSHResourceType.SSHConfig> {
 	@Override
 	protected LaunchResult[] launchAgents(RemoteShell shell, UUID[] uuids) throws IOException {
 		LaunchResult[] results = new LaunchResult[uuids.length];
-		LaunchResult failedResult = new LaunchResult(null, new ResourceFullException(node));
+		LaunchResult failedResult = new LaunchResult(null, new NimrodException.ResourceFull(node));
 
 		if(agents.size() >= limit) {
 			Arrays.fill(results, failedResult);

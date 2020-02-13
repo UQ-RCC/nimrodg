@@ -23,7 +23,7 @@ import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.Job;
 import au.edu.uq.rcc.nimrodg.api.JobAttempt;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
-import au.edu.uq.rcc.nimrodg.api.NimrodAPIException;
+import au.edu.uq.rcc.nimrodg.api.NimrodException;
 import au.edu.uq.rcc.nimrodg.api.ResourceTypeInfo;
 import au.edu.uq.rcc.nimrodg.api.Actuator;
 import java.io.IOException;
@@ -85,7 +85,7 @@ public abstract class TempNimrodAPIImpl implements NimrodAPI, NimrodMasterAPI, N
 	@Override
 	public TempExperiment.Impl addExperiment(String name, CompiledRun ce) {
 		if(db.runSQL(() -> db.experimentExists(name))) {
-			throw new ExperimentExistsException(name);
+			throw new NimrodException.ExperimentExists(name);
 		}
 
 		/* FIXME: I feel that this shouldn't be here. */
@@ -205,7 +205,7 @@ public abstract class TempNimrodAPIImpl implements NimrodAPI, NimrodMasterAPI, N
 			try {
 				tl.add(DBUtils.createType(e.getValue()));
 			} catch(ReflectiveOperationException ex) {
-				throw new NimrodAPIException(ex);
+				throw new NimrodException(ex);
 			}
 		}
 		return tl;
@@ -221,7 +221,7 @@ public abstract class TempNimrodAPIImpl implements NimrodAPI, NimrodMasterAPI, N
 		try {
 			return DBUtils.createType(t.getValue());
 		} catch(ReflectiveOperationException ex) {
-			throw new NimrodAPIException(ex);
+			throw new NimrodException(ex);
 		}
 	}
 

@@ -23,11 +23,10 @@ import au.edu.uq.rcc.nimrodg.agent.Agent;
 import au.edu.uq.rcc.nimrodg.agent.AgentState;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
 import au.edu.uq.rcc.nimrodg.api.AgentInfo;
-import au.edu.uq.rcc.nimrodg.api.NimrodAPIException;
+import au.edu.uq.rcc.nimrodg.api.NimrodException;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.api.Actuator;
 import au.edu.uq.rcc.nimrodg.api.NimrodConfig;
-import au.edu.uq.rcc.nimrodg.api.ResourceFullException;
 import au.edu.uq.rcc.nimrodg.api.utils.NimrodUtils;
 import java.io.IOException;
 import java.nio.file.FileAlreadyExistsException;
@@ -134,7 +133,7 @@ public class LocalActuator implements Actuator {
 	}
 
 	@Override
-	public Resource getResource() throws NimrodAPIException {
+	public Resource getResource() throws NimrodException {
 		return node;
 	}
 
@@ -287,7 +286,7 @@ public class LocalActuator implements Actuator {
 		}
 
 		LaunchResult[] results = new LaunchResult[uuids.length];
-		LaunchResult failedResult = new LaunchResult(null, new ResourceFullException(node));
+		LaunchResult failedResult = new LaunchResult(null, new NimrodException.ResourceFull(node));
 
 		/* If we're chockers, just die */
 		synchronized(agents) {

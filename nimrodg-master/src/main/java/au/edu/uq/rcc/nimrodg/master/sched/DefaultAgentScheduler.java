@@ -25,9 +25,9 @@ import au.edu.uq.rcc.nimrodg.api.CommandResult;
 import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.JobAttempt;
 import au.edu.uq.rcc.nimrodg.api.NetworkJob;
+import au.edu.uq.rcc.nimrodg.api.NimrodException;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.api.Task;
-import au.edu.uq.rcc.nimrodg.api.ResourceFullException;
 import au.edu.uq.rcc.nimrodg.api.utils.MsgUtils;
 import au.edu.uq.rcc.nimrodg.api.utils.NimrodUtils;
 import au.edu.uq.rcc.nimrodg.master.AgentSchedulerFactory;
@@ -170,7 +170,7 @@ public class DefaultAgentScheduler implements AgentScheduler {
 	@Override
 	public void onAgentLaunchFailure(UUID uuid, Resource node, Throwable t) {
 		LOGGER.trace("Agent launch failure for '{}' on '{}'.", uuid, node.getPath());
-		if(t instanceof ResourceFullException) {
+		if(t instanceof NimrodException.ResourceFull) {
 			LOGGER.trace("  Resource full...");
 		} else {
 			m_FailureTracker.reportLaunchFailure(uuid, node, t);

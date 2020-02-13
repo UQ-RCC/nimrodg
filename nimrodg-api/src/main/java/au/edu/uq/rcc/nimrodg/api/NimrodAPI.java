@@ -66,9 +66,8 @@ public interface NimrodAPI extends AgentProvider, AutoCloseable {
 	 *
 	 * @param exp The experiment instance to delete.
 	 * @throws IOException if purging the working directory failed.
-	 * @throws ExperimentActiveException if the experiment is currently active.
 	 */
-	void deleteExperiment(Experiment exp) throws IOException, ExperimentActiveException;
+	void deleteExperiment(Experiment exp) throws IOException;
 
 	Job addSingleJob(Experiment exp, Map<String, String> values);
 

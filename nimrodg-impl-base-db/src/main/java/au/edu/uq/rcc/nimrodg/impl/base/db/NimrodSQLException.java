@@ -19,10 +19,10 @@
  */
 package au.edu.uq.rcc.nimrodg.impl.base.db;
 
-import au.edu.uq.rcc.nimrodg.api.NimrodAPIException;
+import au.edu.uq.rcc.nimrodg.api.NimrodException;
 import java.sql.SQLException;
 
-public class NimrodSQLException extends NimrodAPIException {
+public class NimrodSQLException extends NimrodException {
 
 	private final SQLException innerException;
 

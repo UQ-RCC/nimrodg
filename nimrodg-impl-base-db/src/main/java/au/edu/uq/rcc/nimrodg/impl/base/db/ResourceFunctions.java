@@ -20,7 +20,7 @@
 package au.edu.uq.rcc.nimrodg.impl.base.db;
 
 import au.edu.uq.rcc.nimrodg.api.Experiment;
-import au.edu.uq.rcc.nimrodg.api.NimrodAPIException;
+import au.edu.uq.rcc.nimrodg.api.NimrodException;
 import java.util.Collection;
 import java.util.UUID;
 import javax.json.JsonStructure;
@@ -81,12 +81,4 @@ public interface ResourceFunctions<T extends Resource, E extends Experiment, A e
 	AgentState addAgent(T node, AgentState agent) throws X;
 
 	void updateAgent(AgentState agent) throws X;
-
-	public class ResourceException extends NimrodAPIException {
-
-	}
-
-	public class ResourceHasAssignmentsException extends ResourceException {
-
-	}
 }

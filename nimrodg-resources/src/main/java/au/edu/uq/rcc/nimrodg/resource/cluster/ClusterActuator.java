@@ -21,8 +21,8 @@ package au.edu.uq.rcc.nimrodg.resource.cluster;
 
 import au.edu.uq.rcc.nimrodg.agent.Agent;
 import au.edu.uq.rcc.nimrodg.agent.AgentState;
+import au.edu.uq.rcc.nimrodg.api.NimrodException;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
-import au.edu.uq.rcc.nimrodg.api.ResourceFullException;
 import au.edu.uq.rcc.nimrodg.resource.act.ActuatorUtils;
 import au.edu.uq.rcc.nimrodg.resource.cluster.ClusterResourceType.ClusterConfig;
 
@@ -130,7 +130,7 @@ public abstract class ClusterActuator<C extends ClusterConfig> extends POSIXActu
 	 * @return The new list of UUIDs.
 	 */
 	protected UUID[] applyFullCap(UUID[] uuids, LaunchResult[] results) {
-		LaunchResult fullLaunch = new LaunchResult(null, new ResourceFullException(node));
+		LaunchResult fullLaunch = new LaunchResult(null, new NimrodException.ResourceFull(node));
 
 		int currentAgents = ops.getAgentCount(node);
 

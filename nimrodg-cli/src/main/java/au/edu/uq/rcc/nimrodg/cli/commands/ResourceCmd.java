@@ -21,7 +21,7 @@ package au.edu.uq.rcc.nimrodg.cli.commands;
 
 import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
-import au.edu.uq.rcc.nimrodg.api.NimrodAPIException;
+import au.edu.uq.rcc.nimrodg.api.NimrodException;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.api.ResourceType;
 import au.edu.uq.rcc.nimrodg.setup.UserConfig;
@@ -38,7 +38,6 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import javax.json.Json;
 import javax.json.JsonStructure;
-import javax.json.JsonWriter;
 import javax.json.stream.JsonGenerator;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
@@ -66,7 +65,7 @@ public class ResourceCmd extends NimrodCLICommand {
 	}
 
 	@Override
-	public int execute(Namespace args, UserConfig config, NimrodAPI nimrod, PrintStream out, PrintStream err, Path[] configDirs) throws IOException, NimrodAPIException {
+	public int execute(Namespace args, UserConfig config, NimrodAPI nimrod, PrintStream out, PrintStream err, Path[] configDirs) throws IOException, NimrodException {
 
 		/* NB: add-root and add-child are separate because they might use separate parsers. */
 		switch(args.getString("operation")) {
@@ -87,7 +86,7 @@ public class ResourceCmd extends NimrodCLICommand {
 
 	}
 
-	private int executeAdd(NimrodAPI api, Namespace args, PrintStream out, PrintStream err, Path[] configDirs) throws NimrodAPIException {
+	private int executeAdd(NimrodAPI api, Namespace args, PrintStream out, PrintStream err, Path[] configDirs) throws NimrodException {
 		String name = args.getString("resource_name");
 
 		Resource node = api.getResource(name);
@@ -109,7 +108,7 @@ public class ResourceCmd extends NimrodCLICommand {
 				err.printf("No such resource type '%s'.\n", type);
 				return 1;
 			}
-		} catch(NimrodAPIException e) {
+		} catch(NimrodException e) {
 			err.printf("Error instantiating resource type '%s'.\n", type);
 			e.printStackTrace(err);
 			return 1;
@@ -126,7 +125,7 @@ public class ResourceCmd extends NimrodCLICommand {
 		return 0;
 	}
 
-	private int executeRemove(NimrodAPI api, Namespace args, PrintStream out, PrintStream err) throws NimrodAPIException {
+	private int executeRemove(NimrodAPI api, Namespace args, PrintStream out, PrintStream err) throws NimrodException {
 		args.getList("resource_name").stream()
 				.distinct()
 				.map(r -> api.getResource((String)r))
@@ -135,7 +134,7 @@ public class ResourceCmd extends NimrodCLICommand {
 		return 0;
 	}
 
-	private int executeList(NimrodAPI api, Namespace args, PrintStream out, PrintStream err) throws NimrodAPIException {
+	private int executeList(NimrodAPI api, Namespace args, PrintStream out, PrintStream err) throws NimrodException {
 		Pattern p;
 		try {
 			p = Pattern.compile(args.getString("pathspec"));
@@ -156,7 +155,7 @@ public class ResourceCmd extends NimrodCLICommand {
 		}
 	}
 
-	private int executeQuery(NimrodAPI api, Namespace args, PrintStream out, PrintStream err) throws NimrodAPIException {
+	private int executeQuery(NimrodAPI api, Namespace args, PrintStream out, PrintStream err) throws NimrodException {
 		Resource n = api.getResource(args.get("resource_name"));
 
 		if(n == null) {
@@ -180,7 +179,7 @@ public class ResourceCmd extends NimrodCLICommand {
 		Json.createWriterFactory(ops).createWriter(ps).write(json);
 	}
 
-	private int executeAssign(NimrodAPI api, Namespace args, PrintStream out, PrintStream err) throws NimrodAPIException {
+	private int executeAssign(NimrodAPI api, Namespace args, PrintStream out, PrintStream err) throws NimrodException {
 		String expName = args.getString("exp_name");
 
 		Experiment exp = api.getExperiment(expName);
@@ -206,7 +205,7 @@ public class ResourceCmd extends NimrodCLICommand {
 		return failed ? 1 : 0;
 	}
 
-	private int executeUnassign(NimrodAPI api, Namespace args, PrintStream out, PrintStream err) throws NimrodAPIException {
+	private int executeUnassign(NimrodAPI api, Namespace args, PrintStream out, PrintStream err) throws NimrodException {
 
 		String expName = args.getString("exp_name");
 		Experiment exp = api.getExperiment(expName);

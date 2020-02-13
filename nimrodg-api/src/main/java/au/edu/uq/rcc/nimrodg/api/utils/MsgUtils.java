@@ -35,7 +35,7 @@ import au.edu.uq.rcc.nimrodg.api.CopyCommand;
 import au.edu.uq.rcc.nimrodg.api.ExecCommand;
 import au.edu.uq.rcc.nimrodg.api.Job;
 import au.edu.uq.rcc.nimrodg.api.NetworkJob;
-import au.edu.uq.rcc.nimrodg.api.NimrodAPIException;
+import au.edu.uq.rcc.nimrodg.api.NimrodException;
 import au.edu.uq.rcc.nimrodg.api.OnErrorCommand;
 import au.edu.uq.rcc.nimrodg.api.RedirectCommand;
 import au.edu.uq.rcc.nimrodg.api.Experiment;
@@ -46,11 +46,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 public class MsgUtils {
 
-	public static NetworkJob resolveNonSubstitutionTask(UUID uuid, Task task, String token, URI txuri) throws NimrodAPIException {
+	public static NetworkJob resolveNonSubstitutionTask(UUID uuid, Task task, String token, URI txuri) throws NimrodException {
 		return new NetworkJob(uuid, -1, txuri.toString(), token, buildCommandList(task, new HashMap<>()), new HashMap<>());
 	}
 

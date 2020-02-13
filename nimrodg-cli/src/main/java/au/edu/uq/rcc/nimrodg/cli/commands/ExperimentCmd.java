@@ -23,7 +23,7 @@ public class ExperimentCmd extends NimrodCLICommand {
     }
 
     @Override
-    public int execute(Namespace args, UserConfig config, NimrodAPI nimrod, PrintStream out, PrintStream err, Path[] configDirs) throws IOException, NimrodAPIException {
+    public int execute(Namespace args, UserConfig config, NimrodAPI nimrod, PrintStream out, PrintStream err, Path[] configDirs) throws IOException, NimrodException {
         switch(args.getString("operation")) {
             case "add":
                 return executeAdd(args, config, nimrod, out, err, configDirs);
@@ -33,7 +33,7 @@ public class ExperimentCmd extends NimrodCLICommand {
         return 0;
     }
 
-    private int executeAdd(Namespace args, UserConfig config, NimrodAPI nimrod, PrintStream out, PrintStream err, Path[] configDirs) throws IOException, NimrodAPIException {
+    private int executeAdd(Namespace args, UserConfig config, NimrodAPI nimrod, PrintStream out, PrintStream err, Path[] configDirs) throws IOException, NimrodException {
         String expName = args.getString("exp_name");
         String runFile = args.getString("planfile");
 
@@ -55,7 +55,7 @@ public class ExperimentCmd extends NimrodCLICommand {
         try {
             rf = b.build();
         } catch(RunBuilder.RunfileBuildException e) {
-            throw new NimrodAPIException(e);
+            throw new NimrodException(e);
         }
 
         /* Now add it */
@@ -69,7 +69,7 @@ public class ExperimentCmd extends NimrodCLICommand {
         return 0;
     }
 
-    private int executeDelete(Namespace args, UserConfig config, NimrodAPI nimrod, PrintStream out, PrintStream err, Path[] configDirs) throws IOException, NimrodAPIException {
+    private int executeDelete(Namespace args, UserConfig config, NimrodAPI nimrod, PrintStream out, PrintStream err, Path[] configDirs) throws IOException, NimrodException {
         String expName = args.getString("exp_name");
 
         Experiment exp = nimrod.getExperiment(expName);

@@ -20,7 +20,7 @@
 package au.edu.uq.rcc.nimrodg.cli;
 
 import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
-import au.edu.uq.rcc.nimrodg.api.NimrodAPIException;
+import au.edu.uq.rcc.nimrodg.api.NimrodException;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPIFactory;
 import au.edu.uq.rcc.nimrodg.setup.UserConfig;
 import java.io.IOException;
@@ -44,7 +44,7 @@ public abstract class NimrodCLICommand extends DefaultCLICommand {
 		}
 	}
 
-	public abstract int execute(Namespace args, UserConfig config, NimrodAPI nimrod, PrintStream out, PrintStream err, Path[] configDirs) throws IOException, NimrodAPIException;
+	public abstract int execute(Namespace args, UserConfig config, NimrodAPI nimrod, PrintStream out, PrintStream err, Path[] configDirs) throws IOException, NimrodException;
 
 	public static NimrodAPIFactory createFactory(UserConfig config) throws ReflectiveOperationException {
 		return createFactory(config.factory());

@@ -22,15 +22,14 @@ package au.edu.uq.rcc.nimrodg.impl.sqlite3;
 import au.edu.uq.rcc.nimrodg.agent.Agent;
 import au.edu.uq.rcc.nimrodg.agent.AgentState;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
-import au.edu.uq.rcc.nimrodg.api.NimrodAPIException;
+import au.edu.uq.rcc.nimrodg.api.NimrodException;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.impl.base.db.DBBaseHelper;
 import au.edu.uq.rcc.nimrodg.impl.base.db.DBUtils;
 import au.edu.uq.rcc.nimrodg.impl.base.db.TempAgent;
 import au.edu.uq.rcc.nimrodg.impl.base.db.TempResource;
 import au.edu.uq.rcc.nimrodg.impl.base.db.TempResourceType;
-import java.net.URI;
-import java.net.URISyntaxException;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -156,7 +155,7 @@ public class DBResourceHelpers extends DBBaseHelper {
 
 		Optional<TempResourceType> _type = getResourceTypeInfo(type);
 		if(!_type.isPresent()) {
-			throw new NimrodAPIException("No such type '%s'", type);
+			throw new NimrodException("No such type '%s'", type);
 		}
 
 		qAddResource.setString(1, name);

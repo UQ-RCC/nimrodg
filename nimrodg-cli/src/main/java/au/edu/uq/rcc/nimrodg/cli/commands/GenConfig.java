@@ -19,7 +19,7 @@
  */
 package au.edu.uq.rcc.nimrodg.cli.commands;
 
-import au.edu.uq.rcc.nimrodg.api.NimrodAPIException;
+import au.edu.uq.rcc.nimrodg.api.NimrodException;
 import au.edu.uq.rcc.nimrodg.cli.CLICommand;
 import au.edu.uq.rcc.nimrodg.cli.CommandEntry;
 import au.edu.uq.rcc.nimrodg.cli.NimrodCLI;
@@ -42,7 +42,7 @@ public class GenConfig implements CLICommand {
 	}
 
 	@Override
-	public int execute(Namespace args, PrintStream out, PrintStream err, Path[] configDirs) throws IOException, NimrodAPIException {
+	public int execute(Namespace args, PrintStream out, PrintStream err, Path[] configDirs) throws IOException, NimrodException {
 		Path config = Paths.get(args.getString("config"));
 
 		byte[] rawCfg;

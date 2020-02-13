@@ -21,13 +21,13 @@ package au.edu.uq.rcc.nimrodg.test;
 
 import au.edu.uq.rcc.nimrodg.agent.AgentState;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentHello;
-import au.edu.uq.rcc.nimrodg.api.NimrodAPIException;
+import au.edu.uq.rcc.nimrodg.api.NimrodException;
 import au.edu.uq.rcc.nimrodg.api.Actuator;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import au.edu.uq.rcc.nimrodg.api.NimrodMasterAPI;
+
 import au.edu.uq.rcc.nimrodg.api.Resource;
 import java.util.Arrays;
 
@@ -46,7 +46,7 @@ public class DummyActuator implements Actuator {
 	}
 
 	@Override
-	public Resource getResource() throws NimrodAPIException {
+	public Resource getResource() throws NimrodException {
 		return resource;
 	}
 

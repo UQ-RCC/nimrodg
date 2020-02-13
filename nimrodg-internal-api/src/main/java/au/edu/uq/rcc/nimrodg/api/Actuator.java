@@ -52,7 +52,7 @@ public interface Actuator extends AutoCloseable {
 		int getAgentCount(Resource res);
 	}
 
-	public Resource getResource() throws NimrodAPIException;
+	public Resource getResource() throws NimrodException;
 
 	public static class LaunchResult {
 

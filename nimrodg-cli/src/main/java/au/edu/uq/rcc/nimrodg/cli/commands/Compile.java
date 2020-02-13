@@ -19,7 +19,7 @@
  */
 package au.edu.uq.rcc.nimrodg.cli.commands;
 
-import au.edu.uq.rcc.nimrodg.api.NimrodAPIException;
+import au.edu.uq.rcc.nimrodg.api.NimrodException;
 import au.edu.uq.rcc.nimrodg.api.NimrodParseAPI;
 import au.edu.uq.rcc.nimrodg.api.PlanfileParseException;
 import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledRun;
@@ -44,7 +44,7 @@ public class Compile implements CLICommand {
 	}
 
 	@Override
-	public int execute(Namespace args, PrintStream out, PrintStream err, Path[] configDirs) throws IOException, NimrodAPIException {
+	public int execute(Namespace args, PrintStream out, PrintStream err, Path[] configDirs) throws IOException, NimrodException {
 		String runFile = args.getString("planfile");
 
 		NimrodParseAPI parseApi = ANTLR4ParseAPIImpl.INSTANCE;
@@ -65,7 +65,7 @@ public class Compile implements CLICommand {
 		try {
 			rf = b.build();
 		} catch(RunBuilder.RunfileBuildException e) {
-			throw new NimrodAPIException(e);
+			throw new NimrodException(e);
 		}
 
 		err.printf("Successfully compiled planfile:\n");

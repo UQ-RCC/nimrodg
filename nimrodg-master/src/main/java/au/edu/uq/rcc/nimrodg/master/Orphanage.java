@@ -2,9 +2,8 @@ package au.edu.uq.rcc.nimrodg.master;
 
 import au.edu.uq.rcc.nimrodg.agent.AgentState;
 import au.edu.uq.rcc.nimrodg.api.Actuator;
-import au.edu.uq.rcc.nimrodg.api.NimrodAPIException;
+import au.edu.uq.rcc.nimrodg.api.NimrodException;
 import au.edu.uq.rcc.nimrodg.api.Resource;
-import au.edu.uq.rcc.nimrodg.api.ResourceFullException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.UUID;
@@ -25,14 +24,14 @@ public final class Orphanage implements Actuator {
 	}
 
 	@Override
-	public Resource getResource() throws NimrodAPIException {
+	public Resource getResource() throws NimrodException {
 		return resource;
 	}
 
 	@Override
 	public LaunchResult[] launchAgents(UUID[] uuids) {
 		LaunchResult[] lrs = new LaunchResult[uuids.length];
-		Arrays.fill(lrs, new LaunchResult(null, new ResourceFullException(resource)));
+		Arrays.fill(lrs, new LaunchResult(null, new NimrodException.ResourceFull(resource)));
 		return lrs;
 	}
 

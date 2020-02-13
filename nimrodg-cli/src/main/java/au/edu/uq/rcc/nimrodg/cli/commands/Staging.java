@@ -24,7 +24,7 @@ import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.Job;
 import au.edu.uq.rcc.nimrodg.api.JobAttempt;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
-import au.edu.uq.rcc.nimrodg.api.NimrodAPIException;
+import au.edu.uq.rcc.nimrodg.api.NimrodException;
 import au.edu.uq.rcc.nimrodg.api.NimrodMasterAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodParseAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
@@ -112,8 +112,8 @@ public class Staging extends DefaultCLICommand {
 			return 1;
 		} catch(InvocationTargetException e) {
 			Throwable t = e.getTargetException();
-			if(t instanceof NimrodAPIException) {
-				throw (NimrodAPIException)t;
+			if(t instanceof NimrodException) {
+				throw (NimrodException)t;
 			} else if(t instanceof IOException) {
 				throw (IOException)t;
 			} else if(t instanceof RuntimeException) {

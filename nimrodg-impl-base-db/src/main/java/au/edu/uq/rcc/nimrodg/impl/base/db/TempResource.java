@@ -19,7 +19,7 @@
  */
 package au.edu.uq.rcc.nimrodg.impl.base.db;
 
-import au.edu.uq.rcc.nimrodg.api.NimrodAPIException;
+import au.edu.uq.rcc.nimrodg.api.NimrodException;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.api.ResourceType;
 import javax.json.JsonObject;
@@ -80,7 +80,7 @@ public class TempResource {
 			try {
 				return DBUtils.createType(typeClass);
 			} catch(ReflectiveOperationException ex) {
-				throw new NimrodAPIException(ex);
+				throw new NimrodException(ex);
 			}
 		}
 

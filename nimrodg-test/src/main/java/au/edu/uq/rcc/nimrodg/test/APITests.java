@@ -32,7 +32,7 @@ import au.edu.uq.rcc.nimrodg.api.Job;
 import au.edu.uq.rcc.nimrodg.api.JobAttempt;
 import au.edu.uq.rcc.nimrodg.api.NetworkJob;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
-import au.edu.uq.rcc.nimrodg.api.NimrodAPIException;
+import au.edu.uq.rcc.nimrodg.api.NimrodException;
 import au.edu.uq.rcc.nimrodg.api.NimrodMasterAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.api.PlanfileParseException;
@@ -94,7 +94,7 @@ public abstract class APITests {
 	}
 
 	@Test
-	public void experimentEnumerationTest() throws NimrodAPIException, IOException, RunBuilder.RunfileBuildException, SubstitutionException, PlanfileParseException {
+	public void experimentEnumerationTest() throws NimrodException, IOException, RunBuilder.RunfileBuildException, SubstitutionException, PlanfileParseException {
 		NimrodAPI api = getNimrod();
 		Experiment exp1 = api.addExperiment("test1", TestUtils.getSampleExperiment());
 		Experiment exp2 = api.addExperiment("test2", TestUtils.getSampleExperiment());
@@ -106,7 +106,7 @@ public abstract class APITests {
 	}
 
 	@Test
-	public void basicTests() throws NimrodAPIException, IOException, RunBuilder.RunfileBuildException, SubstitutionException, PlanfileParseException {
+	public void basicTests() throws NimrodException, IOException, RunBuilder.RunfileBuildException, SubstitutionException, PlanfileParseException {
 		NimrodAPI api = getNimrod();
 		Experiment exp = api.addExperiment("test1", TestUtils.getSampleExperiment());
 
@@ -404,7 +404,7 @@ public abstract class APITests {
 	}
 
 	@Test
-	public void complexResourceAssignmentTest() throws NimrodAPIException, IOException, RunBuilder.RunfileBuildException, SubstitutionException, PlanfileParseException {
+	public void complexResourceAssignmentTest() throws NimrodException, IOException, RunBuilder.RunfileBuildException, SubstitutionException, PlanfileParseException {
 		NimrodAPI api = getNimrod();
 		TestUtils.createSampleResources(api);
 
@@ -451,7 +451,7 @@ public abstract class APITests {
 	}
 
 	@Test
-	public void testCapabilityTest() throws NimrodAPIException, IOException, RunBuilder.RunfileBuildException, SubstitutionException, PlanfileParseException {
+	public void testCapabilityTest() throws NimrodException, IOException, RunBuilder.RunfileBuildException, SubstitutionException, PlanfileParseException {
 		NimrodAPI api = getNimrod();
 		TestUtils.createSampleResources(api);
 
