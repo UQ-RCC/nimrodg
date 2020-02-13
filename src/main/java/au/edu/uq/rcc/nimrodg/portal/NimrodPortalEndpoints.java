@@ -23,6 +23,7 @@ import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.Job;
 import au.edu.uq.rcc.nimrodg.api.JobAttempt;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
+import au.edu.uq.rcc.nimrodg.api.NimrodException;
 import au.edu.uq.rcc.nimrodg.api.PlanfileParseException;
 import au.edu.uq.rcc.nimrodg.api.Resource;
 import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledRun;
@@ -112,7 +113,6 @@ public class NimrodPortalEndpoints {
 
 	private final Jinjava jinJava;
 	private final String nimrodIniTemplate;
-	private final String setupIniTemplate;
 
 	@Autowired
 	private JdbcTemplate jdbc;
@@ -144,12 +144,6 @@ public class NimrodPortalEndpoints {
 
 		try(InputStream is = NimrodPortalEndpoints.class.getResourceAsStream("nimrod.ini.j2")) {
 			nimrodIniTemplate = new String(is.readAllBytes(), StandardCharsets.UTF_8);
-		} catch(IOException e) {
-			throw new UncheckedIOException(e);
-		}
-
-		try(InputStream is = NimrodPortalEndpoints.class.getResourceAsStream("nimrod-setup.ini.j2")) {
-			setupIniTemplate = new String(is.readAllBytes(), StandardCharsets.UTF_8);
 		} catch(IOException e) {
 			throw new UncheckedIOException(e);
 		}
@@ -193,13 +187,11 @@ public class NimrodPortalEndpoints {
 			}
 		}
 
-		/* Template the config files out to the HPC */
+		/* Template the config file out to the HPC */
 		ResponseEntity<String> jo;
 		try {
 			jo = resource.executeJob("setuserconfiguration", Map.of(
-					"config", jinJava.render(nimrodIniTemplate, userState.vars),
-					"setup_config", jinJava.render(setupIniTemplate, userState.vars),
-					"initialise", "0"
+					"config", jinJava.render(nimrodIniTemplate, userState.vars)
 			));
 		} catch(HttpStatusCodeException e) {
 			/* If we 401, pass that back to the user so they can refresh the token. */
@@ -228,46 +220,7 @@ public class NimrodPortalEndpoints {
 
 		try(NimrodAPI nimrod = createNimrod(userState.username)) {
 			for(Experiment exp : nimrod.getExperiments()) {
-				ArrayNode vars = objectMapper.createArrayNode();
-				exp.getVariables().forEach(vars::add);
-
-				ObjectNode on = objectMapper.createObjectNode()
-						.put("name", exp.getName())
-						.put("state", exp.getState().toString())
-						.put("working_directory", exp.getWorkingDirectory())
-						.put("creation_time", exp.getCreationTime().toString())
-						.put("token", exp.getToken())
-						.put("is_persistent", exp.isPersistent())
-						.put("is_active", exp.isActive());
-
-				on.set("variables", vars);
-				on.set("tasks", javaxJsonToJackson(JsonUtils.toJson(exp.getTasks().values())));
-
-				Collection<Job> jobs = exp.filterJobs(EnumSet.allOf(JobAttempt.Status.class), 0, -1);
-				int nComplete = 0, nFailed = 0, nPending = 0, nRunning = 0;
-				for(Job j : jobs) {
-					switch(j.getStatus()) {
-						case COMPLETED:
-							++nComplete;
-							break;
-						case RUNNING:
-							++nRunning;
-							break;
-						case FAILED:
-							++nFailed;
-							break;
-						case NOT_RUN:
-							++nPending;
-							break;
-					}
-				}
-				on.put("total_jobs", jobs.size());
-				on.put("completed_jobs", nComplete);
-				on.put("running_jobs", nRunning);
-				on.put("failed_jobs", nFailed);
-				on.put("pending_jobs", nPending);
-
-				exps.add(on);
+				exps.add(toJson(exp));
 			}
 		} catch(Exception e) {
 			LOGGER.error(String.format("Unable to query experiments for user %s", userState.username), e);
@@ -275,6 +228,69 @@ public class NimrodPortalEndpoints {
 		}
 
 		return ResponseEntity.status(HttpStatus.OK).body(exps);
+	}
+
+	@RequestMapping(method = RequestMethod.POST, value = "/api/experiments")
+	@ResponseBody
+	public ResponseEntity<JsonNode> addExperiments(JwtAuthenticationToken jwt, @RequestBody AddExperiment addExperiment) {
+		UserState userState = getUserState(jwt);
+
+		ArrayNode errors = objectMapper.createArrayNode();
+		ObjectNode response = objectMapper.createObjectNode();
+		response.set("result", objectMapper.nullNode());
+		response.set("errors", errors);
+
+		RunBuilder rb;
+		try {
+			rb = ANTLR4ParseAPIImpl.INSTANCE.parseRunToBuilder(addExperiment.planfile);
+		} catch(PlanfileParseException ex) {
+			for(PlanfileParseException.ParseError e : ex.getErrors()) {
+				errors.add(objectMapper.createObjectNode()
+						.put("line", e.line)
+						.put("position", e.position)
+						.put("message", e.message)
+				);
+			}
+
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+		}
+
+		CompiledRun rf;
+		try {
+			rf = rb.build();
+		} catch(RunBuilder.RunfileBuildException e) {
+			errors.add(objectMapper.createObjectNode()
+					.put("line", -1)
+					.put("position", -1)
+					.put("message", e.getMessage())
+			);
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+		}
+
+
+		try(NimrodAPI nimrod = createNimrod(userState.username)) {
+			Experiment exp = nimrod.getExperiment(addExperiment.name);
+			if(exp != null) {
+				return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+			}
+
+			/* NB: Insert this before the actual experiment. */
+			jdbc.update("INSERT INTO public.portal_planfiles(user_id, exp_name, planfile) VALUES(?, ?, ?) ON CONFLICT(user_id, exp_name) DO UPDATE SET planfile=EXCLUDED.planfile",
+					userState.id,
+					addExperiment.name,
+					addExperiment.planfile
+			);
+
+			exp = nimrod.addExperiment(addExperiment.name, rf);
+			response.set("result", toJson(exp));
+		} catch(NimrodException.ExperimentExists e) {
+			return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+		} catch(Exception e) {
+			LOGGER.error(String.format("Unable to add experiment %s for user %s", addExperiment.name, userState.username), e);
+			return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+		}
+
+		return ResponseEntity.status(HttpStatus.OK).body(response);
 	}
 
 	@RequestMapping(method = {RequestMethod.GET}, value = "/api/compile")
@@ -350,7 +366,20 @@ public class NimrodPortalEndpoints {
 				return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
 			}
 
-			return ResponseEntity.status(HttpStatus.OK).body(toJson(exp));
+			ObjectNode jExp = toJson(exp);
+
+			SqlRowSet rs = jdbc.queryForRowSet("SELECT planfile FROM public.portal_planfiles WHERE user_id = ? AND exp_name = ?",
+					userState.id,
+					expName
+			);
+			if(rs.next()) {
+				jExp.put("planfile", rs.getString("planfile"));
+			} else {
+				jExp.put("planfile", "");
+			}
+
+
+			return ResponseEntity.status(HttpStatus.OK).body(jExp);
 
 		} catch(Exception e) {
 			LOGGER.error(String.format("Unable to get experiment %s for user %s", expName, userState.username), e);
@@ -503,7 +532,7 @@ public class NimrodPortalEndpoints {
 	}
 
 	private UserState getUserState(String username) throws ResponseStatusException {
-		SqlRowSet rs = jdbc.queryForRowSet("SELECT pg_password, amqp_password, initialised FROM public.portal_create_user(?)", username);
+		SqlRowSet rs = jdbc.queryForRowSet("SELECT id, pg_password, amqp_password, initialised FROM public.portal_create_user(?)", username);
 		if(!rs.next()) {
 			/* Hopefully, should never happen. */
 			LOGGER.error("portal_create_user({}) returned no rows.", username);
@@ -528,6 +557,7 @@ public class NimrodPortalEndpoints {
 		vars.put("amqp_url", amqpUrl);
 
 		return new UserState(
+				rs.getLong("id"),
 				username,
 				username,
 				rs.getString("pg_password"),

@@ -27,7 +27,38 @@ nimrod:
       #amqp_routing_key:
       #jdbc_url:
       #amqp_url:
-
+  home: /usr/share/nimrod
+  setup:
+    workdir: /home/{username}/.config/nimrod-portal
+    storedir: ${nimrod.setup.workdir}/experiments
+    amqp:
+      uri: amqps://{amqp_username}:{amqp_password}@{amqp_host}/{amqp_username}
+      routing_key: nimrod-portal
+      cert: /etc/ssl/certs/ca-bundle.crt
+      no_verify_peer: false
+      no_verify_host: false
+    transfer:
+      uri: file:///30days/{username}/
+      cert: /etc/ssl/certs/ca-bundle.crt
+      no_verify_peer: false
+      no_verify_host: false
+    agents:
+      x86_64-pc-linux-musl: ${nimrod.home}/agents/agent-x86_64-pc-linux-musl
+    agentmap:
+      Linux:
+        x86_64: x86_64-pc-linux-musl
+    resource_types:
+      hpc: au.edu.uq.rcc.nimrodg.resource.HPCResourceType
+    properties:
+      nimrod.sched.default.launch_penalty: -10
+      nimrod.sched.default.spawn_cap: 10
+      nimrod.sched.default.job_buf_size: 1000
+      nimrod.sched.default.job_buf_refill_threshold: 100
+      nimrod.master.heart.expiry_retry_interval: 5
+      nimrod.master.heart.expiry_retry_count: 5
+      nimrod.master.heart.interval: 0
+      nimrod.master.heart.missed_threshold: 3
+      nimrod.master.amqp.tls_protocol: TLSv1.2
 spring:
   datasource:
     url: jdbc:postgresql://db.example.com:5432/nimrod_portal

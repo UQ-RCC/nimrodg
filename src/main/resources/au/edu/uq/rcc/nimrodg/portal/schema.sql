@@ -22,6 +22,12 @@
 --DROP DATABASE IF EXISTS nimrod_portal;
 --CREATE DATABASE nimrod_portal;
 
+
+DROP DOMAIN IF EXISTS public.nimrod_identifier CASCADE;
+CREATE DOMAIN public.nimrod_identifier AS TEXT CHECK (VALUE ~ '^[a-zA-Z0-9_]+$');
+
+
+
 CREATE TABLE IF NOT EXISTS public.portal_users(
     id				BIGSERIAL NOT NULL PRIMARY KEY,
     username		NAME NOT NULL UNIQUE,
@@ -84,3 +90,11 @@ BEGIN
     RETURN QUERY SELECT * FROM public.portal_user_status WHERE id = _user.id;
 END
 $$ LANGUAGE 'plpgsql';
+
+CREATE TABLE IF NOT EXISTS public.portal_planfiles(
+	id			BIGSERIAL NOT NULL PRIMARY KEY,
+	user_id		BIGINT NOT NULL REFERENCES public.portal_users(id) ON DELETE CASCADE,
+	exp_name	public.nimrod_identifier NOT NULL,
+	planfile	TEXT NOT NULL,
+	UNIQUE(user_id, exp_name)
+);
