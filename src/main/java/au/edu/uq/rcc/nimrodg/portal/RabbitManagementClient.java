@@ -25,6 +25,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestOperations;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -63,7 +64,11 @@ public class RabbitManagementClient {
 				.pathSegment("api", "users", username)
 				.build(new Object[0]);
 
-		return rabbitRest.exchange(uri, HttpMethod.PUT, new HttpEntity<>(payload, headers), Void.class);
+		try {
+			return rabbitRest.exchange(uri, HttpMethod.PUT, new HttpEntity<>(payload, headers), Void.class);
+		} catch(HttpStatusCodeException e) {
+			return ResponseEntity.status(e.getStatusCode()).build();
+		}
 	}
 
 	public ResponseEntity<Void> addVHost(String vhost) {
@@ -75,7 +80,11 @@ public class RabbitManagementClient {
 				.pathSegment("api", "vhosts", vhost)
 				.build(new Object[0]);
 
-		return rabbitRest.exchange(uri, HttpMethod.PUT, new HttpEntity<>(headers), Void.class);
+		try {
+			return rabbitRest.exchange(uri, HttpMethod.PUT, new HttpEntity<>(headers), Void.class);
+		} catch(HttpStatusCodeException e) {
+			return ResponseEntity.status(e.getStatusCode()).build();
+		}
 	}
 
 	public ResponseEntity<Void> addPermissions(String vhost, String username, String configure, String read, String write) {
@@ -93,6 +102,10 @@ public class RabbitManagementClient {
 				.pathSegment("api", "permissions", vhost, username)
 				.build(new Object[0]);
 
-		return rabbitRest.exchange(uri, HttpMethod.PUT, new HttpEntity<>(payload, headers), Void.class);
+		try {
+			return rabbitRest.exchange(uri, HttpMethod.PUT, new HttpEntity<>(payload, headers), Void.class);
+		} catch(HttpStatusCodeException e) {
+			return ResponseEntity.status(e.getStatusCode()).build();
+		}
 	}
 }

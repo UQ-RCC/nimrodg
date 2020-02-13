@@ -164,55 +164,56 @@ public class NimrodPortalEndpoints {
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
 		}
 
-//		try {
-//			HttpStatus code = rabbit.addUser(userState.amqpUser, userState.amqpPass).getStatusCode();
-//			if(!HttpStatus.CREATED.equals(code) && !HttpStatus.NO_CONTENT.equals(code)) {
-//				return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
-//			}
-//
-//			code = rabbit.addVHost(userState.amqpUser).getStatusCode();
-//			if(!HttpStatus.CREATED.equals(code) && !HttpStatus.NO_CONTENT.equals(code)) {
-//				return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
-//			}
-//
-//			code = rabbit.addPermissions(userState.amqpUser, userState.amqpUser, ".*", ".*", ".*").getStatusCode();
-//			if(!HttpStatus.CREATED.equals(code) && !HttpStatus.NO_CONTENT.equals(code)) {
-//				return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
-//			}
-//		} catch(HttpStatusCodeException e) {
-//			//TODO: Log
-//			return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
-//		}
-
-		// TODO: Change this to use NimrodSetupAPI
-		try(NimrodSetupAPI setup = createNimrodSetup(userState.username)) {
-			SetupConfigBuilder b = setupConfig.toBuilder(userState.vars);
-			setup.reset();
-			setup.setup(b.build());
-		} catch(Exception e) {
-			//TODO: Log
+		HttpStatus code = rabbit.addUser(userState.amqpUser, userState.amqpPass).getStatusCode();
+		if(!HttpStatus.CREATED.equals(code) && !HttpStatus.NO_CONTENT.equals(code)) {
+			LOGGER.error("Unable to add RabbitMQ user {}, status = {}", userState.username, code);
 			return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
 		}
-//		ResponseEntity<String> jo;
-//		try {
-//			jo = resource.executeJob("setuserconfiguration", Map.of(
-//					"config", jinJava.render(nimrodIniTemplate, userState.vars),
-//					"setup_config", jinJava.render(setupIniTemplate, userState.vars),
-//					"initialise", userState.initialised ? "0" : "1"
-//			));
-//		} catch(HttpStatusCodeException e) {
-//			/* If we 401, pass that back to the user so they can refresh the token. */
-//			if(e.getStatusCode() == org.springframework.http.HttpStatus.FORBIDDEN) {
-//				return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-//			}
-//
-//			return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
-//		}
-//
-//		if(!HttpStatus.OK.equals(jo.getStatusCode())) {
-//			// TODO: log
-//			return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
-//		}
+
+		code = rabbit.addVHost(userState.amqpUser).getStatusCode();
+		if(!HttpStatus.CREATED.equals(code) && !HttpStatus.NO_CONTENT.equals(code)) {
+			LOGGER.error("Unable to add RabbitMQ vhost {}, status = {}", userState.username, code);
+			return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+		}
+
+		code = rabbit.addPermissions(userState.amqpUser, userState.amqpUser, ".*", ".*", ".*").getStatusCode();
+		if(!HttpStatus.CREATED.equals(code) && !HttpStatus.NO_CONTENT.equals(code)) {
+			LOGGER.error("Unable to set RabbitMQ user {} permissions on vhost {}, status = {}", userState.username, userState.username, code);
+			return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+		}
+
+		if(!userState.initialised) {
+			try(NimrodSetupAPI setup = createNimrodSetup(userState.username)) {
+				SetupConfigBuilder b = setupConfig.toBuilder(userState.vars);
+				setup.reset();
+				setup.setup(b.build());
+			} catch(Exception e) {
+				LOGGER.error(String.format("Unable to initialise Nimrod tables for user %s", userState.username), e);
+				return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+			}
+		}
+
+		/* Template the config files out to the HPC */
+		ResponseEntity<String> jo;
+		try {
+			jo = resource.executeJob("setuserconfiguration", Map.of(
+					"config", jinJava.render(nimrodIniTemplate, userState.vars),
+					"setup_config", jinJava.render(setupIniTemplate, userState.vars),
+					"initialise", "0"
+			));
+		} catch(HttpStatusCodeException e) {
+			/* If we 401, pass that back to the user so they can refresh the token. */
+			if(e.getStatusCode() == org.springframework.http.HttpStatus.FORBIDDEN) {
+				return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+			}
+
+			return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+		}
+
+		if(!HttpStatus.OK.equals(jo.getStatusCode())) {
+			LOGGER.error("Unable to write Nimrod configuration for user {}, status = {}", userState.username, jo.getStatusCode());
+			return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+		}
 
 		return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
 	}
@@ -269,7 +270,7 @@ public class NimrodPortalEndpoints {
 				exps.add(on);
 			}
 		} catch(Exception e) {
-			//TODO: Log
+			LOGGER.error(String.format("Unable to query experiments for user %s", userState.username), e);
 			return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
 		}
 
@@ -333,7 +334,7 @@ public class NimrodPortalEndpoints {
 		try(NimrodAPI nimrod = createNimrod(userState.username)) {
 			return ResponseEntity.status(HttpStatus.OK).body(toJson(nimrod.getResources()));
 		} catch(Exception e) {
-			//TODO: Log
+			LOGGER.error(String.format("Unable to query resources for user %s", userState.username), e);
 			return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
 		}
 	}
@@ -352,7 +353,7 @@ public class NimrodPortalEndpoints {
 			return ResponseEntity.status(HttpStatus.OK).body(toJson(exp));
 
 		} catch(Exception e) {
-			//TODO: Log
+			LOGGER.error(String.format("Unable to get experiment %s for user %s", expName, userState.username), e);
 			return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
 		}
 	}
@@ -378,7 +379,7 @@ public class NimrodPortalEndpoints {
 			return ResponseEntity.status(HttpStatus.OK).body(arr);
 
 		} catch(Exception e) {
-			//TODO: Log
+			LOGGER.error(String.format("Unable to query assignments of experiment %s for user %s", expName, userState.username), e);
 			return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
 		}
 	}
@@ -403,9 +404,8 @@ public class NimrodPortalEndpoints {
 					.forEach(r -> nimrod.assignResource(r, exp));
 
 			return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
-
 		} catch(Exception e) {
-			//TODO: Log
+			LOGGER.error(String.format("Unable to set assignments of experiment %s for user %s", expName, userState.username), e);
 			return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
 		}
 	}
