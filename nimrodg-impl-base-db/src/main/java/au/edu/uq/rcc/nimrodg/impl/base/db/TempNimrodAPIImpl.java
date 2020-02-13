@@ -88,32 +88,12 @@ public abstract class TempNimrodAPIImpl implements NimrodAPI, NimrodMasterAPI, N
 			throw new NimrodException.ExperimentExists(name);
 		}
 
-		/* FIXME: I feel that this shouldn't be here. */
-		Path rootStore = Paths.get(this.getConfig().getRootStore());
-		Path workDir = rootStore.resolve(name);
-
-		try {
-			if(Files.exists(workDir)) {
-				NimrodUtils.deltree(workDir);
-			}
-
-			Files.createDirectories(workDir);
-		} catch(IOException e) {
-			throw new UncheckedIOException(e);
-		}
-
 		return db.runSQLTransaction(() -> db.addExperiment(name, name, null, ce));
 	}
 
 	@Override
-	public void deleteExperiment(Experiment _exp) throws IOException {
-		TempExperiment.Impl exp = validateExperiment(_exp);
-
-		/* FIXME: This shouldn't be here. */
-		Path workDir = Paths.get(getConfig().getRootStore()).resolve(exp.getWorkingDirectory());
-		NimrodUtils.deltree(workDir);
-
-		db.runSQL(() -> db.deleteExperiment(exp.base.id));
+	public void deleteExperiment(Experiment _exp) {
+		db.runSQL(() -> db.deleteExperiment(validateExperiment(_exp).base.id));
 	}
 
 	@Override

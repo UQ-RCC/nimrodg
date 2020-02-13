@@ -1,6 +1,7 @@
 package au.edu.uq.rcc.nimrodg.cli.commands;
 
 import au.edu.uq.rcc.nimrodg.api.*;
+import au.edu.uq.rcc.nimrodg.api.utils.NimrodUtils;
 import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledRun;
 import au.edu.uq.rcc.nimrodg.api.utils.run.RunBuilder;
 import au.edu.uq.rcc.nimrodg.cli.CommandEntry;
@@ -13,6 +14,8 @@ import net.sourceforge.argparse4j.inf.Subparsers;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -65,7 +68,22 @@ public class ExperimentCmd extends NimrodCLICommand {
             return 1;
         }
 
+        /* FIXME: I feel that this shouldn't be here. */
+        Path rootStore = Paths.get(nimrod.getConfig().getRootStore());
+        Path workDir = rootStore.resolve(expName);
+
+        try {
+            if(Files.exists(workDir)) {
+                NimrodUtils.deltree(workDir);
+            }
+
+            Files.createDirectories(workDir);
+        } catch(IOException e) {
+            throw new UncheckedIOException(e);
+        }
+
         nimrod.addExperiment(expName, rf);
+
         return 0;
     }
 
@@ -73,10 +91,15 @@ public class ExperimentCmd extends NimrodCLICommand {
         String expName = args.getString("exp_name");
 
         Experiment exp = nimrod.getExperiment(expName);
-        if(exp != null) {
-            nimrod.deleteExperiment(exp);
+        if(exp == null) {
+            return 0;
         }
 
+        /* FIXME: This shouldn't be here. */
+        Path workDir = Paths.get(nimrod.getConfig().getRootStore()).resolve(exp.getWorkingDirectory());
+        NimrodUtils.deltree(workDir);
+
+        nimrod.deleteExperiment(exp);
         return 0;
     }
 
