@@ -31,7 +31,7 @@ import javax.json.JsonStructure;
  */
 public interface NimrodAPI extends AgentProvider, AutoCloseable {
 
-	public final class APICaps {
+	final class APICaps {
 
 		/**
 		 * Does this API implementation support Master capabilities.
@@ -150,4 +150,7 @@ public interface NimrodAPI extends AgentProvider, AutoCloseable {
 	Collection<ResourceType> getResourceTypeInfo();
 
 	ResourceType getResourceTypeInfo(String name);
+
+	@Override
+	void close() throws NimrodException;
 }
