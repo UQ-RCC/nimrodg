@@ -28,6 +28,13 @@ import au.edu.uq.rcc.nimrodg.resource.act.ActuatorUtils;
 import au.edu.uq.rcc.nimrodg.resource.cluster.ClusterResourceType;
 import au.edu.uq.rcc.nimrodg.resource.cluster.HPCActuator;
 import com.hubspot.jinjava.Jinjava;
+import net.sourceforge.argparse4j.inf.ArgumentParser;
+import net.sourceforge.argparse4j.inf.Namespace;
+
+import javax.json.Json;
+import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
+import javax.json.JsonString;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
@@ -45,12 +52,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import javax.json.Json;
-import javax.json.JsonObject;
-import javax.json.JsonObjectBuilder;
-import javax.json.JsonString;
-import net.sourceforge.argparse4j.inf.ArgumentParser;
-import net.sourceforge.argparse4j.inf.Namespace;
 
 public class HPCResourceType extends ClusterResourceType {
 
@@ -111,7 +112,7 @@ public class HPCResourceType extends ClusterResourceType {
 		try {
 			jj.render(template, vars);
 		} catch(RuntimeException e) {
-			err.printf("Malformed template.\n");
+			err.print("Malformed template.\n");
 			e.printStackTrace(err);
 			return false;
 		}
@@ -148,7 +149,7 @@ public class HPCResourceType extends ClusterResourceType {
 		long walltime = StringUtils.parseWalltime(ns.getString("walltime"));
 
 		if(ncpus < 1 || mem < 1 || walltime < 1) {
-			err.printf("ncpus, mem, and walltime cannot be < 0.\n");
+			err.print("ncpus, mem, and walltime cannot be < 0.\n");
 			valid = false;
 		} else {
 			jb.add("ncpus", ncpus);
@@ -205,6 +206,21 @@ public class HPCResourceType extends ClusterResourceType {
 
 		public HPCConfig(HPCConfig cfg) {
 			this(cfg, cfg.ncpus, cfg.mem, cfg.walltime, cfg.account, cfg.queue, cfg.server, cfg.hpc);
+		}
+
+		@Override
+		protected JsonObjectBuilder toJsonBuilder() {
+			JsonObjectBuilder job = super.toJsonBuilder()
+					.add("definition", hpc.toJson())
+					.add("ncpus", ncpus)
+					.add("mem", mem)
+					.add("walltime", walltime);
+
+			account.ifPresent(a -> job.add("account", a));
+			queue.ifPresent(q -> job.add("queue", q));
+			server.ifPresent(s -> job.add("server", s));
+
+			return job;
 		}
 	}
 
@@ -303,8 +319,7 @@ public class HPCResourceType extends ClusterResourceType {
 		JsonObjectBuilder job = Json.createObjectBuilder(internalConfig);
 
 		{
-			List<Path> confDirs = new ArrayList<>();
-			confDirs.addAll(Arrays.asList(configDirs));
+			List<Path> confDirs = new ArrayList<>(Arrays.asList(configDirs));
 			Collections.reverse(confDirs);
 
 			for(Path p : confDirs) {
@@ -326,7 +341,7 @@ public class HPCResourceType extends ClusterResourceType {
 		}
 
 		return job.build().entrySet().stream().collect(Collectors.toMap(
-				e -> e.getKey(),
+				Map.Entry::getKey,
 				e -> {
 					try {
 						return parseHpcDef(e.getKey(), e.getValue().asJsonObject(), true);

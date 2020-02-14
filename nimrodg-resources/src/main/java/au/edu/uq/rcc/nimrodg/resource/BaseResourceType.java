@@ -71,10 +71,9 @@ public abstract class BaseResourceType implements MasterResourceType {
 	}
 
 	protected ArgumentParser createParseHeader() {
-		ArgumentParser argparser = ArgumentParsers.newArgumentParser(this.getName())
+		return ArgumentParsers.newArgumentParser(this.getName())
 				.defaultHelp(true)
 				.description(String.format("%s resource configuration", this.getDisplayName()));
-		return argparser;
 	}
 
 	protected void addArguments(ArgumentParser parser) {

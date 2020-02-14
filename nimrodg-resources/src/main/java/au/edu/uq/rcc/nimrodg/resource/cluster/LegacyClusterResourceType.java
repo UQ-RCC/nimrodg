@@ -122,5 +122,11 @@ public abstract class LegacyClusterResourceType extends ClusterResourceType {
 		public DialectConfig(DialectConfig cfg) {
 			this(cfg, cfg.dialect, cfg.batchConfig);
 		}
+
+		@Override
+		protected JsonObjectBuilder toJsonBuilder() {
+			return super.toJsonBuilder()
+					.add("batch_config", Json.createArrayBuilder(Arrays.asList(batchConfig)));
+		}
 	}
 }

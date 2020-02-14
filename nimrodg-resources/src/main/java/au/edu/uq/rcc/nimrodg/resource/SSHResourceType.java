@@ -37,6 +37,7 @@ import java.security.cert.Certificate;
 import java.util.ArrayList;
 import java.util.List;
 import javax.json.Json;
+import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonString;
@@ -354,6 +355,19 @@ public abstract class SSHResourceType extends BaseResourceType {
 
 		protected SSHConfig(SSHConfig cfg) {
 			this(cfg.agentInfo, cfg.transportFactory, cfg.transportConfig, cfg.forwardedEnvironment);
+		}
+
+		protected JsonObjectBuilder toJsonBuilder() {
+			JsonArrayBuilder jab = Json.createArrayBuilder();
+			forwardedEnvironment.forEach(jab::add);
+			return Json.createObjectBuilder()
+					.add("agent_platform", agentInfo.getPlatformString())
+					.add("transport", transportFactory.buildJsonConfiguration(transportConfig))
+					.add("forwarded_environment", jab);
+		}
+
+		public final JsonObject toJson() {
+			return toJsonBuilder().build();
 		}
 	}
 }

@@ -145,5 +145,13 @@ public abstract class ClusterResourceType extends SSHResourceType {
 		public ClusterConfig(ClusterConfig cfg) {
 			this(cfg, cfg.limit, cfg.tmpVar, cfg.submissionArgs, cfg.maxBatchSize);
 		}
+
+		@Override
+		protected JsonObjectBuilder toJsonBuilder() {
+			return super.toJsonBuilder()
+					.add("limit", limit)
+					.add("tmpvar", tmpVar)
+					.add("max_batch_size", maxBatchSize);
+		}
 	}
 }
