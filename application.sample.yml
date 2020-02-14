@@ -13,7 +13,6 @@ nimrod:
     api: https://resourceserver.example.com/resource/
     cacert: /etc/ssl/certs/ca-certificates.crt
   remote:
-    rabbit_uritemplate: amqps://{username}:{amqp_password}@{amqp_host}/{username}
     postgres_uritemplate: postgresql://{pg_host}/nimrod_portal?currentSchema={username}&ssl=true&sslmode=verify-ca&sslrootcert={ssl_cacert}
     vars:
       ssl_cacert: /etc/ssl/certs/ca-certificates.crt

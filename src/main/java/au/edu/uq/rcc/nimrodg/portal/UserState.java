@@ -14,11 +14,10 @@ public class UserState {
 	public final boolean initialised;
 
 	public final String jdbcUrl;
-	public final String amqpUrl;
 
 	public final Map<String, String> vars;
 
-	public UserState(long id, String username, String dbUser, String dbPass, String amqpUser, String amqpPass, boolean initialised, String jdbcUrl, String amqpUrl, Map<String, String> vars) {
+	public UserState(long id, String username, String dbUser, String dbPass, String amqpUser, String amqpPass, boolean initialised, String jdbcUrl, Map<String, String> vars) {
 		this.id = id;
 		this.username = username;
 		this.dbUser = dbUser;
@@ -27,7 +26,6 @@ public class UserState {
 		this.amqpPass = amqpPass;
 		this.initialised = initialised;
 		this.jdbcUrl = jdbcUrl;
-		this.amqpUrl = amqpUrl;
 		this.vars = Map.copyOf(vars);
 	}
 }

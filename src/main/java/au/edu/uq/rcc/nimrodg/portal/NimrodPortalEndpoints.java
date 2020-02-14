@@ -122,10 +122,6 @@ public class NimrodPortalEndpoints {
 	private UriBuilder postgresUriBuilder;
 
 	@Autowired
-	@Qualifier("rabbitbuilder")
-	private UriBuilder rabbitUriBuilder;
-
-	@Autowired
 	private RabbitManagementClient rabbit;
 
 	@Autowired
@@ -181,7 +177,7 @@ public class NimrodPortalEndpoints {
 				SetupConfigBuilder b = setupConfig.toBuilder(userState.vars);
 				setup.reset();
 				setup.setup(b.build());
-			} catch(Exception e) {
+			} catch(NimrodSetupAPI.SetupException|SQLException e) {
 				LOGGER.error(String.format("Unable to initialise Nimrod tables for user %s", userState.username), e);
 				return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
 			}
@@ -230,19 +226,10 @@ public class NimrodPortalEndpoints {
 		return ResponseEntity.status(HttpStatus.OK).body(exps);
 	}
 
-	@RequestMapping(method = RequestMethod.POST, value = "/api/experiments")
-	@ResponseBody
-	public ResponseEntity<JsonNode> addExperiments(JwtAuthenticationToken jwt, @RequestBody AddExperiment addExperiment) {
-		UserState userState = getUserState(jwt);
-
-		ArrayNode errors = objectMapper.createArrayNode();
-		ObjectNode response = objectMapper.createObjectNode();
-		response.set("result", objectMapper.nullNode());
-		response.set("errors", errors);
-
+	private CompiledRun asdfasd(String planfile, ArrayNode errors) {
 		RunBuilder rb;
 		try {
-			rb = ANTLR4ParseAPIImpl.INSTANCE.parseRunToBuilder(addExperiment.planfile);
+			rb = ANTLR4ParseAPIImpl.INSTANCE.parseRunToBuilder(planfile);
 		} catch(PlanfileParseException ex) {
 			for(PlanfileParseException.ParseError e : ex.getErrors()) {
 				errors.add(objectMapper.createObjectNode()
@@ -251,8 +238,7 @@ public class NimrodPortalEndpoints {
 						.put("message", e.message)
 				);
 			}
-
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+			return null;
 		}
 
 		CompiledRun rf;
@@ -264,14 +250,31 @@ public class NimrodPortalEndpoints {
 					.put("position", -1)
 					.put("message", e.getMessage())
 			);
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+			return null;
 		}
 
+		return rf;
+	}
+
+	@RequestMapping(method = RequestMethod.POST, value = "/api/experiments")
+	@ResponseBody
+	public ResponseEntity<JsonNode> addExperiments(JwtAuthenticationToken jwt, @RequestBody AddExperiment addExperiment) throws SQLException {
+		UserState userState = getUserState(jwt);
+
+		ArrayNode errors = objectMapper.createArrayNode();
+		ObjectNode response = objectMapper.createObjectNode();
+		response.set("result", objectMapper.nullNode());
+		response.set("errors", errors);
+
+		CompiledRun rf = asdfasd(addExperiment.planfile, errors);
+		if(rf == null) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+		}
 
 		try(NimrodAPI nimrod = createNimrod(userState.username)) {
 			Experiment exp = nimrod.getExperiment(addExperiment.name);
 			if(exp != null) {
-				return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+				return ResponseEntity.status(HttpStatus.CONFLICT).build();
 			}
 
 			/* NB: Insert this before the actual experiment. */
@@ -284,8 +287,8 @@ public class NimrodPortalEndpoints {
 			exp = nimrod.addExperiment(addExperiment.name, rf);
 			response.set("result", toJson(exp));
 		} catch(NimrodException.ExperimentExists e) {
-			return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
-		} catch(Exception e) {
+			return ResponseEntity.status(HttpStatus.CONFLICT).build();
+		} catch(SQLException e) {
 			LOGGER.error(String.format("Unable to add experiment %s for user %s", addExperiment.name, userState.username), e);
 			return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
 		}
@@ -293,44 +296,22 @@ public class NimrodPortalEndpoints {
 		return ResponseEntity.status(HttpStatus.OK).body(response);
 	}
 
-	@RequestMapping(method = {RequestMethod.GET}, value = "/api/compile")
+	@RequestMapping(method = RequestMethod.GET, value = "/api/compile")
 	@ResponseBody
 	public JsonNode compilePlanfile(HttpServletResponse httpResponse, @RequestParam(name = "planfile") String planfile) {
 		httpResponse.setHeader("Cache-Control", "no-cache, no-store, max-age=0, must-revalidate");
 
 		ArrayNode errors = objectMapper.createArrayNode();
 		ObjectNode response = objectMapper.createObjectNode();
-		response.set("result", objectMapper.nullNode());
 		response.set("errors", errors);
 
-		RunBuilder rb;
-		try {
-			rb = ANTLR4ParseAPIImpl.INSTANCE.parseRunToBuilder(planfile);
-		} catch(PlanfileParseException ex) {
-			for(PlanfileParseException.ParseError e : ex.getErrors()) {
-				errors.add(objectMapper.createObjectNode()
-						.put("line", e.line)
-						.put("position", e.position)
-						.put("message", e.message)
-				);
-			}
-
-			return response;
+		CompiledRun rf = asdfasd(planfile, errors);
+		if(rf != null) {
+			response.set("result", javaxJsonToJackson(JsonUtils.toJson(rf)));
+		} else {
+			response.set("result", objectMapper.nullNode());
 		}
 
-		CompiledRun rf;
-		try {
-			rf = rb.build();
-		} catch(RunBuilder.RunfileBuildException e) {
-			errors.add(objectMapper.createObjectNode()
-					.put("line", -1)
-					.put("position", -1)
-					.put("message", e.getMessage())
-			);
-			return response;
-		}
-
-		response.set("result", javaxJsonToJackson(JsonUtils.toJson(rf)));
 		return response;
 	}
 
@@ -551,10 +532,8 @@ public class NimrodPortalEndpoints {
 		vars.put("amqp_routing_key", username);
 
 		String jdbcUrl = String.format("jdbc:%s", postgresUriBuilder.build(vars));
-		String amqpUrl = rabbitUriBuilder.build(vars).toString();
 
 		vars.put("jdbc_url", jdbcUrl);
-		vars.put("amqp_url", amqpUrl);
 
 		return new UserState(
 				rs.getLong("id"),
@@ -565,13 +544,12 @@ public class NimrodPortalEndpoints {
 				rs.getString("amqp_password"),
 				rs.getBoolean("initialised"),
 				jdbcUrl,
-				amqpUrl,
 				vars
 		);
 	}
 
 
-	private NimrodAPI createNimrod(String username) throws Exception {
+	private NimrodAPI createNimrod(String username) throws SQLException {
 		/* NB: Can't use try-with-resources here. */
 		Connection c = ds.getConnection();
 		try {
@@ -587,7 +565,7 @@ public class NimrodPortalEndpoints {
 		return new NimrodAPIFactoryImpl().createNimrod(c);
 	}
 
-	private NimrodSetupAPI createNimrodSetup(String username) throws Exception {
+	private NimrodSetupAPI createNimrodSetup(String username) throws SQLException {
 		/* NB: Can't use try-with-resources here. */
 		Connection c = ds.getConnection();
 		try {
@@ -639,12 +617,6 @@ public class NimrodPortalEndpoints {
 	@Bean
 	@Qualifier("pgbuilder")
 	public UriBuilder createPostgresUriBuilder(@Value("${nimrod.remote.postgres_uritemplate}") String s) {
-		return new DefaultUriBuilderFactory().uriString(s);
-	}
-
-	@Bean
-	@Qualifier("rabbitbuilder")
-	public UriBuilder createRabbitUriBuilder(@Value("${nimrod.remote.rabbit_uritemplate}") String s) {
 		return new DefaultUriBuilderFactory().uriString(s);
 	}
 
