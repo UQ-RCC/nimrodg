@@ -59,7 +59,12 @@ public class NimrodAPIFactoryImpl implements NimrodAPIFactory {
 		dbconfig.setProperty("password", pgconfig.getOrDefault("password", ""));
 		Driver drv = (Driver)Class.forName(pgconfig.getOrDefault("driver", "org.postgresql.Driver")).getConstructor().newInstance();
 
-		return drv.connect(pgconfig.getOrDefault("url", ""), dbconfig);
+		Connection c = drv.connect(pgconfig.getOrDefault("url", ""), dbconfig);
+		if(c == null) {
+			throw new SQLException("Driver returned null, check your url");
+		}
+
+		return c;
 	}
 
 	@Override

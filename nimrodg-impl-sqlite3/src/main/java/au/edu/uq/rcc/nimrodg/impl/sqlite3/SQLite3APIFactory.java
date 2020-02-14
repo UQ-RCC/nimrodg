@@ -57,6 +57,10 @@ public class SQLite3APIFactory implements NimrodAPIFactory {
 		Driver drv = (Driver)Class.forName(pgconfig.getOrDefault("driver", "org.sqlite.JDBC")).getConstructor().newInstance();
 
 		Connection c = drv.connect(pgconfig.getOrDefault("url", "jdbc:sqlite::memory:"), new Properties());
+		if(c == null) {
+			throw new SQLException("Driver returned null, check your url");
+		}
+
 		try(Statement s = c.createStatement()) {
 			if(foreignKeys) {
 				s.execute("PRAGMA foreign_keys = true");
