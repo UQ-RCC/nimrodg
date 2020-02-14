@@ -19,15 +19,15 @@
  */
 package au.edu.uq.rcc.nimrodg.impl.sqlite3;
 
-import au.edu.uq.rcc.nimrodg.setup.AMQPConfig;
 import au.edu.uq.rcc.nimrodg.api.MachinePair;
-import au.edu.uq.rcc.nimrodg.setup.NimrodSetupAPI;
-import au.edu.uq.rcc.nimrodg.setup.NimrodSetupAPI.SetupException;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
-import au.edu.uq.rcc.nimrodg.setup.SetupConfig;
 import au.edu.uq.rcc.nimrodg.impl.base.db.DBUtils;
 import au.edu.uq.rcc.nimrodg.impl.base.db.SQLUUUUU;
 import au.edu.uq.rcc.nimrodg.impl.base.db.TempConfig;
+import au.edu.uq.rcc.nimrodg.setup.AMQPConfig;
+import au.edu.uq.rcc.nimrodg.setup.NimrodSetupAPI;
+import au.edu.uq.rcc.nimrodg.setup.NimrodSetupAPI.SetupException;
+import au.edu.uq.rcc.nimrodg.setup.SetupConfig;
 import au.edu.uq.rcc.nimrodg.setup.TransferConfig;
 
 import java.io.ByteArrayOutputStream;
@@ -58,11 +58,11 @@ public class SQLite3SetupAPI extends SQLUUUUU<SetupException> implements NimrodS
 	private final Connection conn;
 	private final boolean managed;
 
-	SQLite3SetupAPI(Connection conn) throws SQLException, IOException {
+	SQLite3SetupAPI(Connection conn) {
 		this(conn, true);
 	}
 
-	SQLite3SetupAPI(Connection conn, boolean managed) throws SQLException, IOException {
+	SQLite3SetupAPI(Connection conn, boolean managed) {
 		this.conn = conn;
 		this.managed = managed;
 	}
@@ -280,15 +280,6 @@ public class SQLite3SetupAPI extends SQLUUUUU<SetupException> implements NimrodS
 	@Override
 	public synchronized String setProperty(String prop, String val) throws SetupException {
 		return this.runSQLTransaction(() -> _setPropertyT(prop, val));
-	}
-
-	@Override
-	public synchronized boolean addResourceType(String name, Class<?> clazz) throws SetupException {
-		if(name == null || clazz == null) {
-			throw new IllegalArgumentException();
-		}
-
-		return addResourceType(name, clazz.getCanonicalName());
 	}
 
 	@Override

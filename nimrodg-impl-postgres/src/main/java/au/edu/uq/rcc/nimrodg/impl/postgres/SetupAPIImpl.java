@@ -21,10 +21,11 @@ package au.edu.uq.rcc.nimrodg.impl.postgres;
 
 import au.edu.uq.rcc.nimrodg.setup.NimrodSetupAPI;
 import au.edu.uq.rcc.nimrodg.setup.SetupConfig;
-import au.edu.uq.rcc.nimrodg.impl.base.db.DBUtils;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -104,7 +105,7 @@ public class SetupAPIImpl implements NimrodSetupAPI {
 				}
 			}
 
-			dbData = baos.toString("UTF-8");
+			dbData = baos.toString(StandardCharsets.UTF_8);
 		} catch(IOException e) {
 			throw new SetupException(e);
 		}
@@ -138,10 +139,10 @@ public class SetupAPIImpl implements NimrodSetupAPI {
 				}
 			}
 
-			cfg.agents().entrySet().forEach(e -> addAgent(e.getKey(), e.getValue()));
-			cfg.agentMappings().entrySet().forEach(e -> mapAgent(e.getValue(), e.getKey().system(), e.getKey().machine()));
-			cfg.resourceTypes().entrySet().forEach(e -> addResourceType(e.getKey(), e.getValue()));
-			cfg.properties().entrySet().forEach(e -> setProperty(e.getKey(), e.getValue()));
+			cfg.agents().forEach(this::addAgent);
+			cfg.agentMappings().forEach((key, value) -> mapAgent(value, key.system(), key.machine()));
+			cfg.resourceTypes().forEach(this::addResourceType);
+			cfg.properties().forEach(this::setProperty);
 
 		} catch(SQLException e) {
 			throw new SetupException(e);
@@ -180,15 +181,6 @@ public class SetupAPIImpl implements NimrodSetupAPI {
 		} catch(SQLException e) {
 			throw new SetupException(e);
 		}
-	}
-
-	@Override
-	public synchronized boolean addResourceType(String name, Class<?> clazz) throws SetupException {
-		if(name == null || clazz == null) {
-			throw new IllegalArgumentException();
-		}
-
-		return addResourceType(name, clazz.getCanonicalName());
 	}
 
 	@Override

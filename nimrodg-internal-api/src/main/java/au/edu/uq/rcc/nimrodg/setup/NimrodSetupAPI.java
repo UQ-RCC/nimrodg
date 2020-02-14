@@ -19,23 +19,25 @@
  */
 package au.edu.uq.rcc.nimrodg.setup;
 
+import au.edu.uq.rcc.nimrodg.api.ResourceType;
+
 public interface NimrodSetupAPI extends AutoCloseable {
 
-	public static class SetupException extends RuntimeException {
+	class SetupException extends RuntimeException {
 
 		public SetupException() {
 		}
 
-		public SetupException(String string) {
-			super(string);
+		public SetupException(String msg) {
+			super(msg);
 		}
 
-		public SetupException(String string, Throwable thrwbl) {
-			super(string, thrwbl);
+		public SetupException(String msg, Throwable t) {
+			super(msg, t);
 		}
 
-		public SetupException(Throwable thrwbl) {
-			super(thrwbl);
+		public SetupException(Throwable t) {
+			super(t);
 		}
 
 	}
@@ -48,7 +50,13 @@ public interface NimrodSetupAPI extends AutoCloseable {
 
 	String setProperty(String prop, String val) throws SetupException;
 
-	boolean addResourceType(String name, Class<?> clazz) throws SetupException;
+	default boolean addResourceType(String name, Class<? extends ResourceType> clazz) throws SetupException {
+		if(name == null || clazz == null) {
+			throw new IllegalArgumentException();
+		}
+
+		return addResourceType(name, clazz.getCanonicalName());
+	}
 
 	boolean addResourceType(String name, String clazz) throws SetupException;
 
@@ -63,6 +71,6 @@ public interface NimrodSetupAPI extends AutoCloseable {
 	boolean unmapAgent(String system, String machine) throws SetupException;
 
 	@Override
-	public void close() throws SetupException;
+	void close() throws SetupException;
 
 }

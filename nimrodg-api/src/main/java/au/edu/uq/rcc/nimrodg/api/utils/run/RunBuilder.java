@@ -19,24 +19,20 @@
  */
 package au.edu.uq.rcc.nimrodg.api.utils.run;
 
+import au.edu.uq.rcc.nimrodg.api.Substitution;
 import au.edu.uq.rcc.nimrodg.api.Task;
+
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 public class RunBuilder {
 
-	private static final Set<String> IMPLICIT_VARIABLES;
-
-	static {
-		IMPLICIT_VARIABLES = new HashSet<>();
-		IMPLICIT_VARIABLES.add("jobname");
-		IMPLICIT_VARIABLES.add("jobindex");
-	}
+	private static final Set<String> IMPLICIT_VARIABLES = Set.of("jobname", "jobindex");
 
 	private final List<VariableBuilder> m_Variables;
 	private final List<JobBuilder> m_Jobs;
@@ -56,7 +52,7 @@ public class RunBuilder {
 	}
 
 	public RunBuilder addVariables(Collection<VariableBuilder> vars) {
-		vars.stream().map(var -> new VariableBuilder(var)).forEach(m_Variables::add);
+		vars.stream().map(VariableBuilder::new).forEach(m_Variables::add);
 		return this;
 	}
 
@@ -66,7 +62,7 @@ public class RunBuilder {
 	}
 
 	public RunBuilder addParameters(Collection<ParameterBuilder> params) {
-		params.stream().map(p -> new ParameterBuilder(p)).forEach(m_Parameters::add);
+		params.stream().map(ParameterBuilder::new).forEach(m_Parameters::add);
 		return this;
 	}
 
@@ -193,7 +189,7 @@ public class RunBuilder {
 
 		if(!vars.isEmpty()) {
 			/* Sort them by index and check if the indices are consecutive */
-			vars.sort((v1, v2) -> Integer.compare(v1.index, v2.index));
+			vars.sort(Comparator.comparingInt(v -> v.index));
 
 			if(vars.get(0).index != 0) {
 				throw new FirstVariableIndexNonzero(vars.get(0));
@@ -220,7 +216,7 @@ public class RunBuilder {
 
 	private static List<CompiledJob> checkJobs(List<CompiledVariable> vars, List<CompiledJob> runJobs) throws RunfileBuildException {
 		List<CompiledJob> initialJobs = new ArrayList<>(runJobs);
-		initialJobs.sort((j1, j2) -> Integer.compare(j1.index, j2.index));
+		initialJobs.sort(Comparator.comparingInt(j -> j.index));
 
 		if(!initialJobs.isEmpty() && initialJobs.get(0).index != 1) {
 			throw new FirstJobIndexNononeException(initialJobs.get(0));
@@ -351,7 +347,7 @@ public class RunBuilder {
 		Set<String> subVarNames = mainTask.commands.stream()
 				.flatMap(cmd -> cmd.normalise().stream()
 				.flatMap(arg -> arg.getSubstitutions()
-				.stream())).map(s -> s.getVariable()).collect(Collectors.toSet());
+				.stream())).map(Substitution::getVariable).collect(Collectors.toSet());
 
 		subVarNames.removeAll(varNames);
 
@@ -432,7 +428,7 @@ public class RunBuilder {
 		}
 
 		/* Check our supplied initial jobs are valid. */
-		checkJobs(vars, m_Jobs.stream().map(j -> j.build()).collect(Collectors.toList()));
+		checkJobs(vars, m_Jobs.stream().map(JobBuilder::build).collect(Collectors.toList()));
 
 		/* Apply the parameters to the jobs. */
 		List<CompiledJob> jobs = applyParameters(pars, m_Jobs);
