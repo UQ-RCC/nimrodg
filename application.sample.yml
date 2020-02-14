@@ -8,14 +8,14 @@ nimrod:
     user: nimrod-portal
     password: password
     api: https://amqp.example.com:15671/
-    cacert: /etc/ssl/certs/ca-certificates.crt
+    cacert: /etc/ssl/certs/ca-bundle.crt
   resource:
     api: https://resourceserver.example.com/resource/
-    cacert: /etc/ssl/certs/ca-certificates.crt
+    cacert: /etc/ssl/certs/ca-bundle.crt
   remote:
     postgres_uritemplate: postgresql://{pg_host}/nimrod_portal?currentSchema={username}&ssl=true&sslmode=verify-ca&sslrootcert={ssl_cacert}
     vars:
-      ssl_cacert: /etc/ssl/certs/ca-certificates.crt
+      ssl_cacert: /etc/ssl/certs/ca-bundle.crt
       amqp_host: amqp.example.com
       pg_host: db.example.com
       # These are provided by the implementation

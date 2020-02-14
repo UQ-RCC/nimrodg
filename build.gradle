@@ -24,6 +24,8 @@ jgitver {
 
 repositories {
 	mavenCentral()
+	/* For org.everit.json.schema */
+	maven { url 'https://jitpack.io' }
 }
 
 mainClassName = 'au.edu.uq.rcc.nimrodg.portal.PortalServerApplication'
@@ -60,6 +62,7 @@ dependencies {
 	implementation('au.edu.uq.rcc.nimrodg:nimrodg-internal-api')
 	implementation('au.edu.uq.rcc.nimrodg:nimrodg-impl-postgres')
 	implementation('au.edu.uq.rcc.nimrodg:nimrodg-parsing')
+	implementation('au.edu.uq.rcc.nimrodg:nimrodg-resources')
 
 	// FIXME: For Nimrod
 	runtimeOnly group: 'org.glassfish', name: 'javax.json', version: '1.1'

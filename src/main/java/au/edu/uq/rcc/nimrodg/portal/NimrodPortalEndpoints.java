@@ -19,6 +19,7 @@
  */
 package au.edu.uq.rcc.nimrodg.portal;
 
+import au.edu.uq.rcc.nimrodg.api.AgentInfo;
 import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.Job;
 import au.edu.uq.rcc.nimrodg.api.JobAttempt;
@@ -31,6 +32,11 @@ import au.edu.uq.rcc.nimrodg.api.utils.run.JsonUtils;
 import au.edu.uq.rcc.nimrodg.api.utils.run.RunBuilder;
 import au.edu.uq.rcc.nimrodg.impl.postgres.NimrodAPIFactoryImpl;
 import au.edu.uq.rcc.nimrodg.parsing.ANTLR4ParseAPIImpl;
+import au.edu.uq.rcc.nimrodg.resource.HPCResourceType;
+import au.edu.uq.rcc.nimrodg.resource.SSHResourceType;
+import au.edu.uq.rcc.nimrodg.resource.cluster.ClusterResourceType;
+import au.edu.uq.rcc.nimrodg.resource.ssh.ClientFactories;
+import au.edu.uq.rcc.nimrodg.resource.ssh.TransportFactory;
 import au.edu.uq.rcc.nimrodg.setup.NimrodSetupAPI;
 import au.edu.uq.rcc.nimrodg.setup.SetupConfigBuilder;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -91,6 +97,7 @@ import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
@@ -98,12 +105,14 @@ import java.security.cert.CertificateFactory;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 @Controller
 @ConfigurationProperties(prefix = "nimrod.remote")
@@ -113,6 +122,7 @@ public class NimrodPortalEndpoints {
 
 	private final Jinjava jinJava;
 	private final String nimrodIniTemplate;
+	private final Map<String, HPCResourceType.HPCDefinition> hpcDefs;
 
 	@Autowired
 	private JdbcTemplate jdbc;
@@ -143,6 +153,12 @@ public class NimrodPortalEndpoints {
 
 		try(InputStream is = NimrodPortalEndpoints.class.getResourceAsStream("nimrod.ini.j2")) {
 			nimrodIniTemplate = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+		} catch(IOException e) {
+			throw new UncheckedIOException(e);
+		}
+
+		try {
+			hpcDefs = HPCResourceType.loadConfig(new Path[0], new ArrayList<>());
 		} catch(IOException e) {
 			throw new UncheckedIOException(e);
 		}
@@ -180,7 +196,7 @@ public class NimrodPortalEndpoints {
 				SetupConfigBuilder b = setupConfig.toBuilder(userState.vars);
 				setup.reset();
 				setup.setup(b.build());
-			} catch(NimrodSetupAPI.SetupException|SQLException e) {
+			} catch(NimrodSetupAPI.SetupException | SQLException e) {
 				LOGGER.error(String.format("Unable to initialise Nimrod tables for user %s", userState.username), e);
 				return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
 			}
@@ -190,7 +206,9 @@ public class NimrodPortalEndpoints {
 		ResponseEntity<String> jo;
 		try {
 			jo = resource.executeJob("setuserconfiguration", Map.of(
-					"config", jinJava.render(nimrodIniTemplate, userState.vars)
+					"config", jinJava.render(nimrodIniTemplate, userState.vars),
+					"setup_config", "",
+					"initialise", "0"
 			));
 		} catch(HttpStatusCodeException e) {
 			/* If we 401, pass that back to the user so they can refresh the token. */
@@ -320,16 +338,6 @@ public class NimrodPortalEndpoints {
 		}
 	}
 
-	@RequestMapping(method = {RequestMethod.GET}, value = "/api/resources")
-	@ResponseBody
-	public ResponseEntity<JsonNode> getResources(JwtAuthenticationToken jwt) throws SQLException {
-		UserState userState = getUserState(jwt);
-
-		try(NimrodAPI nimrod = createNimrod(userState.username)) {
-			return ResponseEntity.status(HttpStatus.OK).body(toJson(nimrod.getResources()));
-		}
-	}
-
 	@RequestMapping(method = {RequestMethod.GET}, value = "/api/experiments/{expName}")
 	@ResponseBody
 	public ResponseEntity<JsonNode> getExperiment(JwtAuthenticationToken jwt, @PathVariable String expName) throws SQLException {
@@ -397,6 +405,78 @@ public class NimrodPortalEndpoints {
 					.forEach(r -> nimrod.assignResource(r, exp));
 
 			return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+		}
+	}
+
+	@RequestMapping(method = RequestMethod.GET, value = "/api/resources")
+	@ResponseBody
+	public ResponseEntity<JsonNode> getResources(JwtAuthenticationToken jwt) throws SQLException {
+		UserState userState = getUserState(jwt);
+
+		try(NimrodAPI nimrod = createNimrod(userState.username)) {
+			return ResponseEntity.status(HttpStatus.OK).body(toJson(nimrod.getResources()));
+		}
+	}
+
+	@RequestMapping(method = RequestMethod.GET, value = "/api/resources/{resName}")
+	@ResponseBody
+	public ResponseEntity<JsonNode> getResource(JwtAuthenticationToken jwt, @PathVariable String resName) throws SQLException {
+		UserState userState = getUserState(jwt);
+
+		try(NimrodAPI nimrod = createNimrod(userState.username)) {
+			Resource res = nimrod.getResource(resName);
+			if(res == null) {
+				return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+			}
+
+			return ResponseEntity.status(HttpStatus.OK).body(toJson(res));
+		}
+	}
+
+	@RequestMapping(method = RequestMethod.POST, value = "/api/resources")
+	@ResponseBody
+	public ResponseEntity<JsonNode> addResource(JwtAuthenticationToken jwt, @RequestBody AddResource addResource) throws SQLException {
+		UserState userState = getUserState(jwt);
+
+		try(NimrodAPI nimrod = createNimrod(userState.username)) {
+
+			/* FIXME: this needs hpcargs */
+			HPCResourceType.HPCConfig hpcc = new HPCResourceType.HPCConfig(
+					new ClusterResourceType.ClusterConfig(
+							new SSHResourceType.SSHConfig(
+									nimrod.lookupAgentByPlatform("x86_64-pc-linux-musl"),
+									ClientFactories.LOCAL_FACTORY,
+									new TransportFactory.Config(
+											Optional.empty(),
+											Optional.empty(),
+											new PublicKey[0],
+											Optional.empty(),
+											Optional.empty()
+									),
+									List.of()
+							),
+							addResource.limit,
+							"TMPDIR",
+							new String[0],
+							addResource.maxbatch
+					),
+					addResource.ncpu,
+					addResource.mem,
+					addResource.hour * 3600,
+					Optional.of(addResource.account),
+					Optional.empty(),
+					Optional.of(addResource.machine),
+					hpcDefs.get("pbspro")
+			);
+
+
+			Resource res = nimrod.getResource(addResource.name);
+			if(res != null) {
+				return ResponseEntity.status(HttpStatus.CONFLICT).build();
+			}
+
+			res = nimrod.addResource(addResource.name, "hpc", hpcc.toJson(), null, null);
+			return ResponseEntity.status(HttpStatus.OK).body(toJson(res));
 		}
 	}
 

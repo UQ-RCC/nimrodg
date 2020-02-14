@@ -29,12 +29,12 @@ CREATE DOMAIN public.nimrod_identifier AS TEXT CHECK (VALUE ~ '^[a-zA-Z0-9_]+$')
 
 
 CREATE TABLE IF NOT EXISTS public.portal_users(
-    id				BIGSERIAL NOT NULL PRIMARY KEY,
-    username		NAME NOT NULL UNIQUE,
+    id                BIGSERIAL NOT NULL PRIMARY KEY,
+    username        NAME NOT NULL UNIQUE,
     -- NB: Not actually being used as a hash, so this is fine
     -- Also have to keep these as plaintext to regen the configuration files
-    pg_password		TEXT NOT NULL DEFAULT(MD5(random()::text) || MD5(random()::text)),
-    amqp_password	TEXT NOT NULL DEFAULT(MD5(random()::text) || MD5(random()::text))
+    pg_password        TEXT NOT NULL DEFAULT(MD5(random()::text) || MD5(random()::text)),
+    amqp_password    TEXT NOT NULL DEFAULT(MD5(random()::text) || MD5(random()::text))
 );
 
 CREATE OR REPLACE VIEW public.portal_user_status AS
@@ -81,20 +81,34 @@ BEGIN
         EXECUTE format('ALTER ROLE %I WITH ENCRYPTED PASSWORD %L LOGIN', _username, _user.pg_password);
     END IF;
 
-	-- Allow us to access the user's tables.
-	EXECUTE format('GRANT %I TO CURRENT_USER', _username);
+    -- Allow us to access the user's tables.
+    EXECUTE format('GRANT %I TO CURRENT_USER', _username);
 
     EXECUTE format('CREATE SCHEMA IF NOT EXISTS %I', _username);
-    EXECUTE format('GRANT ALL PRIVILEGES ON SCHEMA %I TO %I', _username, _username);
+
+    -- Allow the user to see their schema
+    EXECUTE format('GRANT USAGE ON SCHEMA %I TO %I', _username, _username);
+
+    -- Allow the user to see all data
+    EXECUTE format('GRANT SELECT ON ALL TABLES IN SCHEMA %I TO %I', _username, _username);
+
+    -- Allow the user to edit jobs/agents/assignments
+    EXECUTE format('GRANT SELECT,UPDATE,INSERT,DELETE   ON %I.nimrod_resource_assignments           TO %I', _username, _username);
+    EXECUTE format('GRANT UPDATE                        ON %I.nimrod_experiments                    TO %I', _username, _username);
+    EXECUTE format('GRANT SELECT,INSERT,DELETE          ON %I.nimrod_master_message_storage         TO %I', _username, _username);
+    EXECUTE format('GRANT SELECT,INSERT,UPDATE,DELETE   ON %I.nimrod_job_attempts                   TO %I', _username, _username);
+    EXECUTE format('GRANT USAGE                         ON %I.nimrod_job_attempts_id_seq            TO %I', _username, _username);
+    EXECUTE format('GRANT SELECT,INSERT,DELETE          ON %I.nimrod_resource_capabilities          TO %I', _username, _username);
+    EXECUTE format('GRANT USAGE                         ON %I.nimrod_resource_capabilities_id_seq   TO %I', _username, _username);
 
     RETURN QUERY SELECT * FROM public.portal_user_status WHERE id = _user.id;
 END
 $$ LANGUAGE 'plpgsql';
 
 CREATE TABLE IF NOT EXISTS public.portal_planfiles(
-	id			BIGSERIAL NOT NULL PRIMARY KEY,
-	user_id		BIGINT NOT NULL REFERENCES public.portal_users(id) ON DELETE CASCADE,
-	exp_name	public.nimrod_identifier NOT NULL,
-	planfile	TEXT NOT NULL,
-	UNIQUE(user_id, exp_name)
+    id          BIGSERIAL NOT NULL PRIMARY KEY,
+    user_id     BIGINT NOT NULL REFERENCES public.portal_users(id) ON DELETE CASCADE,
+    exp_name    public.nimrod_identifier NOT NULL,
+    planfile    TEXT NOT NULL,
+    UNIQUE(user_id, exp_name)
 );
