@@ -356,8 +356,12 @@ public abstract class TempNimrodAPIImpl implements NimrodAPI, NimrodMasterAPI, N
 	}
 
 	@Override
-	public void close() throws SQLException {
-		db.close();
+	public void close() {
+		try {
+			db.close();
+		} catch(SQLException e) {
+			throw new NimrodException.DbError(e);
+		}
 	}
 
 	@Override

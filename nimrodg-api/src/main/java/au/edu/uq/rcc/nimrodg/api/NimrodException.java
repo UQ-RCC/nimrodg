@@ -19,6 +19,8 @@
  */
 package au.edu.uq.rcc.nimrodg.api;
 
+import java.sql.SQLException;
+
 public class NimrodException extends RuntimeException {
 
 	public NimrodException() {
@@ -68,6 +70,14 @@ public class NimrodException extends RuntimeException {
 
 		public ResourceFull(Resource res) {
 			this.resource = res;
+		}
+	}
+
+	public static class DbError extends NimrodException {
+		public final SQLException sql;
+
+		public DbError(SQLException sql) {
+			this.sql = sql;
 		}
 	}
 }

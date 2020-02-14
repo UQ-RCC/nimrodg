@@ -19,6 +19,7 @@
  */
 package au.edu.uq.rcc.nimrodg.impl.postgres;
 
+import au.edu.uq.rcc.nimrodg.api.NimrodException;
 import au.edu.uq.rcc.nimrodg.impl.base.db.TempNimrodAPIImpl;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -33,9 +34,11 @@ public class NimrodAPIImpl extends TempNimrodAPIImpl {
 	}
 
 	@Override
-	public void close() throws SQLException {
-		try(Connection c = conn) {
+	public void close() {
+		try(conn) {
 			super.close();
+		} catch(SQLException e) {
+			throw new NimrodException.DbError(e);
 		}
 	}
 

@@ -23,7 +23,7 @@ import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPIFactory;
 import au.edu.uq.rcc.nimrodg.setup.NimrodSetupAPI;
 import au.edu.uq.rcc.nimrodg.setup.UserConfig;
-import java.io.IOException;
+
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.SQLException;
@@ -39,17 +39,13 @@ public class SQLite3APIFactory implements NimrodAPIFactory {
 	}
 
 	@Override
-	public NimrodAPI createNimrod(UserConfig config) throws Exception {
+	public NimrodAPI createNimrod(UserConfig config) throws SQLException, ReflectiveOperationException {
 		return createNimrod(createConnection(config, true));
 	}
 
 	@Override
-	public NimrodSetupAPI getSetupAPI(Connection conn) throws NimrodSetupAPI.SetupException, SQLException {
-		try {
-			return new SQLite3SetupAPI(conn);
-		} catch(IOException e) {
-			throw new NimrodSetupAPI.SetupException(e);
-		}
+	public NimrodSetupAPI getSetupAPI(Connection conn) throws NimrodSetupAPI.SetupException {
+		return new SQLite3SetupAPI(conn);
 	}
 
 	private static Connection createConnection(UserConfig config, boolean foreignKeys) throws SQLException, ReflectiveOperationException {

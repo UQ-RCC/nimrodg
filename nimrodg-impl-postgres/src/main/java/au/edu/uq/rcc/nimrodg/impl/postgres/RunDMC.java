@@ -25,6 +25,7 @@ import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.JobAttempt;
 import au.edu.uq.rcc.nimrodg.api.NimrodConfig;
 import au.edu.uq.rcc.nimrodg.api.NimrodEntity;
+import au.edu.uq.rcc.nimrodg.api.NimrodException;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.api.ResourceTypeInfo;
 import au.edu.uq.rcc.nimrodg.api.events.ConfigChangeMasterEvent;
@@ -35,7 +36,6 @@ import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledRun;
 import au.edu.uq.rcc.nimrodg.impl.base.db.BrokenDBInvariantException;
 import au.edu.uq.rcc.nimrodg.impl.base.db.DBUtils;
 import au.edu.uq.rcc.nimrodg.impl.base.db.NimrodDBAPI;
-import au.edu.uq.rcc.nimrodg.impl.base.db.NimrodSQLException;
 import au.edu.uq.rcc.nimrodg.impl.base.db.SQLUUUUU;
 import au.edu.uq.rcc.nimrodg.impl.base.db.TempAgent;
 import au.edu.uq.rcc.nimrodg.impl.base.db.TempAgentInfo;
@@ -62,7 +62,7 @@ import java.util.stream.Collectors;
 import javax.json.JsonObject;
 import javax.json.JsonStructure;
 
-public class RunDMC extends SQLUUUUU<NimrodSQLException> implements NimrodDBAPI, AutoCloseable {
+public class RunDMC extends SQLUUUUU<NimrodException.DbError> implements NimrodDBAPI, AutoCloseable {
 
 	private final Connection conn;
 	private final List<PreparedStatement> statements;
@@ -151,12 +151,12 @@ public class RunDMC extends SQLUUUUU<NimrodSQLException> implements NimrodDBAPI,
 
 	@Override
 	public synchronized Optional<TempAgentInfo.Impl> lookupAgentByPlatform(String platform) throws SQLException {
-		return agentHelpers.lookupAgentByPlatform(platform).map(p -> p.create());
+		return agentHelpers.lookupAgentByPlatform(platform).map(TempAgentInfo::create);
 	}
 
 	@Override
 	public synchronized Optional<TempAgentInfo.Impl> lookupAgentByPOSIX(String system, String machine) throws SQLException {
-		return agentHelpers.lookupAgentByPOSIX(system, machine).map(p -> p.create());
+		return agentHelpers.lookupAgentByPOSIX(system, machine).map(TempAgentInfo::create);
 	}
 
 	@Override
@@ -464,8 +464,8 @@ public class RunDMC extends SQLUUUUU<NimrodSQLException> implements NimrodDBAPI,
 	}
 
 	@Override
-	protected NimrodSQLException makeException(SQLException e) {
-		return new NimrodSQLException(e);
+	protected NimrodException.DbError makeException(SQLException e) {
+		return new NimrodException.DbError(e);
 	}
 
 	@Override

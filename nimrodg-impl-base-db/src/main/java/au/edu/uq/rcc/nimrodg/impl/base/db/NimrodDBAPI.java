@@ -24,6 +24,7 @@ import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.JobAttempt;
 import au.edu.uq.rcc.nimrodg.api.NimrodConfig;
 import au.edu.uq.rcc.nimrodg.api.NimrodEntity;
+import au.edu.uq.rcc.nimrodg.api.NimrodException;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.api.events.NimrodMasterEvent;
 import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledRun;
@@ -35,7 +36,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.Optional;
 
-public interface NimrodDBAPI extends ResourceFunctions<TempResource.Impl, TempExperiment.Impl, TempAgent.Impl, SQLException>, ISQLBase<NimrodSQLException>, AutoCloseable {
+public interface NimrodDBAPI extends ResourceFunctions<TempResource.Impl, TempExperiment.Impl, TempAgent.Impl, SQLException>, ISQLBase<NimrodException.DbError>, AutoCloseable {
 
 	NimrodConfig getConfig() throws SQLException;
 
