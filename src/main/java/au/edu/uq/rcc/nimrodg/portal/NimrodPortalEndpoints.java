@@ -133,7 +133,10 @@ public class NimrodPortalEndpoints {
 	private Map<String, String> remoteVars;
 
 	@Autowired
-	DefaultSetupConfig setupConfig;
+	private DataSource dataSource;
+
+	@Autowired
+	private DefaultSetupConfig setupConfig;
 
 	public NimrodPortalEndpoints() {
 		this.jinJava = new Jinjava();
@@ -209,7 +212,7 @@ public class NimrodPortalEndpoints {
 
 	@RequestMapping(method = {RequestMethod.GET}, value = "/api/experiments")
 	@ResponseBody
-	public ResponseEntity<JsonNode> getExperiments(JwtAuthenticationToken jwt) {
+	public ResponseEntity<JsonNode> getExperiments(JwtAuthenticationToken jwt) throws SQLException {
 		UserState userState = getUserState(jwt);
 
 		ArrayNode exps = objectMapper.createArrayNode();
@@ -218,15 +221,12 @@ public class NimrodPortalEndpoints {
 			for(Experiment exp : nimrod.getExperiments()) {
 				exps.add(toJson(exp));
 			}
-		} catch(Exception e) {
-			LOGGER.error(String.format("Unable to query experiments for user %s", userState.username), e);
-			return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
 		}
 
 		return ResponseEntity.status(HttpStatus.OK).body(exps);
 	}
 
-	private CompiledRun asdfasd(String planfile, ArrayNode errors) {
+	private CompiledRun compilePlanfile(String planfile, ArrayNode errors) {
 		RunBuilder rb;
 		try {
 			rb = ANTLR4ParseAPIImpl.INSTANCE.parseRunToBuilder(planfile);
@@ -266,7 +266,7 @@ public class NimrodPortalEndpoints {
 		response.set("result", objectMapper.nullNode());
 		response.set("errors", errors);
 
-		CompiledRun rf = asdfasd(addExperiment.planfile, errors);
+		CompiledRun rf = compilePlanfile(addExperiment.planfile, errors);
 		if(rf == null) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
 		}
@@ -288,9 +288,6 @@ public class NimrodPortalEndpoints {
 			response.set("result", toJson(exp));
 		} catch(NimrodException.ExperimentExists e) {
 			return ResponseEntity.status(HttpStatus.CONFLICT).build();
-		} catch(SQLException e) {
-			LOGGER.error(String.format("Unable to add experiment %s for user %s", addExperiment.name, userState.username), e);
-			return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
 		}
 
 		return ResponseEntity.status(HttpStatus.OK).body(response);
@@ -305,7 +302,7 @@ public class NimrodPortalEndpoints {
 		ObjectNode response = objectMapper.createObjectNode();
 		response.set("errors", errors);
 
-		CompiledRun rf = asdfasd(planfile, errors);
+		CompiledRun rf = compilePlanfile(planfile, errors);
 		if(rf != null) {
 			response.set("result", javaxJsonToJackson(JsonUtils.toJson(rf)));
 		} else {
@@ -325,20 +322,17 @@ public class NimrodPortalEndpoints {
 
 	@RequestMapping(method = {RequestMethod.GET}, value = "/api/resources")
 	@ResponseBody
-	public ResponseEntity<JsonNode> getResources(JwtAuthenticationToken jwt) {
+	public ResponseEntity<JsonNode> getResources(JwtAuthenticationToken jwt) throws SQLException {
 		UserState userState = getUserState(jwt);
 
 		try(NimrodAPI nimrod = createNimrod(userState.username)) {
 			return ResponseEntity.status(HttpStatus.OK).body(toJson(nimrod.getResources()));
-		} catch(Exception e) {
-			LOGGER.error(String.format("Unable to query resources for user %s", userState.username), e);
-			return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
 		}
 	}
 
 	@RequestMapping(method = {RequestMethod.GET}, value = "/api/experiments/{expName}")
 	@ResponseBody
-	public ResponseEntity<JsonNode> getExperiment(JwtAuthenticationToken jwt, @PathVariable String expName) {
+	public ResponseEntity<JsonNode> getExperiment(JwtAuthenticationToken jwt, @PathVariable String expName) throws SQLException {
 		UserState userState = getUserState(jwt);
 
 		try(NimrodAPI nimrod = createNimrod(userState.username)) {
@@ -353,23 +347,16 @@ public class NimrodPortalEndpoints {
 					userState.id,
 					expName
 			);
+
 			if(rs.next()) {
 				jExp.put("planfile", rs.getString("planfile"));
 			} else {
 				jExp.put("planfile", "");
 			}
 
-
 			return ResponseEntity.status(HttpStatus.OK).body(jExp);
-
-		} catch(Exception e) {
-			LOGGER.error(String.format("Unable to get experiment %s for user %s", expName, userState.username), e);
-			return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
 		}
 	}
-
-	@Autowired
-	private DataSource ds;
 
 	@RequestMapping(method = {RequestMethod.GET}, value = "/api/experiments/{expName}/resources")
 	@ResponseBody
@@ -387,16 +374,12 @@ public class NimrodPortalEndpoints {
 					.map(Resource::getName)
 					.forEach(arr::add);
 			return ResponseEntity.status(HttpStatus.OK).body(arr);
-
-		} catch(Exception e) {
-			LOGGER.error(String.format("Unable to query assignments of experiment %s for user %s", expName, userState.username), e);
-			return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
 		}
 	}
 
 	@RequestMapping(method = {RequestMethod.PUT}, value = "/api/experiments/{expName}/resources")
 	@ResponseBody
-	public ResponseEntity<JsonNode> setAssignments(JwtAuthenticationToken jwt, @PathVariable String expName, @RequestBody List<String> ds) {
+	public ResponseEntity<JsonNode> setAssignments(JwtAuthenticationToken jwt, @PathVariable String expName, @RequestBody List<String> ds) throws SQLException {
 		UserState userState = getUserState(jwt);
 
 		try(NimrodAPI nimrod = createNimrod(userState.username)) {
@@ -414,21 +397,10 @@ public class NimrodPortalEndpoints {
 					.forEach(r -> nimrod.assignResource(r, exp));
 
 			return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
-		} catch(Exception e) {
-			LOGGER.error(String.format("Unable to set assignments of experiment %s for user %s", expName, userState.username), e);
-			return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
 		}
 	}
 
 	/* FIXME: These should be in Nimrod proper */
-	private ArrayNode toJsonExp(Collection<Experiment> expList) {
-		ArrayNode ress = objectMapper.createArrayNode();
-		for(Experiment exp : expList) {
-			ress.add(toJson(exp));
-		}
-		return ress;
-	}
-
 	private ObjectNode toJson(Experiment exp) {
 		ArrayNode vars = objectMapper.createArrayNode();
 		exp.getVariables().forEach(vars::add);
@@ -551,7 +523,7 @@ public class NimrodPortalEndpoints {
 
 	private NimrodAPI createNimrod(String username) throws SQLException {
 		/* NB: Can't use try-with-resources here. */
-		Connection c = ds.getConnection();
+		Connection c = dataSource.getConnection();
 		try {
 			/* ...Also can't use prepareStatement() with SET. The username should always be safe regardless. */
 			try(Statement stmt = c.createStatement()) {
@@ -567,7 +539,7 @@ public class NimrodPortalEndpoints {
 
 	private NimrodSetupAPI createNimrodSetup(String username) throws SQLException {
 		/* NB: Can't use try-with-resources here. */
-		Connection c = ds.getConnection();
+		Connection c = dataSource.getConnection();
 		try {
 			/* ...Also can't use prepareStatement() with SET. The username should always be safe regardless. */
 			try(Statement stmt = c.createStatement()) {
