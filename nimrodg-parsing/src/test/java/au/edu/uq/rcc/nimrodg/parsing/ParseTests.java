@@ -502,6 +502,16 @@ public class ParseTests {
 		CompiledRun rr = getRunBuilder(getString(pln)).build();
 	}
 
+	@Test
+	public void rangeWithoutStepTest() throws IOException, RunBuilder.RunfileBuildException {
+		CompiledRun rr = getRunBuilder(getString(
+				"parameter x integer range from 0 to 100\n"
+				+ "parameter y float range from 0 to 100\n"
+				+ "task main\n"
+				+ "    onerror fail\n"
+				+ "endtask")).build();
+	}
+
 	@Test(expected = ParseCancellationException.class)
 	public void badTaskNameTest() throws IOException, RunBuilder.RunfileBuildException, SubstitutionException {
 		getRunBuilder(getFile("test_badtask.pln")).build();

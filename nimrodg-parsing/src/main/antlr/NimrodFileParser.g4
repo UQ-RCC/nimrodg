@@ -54,7 +54,7 @@ parameterType		: FLOAT | INTEGER | TEXT | FILES ;
 
 
 domainDefault		: variableValue ;
-domainRange			: RANGE FROM number TO number (STEP positiveNumber | POINTS positiveInteger) ;
+domainRange			: RANGE FROM number TO number (STEP positiveNumber | POINTS positiveInteger)? ;
 domainRandom		: RANDOM FROM number TO number (POINTS positiveInteger)? ;
 domainAnyof			: SELECT ANYOF variableValue+ ;
 

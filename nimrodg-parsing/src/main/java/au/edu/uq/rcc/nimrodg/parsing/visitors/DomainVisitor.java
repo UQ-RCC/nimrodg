@@ -98,7 +98,8 @@ public class DomainVisitor extends NimrodFileParserBaseVisitor<List<String>> {
 			}
 			step = Integer.parseInt(ictx.getText(), 10);
 		} else {
-			throw new IllegalStateException();
+			/* If not specified, default to a step size of 1. */
+			step = 1;
 		}
 
 		/* Java 8's IntStream can't do step sizes. */
@@ -125,7 +126,7 @@ public class DomainVisitor extends NimrodFileParserBaseVisitor<List<String>> {
 		} else if(ctx.STEP() != null) {
 			step = Double.parseDouble(ctx.positiveNumber().getText());
 		} else {
-			throw new IllegalStateException();
+			step = 1.0;
 		}
 
 		int n = (int)Math.ceil(Math.max(0, (end - start) / step));
