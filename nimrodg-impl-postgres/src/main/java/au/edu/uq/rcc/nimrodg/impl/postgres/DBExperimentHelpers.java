@@ -155,14 +155,6 @@ public class DBExperimentHelpers extends DBBaseHelper {
 		}
 	}
 
-	public boolean experimentExists(String name) throws SQLException {
-		return getExperiment(name).isPresent();
-	}
-
-	public boolean experimentExists(long id) throws SQLException {
-		return getExperiment(id).isPresent();
-	}
-
 	public boolean deleteExperiment(long id) throws SQLException {
 		qDelExperiment.setLong(1, id);
 		return qDelExperiment.execute();

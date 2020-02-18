@@ -23,11 +23,11 @@ import java.sql.SQLException;
 
 public interface ISQLBase<X extends RuntimeException> {
 
-	public interface SQLProc {
+	interface SQLProc {
 		void doSQL() throws SQLException;
 	}
 
-	public interface SQLReturnProc<T> {
+	interface SQLReturnProc<T> {
 		T doSQL() throws SQLException;
 	}
 

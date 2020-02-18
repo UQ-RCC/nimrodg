@@ -80,11 +80,14 @@ public abstract class TempNimrodAPIImpl implements NimrodAPI, NimrodMasterAPI, N
 
 	@Override
 	public TempExperiment.Impl addExperiment(String name, CompiledRun ce) {
-		if(db.runSQL(() -> db.experimentExists(name))) {
-			throw new NimrodException.ExperimentExists(name);
-		}
+		return db.runSQLTransaction(() -> {
+			Optional<TempExperiment.Impl> exp = db.getExperiment(name);
+			if(exp.isPresent()) {
+				throw new NimrodException.ExperimentExists(exp.get());
+			}
 
-		return db.runSQLTransaction(() -> db.addExperiment(name, name, null, ce));
+			return db.addExperiment(name, name, null, ce);
+		});
 	}
 
 	@Override
@@ -137,8 +140,16 @@ public abstract class TempNimrodAPIImpl implements NimrodAPI, NimrodMasterAPI, N
 		if(name == null || type == null || config == null) {
 			throw new IllegalArgumentException();
 		}
-		// TODO: Validate configuration.
-		return db.runSQL(() -> db.addResource(name, type, config, amqpUri, txUri));
+
+		return db.runSQLTransaction(() -> {
+			Optional<TempResource.Impl> res = db.getResource(name);
+			if(res.isPresent()) {
+				throw new NimrodException.ResourceExists(res.get());
+			}
+
+			// TODO: Validate configuration.
+			return db.addResource(name, type, config, amqpUri, txUri);
+		});
 	}
 
 	@Override

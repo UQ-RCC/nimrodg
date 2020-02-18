@@ -36,11 +36,10 @@ public class NimrodException extends RuntimeException {
 	}
 
 	public static class ExperimentExists extends NimrodException {
-		public final String name;
+		public final Experiment experiment;
 
-		public ExperimentExists(String name) {
-			super(name);
-			this.name = name;
+		public ExperimentExists(Experiment experiment) {
+			this.experiment = experiment;
 		}
 	}
 
@@ -55,6 +54,14 @@ public class NimrodException extends RuntimeException {
 
 	public static class DifferentImplementation extends NimrodException {
 
+	}
+
+	public static class ResourceExists extends NimrodException {
+		public final Resource resource;
+
+		public ResourceExists(Resource resource) {
+			this.resource = resource;
+		}
 	}
 
 	public static class ResourceBusy extends NimrodException {

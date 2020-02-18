@@ -62,10 +62,6 @@ public interface NimrodDBAPI extends ResourceFunctions<TempResource.Impl, TempEx
 
 	Optional<TempExperiment.Impl> getExperiment(long id) throws SQLException;
 
-	boolean experimentExists(String name) throws SQLException;
-
-	boolean experimentExists(long id) throws SQLException;
-
 	boolean deleteExperiment(long id) throws SQLException;
 
 	boolean deleteExperiment(String name) throws SQLException;

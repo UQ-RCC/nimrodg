@@ -319,16 +319,6 @@ public class SQLite3DB extends SQLUUUUU<NimrodException.DbError> implements Nimr
 	}
 
 	@Override
-	public synchronized boolean experimentExists(String name) throws SQLException {
-		return experimentHelpers.experimentExists(name);
-	}
-
-	@Override
-	public synchronized boolean experimentExists(long id) throws SQLException {
-		return experimentHelpers.experimentExists(id);
-	}
-
-	@Override
 	public synchronized boolean deleteExperiment(long id) throws SQLException {
 		return experimentHelpers.deleteExperiment(id);
 	}
