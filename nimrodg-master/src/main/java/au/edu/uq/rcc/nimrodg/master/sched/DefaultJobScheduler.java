@@ -147,15 +147,10 @@ public class DefaultJobScheduler implements JobScheduler {
 
 		JobAttempt.Status status = att.getStatus();
 
-		/*
-		if(status != Status.RUNNING) {
-			LOGGER.debug("onJobUpdate: Attempt {} on {}, status != RUNNING, == {}", att.getPath(), att.getAgentUUID(), status);
-		}
-		*/
 		assert status == Status.RUNNING;
 
 		if(au.getAction() == AgentUpdate.Action.Stop) {
-			if(cr.index < maxIdx || cr.status != CommandResult.CommandResultStatus.SUCCESS) {
+			if(cr.status != CommandResult.CommandResultStatus.SUCCESS) {
 				/* A command has failed and caused the job to stop. */
 				ops.updateJobFinished(att, true);
 			} else {

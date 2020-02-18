@@ -203,6 +203,7 @@ CREATE TYPE nimrod_command_result_status AS ENUM(
 	'SYSTEM_ERROR',
 	'EXCEPTION',
 	'ABORTED',
+	'FAILED',
 	'SUCCESS'
 );
 

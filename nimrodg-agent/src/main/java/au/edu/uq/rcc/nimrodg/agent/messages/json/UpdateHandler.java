@@ -110,6 +110,8 @@ public class UpdateHandler implements JsonHandler {
 				return Json.createValue("system_error");
 			case ABORTED:
 				return Json.createValue("aborted");
+			case FAILED:
+				return Json.createValue("failed");
 		}
 
 		throw new IllegalArgumentException();
@@ -131,6 +133,8 @@ public class UpdateHandler implements JsonHandler {
 				return CommandResult.CommandResultStatus.SYSTEM_ERROR;
 			case "aborted":
 				return CommandResult.CommandResultStatus.ABORTED;
+			case "failed":
+				return CommandResult.CommandResultStatus.FAILED;
 		}
 
 		throw new IllegalArgumentException();

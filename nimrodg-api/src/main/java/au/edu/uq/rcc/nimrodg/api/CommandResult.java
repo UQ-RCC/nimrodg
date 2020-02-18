@@ -26,6 +26,7 @@ public interface CommandResult {
 		SYSTEM_ERROR,
 		EXCEPTION,
 		ABORTED,
+		FAILED,
 		SUCCESS
 	}
 
@@ -55,6 +56,8 @@ public interface CommandResult {
 				return "EXCEPTION";
 			case ABORTED:
 				return "ABORTED";
+			case FAILED:
+				return "FAILED";
 			case SUCCESS:
 				return "SUCCESS";
 		}
@@ -72,6 +75,8 @@ public interface CommandResult {
 				return CommandResultStatus.EXCEPTION;
 			case "ABORTED":
 				return CommandResultStatus.ABORTED;
+			case "FAILED":
+				return CommandResultStatus.FAILED;
 			case "SUCCESS":
 				return CommandResultStatus.SUCCESS;
 		}

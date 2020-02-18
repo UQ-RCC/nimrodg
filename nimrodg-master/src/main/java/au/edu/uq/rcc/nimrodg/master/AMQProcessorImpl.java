@@ -38,11 +38,13 @@ import com.rabbitmq.client.impl.ForgivingExceptionHandler;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.security.cert.Certificate;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeoutException;
+import javax.json.Json;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
@@ -248,8 +250,16 @@ public class AMQProcessorImpl implements AMQProcessor {
 	private class _ReturnListener implements ReturnListener {
 
 		@Override
-		public void handleReturn(int arg0, String arg1, String arg2, String arg3, AMQP.BasicProperties arg4, byte[] arg5) throws IOException {
-			int x = 0;
+		public void handleReturn(int replyCode, String replyText, String exchange, String routingKey, AMQP.BasicProperties properties, byte[] body) throws IOException {
+			String s = Json.createObjectBuilder()
+					.add("replyCode", replyCode)
+					.add("replyText", replyText)
+					.add("exchange", exchange)
+					.add("routingKey", routingKey)
+					.add("properties", properties.toString())
+					.add("body", new String(body, StandardCharsets.UTF_8))
+					.build().toString();
+			System.err.println(s);
 		}
 	}
 }
