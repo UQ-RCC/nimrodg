@@ -225,7 +225,7 @@ public class NimrodPortalEndpoints {
 			return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
 		}
 
-		return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+		return ResponseEntity.noContent().build();
 	}
 
 
@@ -242,7 +242,7 @@ public class NimrodPortalEndpoints {
 			}
 		}
 
-		return ResponseEntity.status(HttpStatus.OK).body(exps);
+		return ResponseEntity.ok(exps);
 	}
 
 	@RequestMapping(method = RequestMethod.POST, value = "/api/experiments")
@@ -257,7 +257,7 @@ public class NimrodPortalEndpoints {
 
 		CompiledRun rf = compilePlanfile(addExperiment.planfile, errors);
 		if(rf == null) {
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+			return ResponseEntity.badRequest().body(response);
 		}
 
 		try(NimrodAPI nimrod = createNimrod(userState.username)) {
@@ -292,14 +292,14 @@ public class NimrodPortalEndpoints {
 		try(NimrodAPI nimrod = createNimrod(userState.username)) {
 			Experiment exp = nimrod.getExperiment(expName);
 			if(exp == null) {
-				return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+				return ResponseEntity.notFound().build();
 			}
 			nimrod.deleteExperiment(exp);
 		} catch(NimrodException.ExperimentActive e) {
 			return ResponseEntity.status(HttpStatus.CONFLICT).build();
 		}
 
-		return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+		return ResponseEntity.noContent().build();
 	}
 
 	private CompiledRun compilePlanfile(String planfile, ArrayNode errors) {
