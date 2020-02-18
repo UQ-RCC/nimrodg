@@ -62,6 +62,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
@@ -87,7 +88,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 
 		private final int value;
 
-		private State(int value) {
+		State(int value) {
 			this.value = value;
 		}
 	}
@@ -144,7 +145,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 		}
 	}
 
-	public class RunningJob {
+	public static class RunningJob {
 
 		public final UUID uuid;
 		public final Job job;
@@ -228,7 +229,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 
 	/* This runs out-of-band with the state machine. */
 	@Override
-	public MessageOperation processAgentMessage(AgentMessage msg, byte[] body) throws IllegalStateException, IOException {
+	public MessageOperation processAgentMessage(AgentMessage msg, byte[] body) throws IllegalStateException {
 		if(!agentMessages.offer(new _AgentMessage(msg, Instant.now()))) {
 			return MessageOperation.RejectAndRequeue;
 		}
@@ -341,7 +342,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 				.collect(Collectors.toMap(
 						r -> r,
 						r -> nimrod.getResourceAgents(r).stream()
-								.map(as -> new DefaultAgentState(as))
+								.map(DefaultAgentState::new)
 								.collect(Collectors.toList())
 				));
 
@@ -393,7 +394,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 				EnumSet.of(JobAttempt.Status.NOT_RUN, JobAttempt.Status.RUNNING)
 		);
 
-		activeAttempts.entrySet().stream().forEach(je -> je.getValue().stream()
+		activeAttempts.forEach((job, value) -> value.stream()
 				.filter(att -> att.getStatus() == JobAttempt.Status.RUNNING && !runningJobs.containsKey(att.getAgentUUID()))
 				.forEach(att -> {
 					AgentInfo ai = allAgents.get(att.getAgentUUID());
@@ -405,7 +406,6 @@ public class Master implements MessageQueueListener, AutoCloseable {
 						return;
 					}
 
-					Job job = je.getKey();
 					RunningJob rj = new RunningJob(att.getUUID(), job, att, buildNetworkJob(att, job, ai), ai.instance, true);
 					runningJobs.put(rj.uuid, rj);
 				}));
@@ -423,7 +423,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 
 		agentScheduler.resync(
 				allAgents.values().stream().map(ai -> ai.instance).collect(Collectors.toSet()),
-				runningJobs.values().stream().collect(Collectors.toSet())
+				new HashSet<>(runningJobs.values())
 		);
 	}
 
@@ -515,8 +515,8 @@ public class Master implements MessageQueueListener, AutoCloseable {
 
 		{
 			List<AgentInfo> ais = heartOps.toExpire.stream()
-					.map(u -> allAgents.remove(u))
-					.filter(ai -> ai != null)
+					.map(allAgents::remove)
+					.filter(Objects::nonNull)
 					.collect(Collectors.toList());
 
 			ais.forEach(ai -> this.doExpire(ai.state));
@@ -868,12 +868,12 @@ public class Master implements MessageQueueListener, AutoCloseable {
 
 		@Override
 		public Collection<Resource> getResources() {
-			return nimrod.getResources().stream().map(n -> (Resource)n).collect(Collectors.toList());
+			return nimrod.getResources();
 		}
 
 		@Override
 		public Collection<Resource> getAssignedResources(Experiment exp) {
-			return nimrod.getAssignedResources(exp).stream().map(r -> (Resource)r).collect(Collectors.toList());
+			return nimrod.getAssignedResources(exp);
 		}
 
 		@Override
