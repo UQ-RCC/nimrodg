@@ -19,7 +19,6 @@
  */
 package au.edu.uq.rcc.nimrodg.portal;
 
-import au.edu.uq.rcc.nimrodg.api.AgentInfo;
 import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.Job;
 import au.edu.uq.rcc.nimrodg.api.JobAttempt;
@@ -78,6 +77,8 @@ import org.springframework.web.context.annotation.RequestScope;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.DefaultUriBuilderFactory;
 import org.springframework.web.util.UriBuilder;
+import org.springframework.web.util.UriComponents;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -244,6 +245,63 @@ public class NimrodPortalEndpoints {
 		return ResponseEntity.status(HttpStatus.OK).body(exps);
 	}
 
+	@RequestMapping(method = RequestMethod.POST, value = "/api/experiments")
+	@ResponseBody
+	public ResponseEntity<JsonNode> addExperiment(JwtAuthenticationToken jwt, UriComponentsBuilder uriComponentsBuilder, @RequestBody AddExperiment addExperiment) throws SQLException {
+		UserState userState = getUserState(jwt);
+
+		ArrayNode errors = objectMapper.createArrayNode();
+		ObjectNode response = objectMapper.createObjectNode();
+		response.set("result", objectMapper.nullNode());
+		response.set("errors", errors);
+
+		CompiledRun rf = compilePlanfile(addExperiment.planfile, errors);
+		if(rf == null) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+		}
+
+		try(NimrodAPI nimrod = createNimrod(userState.username)) {
+			Experiment exp = nimrod.getExperiment(addExperiment.name);
+			if(exp != null) {
+				return ResponseEntity.status(HttpStatus.CONFLICT).build();
+			}
+
+			/* NB: Insert this before the actual experiment. */
+			jdbc.update("INSERT INTO public.portal_planfiles(user_id, exp_name, planfile) VALUES(?, ?, ?) ON CONFLICT(user_id, exp_name) DO UPDATE SET planfile=EXCLUDED.planfile",
+					userState.id,
+					addExperiment.name,
+					addExperiment.planfile
+			);
+
+			nimrod.addExperiment(addExperiment.name, rf);
+		} catch(NimrodException.ExperimentExists e) {
+			return ResponseEntity.status(HttpStatus.CONFLICT).build();
+		}
+
+		UriComponents uriComponents = uriComponentsBuilder.path("/api/experiments/{name}")
+				.buildAndExpand(Map.of("name", addExperiment.name));
+
+		return ResponseEntity.created(uriComponents.toUri()).build();
+	}
+
+	@RequestMapping(method = {RequestMethod.DELETE}, value = "/api/experiments/{expName}")
+	@ResponseBody
+	public ResponseEntity<JsonNode> deleteExperiment(JwtAuthenticationToken jwt, @PathVariable String expName) throws SQLException {
+		UserState userState = getUserState(jwt);
+
+		try(NimrodAPI nimrod = createNimrod(userState.username)) {
+			Experiment exp = nimrod.getExperiment(expName);
+			if(exp == null) {
+				return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+			}
+			nimrod.deleteExperiment(exp);
+		} catch(NimrodException.ExperimentActive e) {
+			return ResponseEntity.status(HttpStatus.CONFLICT).build();
+		}
+
+		return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+	}
+
 	private CompiledRun compilePlanfile(String planfile, ArrayNode errors) {
 		RunBuilder rb;
 		try {
@@ -272,43 +330,6 @@ public class NimrodPortalEndpoints {
 		}
 
 		return rf;
-	}
-
-	@RequestMapping(method = RequestMethod.POST, value = "/api/experiments")
-	@ResponseBody
-	public ResponseEntity<JsonNode> addExperiments(JwtAuthenticationToken jwt, @RequestBody AddExperiment addExperiment) throws SQLException {
-		UserState userState = getUserState(jwt);
-
-		ArrayNode errors = objectMapper.createArrayNode();
-		ObjectNode response = objectMapper.createObjectNode();
-		response.set("result", objectMapper.nullNode());
-		response.set("errors", errors);
-
-		CompiledRun rf = compilePlanfile(addExperiment.planfile, errors);
-		if(rf == null) {
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-		}
-
-		try(NimrodAPI nimrod = createNimrod(userState.username)) {
-			Experiment exp = nimrod.getExperiment(addExperiment.name);
-			if(exp != null) {
-				return ResponseEntity.status(HttpStatus.CONFLICT).build();
-			}
-
-			/* NB: Insert this before the actual experiment. */
-			jdbc.update("INSERT INTO public.portal_planfiles(user_id, exp_name, planfile) VALUES(?, ?, ?) ON CONFLICT(user_id, exp_name) DO UPDATE SET planfile=EXCLUDED.planfile",
-					userState.id,
-					addExperiment.name,
-					addExperiment.planfile
-			);
-
-			exp = nimrod.addExperiment(addExperiment.name, rf);
-			response.set("result", toJson(exp));
-		} catch(NimrodException.ExperimentExists e) {
-			return ResponseEntity.status(HttpStatus.CONFLICT).build();
-		}
-
-		return ResponseEntity.status(HttpStatus.OK).body(response);
 	}
 
 	@RequestMapping(method = RequestMethod.GET, value = "/api/compile")
@@ -346,7 +367,7 @@ public class NimrodPortalEndpoints {
 		try(NimrodAPI nimrod = createNimrod(userState.username)) {
 			Experiment exp = nimrod.getExperiment(expName);
 			if(exp == null) {
-				return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+				return ResponseEntity.notFound().build();
 			}
 
 			ObjectNode jExp = toJson(exp);
@@ -362,7 +383,7 @@ public class NimrodPortalEndpoints {
 				jExp.put("planfile", "");
 			}
 
-			return ResponseEntity.status(HttpStatus.OK).body(jExp);
+			return ResponseEntity.ok(jExp);
 		}
 	}
 
@@ -374,14 +395,14 @@ public class NimrodPortalEndpoints {
 		try(NimrodAPI nimrod = createNimrod(userState.username)) {
 			Experiment exp = nimrod.getExperiment(expName);
 			if(exp == null) {
-				return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+				return ResponseEntity.notFound().build();
 			}
 
 			ArrayNode arr = objectMapper.createArrayNode();
 			nimrod.getAssignedResources(exp).stream()
 					.map(Resource::getName)
 					.forEach(arr::add);
-			return ResponseEntity.status(HttpStatus.OK).body(arr);
+			return ResponseEntity.ok(arr);
 		}
 	}
 
@@ -404,7 +425,7 @@ public class NimrodPortalEndpoints {
 					.filter(Objects::nonNull)
 					.forEach(r -> nimrod.assignResource(r, exp));
 
-			return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+			return ResponseEntity.noContent().build();
 		}
 	}
 
@@ -414,7 +435,7 @@ public class NimrodPortalEndpoints {
 		UserState userState = getUserState(jwt);
 
 		try(NimrodAPI nimrod = createNimrod(userState.username)) {
-			return ResponseEntity.status(HttpStatus.OK).body(toJson(nimrod.getResources()));
+			return ResponseEntity.ok(toJson(nimrod.getResources()));
 		}
 	}
 
@@ -426,16 +447,16 @@ public class NimrodPortalEndpoints {
 		try(NimrodAPI nimrod = createNimrod(userState.username)) {
 			Resource res = nimrod.getResource(resName);
 			if(res == null) {
-				return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+				return ResponseEntity.notFound().build();
 			}
 
-			return ResponseEntity.status(HttpStatus.OK).body(toJson(res));
+			return ResponseEntity.ok(toJson(res));
 		}
 	}
 
 	@RequestMapping(method = RequestMethod.POST, value = "/api/resources")
 	@ResponseBody
-	public ResponseEntity<JsonNode> addResource(JwtAuthenticationToken jwt, @RequestBody AddResource addResource) throws SQLException {
+	public ResponseEntity<Void> addResource(JwtAuthenticationToken jwt, UriComponentsBuilder uriComponentsBuilder, @RequestBody AddResource addResource) throws SQLException {
 		UserState userState = getUserState(jwt);
 
 		try(NimrodAPI nimrod = createNimrod(userState.username)) {
@@ -461,7 +482,7 @@ public class NimrodPortalEndpoints {
 							addResource.maxbatch
 					),
 					addResource.ncpu,
-					addResource.mem,
+					addResource.mem * 1073741824L,
 					addResource.hour * 3600,
 					Optional.of(addResource.account),
 					Optional.empty(),
@@ -475,8 +496,32 @@ public class NimrodPortalEndpoints {
 				return ResponseEntity.status(HttpStatus.CONFLICT).build();
 			}
 
-			res = nimrod.addResource(addResource.name, "hpc", hpcc.toJson(), null, null);
-			return ResponseEntity.status(HttpStatus.OK).body(toJson(res));
+			nimrod.addResource(addResource.name, "hpc", hpcc.toJson(), null, null);
+		} catch(NimrodException.ResourceExists e) {
+			return ResponseEntity.status(HttpStatus.CONFLICT).build();
+		}
+
+		UriComponents uriComponents = uriComponentsBuilder.path("/api/resources/{name}")
+				.buildAndExpand(Map.of("name", addResource.name));
+
+		return ResponseEntity.created(uriComponents.toUri()).build();
+	}
+
+	@RequestMapping(method = RequestMethod.DELETE, value = "/api/resources/{resName}")
+	@ResponseBody
+	public ResponseEntity<JsonNode> deleteResource(JwtAuthenticationToken jwt, @PathVariable String resName) throws SQLException {
+		UserState userState = getUserState(jwt);
+
+		try(NimrodAPI nimrod = createNimrod(userState.username)) {
+			Resource res = nimrod.getResource(resName);
+			if(res == null) {
+				return ResponseEntity.notFound().build();
+			}
+
+			nimrod.deleteResource(res);
+			return ResponseEntity.noContent().build();
+		} catch(NimrodException.ResourceBusy e) {
+			return ResponseEntity.status(HttpStatus.CONFLICT).build();
 		}
 	}
 
