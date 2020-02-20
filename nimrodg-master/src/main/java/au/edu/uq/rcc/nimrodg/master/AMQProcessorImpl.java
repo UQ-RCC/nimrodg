@@ -19,12 +19,11 @@
  */
 package au.edu.uq.rcc.nimrodg.master;
 
+import au.edu.uq.rcc.nimrodg.agent.MessageBackend;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentHello;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentLifeControl;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentMessage;
-import au.edu.uq.rcc.nimrodg.agent.MessageBackend;
 import au.edu.uq.rcc.nimrodg.agent.messages.json.JsonBackend;
-import au.edu.uq.rcc.nimrodg.resource.act.ActuatorUtils;
 import au.edu.uq.rcc.nimrodg.shell.ShellUtils;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.AlreadyClosedException;
@@ -35,14 +34,24 @@ import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
-import com.rabbitmq.client.MessageProperties;
 import com.rabbitmq.client.ReturnListener;
 import com.rabbitmq.client.impl.ForgivingExceptionHandler;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import javax.json.Json;
+import javax.mail.internet.ContentType;
+import javax.mail.internet.ParseException;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManagerFactory;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.charset.UnsupportedCharsetException;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.security.cert.Certificate;
@@ -53,15 +62,6 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeoutException;
-import javax.json.Json;
-import javax.mail.internet.ContentType;
-import javax.mail.internet.ParseException;
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManagerFactory;
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class AMQProcessorImpl implements AMQProcessor {
 
@@ -199,6 +199,10 @@ public class AMQProcessorImpl implements AMQProcessor {
 				.timestamp(Date.from(timestamp))
 				.userId(m_User)
 				.appId("nimrod")
+				.headers(Map.of(
+						"User-Agent", "NimrodGMaster/X.X.X", /* FIXME */
+						"X-NimrodG-Sent-At", timestamp.toString()
+				))
 				.build();
 
 		
@@ -215,17 +219,17 @@ public class AMQProcessorImpl implements AMQProcessor {
 		);
 	}
 
-	private Optional<Charset> resolveCharset(String name) {
+	private Charset resolveCharset(String name) {
 		/* Following HTTP/1.1 here: https://tools.ietf.org/html/rfc2616 section 3.4.1*/
 		if(name == null) {
-			return Optional.of(StandardCharsets.ISO_8859_1);
+			return StandardCharsets.ISO_8859_1;
 		}
 
-		if(!Charset.isSupported(name)) {
-			return Optional.empty();
+		try {
+			return Charset.forName(name);
+		} catch(UnsupportedCharsetException e) {
+			return null;
 		}
-
-		return Optional.of(Charset.forName(name));
 	}
 
 	private void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
@@ -269,9 +273,9 @@ public class AMQProcessorImpl implements AMQProcessor {
 			return;
 		}
 
-		Optional<Charset> charset = resolveCharset(contentType.getParameter("charset"));
+		Charset charset = resolveCharset(contentType.getParameter("charset"));
 
-		if(!charset.isPresent()) {
+		if(charset == null) {
 			opMessage(MessageQueueListener.MessageOperation.Reject, tag);
 			return;
 		}
@@ -281,7 +285,7 @@ public class AMQProcessorImpl implements AMQProcessor {
 			return;
 		}
 
-		AgentMessage am = mb.fromBytes(body, charset.get());
+		AgentMessage am = mb.fromBytes(body, charset);
 		if(am == null) {
 			throw new IOException("Message deserialisation failed");
 		}
@@ -291,7 +295,7 @@ public class AMQProcessorImpl implements AMQProcessor {
 				properties,
 				uuid,
 				contentType,
-				charset.get(),
+				charset,
 				properties.getTimestamp().toInstant(),
 				am
 		);
