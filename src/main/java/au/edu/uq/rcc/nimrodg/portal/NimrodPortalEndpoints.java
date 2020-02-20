@@ -168,7 +168,7 @@ public class NimrodPortalEndpoints {
 	@RequestMapping(method = {RequestMethod.PUT}, value = "/api/provision/{username}")
 	@ResponseBody
 	public ResponseEntity<Void> provisionUser(@PathVariable String username, JwtAuthenticationToken jwt) {
-		UserState userState = getUserState(jwt);
+		UserState userState = getUserState(jwt, true);
 		if(!userState.username.equals(username)) {
 			LOGGER.warn("User {} attempted to provision {}", userState.username, username);
 			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
@@ -596,6 +596,10 @@ public class NimrodPortalEndpoints {
 	}
 
 	private UserState getUserState(JwtAuthenticationToken jwt) throws ResponseStatusException {
+		return getUserState(jwt, false);
+	}
+
+	private UserState getUserState(JwtAuthenticationToken jwt, boolean create) throws ResponseStatusException {
 		if(jwt == null) {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN);
 		}
@@ -605,16 +609,23 @@ public class NimrodPortalEndpoints {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN);
 		}
 
-		return getUserState(preferred_username);
-
+		return getUserState(preferred_username, create);
 	}
 
-	private UserState getUserState(String username) throws ResponseStatusException {
-		SqlRowSet rs = jdbc.queryForRowSet("SELECT id, pg_password, amqp_password, initialised FROM public.portal_create_user(?)", username);
-		if(!rs.next()) {
-			/* Hopefully, should never happen. */
-			LOGGER.error("portal_create_user({}) returned no rows.", username);
-			throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE);
+	private UserState getUserState(String username, boolean create) throws ResponseStatusException {
+		SqlRowSet rs;
+		if(!create) {
+			rs = jdbc.queryForRowSet("SELECT id, pg_password, amqp_password, initialised FROM public.portal_user_status WHERE username = ?", username);
+			if(!rs.next()) {
+				throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+			}
+		} else {
+			rs = jdbc.queryForRowSet("SELECT id, pg_password, amqp_password, initialised FROM portal_create_user(?)", username);
+			if(!rs.next()) {
+				/* Hopefully, should never happen. */
+				LOGGER.error("portal_create_user({}) returned no rows.", username);
+				throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE);
+			}
 		}
 
 		String pgPass = rs.getString("pg_password");
