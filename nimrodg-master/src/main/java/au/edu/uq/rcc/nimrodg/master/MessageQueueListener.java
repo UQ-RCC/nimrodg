@@ -19,11 +19,8 @@
  */
 package au.edu.uq.rcc.nimrodg.master;
 
-import au.edu.uq.rcc.nimrodg.agent.messages.AgentMessage;
 import java.io.IOException;
-import java.time.Instant;
 import java.util.Optional;
-import java.util.UUID;
 
 public interface MessageQueueListener {
 

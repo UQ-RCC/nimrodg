@@ -235,17 +235,17 @@ public class Master implements MessageQueueListener, AutoCloseable {
 
 	/* This runs out-of-band with the state machine. */
 	@Override
-	public MessageOperation processAgentMessage(long tag, AMQPMessage amsg) throws IllegalStateException {
+	public Optional<MessageOperation> processAgentMessage(long tag, AMQPMessage amsg) throws IllegalStateException {
 		if(amsg.message == null || amsg.messageId == null || amsg.timestamp == null) {
-			return MessageOperation.Reject;
+			return Optional.of(MessageOperation.Reject);
 		}
 
 		if(!agentMessages.offer(new _AgentMessage(tag, amsg.messageId, amsg.message, amsg.timestamp, Instant.now()))) {
-			return MessageOperation.RejectAndRequeue;
+			return Optional.of(MessageOperation.RejectAndRequeue);
 
 		}
 
-		return MessageOperation.Ack;
+		return Optional.empty();
 	}
 
 	public void setAMQP(AMQProcessor amqp) {
