@@ -36,7 +36,7 @@ public class ShellUtils {
     }
 
     public static Optional<String> getUriUser(Optional<URI> uri) {
-        return uri.map(URI::getUserInfo).map(ui -> ui.split(":", 1)[0]);
+        return uri.map(URI::getUserInfo).map(ui -> ui.split(":", 2)[0]);
     }
 
     public static RemoteShell.CommandResult doProcessOneshot(Process p, String[] args, byte[] input) throws IOException {
