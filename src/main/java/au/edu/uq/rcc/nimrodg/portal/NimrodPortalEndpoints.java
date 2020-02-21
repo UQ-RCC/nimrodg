@@ -211,9 +211,7 @@ public class NimrodPortalEndpoints {
 		ResponseEntity<String> jo;
 		try {
 			jo = resource.executeJob("setuserconfiguration", Map.of(
-					"config", jinJava.render(nimrodIniTemplate, userState.vars),
-					"setup_config", "",
-					"initialise", "0"
+					"config", jinJava.render(nimrodIniTemplate, userState.vars)
 			));
 		} catch(HttpStatusCodeException e) {
 			/* If we 401, pass that back to the user so they can refresh the token. */
@@ -464,8 +462,6 @@ public class NimrodPortalEndpoints {
 		UserState userState = getUserState(jwt);
 
 		try(NimrodAPI nimrod = createNimrod(userState.username)) {
-
-			/* FIXME: this needs hpcargs */
 			HPCResourceType.HPCConfig hpcc = new HPCResourceType.HPCConfig(
 					new ClusterResourceType.ClusterConfig(
 							new SSHResourceType.SSHConfig(
