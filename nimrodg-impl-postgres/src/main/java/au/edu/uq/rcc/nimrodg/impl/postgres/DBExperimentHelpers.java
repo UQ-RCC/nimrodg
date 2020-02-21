@@ -263,7 +263,7 @@ public class DBExperimentHelpers extends DBBaseHelper {
 
 	public List<TempJob> filterJobs(long expId, EnumSet<JobAttempt.Status> status, long start, long limit) throws SQLException {
 		qFilterJobs.setLong(1, expId);
-		qFilterJobs.setArray(2, conn.createArrayOf("nimrod_job_status", status.stream()
+		qFilterJobs.setArray(2, conn.createArrayOf("TEXT", status.stream()
 				.filter(Objects::nonNull)
 				.map(Enum::toString)
 				.toArray()));
@@ -359,7 +359,7 @@ public class DBExperimentHelpers extends DBBaseHelper {
 
 	public List<TempJobAttempt> filterJobAttempts(long jobId, EnumSet<JobAttempt.Status> status) throws SQLException {
 		qFilterJobAttempts.setLong(1, jobId);
-		qFilterJobAttempts.setArray(2, conn.createArrayOf("nimrod_job_status", status.stream()
+		qFilterJobAttempts.setArray(2, conn.createArrayOf("TEXT", status.stream()
 				.filter(Objects::nonNull)
 				.map(Enum::toString)
 				.toArray()));
@@ -401,7 +401,7 @@ public class DBExperimentHelpers extends DBBaseHelper {
 
 	public List<TempJobAttempt> filterJobAttemptsByExperiment(long expId, EnumSet<JobAttempt.Status> status) throws SQLException {
 		qFilterJobAttemptsByExperiment.setLong(1, expId);
-		qFilterJobAttemptsByExperiment.setArray(2, conn.createArrayOf("nimrod_job_status", status.stream()
+		qFilterJobAttemptsByExperiment.setArray(2, conn.createArrayOf("TEXT", status.stream()
 				.filter(Objects::nonNull)
 				.map(Enum::toString)
 				.toArray()));
