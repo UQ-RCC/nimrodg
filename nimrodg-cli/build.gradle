@@ -15,7 +15,6 @@ dependencies {
 	implementation project(':nimrodg-parsing')
 	implementation project(':nimrodg-resources')
 	implementation project(':nimrodg-master')
-	implementation project(':nimrodg-rest')
 	implementation project(':nimrodg-utils')
 
 	runtimeOnly project(':nimrodg-impl-postgres')
