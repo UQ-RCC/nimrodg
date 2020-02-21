@@ -223,7 +223,7 @@ public class ResourceTests {
 		);
 		testClusterResource = new TestResource(
 				"testcluster",
-				new _TestClusterResourceType("testcluster", "TestCluster", "testargs", ccfg),
+				new _TestClusterResourceType("testcluster", "TestCluster", ccfg),
 				nimrodConfig.getAmqpUri(),
 				nimrodConfig.getTransferUri(),
 				JsonValue.EMPTY_JSON_OBJECT
@@ -277,8 +277,8 @@ public class ResourceTests {
 
 		private ClusterConfig config;
 
-		_TestClusterResourceType(String name, String displayName, String argsName, ClusterConfig config) {
-			super(name, displayName, argsName);
+		_TestClusterResourceType(String name, String displayName, ClusterConfig config) {
+			super(name, displayName);
 			this.config = config;
 		}
 
