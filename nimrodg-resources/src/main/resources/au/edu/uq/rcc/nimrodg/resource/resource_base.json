@@ -70,34 +70,6 @@
 				}
 			]
 		},
-		"legacy_cluster_resource": {
-			"allOf": [
-				{ "$ref": "#/definitions/cluster_resource" },
-				{
-					"type": "object",
-					"properties": {
-						"batch_config": {
-							"type": "array",
-							"minItems": 0,
-							"items": {
-								"type": "object",
-								"properties": {
-									"name": {
-										"type": "string",
-										"pattern": "^([\\w-]+)$"
-									},
-									"value": { "type": ["string", "integer"] },
-									"scale": { "type": "boolean" }
-								},
-								"additionalProperties": false,
-								"required": ["name", "value", "scale"]
-							}
-						}
-					},
-					"required": ["batch_config"]
-				}
-			]
-		},
 		"hpc_cluster_resource": {
 			"allOf": [
 				{ "$ref": "#/definitions/cluster_resource" },
