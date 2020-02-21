@@ -624,7 +624,7 @@ public class NimrodPortalEndpoints {
 				throw new ResponseStatusException(HttpStatus.FORBIDDEN);
 			}
 		} else {
-			rs = jdbc.queryForRowSet("SELECT id, pg_password, amqp_password, initialised FROM portal_create_user(?)", username);
+			rs = jdbc.queryForRowSet("SELECT id, pg_password, amqp_password, initialised FROM public.portal_create_user(?)", username);
 			if(!rs.next()) {
 				/* Hopefully, should never happen. */
 				LOGGER.error("portal_create_user({}) returned no rows.", username);
