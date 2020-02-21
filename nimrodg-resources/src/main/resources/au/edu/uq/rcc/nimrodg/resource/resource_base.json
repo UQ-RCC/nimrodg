@@ -64,6 +64,10 @@
 					"properties": {
 						"limit": { "type": "integer", "minimum": 1 },
 						"tmpvar": { "$ref": "#/definitions/environment_variable" },
+						"submission_args": {
+							"type": "array",
+							"items": { "type": "string" }
+						},
 						"max_batch_size": { "type": "integer", "minimum": 1 }
 					},
 					"required": ["limit", "tmpvar", "max_batch_size"]

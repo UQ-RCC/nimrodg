@@ -41,11 +41,8 @@ import javax.json.JsonStructure;
 
 public abstract class ClusterResourceType extends SSHResourceType {
 
-	private final String argsName;
-
-	public ClusterResourceType(String name, String displayName, String argsName) {
+	public ClusterResourceType(String name, String displayName) {
 		super(name, displayName);
-		this.argsName = argsName;
 	}
 
 	protected boolean validateSubmissionArgs(JsonArray ja, List<String> errors) {
@@ -55,7 +52,7 @@ public abstract class ClusterResourceType extends SSHResourceType {
 	@Override
 	public boolean validateConfiguration(AgentProvider ap, JsonStructure _cfg, List<String> errors) {
 		boolean valid = super.validateConfiguration(ap, _cfg, errors);
-		return validateSubmissionArgs(_cfg.asJsonObject().getJsonArray(argsName), errors) && valid;
+		return validateSubmissionArgs(_cfg.asJsonObject().getJsonArray("submission_args"), errors) && valid;
 	}
 
 	protected void buildParserBeforeSubmissionArgs(ArgumentParser argparser) {
@@ -84,7 +81,7 @@ public abstract class ClusterResourceType extends SSHResourceType {
 
 		this.buildParserBeforeSubmissionArgs(argparser);
 
-		argparser.addArgument(argsName)
+		argparser.addArgument("submission_args")
 				.help(String.format("%s submission arguments.", this.getDisplayName()))
 				.nargs("*");
 	}
@@ -94,7 +91,7 @@ public abstract class ClusterResourceType extends SSHResourceType {
 		boolean valid = super.parseArguments(ap, ns, out, err, configDirs, jb);
 
 		jb.add("tmpvar", ns.getString("tmpvar"));
-		jb.add(argsName, Json.createArrayBuilder(ns.getList(argsName)).build());
+		jb.add("submission_args", Json.createArrayBuilder(ns.getList("submission_args")).build());
 
 		Integer limit = ns.getInt("limit");
 		if(limit != null) {
@@ -120,7 +117,7 @@ public abstract class ClusterResourceType extends SSHResourceType {
 				sshCfg,
 				cfg.getInt("limit"),
 				tmpVar,
-				cfg.getJsonArray(argsName).stream().map(a -> ((JsonString)a).getString()).toArray(String[]::new),
+				cfg.getJsonArray("submission_args").stream().map(a -> ((JsonString)a).getString()).toArray(String[]::new),
 				cfg.getInt("max_batch_size")
 		));
 	}
@@ -151,6 +148,7 @@ public abstract class ClusterResourceType extends SSHResourceType {
 			return super.toJsonBuilder()
 					.add("limit", limit)
 					.add("tmpvar", tmpVar)
+					.add("submission_args", Json.createArrayBuilder(Arrays.asList(submissionArgs)))
 					.add("max_batch_size", maxBatchSize);
 		}
 	}

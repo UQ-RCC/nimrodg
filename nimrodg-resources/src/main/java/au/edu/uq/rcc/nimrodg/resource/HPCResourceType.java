@@ -56,7 +56,7 @@ import java.util.stream.Collectors;
 public class HPCResourceType extends ClusterResourceType {
 
 	public HPCResourceType() {
-		super("hpc", "HPC", "hpcargs");
+		super("hpc", "HPC");
 	}
 
 	@Override
