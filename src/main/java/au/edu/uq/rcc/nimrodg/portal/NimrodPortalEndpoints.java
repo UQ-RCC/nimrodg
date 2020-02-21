@@ -83,6 +83,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.sql.DataSource;
 import java.io.IOException;
@@ -148,6 +149,9 @@ public class NimrodPortalEndpoints {
 
 	@Autowired
 	private DefaultSetupConfig setupConfig;
+
+	@Autowired
+	private HttpServletRequest request;
 
 	public NimrodPortalEndpoints() {
 		this.jinJava = new Jinjava();
@@ -643,7 +647,7 @@ public class NimrodPortalEndpoints {
 
 		vars.put("jdbc_url", jdbcUrl);
 
-		return new UserState(
+		UserState userState = new UserState(
 				rs.getLong("id"),
 				username,
 				username,
@@ -654,6 +658,9 @@ public class NimrodPortalEndpoints {
 				jdbcUrl,
 				vars
 		);
+
+		LOGGER.debug("{}: getUserState({}) => {id={}}", request.getRequestURI(), userState.username, userState.id);
+		return userState;
 	}
 
 
