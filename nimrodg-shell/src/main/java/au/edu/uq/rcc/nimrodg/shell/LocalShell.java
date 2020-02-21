@@ -27,7 +27,10 @@ import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.PosixFilePermission;
 import java.time.Instant;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.Map;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,6 +49,11 @@ public class LocalShell implements RemoteShell {
 		Files.write(path, bytes);
 		Files.setPosixFilePermissions(path, new HashSet<>(perms));
 		Files.setLastModifiedTime(path, FileTime.from(timestamp));
+	}
+
+	@Override
+	public Map<String, String> getEnvironment() {
+		return Collections.unmodifiableMap(System.getenv());
 	}
 
 	@Override

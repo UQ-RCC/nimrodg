@@ -14,11 +14,15 @@ import java.security.GeneralSecurityException;
 import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.StringTokenizer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public class ShellUtils {
@@ -110,6 +114,35 @@ public class ShellUtils {
         return sb.toString();
     }
 
+    private static final Pattern ENV_PATTERN = Pattern.compile("^([A-Za-z_][A-Za-z0-9_+]*)=(.*)$");
+
+    public static Map<String, String> readEnvironment(RemoteShell shell) throws IOException {
+        Map<String, String> envs = new HashMap<>();
+        SshdClient.CommandResult env = shell.runCommand("env");
+        if(env.status != 0) {
+            throw new IOException("Error retrieving environment");
+        }
+
+        String[] lines = env.stdout.split("[\\r\\n]+");
+
+        for(String l : lines) {
+            Matcher m = ENV_PATTERN.matcher(l);
+            if(!m.matches()) {
+                //throw new IOException("Error retrieving environment, malformed 'env' output");
+
+                /*
+                 * Tell me this isn't horrible. This was on Flashlite.
+                 * G_BROKEN_FILENAMES=1
+                 * BASH_FUNC_module()=() {  eval `/usr/bin/modulecmd bash $*`
+                 * }
+                 * _=/bin/env
+                 */
+                continue;
+            }
+            envs.put(m.group(1), m.group(2));
+        }
+        return envs;
+    }
 
     @SuppressWarnings("OctalInteger")
     public static Set<PosixFilePermission> posixIntToPermissions(int perms) {

@@ -38,18 +38,15 @@ import java.security.cert.Certificate;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public abstract class POSIXActuator<C extends SSHConfig> implements Actuator {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(POSIXActuator.class);
 
-	private static final Pattern ENV_PATTERN = Pattern.compile("^([A-Za-z_][A-Za-z0-9_+]*)=(.*)$");
+
 
 	protected final Operations ops;
 	protected final Resource node;
@@ -99,7 +96,7 @@ public abstract class POSIXActuator<C extends SSHConfig> implements Actuator {
 			try {
 				Path agentPath = Paths.get(config.agentInfo.getPath());
 
-				remoteEnvironment = readEnv(client);
+				remoteEnvironment = client.getEnvironment();
 
 				String homeDir = remoteEnvironment.get("HOME");
 				if(homeDir == null) {
@@ -138,34 +135,6 @@ public abstract class POSIXActuator<C extends SSHConfig> implements Actuator {
 		}
 
 		this.isClosed = false;
-	}
-
-	private static Map<String, String> readEnv(RemoteShell client) throws IOException {
-		Map<String, String> envs = new HashMap<>();
-		SshdClient.CommandResult env = client.runCommand("env");
-		if(env.status != 0) {
-			throw new IOException("Error retrieving environment");
-		}
-
-		String[] lines = env.stdout.split("[\\r\\n]+");
-
-		for(String l : lines) {
-			Matcher m = ENV_PATTERN.matcher(l);
-			if(!m.matches()) {
-				//throw new IOException("Error retrieving environment, malformed 'env' output");
-
-				/*
-				 * Tell me this isn't horrible. This was on Flashlite.
-				 * G_BROKEN_FILENAMES=1
-				 * BASH_FUNC_module()=() {  eval `/usr/bin/modulecmd bash $*`
-				 * }
-				 * _=/bin/env
-				 */
-				continue;
-			}
-			envs.put(m.group(1), m.group(2));
-		}
-		return envs;
 	}
 
 	public void nop() throws IOException {
