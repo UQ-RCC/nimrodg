@@ -27,7 +27,6 @@ import au.edu.uq.rcc.nimrodg.cli.commands.ExperimentCmd;
 import au.edu.uq.rcc.nimrodg.cli.commands.GenConfig;
 import au.edu.uq.rcc.nimrodg.cli.commands.GetProp;
 import au.edu.uq.rcc.nimrodg.cli.commands.MasterCmd;
-import au.edu.uq.rcc.nimrodg.cli.commands.PortalAPI;
 import au.edu.uq.rcc.nimrodg.cli.commands.REST;
 import au.edu.uq.rcc.nimrodg.cli.commands.ResourceCmd;
 import au.edu.uq.rcc.nimrodg.cli.commands.SetProp;
@@ -60,7 +59,6 @@ public class NimrodCLI {
 		MasterCmd.DEFINITION,
 		ResourceCmd.DEFINITION,
 		Setup.DEFINITION,
-		PortalAPI.DEFINITION,
 		REST.DEFINITION,
 		Compile.DEFINITION,
 		GenConfig.DEFINITION,
