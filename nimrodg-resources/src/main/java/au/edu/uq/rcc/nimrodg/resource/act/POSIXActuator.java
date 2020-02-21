@@ -19,17 +19,15 @@
  */
 package au.edu.uq.rcc.nimrodg.resource.act;
 
-import au.edu.uq.rcc.nimrodg.shell.RemoteShell;
-import au.edu.uq.rcc.nimrodg.shell.SshdClient;
 import au.edu.uq.rcc.nimrodg.api.Actuator;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.api.Resource;
 import au.edu.uq.rcc.nimrodg.resource.SSHResourceType.SSHConfig;
+import au.edu.uq.rcc.nimrodg.shell.RemoteShell;
+import au.edu.uq.rcc.nimrodg.shell.SshdClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.json.Json;
-import javax.json.JsonObjectBuilder;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
