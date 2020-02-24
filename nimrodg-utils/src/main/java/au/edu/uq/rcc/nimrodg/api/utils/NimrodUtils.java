@@ -19,8 +19,6 @@
  */
 package au.edu.uq.rcc.nimrodg.api.utils;
 
-import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
-
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -35,28 +33,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.function.Function;
-import javax.json.Json;
-import javax.json.JsonObject;
-import javax.json.JsonObjectBuilder;
-
-import au.edu.uq.rcc.nimrodg.api.Resource;
 import java.util.stream.Stream;
 
 public class NimrodUtils {
-
-	private static JsonObject exportResource(Resource root) {
-		JsonObjectBuilder jb = Json.createObjectBuilder();
-		jb.add("name", root.getName());
-		jb.add("config", root.getConfig());
-		return jb.build();
-	}
-
-	public static JsonObject exportResourceConfiguration(NimrodAPI api, Resource r) {
-		JsonObjectBuilder jb = Json.createObjectBuilder();
-		jb.add("type", r.getType().getName());
-		jb.add("root", exportResource(r));
-		return jb.build();
-	}
 
 	public static <T> T selectRandomFromContainer(Collection<T> c) {
 		if(c.isEmpty()) {
@@ -111,7 +90,7 @@ public class NimrodUtils {
 		}
 
 		if(Files.isDirectory(path)) {
-			Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
+			Files.walkFileTree(path, new SimpleFileVisitor<>() {
 				@Override
 				public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
 					Files.delete(file);
@@ -136,7 +115,7 @@ public class NimrodUtils {
 				ret = Long.parseLong(s);
 			}
 		} catch(NumberFormatException e) {
-			ret = val;
+			/* nop */
 		}
 
 		return ret;
@@ -149,7 +128,7 @@ public class NimrodUtils {
 				ret = Long.parseUnsignedLong(s);
 			}
 		} catch(NumberFormatException e) {
-			ret = val;
+			/* nop */
 		}
 
 		return ret;
@@ -157,9 +136,9 @@ public class NimrodUtils {
 
 	@SafeVarargs
 	public static <T> T coalesce(T... args) {
-		for(int i = 0; i < args.length; ++i) {
-			if(args[i] != null) {
-				return args[i];
+		for(T arg : args) {
+			if(arg != null) {
+				return arg;
 			}
 		}
 
