@@ -207,6 +207,8 @@ public class NimrodPortalEndpoints {
 			}
 		}
 
+		jdbc.queryForRowSet("SELECT * FROM public.portal_fix_user(?)", userState.dbUser);
+
 		/* Template the config file out to the HPC */
 		ResponseEntity<String> jo;
 		try {

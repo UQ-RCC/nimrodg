@@ -64,6 +64,25 @@ WHERE
 ;
 GRANT SELECT ON public.current_portal_user TO PUBLIC;
 
+CREATE OR REPLACE FUNCTION public.portal_fix_user(_username NAME) RETURNS VOID AS $$
+BEGIN
+    -- Allow the user to see all data
+    EXECUTE format('GRANT SELECT ON ALL TABLES IN SCHEMA %I TO %I', _username, _username);
+
+    -- Allow the user to edit jobs/agents/assignments
+    EXECUTE format('GRANT SELECT,UPDATE,INSERT,DELETE   ON %I.nimrod_resource_assignments           TO %I', _username, _username);
+    EXECUTE format('GRANT UPDATE                        ON %I.nimrod_experiments                    TO %I', _username, _username);
+    EXECUTE format('GRANT SELECT,INSERT,DELETE          ON %I.nimrod_master_message_storage         TO %I', _username, _username);
+    EXECUTE format('GRANT SELECT,INSERT,UPDATE,DELETE   ON %I.nimrod_job_attempts                   TO %I', _username, _username);
+    EXECUTE format('GRANT USAGE                         ON %I.nimrod_job_attempts_id_seq            TO %I', _username, _username);
+    EXECUTE format('GRANT SELECT,INSERT,DELETE          ON %I.nimrod_resource_capabilities          TO %I', _username, _username);
+    EXECUTE format('GRANT USAGE                         ON %I.nimrod_resource_capabilities_id_seq   TO %I', _username, _username);
+    EXECUTE format('GRANT SELECT,UPDATE,INSERT,DELETE   ON %I.nimrod_resource_agents                TO %I', _username, _username);
+    EXECUTE format('GRANT USAGE                         ON %I.nimrod_resource_agents_id_seq         TO %I', _username, _username);
+    EXECUTE format('GRANT SELECT,UPDATE,INSERT,DELETE   ON %I.nimrod_command_results                TO %I', _username, _username);
+    EXECUTE format('GRANT USAGE                         ON %I.nimrod_command_results_id_seq         TO %I', _username, _username);
+END $$ LANGUAGE 'plpgsql';
+
 CREATE OR REPLACE FUNCTION public.portal_create_user(_username NAME) RETURNS SETOF public.portal_user_status AS $$
 DECLARE
     _user public.portal_users;
@@ -88,22 +107,6 @@ BEGIN
 
     -- Allow the user to see their schema
     EXECUTE format('GRANT USAGE ON SCHEMA %I TO %I', _username, _username);
-
-    -- Allow the user to see all data
-    EXECUTE format('GRANT SELECT ON ALL TABLES IN SCHEMA %I TO %I', _username, _username);
-
-    -- Allow the user to edit jobs/agents/assignments
-    EXECUTE format('GRANT SELECT,UPDATE,INSERT,DELETE   ON %I.nimrod_resource_assignments           TO %I', _username, _username);
-    EXECUTE format('GRANT UPDATE                        ON %I.nimrod_experiments                    TO %I', _username, _username);
-    EXECUTE format('GRANT SELECT,INSERT,DELETE          ON %I.nimrod_master_message_storage         TO %I', _username, _username);
-    EXECUTE format('GRANT SELECT,INSERT,UPDATE,DELETE   ON %I.nimrod_job_attempts                   TO %I', _username, _username);
-    EXECUTE format('GRANT USAGE                         ON %I.nimrod_job_attempts_id_seq            TO %I', _username, _username);
-    EXECUTE format('GRANT SELECT,INSERT,DELETE          ON %I.nimrod_resource_capabilities          TO %I', _username, _username);
-    EXECUTE format('GRANT USAGE                         ON %I.nimrod_resource_capabilities_id_seq   TO %I', _username, _username);
-    EXECUTE format('GRANT SELECT,UPDATE,INSERT,DELETE   ON %I.nimrod_resource_agents                TO %I', _username, _username);
-    EXECUTE format('GRANT USAGE                         ON %I.nimrod_resource_agents_id_seq         TO %I', _username, _username);
-    EXECUTE format('GRANT SELECT,UPDATE,INSERT,DELETE   ON %I.nimrod_command_results                TO %I', _username, _username);
-    EXECUTE format('GRANT USAGE                         ON %I.nimrod_command_results_id_seq         TO %I', _username, _username);
 
     RETURN QUERY SELECT * FROM public.portal_user_status WHERE id = _user.id;
 END
