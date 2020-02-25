@@ -45,10 +45,11 @@ public class FailureTracker {
 		Integer f = m_FailureCounts.getOrDefault(node, 0);
 		int val = f + 1;
 		m_FailureCounts.put(node, val);
-		LOGGER.error("Failed to launch job on '{}', attempt {}", node.getPath(), val);
+		LOGGER.error(String.format("Failed to launch job on '%s', attempt %s", node.getPath(), val), t);
 		if(val >= m_Threshold) {
 			LOGGER.error("This resource has been blacklisted, fix the error and re-assign to reset.");
 		}
+
 
 	}
 
