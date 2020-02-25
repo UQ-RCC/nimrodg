@@ -100,6 +100,10 @@ BEGIN
     EXECUTE format('GRANT USAGE                         ON %I.nimrod_job_attempts_id_seq            TO %I', _username, _username);
     EXECUTE format('GRANT SELECT,INSERT,DELETE          ON %I.nimrod_resource_capabilities          TO %I', _username, _username);
     EXECUTE format('GRANT USAGE                         ON %I.nimrod_resource_capabilities_id_seq   TO %I', _username, _username);
+    EXECUTE format('GRANT SELECT,UPDATE,INSERT,DELETE   ON %I.nimrod_resource_agents                TO %I', _username, _username);
+    EXECUTE format('GRANT USAGE                         ON %I.nimrod_resource_agents_id_seq         TO %I', _username, _username);
+    EXECUTE format('GRANT SELECT,UPDATE,INSERT,DELETE   ON %I.nimrod_command_results                TO %I', _username, _username);
+    EXECUTE format('GRANT USAGE                         ON %I.nimrod_command_results_id_seq         TO %I', _username, _username);
 
     RETURN QUERY SELECT * FROM public.portal_user_status WHERE id = _user.id;
 END
