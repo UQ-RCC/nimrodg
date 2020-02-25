@@ -84,6 +84,7 @@ public class NimrodException extends RuntimeException {
 		public final SQLException sql;
 
 		public DbError(SQLException sql) {
+			super(sql);
 			this.sql = sql;
 		}
 	}
