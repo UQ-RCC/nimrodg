@@ -56,6 +56,7 @@ import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.security.cert.Certificate;
 import java.time.Instant;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.Map;
 import java.util.Optional;
@@ -201,7 +202,7 @@ public class AMQProcessorImpl implements AMQProcessor {
 				.appId("nimrod")
 				.headers(Map.of(
 						"User-Agent", "NimrodGMaster/X.X.X", /* FIXME */
-						"X-NimrodG-Sent-At", timestamp.toString()
+						"X-NimrodG-Sent-At", DateTimeFormatter.ISO_INSTANT.format(timestamp)
 				))
 				.build();
 

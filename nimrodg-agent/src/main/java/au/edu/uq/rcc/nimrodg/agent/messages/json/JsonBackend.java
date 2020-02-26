@@ -24,6 +24,8 @@ import au.edu.uq.rcc.nimrodg.agent.MessageBackend;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -61,6 +63,7 @@ public class JsonBackend implements MessageBackend {
 		JsonObjectBuilder jo = Json.createObjectBuilder();
 		jo.add("uuid", msg.getAgentUUID().toString());
 		jo.add("type", toJson(msg.getType()));
+		jo.add("timestamp", DateTimeFormatter.ISO_INSTANT.format(Instant.now())); // FFIXME:
 		getHandlerForType(msg.getType()).write(jo, msg);
 		return jo.build();
 	}
