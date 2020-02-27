@@ -42,4 +42,8 @@ public class NimrodAPIImpl extends TempNimrodAPIImpl {
 		}
 	}
 
+	@Override
+	public Connection getConnection() {
+		return conn;
+	}
 }

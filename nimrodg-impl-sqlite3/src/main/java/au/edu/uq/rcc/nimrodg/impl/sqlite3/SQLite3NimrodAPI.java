@@ -41,4 +41,10 @@ public class SQLite3NimrodAPI extends TempNimrodAPIImpl {
 			throw new NimrodException.DbError(e);
 		}
 	}
+
+	@Override
+	public Connection getConnection() {
+		return conn;
+	}
+
 }

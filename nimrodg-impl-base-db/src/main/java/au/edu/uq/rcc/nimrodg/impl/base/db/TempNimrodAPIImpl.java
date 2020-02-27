@@ -42,6 +42,7 @@ import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledRun;
 import javax.json.JsonStructure;
 import java.io.IOException;
 import java.security.cert.Certificate;
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -384,4 +385,6 @@ public abstract class TempNimrodAPIImpl implements NimrodAPI, NimrodMasterAPI, N
 
 		return db.runSQLTransaction(() -> db.isTokenValidForStorageT(run, token));
 	}
+
+	public abstract Connection getConnection();
 }
