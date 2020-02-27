@@ -61,6 +61,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -227,9 +228,9 @@ public abstract class APITests {
 			attempts.add(runningAtt);
 
 			/* Check filtering everything. */
-			Set<JobAttempt> js0 = attempts.stream().collect(Collectors.toSet());
-			Set<JobAttempt> js1 = j.filterAttempts(EnumSet.allOf(JobAttempt.Status.class)).stream().collect(Collectors.toSet());
-			Set<JobAttempt> js2 = j.filterAttempts().stream().collect(Collectors.toSet());
+			Set<JobAttempt> js0 = new HashSet<>(attempts);
+			Set<JobAttempt> js1 = new HashSet<>(j.filterAttempts(EnumSet.allOf(JobAttempt.Status.class)));
+			Set<JobAttempt> js2 = new HashSet<>(j.filterAttempts());
 
 			Assert.assertEquals(js0, js1);
 			Assert.assertEquals(js0, js2);
@@ -243,11 +244,11 @@ public abstract class APITests {
 
 		{
 			/* Check filtering by experiment. Used by the master. */
-			Map<Job, Set<JobAttempt>> j0 = Map.of(j, attempts.stream().collect(Collectors.toSet()));
+			Map<Job, Set<JobAttempt>> j0 = Map.of(j, new HashSet<>(attempts));
 			Map<Job, Set<JobAttempt>> j1 = mapi.filterJobAttempts(exp, EnumSet.allOf(JobAttempt.Status.class)).entrySet().stream()
 					.collect(Collectors.toMap(
-							e -> e.getKey(),
-							e -> e.getValue().stream().collect(Collectors.toSet())
+							Map.Entry::getKey,
+							e -> new HashSet<>(e.getValue())
 					));
 			Assert.assertEquals(j0, j1);
 		}
@@ -283,7 +284,7 @@ public abstract class APITests {
 		int x = 0;
 	}
 
-	private class _FactuatorOps extends ActuatorOpsAdapter {
+	private static class _FactuatorOps extends ActuatorOpsAdapter {
 
 		public _FactuatorOps(NimrodMasterAPI nimrod) {
 			super(nimrod);
