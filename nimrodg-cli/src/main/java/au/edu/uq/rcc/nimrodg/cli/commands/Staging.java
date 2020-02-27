@@ -47,6 +47,7 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.UUID;
 import javax.json.Json;
 import javax.json.JsonObject;
@@ -68,7 +69,7 @@ public class Staging extends DefaultCLICommand {
 		try {
 			return this.getClass().getDeclaredMethod(name, UserConfig.class, NimrodAPI.class, PrintStream.class, PrintStream.class, Path[].class, String[].class);
 		} catch(NoSuchMethodException | SecurityException e) {
-
+			/* nop */
 		}
 		return null;
 	}
@@ -77,7 +78,7 @@ public class Staging extends DefaultCLICommand {
 		try {
 			return this.getClass().getDeclaredMethod(name, UserConfig.class, PrintStream.class, PrintStream.class, Path[].class, String[].class);
 		} catch(NoSuchMethodException | SecurityException e) {
-
+			/* nop */
 		}
 		return null;
 	}
@@ -155,7 +156,7 @@ public class Staging extends DefaultCLICommand {
 	public void nAgentSleep(UserConfig config, NimrodAPI nimrod, PrintStream out, PrintStream err, Path[] configDirs, String[] args) throws Exception {
 
 		if(args.length > 2) {
-			err.printf("Invalid arguments\n");
+			err.print("Invalid arguments\n");
 			return;
 		}
 
@@ -293,7 +294,7 @@ public class Staging extends DefaultCLICommand {
 		int i = 0;
 		for(Job j : jobs) {
 			long startTime = System.currentTimeMillis();
-			nimrod.createJobAttempt(j);
+			nimrod.createJobAttempts(List.of(j));
 			long endTime = System.currentTimeMillis();
 
 			totalTime += endTime - startTime;
@@ -319,7 +320,7 @@ public class Staging extends DefaultCLICommand {
 		System.err.printf("Took %f seconds\n", secs / numTimes);
 	}
 
-	private class NullOps extends ActuatorOpsAdapter {
+	private static class NullOps extends ActuatorOpsAdapter {
 		public NullOps(NimrodMasterAPI nimrod) {
 			super(nimrod);
 		}
@@ -330,7 +331,7 @@ public class Staging extends DefaultCLICommand {
 		}
 	}
 
-	public static void main(String[] args) throws Exception, Exception {
+	public static void main(String[] args) throws Exception {
 		//System.exit(NimrodCLI.cliMain(new String[]{"-d", "staging", "nAgentSleep", "6", "60"}));
 		System.exit(NimrodCLI.cliMain(new String[]{"-d", "staging", "bigGet"}));
 	}
@@ -378,13 +379,11 @@ public class Staging extends DefaultCLICommand {
 				.add("uri", "ssh://uqzvanim@wiener.hpc.net.uq.edu.au")
 				.add("keyfile", WIENER_KEY_PATH.toString())
 				.add("slurmargs", Json.createArrayBuilder(Arrays.asList(
-						new String[]{
-							"--nodes", "1",
-							"--ntasks", "1",
-							"--mem-per-cpu", "1g",
-							"--cpus-per-task", "1",
-							"--ntasks-per-node", "1"
-						})).build())
+						"--nodes", "1",
+						"--ntasks", "1",
+						"--mem-per-cpu", "1g",
+						"--cpus-per-task", "1",
+						"--ntasks-per-node", "1")).build())
 				.add("hostkey", "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBC+yRQJovkwmZNLJ14J2k55VhSWIM8IKlFm6UmSrKD7jfTSp7kuriV+Yi3MC9Bo41+sPaHZRNf+6UWhZ1DNJZOg=")
 				.add("limit", 100)
 				.add("max_batch_size", 20)
@@ -401,10 +400,7 @@ public class Staging extends DefaultCLICommand {
 		 * NB: Job-wide and chunk resources are mutually exclusive.
 		 */
 		return Json.createObjectBuilder()
-				.add("pbsargs", Json.createArrayBuilder(Arrays.asList(
-						new String[]{
-							"-A", "UQ-RCC"
-						})).build())
+				.add("pbsargs", Json.createArrayBuilder(Arrays.asList("-A", "UQ-RCC")).build())
 				.add("batch_dialect", "pbspro")
 				.add("batch_config", Json.createArrayBuilder()
 						.add(Json.createObjectBuilder()
