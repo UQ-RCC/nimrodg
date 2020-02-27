@@ -166,7 +166,7 @@ public abstract class APITests {
 		List<JobAttempt> attempts = new ArrayList<>();
 		/* Create one job a attempt and make it run successfully. */
 		{
-			JobAttempt att = mapi.createJobAttempt(j);
+			JobAttempt att = mapi.createJobAttempts(List.of(j)).get(0);
 
 			Assert.assertNull(att.getAgentUUID());
 			Assert.assertNull(att.getStartTime());
@@ -197,7 +197,7 @@ public abstract class APITests {
 
 		/* Create another attempt and fail it immediately */
 		{
-			JobAttempt att = mapi.createJobAttempt(j);
+			JobAttempt att = mapi.createJobAttempts(List.of(j)).get(0);
 
 			Assert.assertNull(att.getAgentUUID());
 			Assert.assertNull(att.getStartTime());
@@ -218,11 +218,11 @@ public abstract class APITests {
 
 		{
 			/* Create an attempt and leave it NOT_RUN. */
-			JobAttempt notRunAtt = mapi.createJobAttempt(j);
+			JobAttempt notRunAtt = mapi.createJobAttempts(List.of(j)).get(0);
 			attempts.add(notRunAtt);
 
 			/* Create an attempt and leave it RUNNING. */
-			JobAttempt runningAtt = mapi.createJobAttempt(j);
+			JobAttempt runningAtt = mapi.createJobAttempts(List.of(j)).get(0);
 			mapi.startJobAttempt(runningAtt, agentUuid);
 			attempts.add(runningAtt);
 
@@ -558,7 +558,7 @@ public abstract class APITests {
 
 		Job j = exp1.filterJobs(EnumSet.of(JobAttempt.Status.NOT_RUN), 0, 1).stream().findFirst().get();
 
-		JobAttempt att = mapi.createJobAttempt(j);
+		JobAttempt att = mapi.createJobAttempts(List.of(j)).get(0);
 		String attToken = mapi.getJobAttemptToken(att);
 
 		NimrodEntity attEnt = sapi.isTokenValidForStorage(exp1, attToken);

@@ -72,12 +72,7 @@ public interface NimrodMasterAPI extends NimrodAPI {
 
 	void updateExperimentState(Experiment exp, Experiment.State state);
 
-	@Deprecated
-	default JobAttempt createJobAttempt(Job j) {
-		return createJobAttempts(List.of(j)).iterator().next();
-	}
-
-	Collection<JobAttempt> createJobAttempts(Collection<Job> jobs);
+	List<JobAttempt> createJobAttempts(Collection<Job> jobs);
 
 	void startJobAttempt(JobAttempt att, UUID agentUuid);
 
