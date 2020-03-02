@@ -547,7 +547,7 @@ public class NimrodPortalEndpoints {
 		Collection<Job> jobs = exp.filterJobs(EnumSet.allOf(JobAttempt.Status.class), 0, -1);
 		int nComplete = 0, nFailed = 0, nPending = 0, nRunning = 0;
 		for(Job j : jobs) {
-			switch(j.getStatus()) {
+			switch(j.getCachedStatus()) {
 				case COMPLETED:
 					++nComplete;
 					break;
