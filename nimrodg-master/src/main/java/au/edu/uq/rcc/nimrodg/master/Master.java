@@ -718,6 +718,11 @@ public class Master implements MessageQueueListener, AutoCloseable {
 		}
 
 		@Override
+		public JobAttempt.Status fetchJobStatus(Job j) {
+			return nimrod.getJobStatus(j);
+		}
+
+		@Override
 		public Collection<JobAttempt> runJobs(Collection<Job> j) {
 			Collection<JobAttempt> att = nimrod.createJobAttempts(j);
 			att.forEach(agentScheduler::onJobRun);

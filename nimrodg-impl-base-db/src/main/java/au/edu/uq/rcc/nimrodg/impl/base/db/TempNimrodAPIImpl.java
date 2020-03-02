@@ -107,6 +107,12 @@ public abstract class TempNimrodAPIImpl implements NimrodAPI, NimrodMasterAPI, N
 	}
 
 	@Override
+	public List<JobAttempt.Status> getJobStatuses(Collection<Job> jobs) {
+		/* TODO: Evaluate changing dbapi calls to take streams instead of lists. */
+		return db.runSQL(() -> db.getJobStatuses(jobs.stream().map(TempNimrodAPIImpl::validateJob).collect(Collectors.toList())));
+	}
+
+	@Override
 	public NimrodConfig getConfig() {
 		return db.runSQL(db::getConfig);
 	}

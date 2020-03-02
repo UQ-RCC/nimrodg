@@ -173,7 +173,7 @@ public abstract class APITests {
 			Assert.assertNull(att.getStartTime());
 			Assert.assertNull(att.getFinishTime());
 			Assert.assertEquals(JobAttempt.Status.NOT_RUN, att.getStatus());
-			Assert.assertEquals(JobAttempt.Status.NOT_RUN, j.getStatus());
+			Assert.assertEquals(JobAttempt.Status.NOT_RUN, api.getJobStatus(j));
 
 			mapi.startJobAttempt(att, agentUuid);
 
@@ -181,7 +181,7 @@ public abstract class APITests {
 			Assert.assertNotNull(att.getStartTime());
 			Assert.assertNull(att.getFinishTime());
 			Assert.assertEquals(JobAttempt.Status.RUNNING, att.getStatus());
-			Assert.assertEquals(JobAttempt.Status.RUNNING, j.getStatus());
+			Assert.assertEquals(JobAttempt.Status.RUNNING, api.getJobStatus(j));
 
 			/* Add a command result for goot measure. Note this has no affect on the attempt status. */
 			mapi.addCommandResult(att, CommandResult.CommandResultStatus.SUCCESS, 1, 10.0f, 0, "Success", 0, true);
@@ -191,7 +191,7 @@ public abstract class APITests {
 			Assert.assertNotNull(att.getStartTime());
 			Assert.assertNotNull(att.getFinishTime());
 			Assert.assertEquals(JobAttempt.Status.COMPLETED, att.getStatus());
-			Assert.assertEquals(JobAttempt.Status.COMPLETED, j.getStatus());
+			Assert.assertEquals(JobAttempt.Status.COMPLETED, api.getJobStatus(j));
 
 			attempts.add(att);
 		}
@@ -204,7 +204,7 @@ public abstract class APITests {
 			Assert.assertNull(att.getStartTime());
 			Assert.assertNull(att.getFinishTime());
 			Assert.assertEquals(JobAttempt.Status.NOT_RUN, att.getStatus());
-			Assert.assertEquals(JobAttempt.Status.COMPLETED, j.getStatus());
+			Assert.assertEquals(JobAttempt.Status.COMPLETED, api.getJobStatus(j));
 
 			mapi.finishJobAttempt(att, true);
 
@@ -212,7 +212,7 @@ public abstract class APITests {
 			Assert.assertNotNull(att.getStartTime());
 			Assert.assertNotNull(att.getFinishTime());
 			Assert.assertEquals(JobAttempt.Status.FAILED, att.getStatus());
-			Assert.assertEquals(JobAttempt.Status.COMPLETED, j.getStatus());
+			Assert.assertEquals(JobAttempt.Status.COMPLETED, api.getJobStatus(j));
 
 			attempts.add(att);
 		}

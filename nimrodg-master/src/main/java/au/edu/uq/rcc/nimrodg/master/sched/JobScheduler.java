@@ -36,6 +36,8 @@ public interface JobScheduler {
 
 		Experiment getExperiment();
 
+		JobAttempt.Status fetchJobStatus(Job j);
+
 		Collection<JobAttempt> runJobs(Collection<Job> jobs);
 
 		void cancelJob(JobAttempt att);

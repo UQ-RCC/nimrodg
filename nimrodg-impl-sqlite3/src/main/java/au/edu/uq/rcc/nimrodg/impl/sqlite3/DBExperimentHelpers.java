@@ -594,12 +594,34 @@ public class DBExperimentHelpers extends DBBaseHelper {
 						jobIndex,
 						DBUtils.getLongInstant(rs, "created"),
 						rs.getString("path"),
+						null,
 						vars
 				));
 			}
 		}
 
-		return jobs;
+		return updateJobs(jobs);
+	}
+
+	private TempJob updateJob(TempJob tj) throws SQLException {
+		return new TempJob(
+				tj.id,
+				tj.expId,
+				tj.jobIndex,
+				tj.created,
+				tj.path,
+				getJobCounts(tj.id).status,
+				tj.variables
+		);
+	}
+
+	private List<TempJob> updateJobs(List<TempJob> jobs) throws SQLException {
+		List<TempJob> jobs2 = new ArrayList<>(jobs.size());
+		for(TempJob tj : jobs) {
+			jobs2.add(updateJob(tj));
+		}
+
+		return jobs2;
 	}
 
 	public Optional<TempJob> getSingleJob(long jobId) throws SQLException {
@@ -614,14 +636,15 @@ public class DBExperimentHelpers extends DBBaseHelper {
 			vars.put("jobindex", String.valueOf(jobIndex));
 			vars.put("jobname", String.valueOf(jobIndex));
 
-			return Optional.of(new TempJob(
+			return Optional.of(updateJob(new TempJob(
 					jobId,
 					rs.getLong("exp_id"),
 					jobIndex,
 					DBUtils.getLongInstant(rs, "created"),
 					rs.getString("path"),
+					null,
 					vars
-			));
+			)));
 		}
 	}
 
@@ -691,18 +714,9 @@ public class DBExperimentHelpers extends DBBaseHelper {
 	}
 
 	public List<TempJob> filterJobs(long expId, EnumSet<JobAttempt.Status> status, long start, long limit) throws SQLException {
-		List<TempJob> tempJobs = getJobRange(expId, start, limit);
-
-		List<TempJob> jobs = new ArrayList<>(tempJobs.size());
-		for(TempJob j : tempJobs) {
-			JobCounts c = getJobCounts(j.id);
-
-			if(status.contains(c.status)) {
-				jobs.add(j);
-			}
-		}
-
-		return jobs;
+		return getJobRange(expId, start, limit).stream()
+				.filter(tj -> status.contains(tj.status))
+				.collect(Collectors.toList());
 	}
 
 	public List<TempJob> getJobsById(long[] ids) throws SQLException {

@@ -185,7 +185,7 @@ public class DefaultJobScheduler implements JobScheduler {
 		Job j = att.getJob();
 		JobInfo stats = jobInfo.get(j);
 
-		Status stat = j.getStatus();
+		Status stat = ops.fetchJobStatus(j);
 
 		if(stat == JobAttempt.Status.COMPLETED) {
 			++stats.retryCount;

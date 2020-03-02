@@ -35,14 +35,16 @@ public class TempJob {
 	public final long jobIndex;
 	public final Instant created;
 	public final String path;
+	public final JobAttempt.Status status;
 	public final Map<String, String> variables;
 
-	public TempJob(long id, long expId, long jobIndex, Instant created, String path, Map<String, String> variables) {
+	public TempJob(long id, long expId, long jobIndex, Instant created, String path, JobAttempt.Status status, Map<String, String> variables) {
 		this.id = id;
 		this.expId = expId;
 		this.jobIndex = jobIndex;
 		this.created = created;
 		this.path = path;
+		this.status = status;
 		this.variables = Map.copyOf(variables);
 	}
 
@@ -88,8 +90,8 @@ public class TempJob {
 		}
 
 		@Override
-		public JobAttempt.Status getStatus() {
-			return m_DB.runSQL(() -> m_DB.getJobStatus(this));
+		public JobAttempt.Status getCachedStatus() {
+			return status;
 		}
 
 		@Override

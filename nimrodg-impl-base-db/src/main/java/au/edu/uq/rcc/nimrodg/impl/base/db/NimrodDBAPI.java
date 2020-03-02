@@ -29,6 +29,7 @@ import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.api.events.NimrodMasterEvent;
 import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledRun;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
@@ -72,11 +73,21 @@ public interface NimrodDBAPI extends ResourceFunctions<TempResource.Impl, TempEx
 
 	Optional<TempJob.Impl> getSingleJobT(long jobId) throws SQLException;
 
+	@Deprecated
 	JobAttempt.Status getJobStatus(TempJob.Impl job) throws SQLException;
 
 	List<TempJob.Impl> filterJobs(TempExperiment.Impl exp, EnumSet<JobAttempt.Status> status, long start, long limit) throws SQLException;
 
 	List<TempJob.Impl> addJobs(TempExperiment.Impl exp, Collection<Map<String, String>> jobs) throws SQLException;
+
+	default List<JobAttempt.Status> getJobStatuses(Collection<TempJob.Impl> jobs) throws SQLException {
+		List<JobAttempt.Status> sl = new ArrayList<>(jobs.size());
+		for(TempJob.Impl j : jobs) {
+			sl.add(getJobStatus(j));
+		}
+
+		return sl;
+	}
 
 	TempJobAttempt.Impl createJobAttempt(TempJob.Impl job, UUID uuid) throws SQLException;
 
