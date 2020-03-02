@@ -1,8 +1,11 @@
 package au.edu.uq.rcc.nimrodg.parsing.visitors;
 
+import au.edu.uq.rcc.nimrodg.api.utils.run.suppliers.ValueSupplier;
 import au.edu.uq.rcc.nimrodg.parsing.antlr.NimrodFileParser;
 import au.edu.uq.rcc.nimrodg.parsing.antlr.NimrodFileParserBaseVisitor;
 import au.edu.uq.rcc.nimrodg.parsing.visitors.VariableVisitor.ParameterType;
+import org.antlr.v4.runtime.misc.ParseCancellationException;
+
 import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
@@ -11,9 +14,7 @@ import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 import java.util.stream.Collectors;
-import org.antlr.v4.runtime.misc.ParseCancellationException;
 
 public class DomainVisitor extends NimrodFileParserBaseVisitor<List<String>> {
 
@@ -52,9 +53,8 @@ public class DomainVisitor extends NimrodFileParserBaseVisitor<List<String>> {
 				throw new ParseCancellationException(String.format("'default' domain not valid with parameter type '%s'", typeString));
 		}
 
-		List<String> ss = new ArrayList<>();
-		ss.add(val);
-		return ss;
+		return ValueSupplier.createDefaultSupplier(val)
+				.stream().collect(Collectors.toList());
 	}
 
 	@Override
@@ -102,14 +102,8 @@ public class DomainVisitor extends NimrodFileParserBaseVisitor<List<String>> {
 			step = 1;
 		}
 
-		/* Java 8's IntStream can't do step sizes. */
-		int n = (int)Math.max(0, (end - start) / step);
-		List<String> args = new ArrayList<>(n);
-		for(long i = start; i <= end; i += step) {
-			args.add(Long.toString(i));
-		}
-
-		return args;
+		return ValueSupplier.createIntegerRangeStepSupplier(start, end, step)
+				.stream().collect(Collectors.toList());
 	}
 
 	private static List<String> buildFloatRangeDomain(NimrodFileParser.DomainRangeContext ctx) {
@@ -129,13 +123,8 @@ public class DomainVisitor extends NimrodFileParserBaseVisitor<List<String>> {
 			step = 1.0;
 		}
 
-		int n = (int)Math.ceil(Math.max(0, (end - start) / step));
-		List<String> args = new ArrayList<>(n);
-		for(double f = start; f <= end; f += step) {
-			args.add(Double.toString(f));
-		}
-
-		return args;
+		return ValueSupplier.createFloatRangeStepSupplier(start, end, step)
+				.stream().collect(Collectors.toList());
 	}
 
 	@Override
@@ -166,15 +155,14 @@ public class DomainVisitor extends NimrodFileParserBaseVisitor<List<String>> {
 		}
 		long end = Long.parseLong(_stop.getText(), 10);
 
-		long count = 1;
+		int count = 1;
 		NimrodFileParser.PositiveIntegerContext ictx = ctx.positiveInteger();
 		if(ictx != null) {
-			count = Long.parseLong(ictx.getText(), 10);
+			count = Integer.parseUnsignedInt(ictx.getText(), 10);
 		}
 
-		return new Random().longs(count, start, end)
-				.mapToObj(l -> Long.toString(l))
-				.collect(Collectors.toList());
+		return ValueSupplier.createIntegerRandomSupplier(start, end, count)
+				.stream().collect(Collectors.toList());
 	}
 
 	private static List<String> buildFloatRandomDomain(NimrodFileParser.DomainRandomContext ctx) {
@@ -183,15 +171,14 @@ public class DomainVisitor extends NimrodFileParserBaseVisitor<List<String>> {
 		double start = Double.parseDouble(nos.get(0).getText());
 		double end = Double.parseDouble(nos.get(1).getText());
 
-		long count = 1;
+		int count = 1;
 		NimrodFileParser.PositiveIntegerContext ictx = ctx.positiveInteger();
 		if(ictx != null) {
-			count = Long.parseLong(ictx.getText(), 10);
+			count = Integer.parseUnsignedInt(ictx.getText(), 10);
 		}
 
-		return new Random().doubles(count, start, end)
-				.mapToObj(l -> Double.toString(l))
-				.collect(Collectors.toList());
+		return ValueSupplier.createFloatRandomSupplier(start, end, count)
+				.stream().collect(Collectors.toList());
 	}
 
 	@Override
@@ -256,7 +243,7 @@ public class DomainVisitor extends NimrodFileParserBaseVisitor<List<String>> {
 					/* Each path is relative to cwd, so just toString() it. */
 					walker.getPathList()
 							.stream()
-							.map(p -> p.toString())
+							.map(Path::toString)
 							.filter(ss -> !ss.isEmpty())
 							.forEach(matched::add);
 				}
@@ -266,6 +253,8 @@ public class DomainVisitor extends NimrodFileParserBaseVisitor<List<String>> {
 			default:
 				throw new ParseCancellationException(String.format("'anyof' domain not valid with parameter type '%s'", typeString));
 		}
-		return vals;
+
+		return ValueSupplier.createStringSuppliedSupplier(vals)
+				.stream().collect(Collectors.toList());
 	}
 }
