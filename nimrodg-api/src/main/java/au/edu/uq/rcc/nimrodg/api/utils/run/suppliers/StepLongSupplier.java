@@ -2,20 +2,33 @@ package au.edu.uq.rcc.nimrodg.api.utils.run.suppliers;
 
 public class StepLongSupplier implements ValueSupplier {
 	private final int totalCount;
+	private final long start;
+	private final long end;
 	private final int step;
 	private long next;
-	private long end;
+
 
 	public StepLongSupplier(long start, long end, int step) {
 		this.totalCount = (int)Math.max(0, (end - start) / step) + 1;
+		this.start = start;
+		this.end = end;
 		this.step = step;
 		this.next = start;
-		this.end = end;
 	}
 
 	@Override
 	public int getTotalCount() {
 		return totalCount;
+	}
+
+	@Override
+	public ValueSupplier duplicateFromStart() {
+		return new StepLongSupplier(start, end, step);
+	}
+
+	@Override
+	public void reset() {
+		next = start;
 	}
 
 	@Override

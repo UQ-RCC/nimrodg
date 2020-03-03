@@ -19,25 +19,34 @@
  */
 package au.edu.uq.rcc.nimrodg.api.utils.run;
 
-import java.util.ArrayList;
-import java.util.List;
+import au.edu.uq.rcc.nimrodg.api.utils.run.suppliers.ValueSupplier;
+
+import java.util.stream.Collectors;
 
 public class VariableBuilder {
 
 	private String name;
 	private String label;
 	private int index;
-	private final List<String> values;
+	private ValueSupplier supplier;
 
 	public VariableBuilder() {
-		this.values = new ArrayList<>();
+		this.supplier = ValueSupplier.getEmpty();
 	}
 
 	public VariableBuilder(VariableBuilder vb) {
 		this.name = vb.name;
 		this.index = vb.index;
 		this.label = vb.label;
-		this.values = new ArrayList<>(vb.values);
+		this.supplier = vb.supplier.duplicateFromStart();
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public int getIndex() {
+		return index;
 	}
 
 	public VariableBuilder name(String name) {
@@ -55,17 +64,16 @@ public class VariableBuilder {
 		return this;
 	}
 
-	public VariableBuilder addValue(String value) {
-		this.values.add(value);
-		return this;
-	}
-
-	public VariableBuilder addValues(List<String> values) {
-		this.values.addAll(values);
+	public VariableBuilder supplier(ValueSupplier supp) {
+		if(supp != null) {
+			this.supplier = supp;
+		} else {
+			this.supplier = ValueSupplier.getEmpty();
+		}
 		return this;
 	}
 
 	public CompiledVariable build() {
-		return new CompiledVariable(name, index, values);
+		return new CompiledVariable(name, index, supplier.stream().collect(Collectors.toList()));
 	}
 }

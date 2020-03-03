@@ -16,7 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class DomainVisitor extends NimrodFileParserBaseVisitor<List<String>> {
+public class DomainVisitor extends NimrodFileParserBaseVisitor<ValueSupplier> {
 
 	private final ParameterType type;
 	private final String typeString;
@@ -27,7 +27,7 @@ public class DomainVisitor extends NimrodFileParserBaseVisitor<List<String>> {
 	}
 
 	@Override
-	public List<String> visitDomainDefault(NimrodFileParser.DomainDefaultContext ctx) {
+	public ValueSupplier visitDomainDefault(NimrodFileParser.DomainDefaultContext ctx) {
 		String val = ctx.variableValue().accept(LiteralVisitor.INSTANCE);
 
 		/* Do some basic validation */
@@ -53,12 +53,11 @@ public class DomainVisitor extends NimrodFileParserBaseVisitor<List<String>> {
 				throw new ParseCancellationException(String.format("'default' domain not valid with parameter type '%s'", typeString));
 		}
 
-		return ValueSupplier.createDefaultSupplier(val)
-				.stream().collect(Collectors.toList());
+		return ValueSupplier.createDefaultSupplier(val);
 	}
 
 	@Override
-	public List<String> visitDomainRange(NimrodFileParser.DomainRangeContext ctx) {
+	public ValueSupplier visitDomainRange(NimrodFileParser.DomainRangeContext ctx) {
 		switch(type) {
 			case Integer:
 				return buildIntegerRangeDomain(ctx);
@@ -69,7 +68,7 @@ public class DomainVisitor extends NimrodFileParserBaseVisitor<List<String>> {
 		}
 	}
 
-	private static List<String> buildIntegerRangeDomain(NimrodFileParser.DomainRangeContext ctx) {
+	private static ValueSupplier buildIntegerRangeDomain(NimrodFileParser.DomainRangeContext ctx) {
 		List<NimrodFileParser.NumberContext> nos = ctx.number();
 
 		/* These may be decimals, so see if the integer rule explicitly was matched. */
@@ -102,11 +101,10 @@ public class DomainVisitor extends NimrodFileParserBaseVisitor<List<String>> {
 			step = 1;
 		}
 
-		return ValueSupplier.createIntegerRangeStepSupplier(start, end, step)
-				.stream().collect(Collectors.toList());
+		return ValueSupplier.createIntegerRangeStepSupplier(start, end, step);
 	}
 
-	private static List<String> buildFloatRangeDomain(NimrodFileParser.DomainRangeContext ctx) {
+	private static ValueSupplier buildFloatRangeDomain(NimrodFileParser.DomainRangeContext ctx) {
 		/* Every number is a decimal! */
 		List<NimrodFileParser.NumberContext> nos = ctx.number();
 
@@ -123,12 +121,11 @@ public class DomainVisitor extends NimrodFileParserBaseVisitor<List<String>> {
 			step = 1.0;
 		}
 
-		return ValueSupplier.createFloatRangeStepSupplier(start, end, step)
-				.stream().collect(Collectors.toList());
+		return ValueSupplier.createFloatRangeStepSupplier(start, end, step);
 	}
 
 	@Override
-	public List<String> visitDomainRandom(NimrodFileParser.DomainRandomContext ctx) {
+	public ValueSupplier visitDomainRandom(NimrodFileParser.DomainRandomContext ctx) {
 		switch(type) {
 			case Integer:
 				return buildIntegerRandomDomain(ctx);
@@ -139,7 +136,7 @@ public class DomainVisitor extends NimrodFileParserBaseVisitor<List<String>> {
 		}
 	}
 
-	private static List<String> buildIntegerRandomDomain(NimrodFileParser.DomainRandomContext ctx) {
+	private static ValueSupplier buildIntegerRandomDomain(NimrodFileParser.DomainRandomContext ctx) {
 		List<NimrodFileParser.NumberContext> nos = ctx.number();
 
 		/* These may be decimals, so see if the integer rule explicitly was matched. */
@@ -161,11 +158,10 @@ public class DomainVisitor extends NimrodFileParserBaseVisitor<List<String>> {
 			count = Integer.parseUnsignedInt(ictx.getText(), 10);
 		}
 
-		return ValueSupplier.createIntegerRandomSupplier(start, end, count)
-				.stream().collect(Collectors.toList());
+		return ValueSupplier.createIntegerRandomSupplier(start, end, count);
 	}
 
-	private static List<String> buildFloatRandomDomain(NimrodFileParser.DomainRandomContext ctx) {
+	private static ValueSupplier buildFloatRandomDomain(NimrodFileParser.DomainRandomContext ctx) {
 		List<NimrodFileParser.NumberContext> nos = ctx.number();
 
 		double start = Double.parseDouble(nos.get(0).getText());
@@ -177,12 +173,11 @@ public class DomainVisitor extends NimrodFileParserBaseVisitor<List<String>> {
 			count = Integer.parseUnsignedInt(ictx.getText(), 10);
 		}
 
-		return ValueSupplier.createFloatRandomSupplier(start, end, count)
-				.stream().collect(Collectors.toList());
+		return ValueSupplier.createFloatRandomSupplier(start, end, count);
 	}
 
 	@Override
-	public List<String> visitDomainAnyof(NimrodFileParser.DomainAnyofContext ctx) {
+	public ValueSupplier visitDomainAnyof(NimrodFileParser.DomainAnyofContext ctx) {
 		List<String> vals = ctx.variableValue()
 				.stream()
 				.map(vv -> vv.accept(LiteralVisitor.INSTANCE))
@@ -254,7 +249,6 @@ public class DomainVisitor extends NimrodFileParserBaseVisitor<List<String>> {
 				throw new ParseCancellationException(String.format("'anyof' domain not valid with parameter type '%s'", typeString));
 		}
 
-		return ValueSupplier.createStringSuppliedSupplier(vals)
-				.stream().collect(Collectors.toList());
+		return ValueSupplier.createSuppliedSupplier(vals);
 	}
 }

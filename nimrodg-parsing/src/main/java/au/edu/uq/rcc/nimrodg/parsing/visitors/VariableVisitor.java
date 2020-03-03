@@ -3,9 +3,13 @@ package au.edu.uq.rcc.nimrodg.parsing.visitors;
 import au.edu.uq.rcc.nimrodg.api.utils.EscapeException;
 import au.edu.uq.rcc.nimrodg.api.utils.StringUtils;
 import au.edu.uq.rcc.nimrodg.api.utils.run.VariableBuilder;
+import au.edu.uq.rcc.nimrodg.api.utils.run.suppliers.ValueSupplier;
 import au.edu.uq.rcc.nimrodg.parsing.antlr.NimrodFileParser;
 import au.edu.uq.rcc.nimrodg.parsing.antlr.NimrodFileParserBaseVisitor;
 import org.antlr.v4.runtime.misc.ParseCancellationException;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class VariableVisitor extends NimrodFileParserBaseVisitor<VariableBuilder> {
 
@@ -17,16 +21,19 @@ public class VariableVisitor extends NimrodFileParserBaseVisitor<VariableBuilder
 		vb.name(ctx.variableName().getText());
 		vb.index(Integer.parseUnsignedInt(ctx.variableIndex().getText(), 10));
 
+		List<String> vals = new ArrayList<>(ctx.variableValue().size());
 		for(NimrodFileParser.VariableValueContext vctx : ctx.variableValue()) {
 			String escString = vctx.STRING_LITERAL().getText();
 			escString = escString.substring(1, escString.length() - 1);
 			try {
-				vb.addValue(StringUtils.unescape(escString));
+				vals.add(StringUtils.unescape(escString));
 			} catch(EscapeException e) {
 				/* ANTLR should catch this before we do. If you get this, check the grammar or CString#unescape(). */
 				throw new ParseCancellationException("Invalid escape sequence in string. This should never happen.", e);
 			}
 		}
+
+		vb.supplier(ValueSupplier.createSuppliedSupplier(vals));
 
 		return vb;
 	}
@@ -42,7 +49,7 @@ public class VariableVisitor extends NimrodFileParserBaseVisitor<VariableBuilder
 
 		if(ctx.parameterType() != null) {
 			ParameterType type = parseParameterType(ctx.parameterType());
-			vb.addValues(ctx.parameterDomain().accept(new DomainVisitor(type, parameterTypeToString(type))));
+			vb.supplier(ctx.parameterDomain().accept(new DomainVisitor(type, parameterTypeToString(type))));
 		}
 		return vb;
 	}

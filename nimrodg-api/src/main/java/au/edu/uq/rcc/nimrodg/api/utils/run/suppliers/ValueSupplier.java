@@ -1,17 +1,25 @@
 package au.edu.uq.rcc.nimrodg.api.utils.run.suppliers;
 
+import java.security.SecureRandom;
 import java.util.Collection;
+import java.util.Random;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public interface ValueSupplier extends Supplier<String> {
 
 	int getTotalCount();
 
+	ValueSupplier duplicateFromStart();
+
+	void reset();
+
 	@Override
 	String get();
 
 	default Stream<String> stream() {
+		this.reset();
 		return Stream.generate(this).limit(getTotalCount());
 	}
 
@@ -28,41 +36,39 @@ public interface ValueSupplier extends Supplier<String> {
 		return new DefaultSupplier(value);
 	}
 
-
 	static ValueSupplier createIntegerRangeStepSupplier(long start, long end, int step) {
 		return new StepLongSupplier(start, end, step);
 	}
 
-	static ValueSupplier createIntegerRangePointsSupplier(long start, long end, int count) {
-		return createIntegerRangeStepSupplier(start, end, (int)Math.max(0.0, (end - start) / (double)count));
+	private static long getSeed() {
+		byte[] _seed = SecureRandom.getSeed(8);
+		return _seed[0] |
+				((_seed[1] & 0xFFL) << 8) |
+				((_seed[2] & 0xFFL) << 16) |
+				((_seed[3] & 0xFFL) << 24) |
+				((_seed[4] & 0xFFL) << 32) |
+				((_seed[5] & 0xFFL) << 40) |
+				((_seed[6] & 0xFFL) << 48) |
+				((_seed[7] & 0xFFL) << 56);
 	}
 
 	static ValueSupplier createIntegerRandomSupplier(long start, long end, int count) {
-		return new RandomLongSupplier(start, end, count);
+		return new RandomLongSupplier(start, end, count, getSeed());
 	}
-
-	static ValueSupplier createIntegerSuppliedSupplier(Collection<Long> values) {
-		return new SuppliedSupplier<>(values);
-	}
-
 
 	static ValueSupplier createFloatRangeStepSupplier(double start, double end, double step) {
 		return new StepDoubleSupplier(start, end, step);
 	}
 
-	static ValueSupplier createFloatRangePointsSupplier(double start, double end, int count) {
-		return createFloatRangeStepSupplier(start, end, (int)Math.max(0.0, (end - start) / (double)count));
-	}
-
 	static ValueSupplier createFloatRandomSupplier(double start, double end, int count) {
-		return new RandomDoubleSupplier(start, end, count);
+		return new RandomDoubleSupplier(start, end, count, getSeed());
 	}
 
-	static ValueSupplier createFloatSuppliedSupplier(Collection<Double> values) {
+	static <T> ValueSupplier createSuppliedSupplier(Collection<T> values) {
 		return new SuppliedSupplier<>(values);
 	}
 
-	static ValueSupplier createStringSuppliedSupplier(Collection<String> values) {
-		return new SuppliedSupplier<>(values);
+	static ValueSupplier getEmpty() {
+		return EmptySupplier.INSTANCE;
 	}
 }

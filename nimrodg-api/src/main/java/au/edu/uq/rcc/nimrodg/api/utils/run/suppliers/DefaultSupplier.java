@@ -23,6 +23,16 @@ public class DefaultSupplier implements ValueSupplier {
 	}
 
 	@Override
+	public ValueSupplier duplicateFromStart() {
+		return new DefaultSupplier(value);
+	}
+
+	@Override
+	public void reset() {
+		retrieved = false;
+	}
+
+	@Override
 	public String get() {
 		if(retrieved) {
 			throw new IllegalStateException();

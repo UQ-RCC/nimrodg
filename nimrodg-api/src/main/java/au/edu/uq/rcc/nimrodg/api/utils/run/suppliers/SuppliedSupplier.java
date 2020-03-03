@@ -5,7 +5,7 @@ import java.util.Iterator;
 
 public class SuppliedSupplier<T> implements ValueSupplier {
 	private final Collection<T> source;
-	private final Iterator<T> it;
+	private Iterator<T> it;
 
 	SuppliedSupplier(Collection<T> source) {
 		this.source = source;
@@ -15,6 +15,16 @@ public class SuppliedSupplier<T> implements ValueSupplier {
 	@Override
 	public int getTotalCount() {
 		return source.size();
+	}
+
+	@Override
+	public ValueSupplier duplicateFromStart() {
+		return new SuppliedSupplier<>(source);
+	}
+
+	@Override
+	public void reset() {
+		it = source.iterator();
 	}
 
 	@Override
