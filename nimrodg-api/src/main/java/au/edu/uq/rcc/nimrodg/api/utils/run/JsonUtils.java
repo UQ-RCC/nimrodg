@@ -81,7 +81,7 @@ public class JsonUtils {
 		cr.jobs.forEach(j -> {
 			JsonObjectBuilder job = Json.createObjectBuilder();
 			for(int i = 0; i < j.indices.length; ++i) {
-				job.add(cr.variables.get(i).name, cr.variables.get(i).values.get(j.indices[i]));
+				job.add(cr.variables.get(i).name, cr.variables.get(i).supplier.getAt(j.indices[i]));
 			}
 			jab.add(job);
 		});
@@ -114,7 +114,7 @@ public class JsonUtils {
 		int i = 0;
 		for(CompiledJob j : cr.jobs) {
 			for(int v = 0; v < j.indices.length; ++v) {
-				job.add(cr.variables.get(v).name, cr.variables.get(v).values.get(j.indices[v]));
+				job.add(cr.variables.get(v).name, cr.variables.get(v).supplier.getAt(j.indices[v]));
 			}
 			jab.add(job.build());
 			++i;

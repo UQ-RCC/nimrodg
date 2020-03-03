@@ -184,7 +184,7 @@ public class MsgUtils {
 		Map<String, String> varMap = new HashMap<>();
 		int i = 0;
 		for(CompiledVariable var : r.variables) {
-			String vval = var.values.get(cj.indices[i]);
+			String vval = var.supplier.getAt(cj.indices[i]);
 			varMap.put(var.name, vval);
 			++i;
 		}

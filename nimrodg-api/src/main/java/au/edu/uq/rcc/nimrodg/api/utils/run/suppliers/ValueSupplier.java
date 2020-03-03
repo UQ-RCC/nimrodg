@@ -1,7 +1,7 @@
 package au.edu.uq.rcc.nimrodg.api.utils.run.suppliers;
 
 import java.security.SecureRandom;
-import java.util.Collection;
+import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -21,8 +21,12 @@ public interface ValueSupplier extends Supplier<String> {
 		 * Naive implementation, subclasses are expected to provide
 		 * a more efficient version, if possible.
 		 */
-		return this.stream().skip(i).findFirst()
-				.orElseThrow(IllegalArgumentException::new);
+		try {
+			return this.stream().skip(i).findFirst()
+					.orElseThrow(IllegalArgumentException::new);
+		} catch(RuntimeException e) {
+			throw e;
+		}
 	}
 
 	default Stream<String> stream() {
@@ -70,7 +74,7 @@ public interface ValueSupplier extends Supplier<String> {
 		return new RandomDoubleSupplier(start, end, count, getSeed());
 	}
 
-	static <T> ValueSupplier createSuppliedSupplier(Collection<T> values) {
+	static <T> ValueSupplier createSuppliedSupplier(List<T> values) {
 		return new SuppliedSupplier<>(values);
 	}
 

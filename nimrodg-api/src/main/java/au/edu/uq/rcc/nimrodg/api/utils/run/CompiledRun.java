@@ -47,7 +47,7 @@ public final class CompiledRun {
 		this.jobs.forEach(j -> {
 			Map<String, String> job = new HashMap<>();
 			for(int i = 0; i < j.indices.length; ++i) {
-				job.put(this.variables.get(i).name, this.variables.get(i).values.get(j.indices[i]));
+				job.put(this.variables.get(i).name, this.variables.get(i).supplier.getAt(j.indices[i]));
 			}
 			jobsList.add(job);
 		});

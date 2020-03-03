@@ -19,16 +19,16 @@
  */
 package au.edu.uq.rcc.nimrodg.api.utils.run;
 
-import java.util.List;
+import au.edu.uq.rcc.nimrodg.api.utils.run.suppliers.ValueSupplier;
 
 public final class CompiledVariable {
 	public final String name;
 	public final int index;
-	public final List<String> values;
+	public final ValueSupplier supplier;
 	
-	CompiledVariable(String name, int index, List<String> values) {
+	CompiledVariable(String name, int index, ValueSupplier supplier) {
 		this.name = name;
 		this.index = index;
-		this.values = List.copyOf(values);
+		this.supplier = supplier.duplicateFromStart();
 	}
 }

@@ -244,7 +244,7 @@ public class RunBuilder {
 				/* m_Variables is sorted and validated by this stage, so this is safe. */
 				CompiledVariable var = vars.get(i);
 				int index = j.indices[i];
-				if(index < 0 || index >= var.values.size()) {
+				if(index < 0 || index >= var.supplier.getTotalCount()) {
 					throw new InvalidJobVariableIndexException(j, var, index);
 				}
 			}
@@ -401,7 +401,7 @@ public class RunBuilder {
 		for(CompiledVariable var : vars) {
 			List<List<Integer>> nn = new ArrayList<>();
 			for(List<Integer> c : combinations) {
-				for(int i = 0; i < var.values.size(); ++i) {
+				for(int i = 0; i < var.supplier.getTotalCount(); ++i) {
 					List<Integer> n = new ArrayList<>(c);
 					n.add(i);
 					nn.add(n);

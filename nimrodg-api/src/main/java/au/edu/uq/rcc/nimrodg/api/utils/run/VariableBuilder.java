@@ -74,6 +74,6 @@ public class VariableBuilder {
 	}
 
 	public CompiledVariable build() {
-		return new CompiledVariable(name, index, supplier.stream().collect(Collectors.toList()));
+		return new CompiledVariable(name, index, supplier);
 	}
 }

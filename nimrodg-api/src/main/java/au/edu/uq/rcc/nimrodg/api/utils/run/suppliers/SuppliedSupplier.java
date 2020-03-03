@@ -1,13 +1,13 @@
 package au.edu.uq.rcc.nimrodg.api.utils.run.suppliers;
 
-import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 
 public class SuppliedSupplier<T> implements ValueSupplier {
-	private final Collection<T> source;
+	private final List<T> source;
 	private Iterator<T> it;
 
-	SuppliedSupplier(Collection<T> source) {
+	SuppliedSupplier(List<T> source) {
 		this.source = source;
 		this.it = source.iterator();
 	}
@@ -41,6 +41,6 @@ public class SuppliedSupplier<T> implements ValueSupplier {
 			throw new IllegalArgumentException();
 		}
 
-		return null;
+		return source.get(idx).toString();
 	}
 }
