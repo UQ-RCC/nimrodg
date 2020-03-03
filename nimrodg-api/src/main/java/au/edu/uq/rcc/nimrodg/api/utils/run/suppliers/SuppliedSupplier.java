@@ -34,4 +34,13 @@ public class SuppliedSupplier<T> implements ValueSupplier {
 		}
 		return it.next().toString();
 	}
+
+	@Override
+	public String getAt(int idx) {
+		if(idx >= source.size()) {
+			throw new IllegalArgumentException();
+		}
+
+		return null;
+	}
 }

@@ -41,4 +41,13 @@ public class StepLongSupplier implements ValueSupplier {
 		next += step;
 		return String.valueOf(val);
 	}
+
+	@Override
+	public String getAt(int i) {
+		if(i > totalCount) {
+			throw new IllegalArgumentException();
+		}
+
+		return String.valueOf(start + (step * i));
+	}
 }

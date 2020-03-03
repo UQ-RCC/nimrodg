@@ -2,9 +2,7 @@ package au.edu.uq.rcc.nimrodg.api.utils.run.suppliers;
 
 import java.security.SecureRandom;
 import java.util.Collection;
-import java.util.Random;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public interface ValueSupplier extends Supplier<String> {
@@ -18,9 +16,17 @@ public interface ValueSupplier extends Supplier<String> {
 	@Override
 	String get();
 
+	default String getAt(int i) {
+		/*
+		 * Naive implementation, subclasses are expected to provide
+		 * a more efficient version, if possible.
+		 */
+		return this.stream().skip(i).findFirst()
+				.orElseThrow(IllegalArgumentException::new);
+	}
+
 	default Stream<String> stream() {
-		this.reset();
-		return Stream.generate(this).limit(getTotalCount());
+		return Stream.generate(this.duplicateFromStart()).limit(this.getTotalCount());
 	}
 
 	static ValueSupplier createDefaultSupplier(long value) {

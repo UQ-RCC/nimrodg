@@ -27,4 +27,9 @@ public class EmptySupplier implements ValueSupplier {
 	public String get() {
 		throw new IllegalStateException();
 	}
+
+	@Override
+	public String getAt(int i) {
+		throw new IllegalArgumentException();
+	}
 }

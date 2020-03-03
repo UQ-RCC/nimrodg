@@ -39,4 +39,13 @@ public class DefaultSupplier implements ValueSupplier {
 		}
 		return value;
 	}
+
+	@Override
+	public String getAt(int i) {
+		if(i != 0) {
+			throw new IllegalArgumentException();
+		}
+
+		return value;
+	}
 }
