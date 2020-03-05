@@ -37,13 +37,11 @@ public class RunBuilder {
 	private final List<VariableBuilder> m_Variables;
 	private final List<JobBuilder> m_Jobs;
 	private final List<CompiledTask> m_Tasks;
-	private final List<ParameterBuilder> m_Parameters;
 
 	public RunBuilder() {
 		m_Variables = new ArrayList<>();
 		m_Jobs = new ArrayList<>();
 		m_Tasks = new ArrayList<>();
-		m_Parameters = new ArrayList<>();
 	}
 
 	public RunBuilder addVariable(VariableBuilder var) {
@@ -53,16 +51,6 @@ public class RunBuilder {
 
 	public RunBuilder addVariables(Collection<VariableBuilder> vars) {
 		vars.stream().map(VariableBuilder::new).forEach(m_Variables::add);
-		return this;
-	}
-
-	public RunBuilder addParameter(ParameterBuilder param) {
-		m_Parameters.add(new ParameterBuilder(param));
-		return this;
-	}
-
-	public RunBuilder addParameters(Collection<ParameterBuilder> params) {
-		params.stream().map(ParameterBuilder::new).forEach(m_Parameters::add);
 		return this;
 	}
 
