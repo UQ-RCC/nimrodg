@@ -68,7 +68,7 @@ public class SupplierTests {
 		Assert.assertEquals(expectedValues, valuesByGetAt);
 		Assert.assertEquals(expectedValues, valuesByGetAfterReset);
 		Assert.assertEquals(expectedValues, valuesByGetAtAfterReset);
-		Assert.assertEquals(expectedValues, s.stream().collect(Collectors.toList()));
+		Assert.assertEquals(expectedValues, ValueSupplier.stream(s).collect(Collectors.toList()));
 
 		if(testDup) {
 			testSupplier(s.duplicateFromStart(), expectedValues, false);

@@ -3,6 +3,7 @@ package au.edu.uq.rcc.nimrodg.api.utils.run.suppliers;
 import java.security.SecureRandom;
 import java.util.List;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public interface ValueSupplier extends Supplier<String> {
@@ -21,18 +22,21 @@ public interface ValueSupplier extends Supplier<String> {
 		 * Naive implementation, subclasses are expected to provide
 		 * a more efficient version, if possible.
 		 */
-		return this.stream().skip(i).findFirst()
+		return ValueSupplier.stream(this).skip(i).findFirst()
 				.orElseThrow(IllegalArgumentException::new);
 	}
 
-	default Stream<String> stream() {
-		return Stream.generate(this.duplicateFromStart()).limit(this.getTotalCount());
+	static Stream<String> stream(ValueSupplier s) {
+		return Stream.generate(s.duplicateFromStart()).limit(s.getTotalCount());
+	}
+
+	static ValueSupplier expandToSupplied(ValueSupplier s) {
+		return createSuppliedSupplier(ValueSupplier.stream(s).collect(Collectors.toUnmodifiableList()));
 	}
 
 	static ValueSupplier createDefaultSupplier(long value) {
 		return new DefaultSupplier(value);
 	}
-
 
 	static ValueSupplier createDefaultSupplier(double value) {
 		return new DefaultSupplier(value);
@@ -63,7 +67,7 @@ public interface ValueSupplier extends Supplier<String> {
 	}
 
 	static ValueSupplier createIntegerRandomSupplier(long start, long end, int count, long seed) {
-		return new RandomLongSupplier(start, end, count, seed);
+		return expandToSupplied(new RandomLongSupplier(start, end, count, seed));
 	}
 
 	static ValueSupplier createFloatRangeStepSupplier(double start, double end, double step) {
@@ -75,7 +79,7 @@ public interface ValueSupplier extends Supplier<String> {
 	}
 
 	static ValueSupplier createFloatRandomSupplier(double start, double end, int count, long seed) {
-		return new RandomDoubleSupplier(start, end, count, seed);
+		return expandToSupplied(new RandomDoubleSupplier(start, end, count, seed));
 	}
 
 	static <T> ValueSupplier createSuppliedSupplier(List<T> values) {
