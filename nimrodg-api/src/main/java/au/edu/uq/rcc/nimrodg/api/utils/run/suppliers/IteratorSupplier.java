@@ -32,4 +32,9 @@ public abstract class IteratorSupplier<T> implements ValueSupplier {
 
 		return Objects.toString(it.next());
 	}
+
+	@Override
+	public boolean isFastIndex() {
+		return false;
+	}
 }

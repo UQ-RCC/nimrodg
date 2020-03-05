@@ -41,6 +41,11 @@ public class DefaultSupplier implements ValueSupplier {
 	}
 
 	@Override
+	public boolean isFastIndex() {
+		return true;
+	}
+
+	@Override
 	public String getAt(int i) {
 		if(i != 0) {
 			throw new IllegalArgumentException();

@@ -42,6 +42,11 @@ public class StepDoubleSupplier implements ValueSupplier {
 	}
 
 	@Override
+	public boolean isFastIndex() {
+		return true;
+	}
+
+	@Override
 	public String getAt(int i) {
 		if(i >= totalCount) {
 			throw new IllegalArgumentException();
