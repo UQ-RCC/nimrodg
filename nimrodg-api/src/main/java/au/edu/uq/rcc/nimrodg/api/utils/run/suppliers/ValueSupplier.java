@@ -21,12 +21,8 @@ public interface ValueSupplier extends Supplier<String> {
 		 * Naive implementation, subclasses are expected to provide
 		 * a more efficient version, if possible.
 		 */
-		try {
-			return this.stream().skip(i).findFirst()
-					.orElseThrow(IllegalArgumentException::new);
-		} catch(RuntimeException e) {
-			throw e;
-		}
+		return this.stream().skip(i).findFirst()
+				.orElseThrow(IllegalArgumentException::new);
 	}
 
 	default Stream<String> stream() {

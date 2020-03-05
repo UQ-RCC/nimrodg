@@ -1,28 +1,23 @@
 package au.edu.uq.rcc.nimrodg.api.utils.run.suppliers;
 
-import java.util.Iterator;
 import java.util.Random;
 
-public class RandomLongSupplier implements ValueSupplier {
+public class RandomLongSupplier extends IteratorSupplier<Long> {
 	private final long start;
 	private final long end;
-	private final int count;
 	private final long seed;
 	private final Random random;
-	private Iterator<Long> it;
 
 	RandomLongSupplier(long start, long end, int count, long seed) {
-		this.start = start;
-		this.end = end;
-		this.count = count;
-		this.seed = seed;
-		this.random = new Random(seed);
-		this.it = random.longs(count, start, end).iterator();
+		this(start, end, count, seed, new Random(seed));
 	}
 
-	@Override
-	public int getTotalCount() {
-		return count;
+	private RandomLongSupplier(long start, long end, int count, long seed, Random random) {
+		super(random.longs(count, start, end).iterator(), count);
+		this.start = start;
+		this.end = end;
+		this.seed = seed;
+		this.random = new Random(seed);
 	}
 
 	@Override
@@ -34,14 +29,5 @@ public class RandomLongSupplier implements ValueSupplier {
 	public void reset() {
 		random.setSeed(seed);
 		it = random.longs(count, start, end).iterator();
-	}
-
-	@Override
-	public String get() {
-		if(!it.hasNext()) {
-			throw new IllegalStateException();
-		}
-
-		return it.next().toString();
 	}
 }
