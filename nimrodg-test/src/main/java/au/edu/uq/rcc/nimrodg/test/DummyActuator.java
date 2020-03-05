@@ -33,13 +33,11 @@ import java.util.Arrays;
 
 public class DummyActuator implements Actuator {
 
-	private final Actuator.Operations ops;
 	private final Resource resource;
 	private final ArrayList<UUID> pendingAgents;
 	private boolean closed;
 
 	public DummyActuator(Actuator.Operations ops, Resource resource) {
-		this.ops = ops;
 		this.resource = resource;
 		this.pendingAgents = new ArrayList<>();
 		this.closed = false;

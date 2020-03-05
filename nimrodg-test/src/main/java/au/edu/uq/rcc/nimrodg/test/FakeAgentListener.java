@@ -28,7 +28,7 @@ import au.edu.uq.rcc.nimrodg.agent.messages.AgentPong;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentSubmit;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentUpdate;
 import au.edu.uq.rcc.nimrodg.api.NimrodMasterAPI;
-import java.io.IOException;
+
 import java.time.Instant;
 
 public class FakeAgentListener implements ReferenceAgent.AgentListener {
@@ -42,7 +42,7 @@ public class FakeAgentListener implements ReferenceAgent.AgentListener {
 	}
 
 	@Override
-	public void send(Agent agent, AgentMessage msg) throws IOException {
+	public void send(Agent agent, AgentMessage msg) {
 
 	}
 

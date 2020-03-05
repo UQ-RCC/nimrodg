@@ -25,34 +25,43 @@ import au.edu.uq.rcc.nimrodg.agent.DefaultAgentState;
 import au.edu.uq.rcc.nimrodg.agent.ReferenceAgent;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentHello;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
+import au.edu.uq.rcc.nimrodg.api.Actuator;
+import au.edu.uq.rcc.nimrodg.api.ActuatorOpsAdapter;
+import au.edu.uq.rcc.nimrodg.api.AgentInfo;
 import au.edu.uq.rcc.nimrodg.api.AgentProvider;
-import au.edu.uq.rcc.nimrodg.api.Command;
+import au.edu.uq.rcc.nimrodg.api.CommandResult;
 import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.Job;
 import au.edu.uq.rcc.nimrodg.api.JobAttempt;
 import au.edu.uq.rcc.nimrodg.api.MachinePair;
 import au.edu.uq.rcc.nimrodg.api.NetworkJob;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
+import au.edu.uq.rcc.nimrodg.api.NimrodConfig;
+import au.edu.uq.rcc.nimrodg.api.NimrodEntity;
 import au.edu.uq.rcc.nimrodg.api.NimrodException;
 import au.edu.uq.rcc.nimrodg.api.NimrodMasterAPI;
+import au.edu.uq.rcc.nimrodg.api.NimrodServeAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.api.PlanfileParseException;
-import au.edu.uq.rcc.nimrodg.api.ResourceTypeInfo;
+import au.edu.uq.rcc.nimrodg.api.Resource;
 import au.edu.uq.rcc.nimrodg.api.Task;
 import au.edu.uq.rcc.nimrodg.api.events.JobAddMasterEvent;
 import au.edu.uq.rcc.nimrodg.api.events.NimrodMasterEvent;
-import au.edu.uq.rcc.nimrodg.api.Actuator;
-import au.edu.uq.rcc.nimrodg.api.AgentInfo;
-import au.edu.uq.rcc.nimrodg.api.CommandResult;
-import au.edu.uq.rcc.nimrodg.api.NimrodConfig;
-import au.edu.uq.rcc.nimrodg.api.NimrodEntity;
-import au.edu.uq.rcc.nimrodg.api.NimrodServeAPI;
 import au.edu.uq.rcc.nimrodg.api.utils.MsgUtils;
-import au.edu.uq.rcc.nimrodg.api.utils.SubstitutionException;
 import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledRun;
 import au.edu.uq.rcc.nimrodg.api.utils.run.RunBuilder;
+import au.edu.uq.rcc.nimrodg.setup.AMQPConfigBuilder;
+import au.edu.uq.rcc.nimrodg.setup.SetupConfig;
+import au.edu.uq.rcc.nimrodg.setup.SetupConfigBuilder;
+import au.edu.uq.rcc.nimrodg.setup.TransferConfigBuilder;
+import org.junit.Assert;
+import org.junit.Test;
 
+import javax.json.Json;
+import javax.json.JsonObject;
+import javax.json.JsonValue;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.security.cert.Certificate;
@@ -64,29 +73,12 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import javax.json.JsonValue;
-
-import au.edu.uq.rcc.nimrodg.api.ActuatorOpsAdapter;
-import au.edu.uq.rcc.nimrodg.setup.AMQPConfigBuilder;
-import au.edu.uq.rcc.nimrodg.setup.SetupConfig;
-import au.edu.uq.rcc.nimrodg.setup.SetupConfigBuilder;
-import au.edu.uq.rcc.nimrodg.setup.TransferConfigBuilder;
-import org.junit.Test;
-import au.edu.uq.rcc.nimrodg.api.Resource;
-
-import java.io.UncheckedIOException;
-import java.util.Optional;
-import javax.json.Json;
-import javax.json.JsonObject;
-
-import org.junit.Assert;
 
 public abstract class APITests {
-
-	public static ResourceTypeInfo DUMMY_RESOURCE_INFO = new ResourceTypeInfo("dummy", DummyResourceType.class.getCanonicalName(), DummyResourceType.class);
 
 	protected abstract NimrodAPI getNimrod();
 
@@ -96,7 +88,7 @@ public abstract class APITests {
 	}
 
 	@Test
-	public void experimentEnumerationTest() throws NimrodException, IOException, RunBuilder.RunfileBuildException, SubstitutionException, PlanfileParseException {
+	public void experimentEnumerationTest() throws NimrodException, RunBuilder.RunfileBuildException, PlanfileParseException {
 		NimrodAPI api = getNimrod();
 		Experiment exp1 = api.addExperiment("test1", TestUtils.getSampleExperiment());
 		Experiment exp2 = api.addExperiment("test2", TestUtils.getSampleExperiment());
@@ -108,7 +100,7 @@ public abstract class APITests {
 	}
 
 	@Test
-	public void basicTests() throws NimrodException, IOException, RunBuilder.RunfileBuildException, SubstitutionException, PlanfileParseException {
+	public void basicTests() throws NimrodException, RunBuilder.RunfileBuildException, PlanfileParseException {
 		NimrodAPI api = getNimrod();
 		Experiment exp = api.addExperiment("test1", TestUtils.getSampleExperiment());
 
@@ -116,7 +108,7 @@ public abstract class APITests {
 
 		Assert.assertEquals(exp, exp2);
 
-		Map<Task.Name, Task> tasks = exp.getTasks();
+		exp.getTasks();
 
 		Job newJob = api.addSingleJob(exp, Map.of("x", "xxx", "y", "yyy"));
 		Assert.assertEquals(Map.of(
@@ -140,7 +132,7 @@ public abstract class APITests {
 	}
 
 	@Test
-	public void runNotReturningImplicitVariablesTest() throws IOException, RunBuilder.RunfileBuildException, SubstitutionException, PlanfileParseException {
+	public void runNotReturningImplicitVariablesTest() throws RunBuilder.RunfileBuildException, PlanfileParseException {
 		NimrodAPI api = getNimrod();
 		Experiment exp = api.addExperiment("test1", TestUtils.getSampleExperiment());
 
@@ -154,14 +146,15 @@ public abstract class APITests {
 	}
 
 	@Test
-	public void jobAttemptTests() throws IOException, RunBuilder.RunfileBuildException, SubstitutionException, PlanfileParseException {
+	public void jobAttemptTests() throws RunBuilder.RunfileBuildException, PlanfileParseException {
 		NimrodAPI api = getNimrod();
 		Experiment exp = api.addExperiment("test1", TestUtils.getSampleExperiment());
 
 		Assert.assertTrue(api.getAPICaps().master);
 		NimrodMasterAPI mapi = (NimrodMasterAPI)api;
 
-		Job j = exp.filterJobs(EnumSet.allOf(JobAttempt.Status.class), 0, 1).stream().findFirst().get();
+		Job j = exp.filterJobs(EnumSet.allOf(JobAttempt.Status.class), 0, 1).stream()
+				.findFirst().orElseThrow(IllegalStateException::new);
 
 		UUID agentUuid = UUID.randomUUID();
 		List<JobAttempt> attempts = new ArrayList<>();
@@ -236,10 +229,12 @@ public abstract class APITests {
 			Assert.assertEquals(js0, js2);
 
 			/* See if we can filter the NOT_RUN attempt. */
-			Assert.assertEquals(notRunAtt, j.filterAttempts(EnumSet.of(JobAttempt.Status.NOT_RUN)).stream().findFirst().get());
+			Assert.assertEquals(notRunAtt, j.filterAttempts(EnumSet.of(JobAttempt.Status.NOT_RUN)).stream()
+					.findFirst().orElseThrow(IllegalStateException::new));
 
 			/* See if we can filter the RUNNING attempt. */
-			Assert.assertEquals(runningAtt, j.filterAttempts(EnumSet.of(JobAttempt.Status.RUNNING)).stream().findFirst().get());
+			Assert.assertEquals(runningAtt, j.filterAttempts(EnumSet.of(JobAttempt.Status.RUNNING)).stream()
+					.findFirst().orElseThrow(IllegalStateException::new));
 		}
 
 		{
@@ -255,11 +250,12 @@ public abstract class APITests {
 	}
 
 	@Test
-	public void substitutionApplicationTest() throws IOException, RunBuilder.RunfileBuildException, SubstitutionException, PlanfileParseException {
+	public void substitutionApplicationTest() throws RunBuilder.RunfileBuildException, PlanfileParseException {
 		NimrodAPI api = getNimrod();
 		Experiment exp = api.addExperiment("test1", TestUtils.getSimpleSampleExperiment());
 
-		Job job = exp.filterJobs(EnumSet.allOf(JobAttempt.Status.class), 0, 1).stream().findFirst().get();
+		Job job = exp.filterJobs(EnumSet.allOf(JobAttempt.Status.class), 0, 1).stream()
+				.findFirst().orElseThrow(IllegalStateException::new);
 
 		NetworkJob nj = MsgUtils.resolveJob(UUID.randomUUID(), job, Task.Name.Main, URI.create("http://localhost"));
 
@@ -269,19 +265,19 @@ public abstract class APITests {
 	}
 
 	@Test
-	public void benchSubstitutionTest() throws IOException, RunBuilder.RunfileBuildException, SubstitutionException, PlanfileParseException {
+	public void benchSubstitutionTest() throws RunBuilder.RunfileBuildException, PlanfileParseException {
 		NimrodAPI api = getNimrod();
 		CompiledRun cr = TestUtils.getBenchRun();
 
 		Experiment exp = api.addExperiment("testbench1", cr);
 
-		Job job = exp.filterJobs(EnumSet.allOf(JobAttempt.Status.class), 0, 1).stream().findFirst().get();
+		Job job = exp.filterJobs(EnumSet.allOf(JobAttempt.Status.class), 0, 1).stream()
+				.findFirst().orElseThrow(IllegalStateException::new);
 
 		NetworkJob nj = MsgUtils.resolveJob(UUID.randomUUID(), job, Task.Name.Main, URI.create("http://localhost"));
 
 		NetworkJob.ExecCommand cmd = (NetworkJob.ExecCommand)nj.commands.get(1);
 		Assert.assertEquals("/home/uqzvanim/nimbench.sh GET 1kb", cmd.arguments.get(0));
-		int x = 0;
 	}
 
 	private static class _FactuatorOps extends ActuatorOpsAdapter {
@@ -315,7 +311,6 @@ public abstract class APITests {
 
 		Resource rootResource = api.addResource("root", "dummy", JsonValue.EMPTY_JSON_OBJECT, null, null);
 
-		Map<UUID, Resource> nodeMap = new HashMap<>();
 		/*
 		 * Get the actuator to "launch" agents.
 		 * It really just creates a bunch of agent.hello messages, which is the same thing, really.
@@ -327,10 +322,7 @@ public abstract class APITests {
 				uuids[i] = UUID.randomUUID();
 			}
 
-			Actuator.LaunchResult[] lrs = act.launchAgents(uuids);
-			for(int i = 0; i < uuids.length; ++i) {
-				nodeMap.put(uuids[i], lrs[i].node);
-			}
+			act.launchAgents(uuids);
 
 			hellos = act.simulateHellos();
 
@@ -353,14 +345,12 @@ public abstract class APITests {
 								.build(),
 						agents[i].getDataStore().getActuatorData()
 				);
-
-				int x = 0;
 			}
 
 			for(int i = 0; i < agents.length; ++i) {
 				ReferenceAgent ra = agents[i];
 				AgentShutdown as = new AgentShutdown(uuids[i], AgentShutdown.Reason.HostSignal, 15);
-				agents[i].processMessage(as, Instant.now());
+				ra.processMessage(as, Instant.now());
 			}
 		}
 	}
@@ -392,7 +382,6 @@ public abstract class APITests {
 			ra.reset(uuid);
 
 			ra.terminate();
-			int x = 0;
 		}
 
 		/* This is a new instance. */
@@ -406,7 +395,7 @@ public abstract class APITests {
 	}
 
 	@Test
-	public void complexResourceAssignmentTest() throws NimrodException, IOException, RunBuilder.RunfileBuildException, SubstitutionException, PlanfileParseException {
+	public void complexResourceAssignmentTest() throws NimrodException, RunBuilder.RunfileBuildException, PlanfileParseException {
 		NimrodAPI api = getNimrod();
 		TestUtils.createSampleResources(api);
 
@@ -453,7 +442,7 @@ public abstract class APITests {
 	}
 
 	@Test
-	public void testCapabilityTest() throws NimrodException, IOException, RunBuilder.RunfileBuildException, SubstitutionException, PlanfileParseException {
+	public void testCapabilityTest() throws NimrodException, RunBuilder.RunfileBuildException, PlanfileParseException {
 		NimrodAPI api = getNimrod();
 		TestUtils.createSampleResources(api);
 
@@ -486,7 +475,7 @@ public abstract class APITests {
 	}
 
 	@Test
-	public void masterJobMessageTests() throws IOException, RunBuilder.RunfileBuildException, SubstitutionException, PlanfileParseException {
+	public void masterJobMessageTests() throws RunBuilder.RunfileBuildException, PlanfileParseException {
 		NimrodAPI api = getNimrod();
 		Assert.assertTrue(api.getAPICaps().master);
 		NimrodMasterAPI mapi = (NimrodMasterAPI)api;
@@ -519,24 +508,24 @@ public abstract class APITests {
 	}
 
 	@Test
-	public void multipleExperimentsTest() throws IOException, RunBuilder.RunfileBuildException, SubstitutionException, PlanfileParseException {
+	public void multipleExperimentsTest() throws RunBuilder.RunfileBuildException, PlanfileParseException {
 		NimrodAPI api = getNimrod();
-		Experiment exp1 = api.addExperiment("exp1", TestUtils.getSampleExperiment());
-		Experiment exp2 = api.addExperiment("exp2", TestUtils.getSampleExperiment());
+		api.addExperiment("exp1", TestUtils.getSampleExperiment());
+		api.addExperiment("exp2", TestUtils.getSampleExperiment());
 	}
 
 	@Test
-	public void commandNormalisationTest() throws IOException, RunBuilder.RunfileBuildException, SubstitutionException, PlanfileParseException {
+	public void commandNormalisationTest() throws RunBuilder.RunfileBuildException, PlanfileParseException {
 		NimrodAPI api = getNimrod();
 		Experiment exp1 = api.addExperiment("exp1", TestUtils.getSampleExperiment());
 
-		List<Command> allCommands = exp1.getTasks().values().stream()
+		exp1.getTasks().values().stream()
 				.flatMap(t -> t.getCommands().stream())
-				.collect(Collectors.toList());
+				.forEach(cmd -> {});
 	}
 
 	@Test
-	public void multiJobTest() throws IOException, RunBuilder.RunfileBuildException, SubstitutionException, PlanfileParseException {
+	public void multiJobTest() throws RunBuilder.RunfileBuildException, PlanfileParseException {
 		NimrodAPI api = getNimrod();
 		Experiment exp1 = api.addExperiment("exp1", TestUtils.getSimpleSampleEmptyExperiment());
 
@@ -545,7 +534,7 @@ public abstract class APITests {
 	}
 
 	@Test
-	public void tokenTest() throws IOException, RunBuilder.RunfileBuildException, SubstitutionException, PlanfileParseException {
+	public void tokenTest() throws RunBuilder.RunfileBuildException, PlanfileParseException {
 		NimrodAPI api = getNimrod();
 		Experiment exp1 = api.addExperiment("exp1", TestUtils.getSimpleSampleExperiment());
 		String token = exp1.getToken();
@@ -557,7 +546,8 @@ public abstract class APITests {
 
 		NimrodMasterAPI mapi = (NimrodMasterAPI)api;
 
-		Job j = exp1.filterJobs(EnumSet.of(JobAttempt.Status.NOT_RUN), 0, 1).stream().findFirst().get();
+		Job j = exp1.filterJobs(EnumSet.of(JobAttempt.Status.NOT_RUN), 0, 1).stream()
+				.findFirst().orElseThrow(IllegalStateException::new);
 
 		JobAttempt att = mapi.createJobAttempts(List.of(j)).get(0);
 		String attToken = mapi.getJobAttemptToken(att);
@@ -589,7 +579,7 @@ public abstract class APITests {
 	}
 
 	@Test
-	public void assignmentStateTests() throws IOException, RunBuilder.RunfileBuildException, SubstitutionException, PlanfileParseException {
+	public void assignmentStateTests() throws RunBuilder.RunfileBuildException, PlanfileParseException {
 		NimrodAPI api = getNimrod();
 
 		Experiment exp1 = api.addExperiment("exp1", TestUtils.getSimpleSampleExperiment());
@@ -676,7 +666,7 @@ public abstract class APITests {
 	}
 
 	@Test
-	public void jobAdditionTest() throws IOException, RunBuilder.RunfileBuildException, SubstitutionException, PlanfileParseException {
+	public void jobAdditionTest() throws RunBuilder.RunfileBuildException, PlanfileParseException {
 		NimrodAPI api = getNimrod();
 
 		Experiment exp = api.addExperiment("exp1", TestUtils.getSimpleSampleEmptyExperiment());
@@ -703,10 +693,10 @@ public abstract class APITests {
 	}
 
 	@Test
-	public void add250000JobsTest() throws IOException, RunBuilder.RunfileBuildException, SubstitutionException, PlanfileParseException {
+	public void add250000JobsTest() throws RunBuilder.RunfileBuildException, PlanfileParseException {
 		NimrodAPI api = getNimrod();
 		/* This will trigger postgres to batch jobs. */
-		Experiment exp = api.addExperiment("exp1", TestUtils.get250000Run());
+		api.addExperiment("exp1", TestUtils.get250000Run());
 	}
 
 	@Test

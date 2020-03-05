@@ -22,19 +22,17 @@ package au.edu.uq.rcc.nimrodg.test;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodParseAPI;
 import au.edu.uq.rcc.nimrodg.api.PlanfileParseException;
-import au.edu.uq.rcc.nimrodg.api.utils.SubstitutionException;
 import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledRun;
 import au.edu.uq.rcc.nimrodg.api.utils.run.RunBuilder;
 import au.edu.uq.rcc.nimrodg.parsing.ANTLR4ParseAPIImpl;
-import java.io.IOException;
-import java.util.ArrayList;
+
 import javax.json.JsonValue;
 
 public class TestUtils {
 
 	public static final NimrodParseAPI PARSE_API = ANTLR4ParseAPIImpl.INSTANCE;
 
-	public static CompiledRun getSampleExperiment() throws IOException, RunBuilder.RunfileBuildException, SubstitutionException, PlanfileParseException {
+	public static CompiledRun getSampleExperiment() throws RunBuilder.RunfileBuildException, PlanfileParseException {
 		return PARSE_API.parseRunToBuilder(
 				"variable x index 0 list \"value-x-0\" \"value-x-1\" \"2\" \"a\" \"za\" \"sf\" \"a\" \"s\" \"a\" \"sdfa\" \"sd\" \"asdfasd\" \"\\x20\"\n"
 				+ "variable y index 1 list \"value-y-0\" \"value-y-1\" \"10\"\n"
@@ -58,7 +56,7 @@ public class TestUtils {
 				+ "endtask").build();
 	}
 
-	public static CompiledRun getSimpleSampleExperiment() throws IOException, RunBuilder.RunfileBuildException, SubstitutionException, PlanfileParseException {
+	public static CompiledRun getSimpleSampleExperiment() throws RunBuilder.RunfileBuildException, PlanfileParseException {
 		return PARSE_API.parseRunToBuilder(
 				"variable x index 0 list \"value-x-0\" \"value-x-1\"\n"
 				+ "variable y index 1 list \"value-y-0\" \"value-y-1\"\n"
@@ -71,7 +69,7 @@ public class TestUtils {
 				+ "endtask").build();
 	}
 
-	public static CompiledRun getSimpleSampleEmptyExperiment() throws IOException, RunBuilder.RunfileBuildException, SubstitutionException, PlanfileParseException {
+	public static CompiledRun getSimpleSampleEmptyExperiment() throws RunBuilder.RunfileBuildException, PlanfileParseException {
 		return PARSE_API.parseRunToBuilder(
 				"parameter x\n"
 				+ "parameter y\n"
@@ -81,7 +79,7 @@ public class TestUtils {
 				+ "endtask").build();
 	}
 
-	public static CompiledRun getBenchRun() throws IOException, RunBuilder.RunfileBuildException, SubstitutionException, PlanfileParseException {
+	public static CompiledRun getBenchRun() throws RunBuilder.RunfileBuildException, PlanfileParseException {
 		return PARSE_API.parseRunToBuilder(
 				"parameter file text select anyof \"1kb\" \"5kb\" \"10kb\" \"100kb\" \"500kb\" \"1mb\" \"100mb\" \"500mb\" \"1000mb\"\n"
 				+ "parameter op text select anyof \"GET\" \"POST\"\n"
@@ -93,9 +91,10 @@ public class TestUtils {
 				+ "endtask").build();
 	}
 
-	public static CompiledRun get250000Run() throws IOException, RunBuilder.RunfileBuildException, SubstitutionException, PlanfileParseException {
+	public static CompiledRun get250000Run() throws RunBuilder.RunfileBuildException, PlanfileParseException {
 		return PARSE_API.parseRunToBuilder(
 				"parameter seed integer random from 1 to 1000000 points 250000\n"
+				//"parameter seed integer range from 1 to 1000000 points 250000\n"
 				+ "\n"
 				+ "task main\n"
 				+ "    onerror fail\n"
