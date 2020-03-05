@@ -58,7 +58,7 @@ public interface ValueSupplier extends Supplier<String> {
 
 	private static long getSeed() {
 		byte[] _seed = SecureRandom.getSeed(8);
-		return _seed[0] |
+		return (_seed[0] & 0xFFL) |
 				((_seed[1] & 0xFFL) << 8) |
 				((_seed[2] & 0xFFL) << 16) |
 				((_seed[3] & 0xFFL) << 24) |
