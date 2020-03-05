@@ -1,5 +1,6 @@
 package au.edu.uq.rcc.nimrodg.api.utils.run.suppliers;
 
+import java.util.Iterator;
 import java.util.Random;
 import java.util.stream.DoubleStream;
 
@@ -9,7 +10,7 @@ public class RandomDoubleSupplier implements ValueSupplier {
 	private final int count;
 	private final long seed;
 	private final Random random;
-	private DoubleStream doubleStream;
+	private Iterator<Double> it;
 
 	RandomDoubleSupplier(double start, double end, int count, long seed) {
 		this.start = start;
@@ -17,7 +18,7 @@ public class RandomDoubleSupplier implements ValueSupplier {
 		this.count = count;
 		this.seed = seed;
 		this.random = new Random(seed);
-		this.doubleStream = random.doubles(count, start, end);
+		this.it = random.doubles(count, start, end).iterator();
 	}
 
 	@Override
@@ -33,12 +34,15 @@ public class RandomDoubleSupplier implements ValueSupplier {
 	@Override
 	public void reset() {
 		random.setSeed(seed);
-		doubleStream = random.doubles(count, start, end);
+		it = random.doubles(count, start, end).iterator();
 	}
 
 	@Override
 	public String get() {
-		double val = doubleStream.findFirst().orElseThrow(IllegalStateException::new);
-		return Double.toString(val);
+		if(!it.hasNext()) {
+			throw new IllegalStateException();
+		}
+
+		return it.next().toString();
 	}
 }

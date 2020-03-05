@@ -1,7 +1,7 @@
 package au.edu.uq.rcc.nimrodg.api.utils.run.suppliers;
 
+import java.util.Iterator;
 import java.util.Random;
-import java.util.stream.LongStream;
 
 public class RandomLongSupplier implements ValueSupplier {
 	private final long start;
@@ -9,7 +9,7 @@ public class RandomLongSupplier implements ValueSupplier {
 	private final int count;
 	private final long seed;
 	private final Random random;
-	private LongStream longStream;
+	private Iterator<Long> it;
 
 	RandomLongSupplier(long start, long end, int count, long seed) {
 		this.start = start;
@@ -17,7 +17,7 @@ public class RandomLongSupplier implements ValueSupplier {
 		this.count = count;
 		this.seed = seed;
 		this.random = new Random(seed);
-		this.longStream = random.longs(count, start, end);
+		this.it = random.longs(count, start, end).iterator();
 	}
 
 	@Override
@@ -33,12 +33,15 @@ public class RandomLongSupplier implements ValueSupplier {
 	@Override
 	public void reset() {
 		random.setSeed(seed);
-		longStream = random.longs(count, start, end);
+		it = random.longs(count, start, end).iterator();
 	}
 
 	@Override
 	public String get() {
-		long val = longStream.findFirst().orElseThrow(IllegalStateException::new);
-		return Long.toString(val);
+		if(!it.hasNext()) {
+			throw new IllegalStateException();
+		}
+
+		return it.next().toString();
 	}
 }

@@ -63,7 +63,11 @@ public interface ValueSupplier extends Supplier<String> {
 	}
 
 	static ValueSupplier createIntegerRandomSupplier(long start, long end, int count) {
-		return new RandomLongSupplier(start, end, count, getSeed());
+		return createIntegerRandomSupplier(start, end, count, getSeed());
+	}
+
+	static ValueSupplier createIntegerRandomSupplier(long start, long end, int count, long seed) {
+		return new RandomLongSupplier(start, end, count, seed);
 	}
 
 	static ValueSupplier createFloatRangeStepSupplier(double start, double end, double step) {
@@ -71,7 +75,11 @@ public interface ValueSupplier extends Supplier<String> {
 	}
 
 	static ValueSupplier createFloatRandomSupplier(double start, double end, int count) {
-		return new RandomDoubleSupplier(start, end, count, getSeed());
+		return createFloatRandomSupplier(start, end, count, getSeed());
+	}
+
+	static ValueSupplier createFloatRandomSupplier(double start, double end, int count, long seed) {
+		return new RandomDoubleSupplier(start, end, count, seed);
 	}
 
 	static <T> ValueSupplier createSuppliedSupplier(List<T> values) {
