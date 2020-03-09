@@ -26,6 +26,7 @@ nimrod:
       #amqp_routing_key:
       #jdbc_url:
       #amqp_url:
+  max_job_count: 10000000
   home: /usr/share/nimrod
   setup:
     workdir: /home/{username}/.config/nimrod-portal

@@ -29,6 +29,7 @@ import au.edu.uq.rcc.nimrodg.api.Resource;
 import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledRun;
 import au.edu.uq.rcc.nimrodg.api.utils.run.JsonUtils;
 import au.edu.uq.rcc.nimrodg.api.utils.run.RunBuilder;
+import au.edu.uq.rcc.nimrodg.api.utils.run.RunfileBuildException;
 import au.edu.uq.rcc.nimrodg.impl.postgres.NimrodAPIFactoryImpl;
 import au.edu.uq.rcc.nimrodg.parsing.ANTLR4ParseAPIImpl;
 import au.edu.uq.rcc.nimrodg.resource.HPCResourceType;
@@ -152,6 +153,10 @@ public class NimrodPortalEndpoints {
 
 	@Autowired
 	private HttpServletRequest request;
+
+	@Autowired
+	@Value("${nimrod.max_job_count}")
+	private long maxJobCount;
 
 	public NimrodPortalEndpoints() {
 		this.jinJava = new Jinjava();
@@ -321,10 +326,20 @@ public class NimrodPortalEndpoints {
 			return null;
 		}
 
+		if(rb.getEstimatedJobCount() >= maxJobCount) {
+			errors.add(objectMapper.createObjectNode()
+					.put("line", -1)
+					.put("position", -1)
+					.put("message", "Estimated job count too large.")
+			);
+
+			return null;
+		}
+
 		CompiledRun rf;
 		try {
 			rf = rb.build();
-		} catch(RunBuilder.RunfileBuildException e) {
+		} catch(RunfileBuildException e) {
 			errors.add(objectMapper.createObjectNode()
 					.put("line", -1)
 					.put("position", -1)
@@ -347,7 +362,7 @@ public class NimrodPortalEndpoints {
 
 		CompiledRun rf = compilePlanfile(planfile, errors);
 		if(rf != null) {
-			response.set("result", javaxJsonToJackson(JsonUtils.toJson(rf)));
+			response.set("result", javaxJsonToJackson(JsonUtils.toJson(rf, false)));
 		} else {
 			response.set("result", objectMapper.nullNode());
 		}
