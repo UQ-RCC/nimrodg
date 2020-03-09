@@ -4,6 +4,7 @@ import au.edu.uq.rcc.nimrodg.api.*;
 import au.edu.uq.rcc.nimrodg.api.utils.NimrodUtils;
 import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledRun;
 import au.edu.uq.rcc.nimrodg.api.utils.run.RunBuilder;
+import au.edu.uq.rcc.nimrodg.api.utils.run.RunfileBuildException;
 import au.edu.uq.rcc.nimrodg.cli.CommandEntry;
 import au.edu.uq.rcc.nimrodg.cli.NimrodCLICommand;
 import au.edu.uq.rcc.nimrodg.parsing.ANTLR4ParseAPIImpl;
@@ -57,7 +58,7 @@ public class ExperimentCmd extends NimrodCLICommand {
         CompiledRun rf;
         try {
             rf = b.build();
-        } catch(RunBuilder.RunfileBuildException e) {
+        } catch(RunfileBuildException e) {
             throw new NimrodException(e);
         }
 

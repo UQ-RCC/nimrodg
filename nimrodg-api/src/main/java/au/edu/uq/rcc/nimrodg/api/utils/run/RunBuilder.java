@@ -74,83 +74,6 @@ public class RunBuilder {
 		return this;
 	}
 
-	public static class RunfileBuildException extends Exception {
-
-		public RunfileBuildException(String s) {
-			super(s);
-		}
-	}
-
-	public static class FirstVariableIndexNonzero extends RunfileBuildException {
-
-		public FirstVariableIndexNonzero(CompiledVariable var) {
-			super(String.format("First variable '%s' has nonzero index.", var.name));
-		}
-
-	}
-
-	public static class DuplicateVariableException extends RunfileBuildException {
-
-		public DuplicateVariableException(String name, int count) {
-			super(String.format("Duplicate variable '%s', %d instances", name, count));
-		}
-	}
-
-	public static class DuplicateVariableIndexException extends RunfileBuildException {
-
-		public DuplicateVariableIndexException(CompiledVariable v1, CompiledVariable v2) {
-			super(String.format("Variables '%s' and '%s' share index %d", v1.name, v2.name, v1.index));
-		}
-	}
-
-	public static class NonConsecutiveVariableIndexException extends RunfileBuildException {
-
-		public NonConsecutiveVariableIndexException(CompiledVariable v1, CompiledVariable v2) {
-			super(String.format("Variable '%s' (%d) has partner '%s' (%d) with non-consecutive index.", v1.name, v1.index, v2.name, v2.index));
-		}
-
-	}
-
-	public static class FirstJobIndexNononeException extends RunfileBuildException {
-
-		public FirstJobIndexNononeException(CompiledJob job) {
-			super(String.format("First job has non-one index '%d'", job.index));
-		}
-
-	}
-
-	public static class DuplicateJobIndexException extends RunfileBuildException {
-
-		public DuplicateJobIndexException(int index) {
-			super(String.format("Multiple jobs with same index %d", index));
-		}
-
-	}
-
-	public static class NonConsecutiveJobIndexException extends RunfileBuildException {
-
-		public NonConsecutiveJobIndexException(int i1, int i2) {
-			super(String.format("Job indices '%d' and '%d' are nonconsecutive", i1, i2));
-		}
-
-	}
-
-	public static class InvalidJobVariablesException extends RunfileBuildException {
-
-		public InvalidJobVariablesException(CompiledJob j) {
-			super(String.format("Job '%d' has missing or too many variable references", j.index));
-		}
-
-	}
-
-	public static class InvalidJobVariableIndexException extends RunfileBuildException {
-
-		public InvalidJobVariableIndexException(CompiledJob j, CompiledVariable var, int index) {
-			super(String.format("Job '%d' references invalid value index '%d' in variable '%s'", j.index, index, var.name));
-		}
-
-	}
-
 	private void checkAndProcessVariables(List<VariableBuilder> inVars, List<CompiledVariable> vars, List<CompiledVariable> pars) throws RunfileBuildException {
 		List<VariableBuilder> parameterBuilders = new ArrayList<>();
 		HashMap<String, Integer> varNames = new HashMap<>();
@@ -171,7 +94,7 @@ public class RunBuilder {
 		for(String name : varNames.keySet()) {
 			int num = varNames.get(name);
 			if(num != 1) {
-				throw new DuplicateVariableException(name, num);
+				throw new RunfileBuildException.DuplicateVariable(name, num);
 			}
 		}
 
@@ -180,7 +103,7 @@ public class RunBuilder {
 			vars.sort(Comparator.comparingInt(v -> v.index));
 
 			if(vars.get(0).index != 0) {
-				throw new FirstVariableIndexNonzero(vars.get(0));
+				throw new RunfileBuildException.FirstVariableIndexNonZero(vars.get(0));
 			}
 
 			for(int i = 1; i < vars.size(); ++i) {
@@ -188,9 +111,9 @@ public class RunBuilder {
 				CompiledVariable v2 = vars.get(i);
 
 				if(v1.index == v2.index) {
-					throw new DuplicateVariableIndexException(v1, v2);
+					throw new RunfileBuildException.DuplicateVariableIndex(v1, v2);
 				} else if(v1.index != v2.index - 1) {
-					throw new NonConsecutiveVariableIndexException(v1, v2);
+					throw new RunfileBuildException.NonConsecutiveVariableIndex(v1, v2);
 				}
 			}
 		}
@@ -207,7 +130,7 @@ public class RunBuilder {
 		initialJobs.sort(Comparator.comparingInt(j -> j.index));
 
 		if(!initialJobs.isEmpty() && initialJobs.get(0).index != 1) {
-			throw new FirstJobIndexNononeException(initialJobs.get(0));
+			throw new RunfileBuildException.FirstJobIndexNonOne(initialJobs.get(0));
 		}
 
 		for(int i = 1; i < initialJobs.size(); ++i) {
@@ -215,16 +138,16 @@ public class RunBuilder {
 			CompiledJob j2 = initialJobs.get(i);
 
 			if(j1.index == j2.index) {
-				throw new DuplicateJobIndexException(j1.index);
+				throw new RunfileBuildException.DuplicateJobIndex(j1.index);
 			} else if(j1.index != j2.index - 1) {
-				throw new NonConsecutiveJobIndexException(j1.index, j2.index);
+				throw new RunfileBuildException.NonConsecutiveJobIndex(j1.index, j2.index);
 			}
 		}
 
 		/* Validate all the value indices */
 		for(CompiledJob j : initialJobs) {
 			if(j.indices.length != vars.size()) {
-				throw new InvalidJobVariablesException(j);
+				throw new RunfileBuildException.InvalidJobVariables(j);
 			}
 
 			for(int i = 0; i < j.indices.length; ++i) {
@@ -233,48 +156,12 @@ public class RunBuilder {
 				CompiledVariable var = vars.get(i);
 				int index = j.indices[i];
 				if(index < 0 || index >= var.supplier.getTotalCount()) {
-					throw new InvalidJobVariableIndexException(j, var, index);
+					throw new RunfileBuildException.InvalidJobVariableIndex(j, var, index);
 				}
 			}
 		}
 
 		return initialJobs;
-	}
-
-	public static class DuplicateTaskNameException extends RunfileBuildException {
-
-		public DuplicateTaskNameException(Task.Name name) {
-			super(String.format("Duplicate task name %s", name.toString().toLowerCase()));
-		}
-	}
-
-	public static class MissingMainTaskException extends RunfileBuildException {
-
-		public MissingMainTaskException() {
-			super("Missing main task");
-		}
-	}
-
-	public static class NonMainHasSubstitutions extends RunfileBuildException {
-
-		public NonMainHasSubstitutions() {
-			super("Non main task is not allowed to have substitutions");
-		}
-
-	}
-
-	public static class InvalidVariableSubstitutionReferenceException extends RunfileBuildException {
-
-		public InvalidVariableSubstitutionReferenceException(String var) {
-			super(String.format("Invalid variable reference '%s' in substitution", var));
-		}
-	}
-
-	public static class ImplicitVariableConflict extends RunfileBuildException {
-
-		public ImplicitVariableConflict() {
-			super("Variable name conflicts with an implicit variable");
-		}
 	}
 
 	private void checkTasks(Set<String> varNames) throws RunfileBuildException {
@@ -291,13 +178,13 @@ public class RunBuilder {
 
 			int count = nameCounts.get(name);
 			if(count > 1) {
-				throw new DuplicateTaskNameException(name);
+				throw new RunfileBuildException.DuplicateTaskName(name);
 			}
 		}
 
 		/* Check we actually have a main task. */
 		if(mainTask == null) {
-			throw new MissingMainTaskException();
+			throw new RunfileBuildException.MissingMainTask();
 		}
 
 		/* Ensure that only the Main task has substitutions. */
@@ -313,17 +200,17 @@ public class RunBuilder {
 						continue;
 					case Copy:
 						if(!((CompiledCopyCommand)ccmd).destPath.getSubstitutions().isEmpty()) {
-							throw new NonMainHasSubstitutions();
+							throw new RunfileBuildException.NonMainHasSubstitutions();
 						}
 
 						if(!((CompiledCopyCommand)ccmd).sourcePath.getSubstitutions().isEmpty()) {
-							throw new NonMainHasSubstitutions();
+							throw new RunfileBuildException.NonMainHasSubstitutions();
 						}
 						break;
 					case Exec:
 						for(CompiledArgument arg : ((CompiledExecCommand)ccmd).arguments) {
 							if(!arg.getSubstitutions().isEmpty()) {
-								throw new NonMainHasSubstitutions();
+								throw new RunfileBuildException.NonMainHasSubstitutions();
 							}
 						}
 						break;
@@ -340,7 +227,7 @@ public class RunBuilder {
 		subVarNames.removeAll(varNames);
 
 		if(!subVarNames.isEmpty()) {
-			throw new InvalidVariableSubstitutionReferenceException(subVarNames.stream().findFirst().get());
+			throw new RunfileBuildException.InvalidVariableSubstitutionReference(subVarNames.stream().findFirst().get());
 		}
 
 	}
@@ -433,7 +320,7 @@ public class RunBuilder {
 		Set<String> varNames = allVars.stream().map(v -> v.name).collect(Collectors.toSet());
 		varNames.addAll(IMPLICIT_VARIABLES);
 		if(varNames.size() != allVars.size() + IMPLICIT_VARIABLES.size()) {
-			throw new ImplicitVariableConflict();
+			throw new RunfileBuildException.ImplicitVariableConflict();
 		}
 
 		/* Check our supplied initial jobs are valid. */

@@ -36,6 +36,7 @@ import au.edu.uq.rcc.nimrodg.api.Task;
 import au.edu.uq.rcc.nimrodg.api.utils.MsgUtils;
 import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledRun;
 import au.edu.uq.rcc.nimrodg.api.utils.run.RunBuilder;
+import au.edu.uq.rcc.nimrodg.api.utils.run.RunfileBuildException;
 import au.edu.uq.rcc.nimrodg.master.AMQProcessorImpl;
 import au.edu.uq.rcc.nimrodg.master.MessageQueueListener;
 import au.edu.uq.rcc.nimrodg.parsing.ANTLR4ParseAPIImpl;
@@ -290,7 +291,7 @@ public class Controller {
 		CompiledRun run;
 		try {
 			run = ANTLR4ParseAPIImpl.INSTANCE.parseRunToBuilder(jobText).build();
-		} catch(RunBuilder.RunfileBuildException | NullPointerException e) {
+		} catch(RunfileBuildException | NullPointerException e) {
 			m_Logger.log(ILogger.Level.ERR, e);
 			return;
 		} catch(PlanfileParseException ex) {

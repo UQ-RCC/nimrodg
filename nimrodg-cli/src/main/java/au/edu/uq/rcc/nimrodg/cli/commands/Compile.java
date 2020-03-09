@@ -25,6 +25,7 @@ import au.edu.uq.rcc.nimrodg.api.PlanfileParseException;
 import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledRun;
 import au.edu.uq.rcc.nimrodg.api.utils.run.JsonUtils;
 import au.edu.uq.rcc.nimrodg.api.utils.run.RunBuilder;
+import au.edu.uq.rcc.nimrodg.api.utils.run.RunfileBuildException;
 import au.edu.uq.rcc.nimrodg.cli.CLICommand;
 import au.edu.uq.rcc.nimrodg.cli.CommandEntry;
 import au.edu.uq.rcc.nimrodg.parsing.ANTLR4ParseAPIImpl;
@@ -64,7 +65,7 @@ public class Compile implements CLICommand {
 		CompiledRun rf;
 		try {
 			rf = b.build();
-		} catch(RunBuilder.RunfileBuildException e) {
+		} catch(RunfileBuildException e) {
 			throw new NimrodException(e);
 		}
 

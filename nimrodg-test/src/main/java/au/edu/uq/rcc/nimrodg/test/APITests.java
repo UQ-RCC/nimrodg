@@ -49,7 +49,7 @@ import au.edu.uq.rcc.nimrodg.api.events.JobAddMasterEvent;
 import au.edu.uq.rcc.nimrodg.api.events.NimrodMasterEvent;
 import au.edu.uq.rcc.nimrodg.api.utils.MsgUtils;
 import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledRun;
-import au.edu.uq.rcc.nimrodg.api.utils.run.RunBuilder;
+import au.edu.uq.rcc.nimrodg.api.utils.run.RunfileBuildException;
 import au.edu.uq.rcc.nimrodg.setup.AMQPConfigBuilder;
 import au.edu.uq.rcc.nimrodg.setup.SetupConfig;
 import au.edu.uq.rcc.nimrodg.setup.SetupConfigBuilder;
@@ -88,7 +88,7 @@ public abstract class APITests {
 	}
 
 	@Test
-	public void experimentEnumerationTest() throws NimrodException, RunBuilder.RunfileBuildException, PlanfileParseException {
+	public void experimentEnumerationTest() throws NimrodException, RunfileBuildException, PlanfileParseException {
 		NimrodAPI api = getNimrod();
 		Experiment exp1 = api.addExperiment("test1", TestUtils.getSampleExperiment());
 		Experiment exp2 = api.addExperiment("test2", TestUtils.getSampleExperiment());
@@ -100,7 +100,7 @@ public abstract class APITests {
 	}
 
 	@Test
-	public void basicTests() throws NimrodException, RunBuilder.RunfileBuildException, PlanfileParseException {
+	public void basicTests() throws NimrodException, RunfileBuildException, PlanfileParseException {
 		NimrodAPI api = getNimrod();
 		Experiment exp = api.addExperiment("test1", TestUtils.getSampleExperiment());
 
@@ -132,7 +132,7 @@ public abstract class APITests {
 	}
 
 	@Test
-	public void runNotReturningImplicitVariablesTest() throws RunBuilder.RunfileBuildException, PlanfileParseException {
+	public void runNotReturningImplicitVariablesTest() throws RunfileBuildException, PlanfileParseException {
 		NimrodAPI api = getNimrod();
 		Experiment exp = api.addExperiment("test1", TestUtils.getSampleExperiment());
 
@@ -146,7 +146,7 @@ public abstract class APITests {
 	}
 
 	@Test
-	public void jobAttemptTests() throws RunBuilder.RunfileBuildException, PlanfileParseException {
+	public void jobAttemptTests() throws RunfileBuildException, PlanfileParseException {
 		NimrodAPI api = getNimrod();
 		Experiment exp = api.addExperiment("test1", TestUtils.getSampleExperiment());
 
@@ -250,7 +250,7 @@ public abstract class APITests {
 	}
 
 	@Test
-	public void substitutionApplicationTest() throws RunBuilder.RunfileBuildException, PlanfileParseException {
+	public void substitutionApplicationTest() throws RunfileBuildException, PlanfileParseException {
 		NimrodAPI api = getNimrod();
 		Experiment exp = api.addExperiment("test1", TestUtils.getSimpleSampleExperiment());
 
@@ -265,7 +265,7 @@ public abstract class APITests {
 	}
 
 	@Test
-	public void benchSubstitutionTest() throws RunBuilder.RunfileBuildException, PlanfileParseException {
+	public void benchSubstitutionTest() throws RunfileBuildException, PlanfileParseException {
 		NimrodAPI api = getNimrod();
 		CompiledRun cr = TestUtils.getBenchRun();
 
@@ -395,7 +395,7 @@ public abstract class APITests {
 	}
 
 	@Test
-	public void complexResourceAssignmentTest() throws NimrodException, RunBuilder.RunfileBuildException, PlanfileParseException {
+	public void complexResourceAssignmentTest() throws NimrodException, RunfileBuildException, PlanfileParseException {
 		NimrodAPI api = getNimrod();
 		TestUtils.createSampleResources(api);
 
@@ -442,7 +442,7 @@ public abstract class APITests {
 	}
 
 	@Test
-	public void testCapabilityTest() throws NimrodException, RunBuilder.RunfileBuildException, PlanfileParseException {
+	public void testCapabilityTest() throws NimrodException, RunfileBuildException, PlanfileParseException {
 		NimrodAPI api = getNimrod();
 		TestUtils.createSampleResources(api);
 
@@ -475,7 +475,7 @@ public abstract class APITests {
 	}
 
 	@Test
-	public void masterJobMessageTests() throws RunBuilder.RunfileBuildException, PlanfileParseException {
+	public void masterJobMessageTests() throws RunfileBuildException, PlanfileParseException {
 		NimrodAPI api = getNimrod();
 		Assert.assertTrue(api.getAPICaps().master);
 		NimrodMasterAPI mapi = (NimrodMasterAPI)api;
@@ -508,14 +508,14 @@ public abstract class APITests {
 	}
 
 	@Test
-	public void multipleExperimentsTest() throws RunBuilder.RunfileBuildException, PlanfileParseException {
+	public void multipleExperimentsTest() throws RunfileBuildException, PlanfileParseException {
 		NimrodAPI api = getNimrod();
 		api.addExperiment("exp1", TestUtils.getSampleExperiment());
 		api.addExperiment("exp2", TestUtils.getSampleExperiment());
 	}
 
 	@Test
-	public void commandNormalisationTest() throws RunBuilder.RunfileBuildException, PlanfileParseException {
+	public void commandNormalisationTest() throws RunfileBuildException, PlanfileParseException {
 		NimrodAPI api = getNimrod();
 		Experiment exp1 = api.addExperiment("exp1", TestUtils.getSampleExperiment());
 
@@ -525,7 +525,7 @@ public abstract class APITests {
 	}
 
 	@Test
-	public void multiJobTest() throws RunBuilder.RunfileBuildException, PlanfileParseException {
+	public void multiJobTest() throws RunfileBuildException, PlanfileParseException {
 		NimrodAPI api = getNimrod();
 		Experiment exp1 = api.addExperiment("exp1", TestUtils.getSimpleSampleEmptyExperiment());
 
@@ -534,7 +534,7 @@ public abstract class APITests {
 	}
 
 	@Test
-	public void tokenTest() throws RunBuilder.RunfileBuildException, PlanfileParseException {
+	public void tokenTest() throws RunfileBuildException, PlanfileParseException {
 		NimrodAPI api = getNimrod();
 		Experiment exp1 = api.addExperiment("exp1", TestUtils.getSimpleSampleExperiment());
 		String token = exp1.getToken();
@@ -579,7 +579,7 @@ public abstract class APITests {
 	}
 
 	@Test
-	public void assignmentStateTests() throws RunBuilder.RunfileBuildException, PlanfileParseException {
+	public void assignmentStateTests() throws RunfileBuildException, PlanfileParseException {
 		NimrodAPI api = getNimrod();
 
 		Experiment exp1 = api.addExperiment("exp1", TestUtils.getSimpleSampleExperiment());
@@ -666,7 +666,7 @@ public abstract class APITests {
 	}
 
 	@Test
-	public void jobAdditionTest() throws RunBuilder.RunfileBuildException, PlanfileParseException {
+	public void jobAdditionTest() throws RunfileBuildException, PlanfileParseException {
 		NimrodAPI api = getNimrod();
 
 		Experiment exp = api.addExperiment("exp1", TestUtils.getSimpleSampleEmptyExperiment());
@@ -693,7 +693,7 @@ public abstract class APITests {
 	}
 
 	@Test
-	public void add250000JobsTest() throws RunBuilder.RunfileBuildException, PlanfileParseException {
+	public void add250000JobsTest() throws RunfileBuildException, PlanfileParseException {
 		NimrodAPI api = getNimrod();
 		/* This will trigger postgres to batch jobs. */
 		api.addExperiment("exp1", TestUtils.get250000Run());
