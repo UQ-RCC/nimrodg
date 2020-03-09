@@ -21,7 +21,7 @@ public class RandomLongSupplier extends IteratorSupplier<Long> {
 	}
 
 	@Override
-	public ValueSupplier duplicateFromStart() {
+	public ValueSupplier _duplicate() {
 		return new RandomLongSupplier(start, end, count, seed);
 	}
 

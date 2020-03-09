@@ -21,7 +21,7 @@ public class RandomDoubleSupplier extends IteratorSupplier<Double> {
 	}
 
 	@Override
-	public ValueSupplier duplicateFromStart() {
+	public ValueSupplier _duplicate() {
 		return new RandomDoubleSupplier(start, end, count, seed);
 	}
 

@@ -7,10 +7,12 @@ public abstract class IteratorSupplier<T> implements ValueSupplier {
 	protected final int count;
 
 	protected Iterator<T> it;
+	private ValueSupplier cache;
 
 	protected IteratorSupplier(Iterator<T> it, int count) {
 		this.count = count;
 		this.it = it;
+		this.cache = null;
 	}
 
 	@Override
@@ -19,7 +21,15 @@ public abstract class IteratorSupplier<T> implements ValueSupplier {
 	}
 
 	@Override
-	public abstract ValueSupplier duplicateFromStart();
+	public final ValueSupplier duplicateFromStart() {
+		if(cache != null) {
+			return cache.duplicateFromStart();
+		}
+
+		return _duplicate();
+	}
+
+	protected abstract ValueSupplier _duplicate();
 
 	@Override
 	public abstract void reset();
@@ -36,5 +46,15 @@ public abstract class IteratorSupplier<T> implements ValueSupplier {
 	@Override
 	public boolean isFastIndex() {
 		return false;
+	}
+
+	@Override
+	public String getAt(int i) {
+		/* getAt() on iterators is slow, so expand and cache if we're called. */
+		if(cache == null) {
+			cache = ValueSupplier.expandToSupplied(duplicateFromStart());
+		}
+
+		return cache.getAt(i);
 	}
 }
