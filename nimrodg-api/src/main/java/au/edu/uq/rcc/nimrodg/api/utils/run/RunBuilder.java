@@ -400,6 +400,27 @@ public class RunBuilder {
 		return combinations;
 	}
 
+	/**
+	 * Get the estimated number of jobs this experiment will contain.
+	 * This does not take into account the validity of the job or variable invariants.
+	 *
+	 * This will always be greater than or equal to the actual job count.
+	 *
+	 * @return The estimated number of jobs this experiment will contain.
+	 */
+	public int getEstimatedJobCount() {
+		int count = 1;
+
+		for(VariableBuilder vb : m_Variables) {
+			count *= vb.build().supplier.getTotalCount();
+		}
+
+		if(!m_Jobs.isEmpty()) {
+			count *= m_Jobs.size();
+		}
+		return count;
+	}
+
 	public CompiledRun build() throws RunfileBuildException {
 		/* Check everything's good! */
 		List<CompiledVariable> vars = new ArrayList<>();
@@ -425,6 +446,7 @@ public class RunBuilder {
 		checkJobs(allVars, jobs);
 		checkTasks(varNames);
 
+		assert this.getEstimatedJobCount() >= jobs.size();
 		return new CompiledRun(allVars, jobs, m_Tasks);
 	}
 
