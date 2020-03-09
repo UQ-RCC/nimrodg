@@ -295,15 +295,20 @@ public class RunBuilder {
 	 *
 	 * @return The estimated number of jobs this experiment will contain.
 	 */
-	public int getEstimatedJobCount() {
-		int count = 1;
+	public long getEstimatedJobCount() {
+		long count = 1;
 
-		for(VariableBuilder vb : m_Variables) {
-			count *= vb.build().supplier.getTotalCount();
-		}
+		try {
+			for(VariableBuilder vb : m_Variables) {
+				count = Math.multiplyExact(count, vb.build().supplier.getTotalCount());
+			}
 
-		if(!m_Jobs.isEmpty()) {
-			count *= m_Jobs.size();
+			if(!m_Jobs.isEmpty()) {
+				count = Math.multiplyExact(count, m_Jobs.size());
+			}
+		} catch(ArithmeticException e) {
+			/* If we get to this point, List<> and friends would fail anyway. */
+			count = Long.MAX_VALUE;
 		}
 		return count;
 	}
