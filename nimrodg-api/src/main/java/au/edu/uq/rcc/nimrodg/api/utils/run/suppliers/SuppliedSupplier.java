@@ -46,6 +46,6 @@ public class SuppliedSupplier<T> implements ValueSupplier {
 			throw new IllegalArgumentException();
 		}
 
-		return source.get(idx).toString();
+		return String.valueOf(source.get(idx));
 	}
 }
