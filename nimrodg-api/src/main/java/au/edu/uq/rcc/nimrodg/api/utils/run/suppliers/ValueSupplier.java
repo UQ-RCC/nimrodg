@@ -17,14 +17,7 @@ public interface ValueSupplier extends Supplier<String> {
 	@Override
 	String get();
 
-	default String getAt(int i) {
-		/*
-		 * Naive implementation, subclasses are expected to provide
-		 * a more efficient version, if possible.
-		 */
-		return ValueSupplier.stream(this).skip(i).findFirst()
-				.orElseThrow(IllegalArgumentException::new);
-	}
+	String getAt(int i);
 
 	static Stream<String> stream(ValueSupplier s) {
 		return Stream.generate(s.duplicateFromStart()).limit(s.getTotalCount());
