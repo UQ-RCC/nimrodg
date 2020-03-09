@@ -22,9 +22,7 @@ package au.edu.uq.rcc.nimrodg.parsing;
 import au.edu.uq.rcc.nimrodg.api.Command;
 import au.edu.uq.rcc.nimrodg.api.CopyCommand;
 import au.edu.uq.rcc.nimrodg.api.Task;
-import au.edu.uq.rcc.nimrodg.api.utils.run.JsonUtils;
 import au.edu.uq.rcc.nimrodg.api.utils.CompiledSubstitution;
-import au.edu.uq.rcc.nimrodg.api.utils.SubstitutionException;
 import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledArgument;
 import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledCommand;
 import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledCopyCommand;
@@ -32,14 +30,12 @@ import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledExecCommand;
 import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledJob;
 import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledRun;
 import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledTask;
+import au.edu.uq.rcc.nimrodg.api.utils.run.JsonUtils;
 import au.edu.uq.rcc.nimrodg.api.utils.run.RunBuilder;
 import au.edu.uq.rcc.nimrodg.api.utils.run.RunfileBuildException;
 import au.edu.uq.rcc.nimrodg.parsing.antlr.NimrodFileLexer;
 import au.edu.uq.rcc.nimrodg.parsing.antlr.NimrodFileParser;
 import au.edu.uq.rcc.nimrodg.parsing.visitors.NimrodFileVisitor;
-import java.io.IOException;
-import java.util.List;
-import java.util.function.BiFunction;
 import org.antlr.v4.runtime.BailErrorStrategy;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
@@ -54,6 +50,10 @@ import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.io.IOException;
+import java.util.List;
+import java.util.function.BiFunction;
+
 public class ParseTests {
 
 	private static CharStream getFile(String f) throws IOException {
@@ -64,7 +64,7 @@ public class ParseTests {
 		return CharStreams.fromString(s);
 	}
 
-	private static RunBuilder getRunBuilder(CharStream s) throws IOException {
+	private static RunBuilder getRunBuilder(CharStream s) {
 		NimrodFileParser parser = new NimrodFileParser(new CommonTokenStream(new NimrodFileLexer(s)));
 		parser.removeErrorListeners();
 		parser.setErrorHandler(new BailErrorStrategy() {
@@ -104,67 +104,67 @@ public class ParseTests {
 	}
 
 	@Test(expected = RunfileBuildException.DuplicateVariable.class)
-	public void runfileVariableDuplicateNameTest() throws IOException, RunfileBuildException, SubstitutionException {
+	public void runfileVariableDuplicateNameTest() throws IOException, RunfileBuildException {
 		getRunBuilder(getFile("onlyvars-dup-name.run")).build();
 	}
 
 	@Test(expected = RunfileBuildException.DuplicateVariableIndex.class)
-	public void runfileVariableDuplicateIndexTest() throws IOException, RunfileBuildException, SubstitutionException {
+	public void runfileVariableDuplicateIndexTest() throws IOException, RunfileBuildException {
 		getRunBuilder(getFile("onlyvars-dup-index.run")).build();
 	}
 
 	@Test(expected = RunfileBuildException.NonConsecutiveVariableIndex.class)
-	public void runfileVariableNonConsecutiveIndexTest() throws IOException, RunfileBuildException, SubstitutionException {
+	public void runfileVariableNonConsecutiveIndexTest() throws IOException, RunfileBuildException {
 		getRunBuilder(getFile("onlyvars-bad-index.run")).build();
 	}
 
 	@Test(expected = RunfileBuildException.FirstVariableIndexNonZero.class)
-	public void runfileVariableFistIndexNonzero() throws IOException, RunfileBuildException, SubstitutionException {
+	public void runfileVariableFistIndexNonzero() throws IOException, RunfileBuildException {
 		getRunBuilder(getFile("onlyvars-first-nonzero.run")).build();
 	}
 
 	@Test
-	public void runfileVariableGoodTest() throws IOException, RunfileBuildException, SubstitutionException {
+	public void runfileVariableGoodTest() throws IOException, RunfileBuildException {
 		getRunBuilder(getFile("onlyvars-good.run")).build();
 	}
 
 	@Test(expected = RunfileBuildException.FirstJobIndexNonOne.class)
-	public void runfileJobFirstIndexNononeTest() throws IOException, RunfileBuildException, SubstitutionException {
+	public void runfileJobFirstIndexNononeTest() throws IOException, RunfileBuildException {
 		getRunBuilder(getFile("onlyjobs-first-nonone.run")).build();
 	}
 
 	@Test(expected = RunfileBuildException.NonConsecutiveJobIndex.class)
-	public void runfileJobNonConsecutiveIndexTest() throws IOException, RunfileBuildException, SubstitutionException {
+	public void runfileJobNonConsecutiveIndexTest() throws IOException, RunfileBuildException {
 		getRunBuilder(getFile("onlyjobs-nonconsec-index.run")).build();
 	}
 
 	@Test(expected = RunfileBuildException.InvalidJobVariables.class)
-	public void runfileJobTooManyVariablesTest() throws IOException, RunfileBuildException, SubstitutionException {
+	public void runfileJobTooManyVariablesTest() throws IOException, RunfileBuildException {
 		getRunBuilder(getFile("onlyjobs-vars-toomany.run")).build();
 	}
 
 	@Test(expected = RunfileBuildException.InvalidJobVariables.class)
-	public void runfileJobTooFewVariablesTest() throws IOException, RunfileBuildException, SubstitutionException {
+	public void runfileJobTooFewVariablesTest() throws IOException, RunfileBuildException {
 		getRunBuilder(getFile("onlyjobs-vars-toofew.run")).build();
 	}
 
 	@Test(expected = RunfileBuildException.InvalidJobVariableIndex.class)
-	public void runfileJobInvalidVariableValueTest() throws IOException, RunfileBuildException, SubstitutionException {
+	public void runfileJobInvalidVariableValueTest() throws IOException, RunfileBuildException {
 		getRunBuilder(getFile("onlyjobs-vars-badval.run")).build();
 	}
 
 	@Test
-	public void runfileJobGoodTest() throws IOException, RunfileBuildException, SubstitutionException {
+	public void runfileJobGoodTest() throws IOException, RunfileBuildException {
 		getRunBuilder(getFile("onlyjobs-good.run")).build();
 	}
 
 	@Test(expected = RunfileBuildException.DuplicateTaskName.class)
-	public void runfileTaskDuplicateNameTest() throws IOException, RunfileBuildException, SubstitutionException {
+	public void runfileTaskDuplicateNameTest() throws IOException, RunfileBuildException {
 		getRunBuilder(getFile("onlytasks-dup-name.run")).build();
 	}
 
 	@Test
-	public void runfileTaskPathTest() throws IOException, RunfileBuildException, SubstitutionException {
+	public void runfileTaskPathTest() throws RunfileBuildException {
 		String s = "variable x index 0 list \"0\"\n"
 				+ "jobs\n"
 				+ "endjobs\n"
@@ -216,7 +216,7 @@ public class ParseTests {
 	}
 
 	@Test
-	public void substitutionFormatsTest() throws IOException, RunfileBuildException, SubstitutionException {
+	public void substitutionFormatsTest() throws RunfileBuildException {
 		String s = "variable x index 0 list \"0\"\n"
 				+ "jobs\n"
 				+ "endjobs\n"
@@ -288,7 +288,7 @@ public class ParseTests {
 	}
 
 	@Test
-	public void runfileTaskGoodTest() throws IOException, RunfileBuildException, SubstitutionException {
+	public void runfileTaskGoodTest() throws IOException, RunfileBuildException {
 		CompiledRun r = getRunBuilder(getFile("onlytasks-good.run")).build();
 
 		Assert.assertEquals(1, r.numTasks);
@@ -309,7 +309,7 @@ public class ParseTests {
 	}
 
 	@Test
-	public void runfileCopyContextTest() throws IOException, RunfileBuildException, SubstitutionException {
+	public void runfileCopyContextTest() throws RunfileBuildException {
 		String s = "variable x index 0 list \"0\"\n"
 				+ "jobs\n"
 				+ "endjobs\n"
@@ -336,7 +336,7 @@ public class ParseTests {
 	}
 
 	@Test
-	public void nonQuotedArgumentSeparationTest() throws IOException, RunfileBuildException, SubstitutionException {
+	public void nonQuotedArgumentSeparationTest() throws RunfileBuildException {
 		String s = "variable x index 0 list \"value-x-0\"\n"
 				+ "jobs\n"
 				+ "endjobs\n"
@@ -365,24 +365,23 @@ public class ParseTests {
 			"/path/to/script.py"
 		};
 
-		Assert.assertArrayEquals(expectedArgs, cmd.arguments.stream().map(a -> a.getText()).toArray());
+		Assert.assertArrayEquals(expectedArgs, cmd.arguments.stream().map(CompiledArgument::getText).toArray());
 	}
 
 	@Test(expected = RunfileBuildException.InvalidVariableSubstitutionReference.class)
-	public void invalidVariableSubstitutionTest() throws IOException, RunfileBuildException, SubstitutionException {
+	public void invalidVariableSubstitutionTest() throws IOException, RunfileBuildException {
 		getRunBuilder(getFile("invalid-variable-substitution.pln")).build();
 	}
 
 	@Test
-	public void aeroSampleTest() throws IOException, RunfileBuildException, SubstitutionException {
+	public void aeroSampleTest() throws IOException, RunfileBuildException {
 		CompiledRun rr = getRunBuilder(getFile("aero-onlyvars.pln")).build();
 
 		String s = JsonUtils.toJson(rr).toString();
-		int x = 0;
 	}
 
 	@Test
-	public void webtest() throws IOException, RunfileBuildException {
+	public void webtest() throws RunfileBuildException {
 		CompiledRun rr = getRunBuilder(getString(
 				"parameter file text select anyof \"1kb\" \"5kb\" \"10kb\" \"100kb\" \"500kb\" \"1mb\" \"100mb\" \"500mb\" \"1000mb\"\n"
 				+ "parameter op text select anyof \"GET\" \"POST\"\n"
@@ -400,7 +399,7 @@ public class ParseTests {
 	}
 
 	@Test
-	public void singleJobTest() throws IOException, RunfileBuildException {
+	public void singleJobTest() throws RunfileBuildException {
 		CompiledRun rr = getRunBuilder(getString(
 				"variable x index 0 list \"0\" \"1\"\n"
 				+ "variable y index 1 list \"0\" \"1\"\n"
@@ -425,7 +424,7 @@ public class ParseTests {
 	}
 
 	@Test
-	public void noJobTest() throws IOException, RunfileBuildException {
+	public void noJobTest() throws RunfileBuildException {
 		CompiledRun rr = getRunBuilder(getString(
 				"variable x index 0 list \"0\" \"1\"\n"
 				+ "variable y index 1 list \"0\" \"1\"\n"
@@ -440,7 +439,7 @@ public class ParseTests {
 	}
 
 	@Test(expected = ParseCancellationException.class)
-	public void parameterMissingTypeTest() throws IOException, RunfileBuildException {
+	public void parameterMissingTypeTest() throws RunfileBuildException {
 		CompiledRun rr = getRunBuilder(getString(
 				"parameter x range from 0 to 100 step 1\n"
 				+ "task main\n"
@@ -452,7 +451,7 @@ public class ParseTests {
 	}
 
 	@Test
-	public void commentsAboveParametersTest() throws IOException, RunfileBuildException {
+	public void commentsAboveParametersTest() throws RunfileBuildException {
 		CompiledRun rr = getRunBuilder(getString("// I AM A COMMENT\n"
 				+ "parameter x integer range from 0 to 100 step 1\n"
 				+ "task main\n"
@@ -461,7 +460,7 @@ public class ParseTests {
 	}
 
 	@Test
-	public void redirectSyntaxTest() throws IOException, RunfileBuildException {
+	public void redirectSyntaxTest() throws RunfileBuildException {
 		String pln
 				= "parameter x integer range from 0 to 100 step 1\n"
 				+ "task main\n"
@@ -482,7 +481,7 @@ public class ParseTests {
 	}
 
 	@Test
-	public void emptyParameterTest() throws IOException, RunfileBuildException {
+	public void emptyParameterTest() throws RunfileBuildException {
 		String pln
 				= "parameter x\n"
 				+ "task main\n"
@@ -492,7 +491,7 @@ public class ParseTests {
 	}
 
 	@Test
-	public void execWithCopyAsArgumentTest() throws IOException, RunfileBuildException {
+	public void execWithCopyAsArgumentTest() throws RunfileBuildException {
 		String pln
 				= "parameter x\n"
 				+ "task main\n"
@@ -504,7 +503,7 @@ public class ParseTests {
 	}
 
 	@Test
-	public void rangeWithoutStepTest() throws IOException, RunfileBuildException {
+	public void rangeWithoutStepTest() throws RunfileBuildException {
 		CompiledRun rr = getRunBuilder(getString(
 				"parameter x integer range from 0 to 100\n"
 				+ "parameter y float range from 0 to 100\n"
@@ -514,12 +513,12 @@ public class ParseTests {
 	}
 
 	@Test(expected = ParseCancellationException.class)
-	public void badTaskNameTest() throws IOException, RunfileBuildException, SubstitutionException {
+	public void badTaskNameTest() throws IOException, RunfileBuildException {
 		getRunBuilder(getFile("test_badtask.pln")).build();
 	}
 
 	@Test(expected = ParseCancellationException.class)
-	public void truncParamTest() throws IOException, RunfileBuildException, SubstitutionException {
+	public void truncParamTest() throws IOException, RunfileBuildException {
 		getRunBuilder(getFile("test_truncparam.pln")).build();
 	}
 
