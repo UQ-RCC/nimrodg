@@ -29,11 +29,6 @@ public class EmptySupplier implements ValueSupplier {
 	}
 
 	@Override
-	public boolean isFastIndex() {
-		return true;
-	}
-
-	@Override
 	public String getAt(int i) {
 		throw new IllegalArgumentException();
 	}

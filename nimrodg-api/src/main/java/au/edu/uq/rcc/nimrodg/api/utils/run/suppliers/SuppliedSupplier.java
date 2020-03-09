@@ -36,11 +36,6 @@ public class SuppliedSupplier<T> implements ValueSupplier {
 	}
 
 	@Override
-	public boolean isFastIndex() {
-		return true;
-	}
-
-	@Override
 	public String getAt(int idx) {
 		if(idx >= source.size()) {
 			throw new IllegalArgumentException();

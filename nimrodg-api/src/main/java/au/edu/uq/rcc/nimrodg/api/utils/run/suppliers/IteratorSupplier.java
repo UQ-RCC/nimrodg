@@ -44,11 +44,6 @@ public abstract class IteratorSupplier<T> implements ValueSupplier {
 	}
 
 	@Override
-	public boolean isFastIndex() {
-		return false;
-	}
-
-	@Override
 	public String getAt(int i) {
 		/* getAt() on iterators is slow, so expand and cache if we're called. */
 		if(cache == null) {

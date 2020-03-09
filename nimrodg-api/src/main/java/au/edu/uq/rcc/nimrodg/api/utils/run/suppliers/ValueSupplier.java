@@ -17,12 +17,6 @@ public interface ValueSupplier extends Supplier<String> {
 	@Override
 	String get();
 
-	/**
-	 * Does {@link #getAt(int)} run in constant time.
-	 * @return true, if {@link #getAt(int)} runs in constant time. Otherwise, false.
-	 */
-	boolean isFastIndex();
-
 	default String getAt(int i) {
 		/*
 		 * Naive implementation, subclasses are expected to provide
