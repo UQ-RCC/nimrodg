@@ -147,7 +147,6 @@ public abstract class SSHResourceType extends BaseResourceType {
 
 		TransportFactory.Config rawConfig = new TransportFactory.Config(
 				uri,
-				user,
 				hkk.map(k -> new PublicKey[]{k}).orElse(new PublicKey[0]),
 				keyFile,
 				Optional.ofNullable(ns.getString("openssh_executable")).map(s -> Paths.get(s))
