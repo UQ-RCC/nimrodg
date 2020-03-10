@@ -25,13 +25,12 @@ import au.edu.uq.rcc.nimrodg.agent.DefaultAgentState;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
 import au.edu.uq.rcc.nimrodg.api.Actuator;
 import au.edu.uq.rcc.nimrodg.api.AgentInfo;
+import au.edu.uq.rcc.nimrodg.api.NimrodConfig;
 import au.edu.uq.rcc.nimrodg.api.NimrodException;
-import au.edu.uq.rcc.nimrodg.api.NimrodMasterAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.api.Resource;
 import au.edu.uq.rcc.nimrodg.api.utils.NimrodUtils;
 import au.edu.uq.rcc.nimrodg.resource.SSHResourceType;
-import au.edu.uq.rcc.nimrodg.resource.act.ActuatorUtils;
 import au.edu.uq.rcc.nimrodg.resource.act.RemoteActuator;
 import au.edu.uq.rcc.nimrodg.resource.ssh.ClientFactories;
 import au.edu.uq.rcc.nimrodg.resource.ssh.TransportFactory;
@@ -554,9 +553,9 @@ public class JcloudsActuator implements Actuator {
 		NodeInfo ni;
 		if(!n.isPresent()) {
 			/* We don't know about the node, try to reconstruct it. */
-			n = Optional.of(compute.getNodeMetadata(nodeId.get()));
+			n = Optional.ofNullable(compute.getNodeMetadata(nodeId.get()));
 			if(!n.isPresent()) {
-				return false;
+				return AdoptStatus.Rejected;
 			}
 
 			Optional<TransportFactory.Config> tcfg = Optional.ofNullable(no.getJsonObject("transport"))
@@ -590,8 +589,8 @@ public class JcloudsActuator implements Actuator {
 				act = launchActuator(sscfg);
 			} catch(UncheckedIOException e) {
 				ni.actuator.completeExceptionally(e);
-				LOGGER.catching(e);
-				return false;
+				LOGGER.warn(String.format("Unable to launch actuator for agent %s recovery", state.getUUID()), e);
+				return AdoptStatus.Rejected;
 			}
 
 			ni.actuator.complete(act);
@@ -601,7 +600,7 @@ public class JcloudsActuator implements Actuator {
 
 		JsonObject ro = data.getJsonObject("remote");
 		if(ro == null) {
-			return false;
+			return AdoptStatus.Rejected;
 		}
 
 		AgentState as = new DefaultAgentState(state);
@@ -610,8 +609,8 @@ public class JcloudsActuator implements Actuator {
 		try {
 			return ni.actuator.thenApply(act -> act.adopt(as)).get();
 		} catch(InterruptedException | ExecutionException e) {
-			LOGGER.catching(e);
-			return false;
+			LOGGER.warn(String.format("Sub-actuator failed to adopt agent %s", as.getUUID()), e);
+			return AdoptStatus.Rejected;
 		}
 	}
 
@@ -634,7 +633,6 @@ public class JcloudsActuator implements Actuator {
 				TRANSPORT_FACTORY,
 				new TransportFactory.Config(
 						Optional.of(uri),
-						uriUser,
 						hostKeys,
 						ni.keyPair,
 						Optional.empty()
@@ -655,12 +653,32 @@ public class JcloudsActuator implements Actuator {
 
 		@Override
 		public void reportAgentFailure(Actuator act, UUID uuid, AgentShutdown.Reason reason, int signal) throws IllegalArgumentException {
-			JcloudsActuator.this.ops.reportAgentFailure(JcloudsActuator.this, uuid, reason, signal);
+			ops.reportAgentFailure(JcloudsActuator.this, uuid, reason, signal);
 		}
 
 		@Override
-		public NimrodMasterAPI getNimrod() {
-			return JcloudsActuator.this.ops.getNimrod();
+		public NimrodConfig getConfig() {
+			return ops.getConfig();
+		}
+
+		@Override
+		public int getAgentCount(Resource res) {
+			return ops.getAgentCount(res);
+		}
+
+		@Override
+		public Map<String, AgentInfo> lookupAgents() {
+			return ops.lookupAgents();
+		}
+
+		@Override
+		public AgentInfo lookupAgentByPlatform(String platString) {
+			return ops.lookupAgentByPlatform(platString);
+		}
+
+		@Override
+		public AgentInfo lookupAgentByPosix(String system, String machine) {
+			return ops.lookupAgentByPosix(system, machine);
 		}
 	}
 
