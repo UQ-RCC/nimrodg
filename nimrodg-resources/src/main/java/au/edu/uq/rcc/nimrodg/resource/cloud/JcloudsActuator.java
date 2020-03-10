@@ -25,17 +25,36 @@ import au.edu.uq.rcc.nimrodg.agent.DefaultAgentState;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
 import au.edu.uq.rcc.nimrodg.api.Actuator;
 import au.edu.uq.rcc.nimrodg.api.AgentInfo;
-import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
-import au.edu.uq.rcc.nimrodg.api.NimrodAPIException;
+import au.edu.uq.rcc.nimrodg.api.NimrodException;
 import au.edu.uq.rcc.nimrodg.api.NimrodMasterAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.api.Resource;
-import au.edu.uq.rcc.nimrodg.api.ResourceFullException;
+import au.edu.uq.rcc.nimrodg.api.utils.NimrodUtils;
 import au.edu.uq.rcc.nimrodg.resource.SSHResourceType;
 import au.edu.uq.rcc.nimrodg.resource.act.ActuatorUtils;
 import au.edu.uq.rcc.nimrodg.resource.act.RemoteActuator;
-import au.edu.uq.rcc.nimrodg.resource.ssh.SSHClient;
+import au.edu.uq.rcc.nimrodg.resource.ssh.ClientFactories;
 import au.edu.uq.rcc.nimrodg.resource.ssh.TransportFactory;
+import au.edu.uq.rcc.nimrodg.shell.ShellUtils;
+import au.edu.uq.rcc.nimrodg.shell.SshdClient;
+import org.jclouds.ContextBuilder;
+import org.jclouds.compute.ComputeService;
+import org.jclouds.compute.ComputeServiceContext;
+import org.jclouds.compute.RunNodesException;
+import org.jclouds.compute.domain.ComputeMetadata;
+import org.jclouds.compute.domain.NodeMetadata;
+import org.jclouds.compute.domain.Template;
+import org.jclouds.compute.options.TemplateOptions;
+import org.jclouds.openstack.nova.v2_0.compute.options.NovaTemplateOptions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.json.Json;
+import javax.json.JsonArrayBuilder;
+import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
+import javax.json.JsonString;
+import javax.json.JsonValue;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
@@ -43,7 +62,7 @@ import java.security.PublicKey;
 import java.security.cert.Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -59,34 +78,16 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import javax.json.Json;
-import javax.json.JsonArrayBuilder;
-import javax.json.JsonObject;
-import javax.json.JsonObjectBuilder;
-import javax.json.JsonString;
-import javax.json.JsonValue;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.jclouds.ContextBuilder;
-import org.jclouds.compute.ComputeService;
-import org.jclouds.compute.ComputeServiceContext;
-import org.jclouds.compute.RunNodesException;
-import org.jclouds.compute.domain.NodeMetadata;
-import org.jclouds.compute.domain.Template;
-import org.jclouds.compute.options.TemplateOptions;
-import org.jclouds.openstack.nova.v2_0.compute.options.NovaTemplateOptions;
 
 public class JcloudsActuator implements Actuator {
 
-	private static final Logger LOGGER = LogManager.getLogger(JcloudsActuator.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(JcloudsActuator.class);
 
-	private static final TransportFactory TRANSPORT_FACTORY = SSHClient.FACTORY;
+	private static final TransportFactory TRANSPORT_FACTORY = ClientFactories.SSHD_FACTORY;
 
 	private final Operations ops;
-	private final NimrodAPI nimrod;
 	private final Resource node;
 	private final NimrodURI amqpUri;
 	private final Certificate[] certs;
@@ -131,7 +132,6 @@ public class JcloudsActuator implements Actuator {
 
 	public JcloudsActuator(Operations ops, Resource node, NimrodURI amqpUri, Certificate[] certs, AgentInfo agentInfo, int agentsPerNode, String tmpDir, CloudConfig config) {
 		this.ops = ops;
-		this.nimrod = ops.getNimrod();
 		this.node = node;
 		this.amqpUri = amqpUri;
 		this.certs = certs;
@@ -172,18 +172,8 @@ public class JcloudsActuator implements Actuator {
 	}
 
 	@Override
-	public Resource getResource() throws NimrodAPIException {
+	public Resource getResource() {
 		return node;
-	}
-
-	@Override
-	public NimrodURI getAMQPUri() {
-		return amqpUri;
-	}
-
-	@Override
-	public Collection<Certificate> getAMQPCertificates() {
-		return List.of(certs);
 	}
 
 	/* Launch agents on a given actuator, remapping the launch results to the correct index. */
@@ -245,21 +235,21 @@ public class JcloudsActuator implements Actuator {
 		outBad.putAll(bad);
 
 		/* Attempt to resolve the host keys. */
-		nodes.values().forEach(ni -> {
+		for(NodeInfo ni : nodes.values()) {
 			ni.sshConfig = CompletableFuture.supplyAsync(() -> resolveTransportFromNode(ni, agentInfo));
-		});
+		}
 	}
 
 	@Override
 	@SuppressWarnings("ThrowableResultIgnored")
 	/* NetBeans really overdoes this. */
-	public LaunchResult[] launchAgents(UUID[] uuids) throws IOException {
+	public LaunchResult[] launchAgents(UUID[] uuids) {
 
 		/* See if there's any space left on our existing nodes. */
 		LinkedHashSet<NodeInfo> good = nodes.values().stream()
 				.filter(ni -> ni.agents.size() < agentsPerNode)
-				.sorted((a, b) -> Integer.compare(a.agents.size(), b.agents.size()))
-				.collect(Collectors.toCollection(() -> new LinkedHashSet<>()));
+				.sorted(Comparator.comparingInt(a -> a.agents.size()))
+				.collect(Collectors.toCollection(LinkedHashSet::new));
 
 		/* Get the number of agents we can launch on our existing nodes. */
 		int nLaunchable = good.stream()
@@ -277,9 +267,7 @@ public class JcloudsActuator implements Actuator {
 			launchNodes(compute, numRequired, groupName, template, agentInfo, newNodes, bad);
 
 			/* Launch the actuator. */
-			newNodes.values().forEach(ni -> {
-				ni.actuator = ni.sshConfig.thenApplyAsync(cfg -> launchActuator(cfg));
-			});
+			newNodes.values().forEach(ni -> ni.actuator = ni.sshConfig.thenApplyAsync(this::launchActuator));
 
 			nodes.putAll(newNodes);
 			good.addAll(newNodes.values());
@@ -291,11 +279,9 @@ public class JcloudsActuator implements Actuator {
 
 		/*
 		 * Wait for the actuators to be created. This is uninterruptible, as each future
-		 * should fail-fast interrupted and complete this future.
+		 * should fail-fast if interrupted and complete this future.
 		 */
-		waitUninterruptibly(CompletableFuture.allOf(actFutures), e -> {
-			return null;
-		});
+		waitUninterruptibly(CompletableFuture.allOf(actFutures), e -> null);
 
 		{
 			/* NB: LinkedHashSet, iteration order is consistent. */
@@ -316,14 +302,13 @@ public class JcloudsActuator implements Actuator {
 		/* Destroy the bad nodes. */
 		if(!bad.isEmpty()) {
 			try {
-				compute.destroyNodesMatching(n -> bad.containsKey(n));
+				compute.destroyNodesMatching(bad::containsKey);
 			} catch(RuntimeException e) {
-				LOGGER.warn("Caught exception during bad node cleanup. Details follow.");
-				LOGGER.catching(e);
+				LOGGER.warn("Caught exception during bad node cleanup.", e);
 			}
 
 			/* If an actuator launch failed, the node is now considered bad. */
-			good.removeAll(bad.keySet());
+			good.removeAll(NimrodUtils.mapToParent(bad.keySet(), nodes::get).keySet());
 
 			/* Now it's safe to remove them from our global list. */
 			bad.keySet().forEach(nodes::remove);
@@ -337,13 +322,13 @@ public class JcloudsActuator implements Actuator {
 		for(Map.Entry<NodeMetadata, Set<UUID>> e : fr.toFail.entrySet()) {
 			Throwable t = bad.get(e.getKey());
 			e.getValue().stream()
-					.map(u -> fr.indexMap.get(u))
+					.map(fr.indexMap::get)
 					.forEach(i -> results[i] = new LaunchResult(node, t));
 		}
 
-		LaunchResult fullResult = new LaunchResult(null, new ResourceFullException(node));
+		LaunchResult fullResult = new LaunchResult(null, new NimrodException.ResourceFull(node));
 		fr.leftovers.stream()
-				.map(u -> fr.indexMap.get(u))
+				.map(fr.indexMap::get)
 				.forEach(i -> results[i] = fullResult);
 
 		actFutures = fr.toLaunch.entrySet().stream()
@@ -352,8 +337,7 @@ public class JcloudsActuator implements Actuator {
 
 		/* Again, should fail-fast. */
 		waitUninterruptibly(CompletableFuture.allOf(actFutures), e -> {
-			/* This should never happen, as launchAgentsOnActuator() shoule never throw. */
-			LOGGER.catching(e);
+			LOGGER.error("launchAgentsOnActuator() threw exception. This is a bug", e);
 			return null;
 		});
 
@@ -405,7 +389,7 @@ public class JcloudsActuator implements Actuator {
 					.ifPresentOrElse(id -> nb.add("image_id", id), () -> nb.add("image_id", JsonValue.NULL));
 
 			Optional.ofNullable(ni.node.getHardware())
-					.map(h -> h.getId())
+					.map(ComputeMetadata::getId)
 					.ifPresentOrElse(h -> nb.add("hardware_id", h), () -> nb.add("hardware_id", JsonValue.NULL));
 
 			/*
@@ -420,7 +404,7 @@ public class JcloudsActuator implements Actuator {
 
 			JsonArrayBuilder urib = Json.createArrayBuilder();
 			ni.uris.stream()
-					.map(u -> u.toString())
+					.map(URI::toString)
 					.forEach(urib::add);
 			nb.add("uris", urib);
 
@@ -438,21 +422,42 @@ public class JcloudsActuator implements Actuator {
 	}
 
 	@Override
-	public boolean forceTerminateAgent(UUID uuid) {
-		NodeInfo ni = agentMap.remove(uuid);
-		if(ni == null) {
-			return false;
+	public void forceTerminateAgent(UUID[] uuid) {
+		Map<NodeInfo, List<UUID>> xxx = NimrodUtils.mapToParent(Arrays.stream(uuid), agentMap::get);
+
+		/* Strip all agents that aren't ours. */
+		xxx.remove(null);
+
+		if(xxx.isEmpty()) {
+			return;
 		}
 
-		if(!ni.agents.remove(uuid)) {
-			return false;
-		}
+		xxx.forEach((ni, uu) -> ni.agents.removeAll(uu));
 
-		try {
-			return ni.actuator.thenApply(act -> act.forceTerminateAgent(uuid)).get();
-		} catch(InterruptedException | ExecutionException e) {
-			LOGGER.catching(e);
-			return false;
+		CompletableFuture cf = CompletableFuture.allOf(xxx.entrySet().stream()
+				.map(e -> e.getKey().actuator.thenAccept(act -> act.forceTerminateAgent(e.getValue().stream().toArray(UUID[]::new)))
+						.handle((v, t) -> {
+							if(t == null) {
+								return null;
+							}
+
+							/* Swallow and log any exceptions that happen. */
+							String uuidList = e.getValue().stream().map(UUID::toString).collect(Collectors.joining(", "));
+							LOGGER.error(String.format("Unable to terminate agents %s", uuidList), t);
+							return null;
+						})
+				)
+				.toArray(CompletableFuture[]::new));
+
+		/* FIXME: I don't like this... */
+		while(!cf.isDone()) {
+			try {
+				cf.get();
+			} catch(ExecutionException e) {
+				LOGGER.warn("forceTerminateAgent() threw in sub-actuator. This is a bug.", e);
+			} catch(InterruptedException e) {
+				/* nop */
+			}
 		}
 	}
 
@@ -519,19 +524,19 @@ public class JcloudsActuator implements Actuator {
 	}
 
 	@Override
-	public boolean adopt(AgentState state) {
-		JsonObject jo = state.getActuatorData();
-		if(jo == null) {
-			return false;
+	public AdoptStatus adopt(AgentState state) {
+		JsonObject data = state.getActuatorData();
+		if(data == null) {
+			return AdoptStatus.Rejected;
 		}
 
 		if(state.getState() == Agent.State.SHUTDOWN) {
-			return false;
+			return AdoptStatus.Rejected;
 		}
 
-		JsonObject no = jo.getJsonObject("node");
+		JsonObject no = data.getJsonObject("node");
 		if(no == null) {
-			return false;
+			return AdoptStatus.Rejected;
 		}
 
 		Optional<String> nodeId = Optional.ofNullable(no.get("id"))
@@ -539,7 +544,7 @@ public class JcloudsActuator implements Actuator {
 				.map(j -> ((JsonString)j).getString());
 
 		if(!nodeId.isPresent()) {
-			return false;
+			return AdoptStatus.Rejected;
 		}
 
 		Optional<NodeMetadata> n = nodes.keySet().stream()
@@ -558,7 +563,7 @@ public class JcloudsActuator implements Actuator {
 					.flatMap(cfg -> TRANSPORT_FACTORY.validateConfiguration(cfg, new ArrayList<>()));
 
 			if(!tcfg.isPresent()) {
-				return false;
+				return AdoptStatus.Rejected;
 			}
 
 			ni = NodeInfo.recover(
@@ -566,7 +571,7 @@ public class JcloudsActuator implements Actuator {
 					no.getJsonArray("uris").stream()
 							.map(j -> URI.create(((JsonString)j).getString()))
 							.toArray(URI[]::new),
-					new SSHResourceType.SSHConfig(agentInfo, TRANSPORT_FACTORY, tcfg.get())
+					new SSHResourceType.SSHConfig(agentInfo, TRANSPORT_FACTORY, tcfg.get(), List.of())
 			);
 		} else {
 			ni = nodes.get(n.get());
@@ -574,7 +579,7 @@ public class JcloudsActuator implements Actuator {
 
 		if(!ni.sshConfig.isDone()) {
 			/* Should never happen. */
-			return false;
+			return AdoptStatus.Rejected;
 		}
 
 		SSHResourceType.SSHConfig sscfg = ni.sshConfig.getNow(null);
@@ -594,7 +599,7 @@ public class JcloudsActuator implements Actuator {
 
 		nodes.putIfAbsent(ni.node, ni);
 
-		JsonObject ro = jo.getJsonObject("remote");
+		JsonObject ro = data.getJsonObject("remote");
 		if(ro == null) {
 			return false;
 		}
@@ -614,9 +619,12 @@ public class JcloudsActuator implements Actuator {
 		URI uri = ni.uris.get(0); // FIXME:
 
 		/* FIXME: Make this configurable. Currently 18 retries at 10 seconds, or 3 minutes. */
+
+		Optional<String> uriUser = ShellUtils.getUriUser(uri);
+
 		PublicKey[] hostKeys;
 		try {
-			hostKeys = SSHClient.resolveHostKeys(ActuatorUtils.getUriUser(uri).orElse(""), uri.getHost(), uri.getPort(), 18, 10000);
+			hostKeys = SshdClient.resolveHostKeys(uriUser.orElse(""), uri.getHost(), uri.getPort(), 18, 10000);
 		} catch(IOException e) {
 			throw new UncheckedIOException(e);
 		}
@@ -626,8 +634,8 @@ public class JcloudsActuator implements Actuator {
 				TRANSPORT_FACTORY,
 				new TransportFactory.Config(
 						Optional.of(uri),
+						uriUser,
 						hostKeys,
-						Optional.empty(),
 						ni.keyPair,
 						Optional.empty()
 				)
