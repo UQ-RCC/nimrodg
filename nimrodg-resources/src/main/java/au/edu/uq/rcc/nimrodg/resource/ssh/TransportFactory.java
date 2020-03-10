@@ -37,14 +37,12 @@ public interface TransportFactory {
 	class Config {
 
 		public final Optional<URI> uri;
-		public final Optional<String> user;
 		public final PublicKey[] hostKeys;
 		public final Optional<Path> privateKey;
 		public final Optional<Path> executablePath;
 
-		public Config(Optional<URI> uri, Optional<String> user, PublicKey[] hostKeys, Optional<Path> privateKey, Optional<Path> executablePath) {
+		public Config(Optional<URI> uri, PublicKey[] hostKeys, Optional<Path> privateKey, Optional<Path> executablePath) {
 			this.uri = uri;
-			this.user = user;
 			this.hostKeys = Arrays.copyOf(hostKeys, hostKeys.length);
 			this.privateKey = privateKey;
 			this.executablePath = executablePath;

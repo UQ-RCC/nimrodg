@@ -60,7 +60,6 @@ public class ClientFactories {
 
 			return Optional.of(new TransportFactory.Config(
 					Optional.empty(),
-					Optional.empty(),
 					new PublicKey[0],
 					Optional.empty(),
 					Optional.empty()
@@ -128,7 +127,6 @@ public class ClientFactories {
 
 			return Optional.of(new TransportFactory.Config(
 					Optional.of(uri),
-					ShellUtils.getUriUser(uri),
 					new PublicKey[0],
 					TransportFactory.getOrNullIfEmpty(cfg, "keyfile").map(s -> Paths.get(URI.create(s))),
 					TransportFactory.getOrNullIfEmpty(cfg, "executable").map(s -> Paths.get(s))
@@ -172,14 +170,13 @@ public class ClientFactories {
 				port = 22;
 			}
 
-			PublicKey[] hostKeys = SshdClient.resolveHostKeys(cfg.user.orElse(""), uri.getHost(), port);
+			PublicKey[] hostKeys = SshdClient.resolveHostKeys(ShellUtils.getUriUser(uri).orElse(""), uri.getHost(), port);
 			if(hostKeys.length == 0) {
 				throw new IOException("No host keys resolved");
 			}
 
 			return new TransportFactory.Config(
 					cfg.uri,
-					cfg.user,
 					hostKeys,
 					cfg.privateKey,
 					Optional.empty()
@@ -250,7 +247,6 @@ public class ClientFactories {
 
 			return Optional.of(new TransportFactory.Config(
 					Optional.of(uri),
-					user,
 					hostKeys,
 					privateKey,
 					Optional.empty()

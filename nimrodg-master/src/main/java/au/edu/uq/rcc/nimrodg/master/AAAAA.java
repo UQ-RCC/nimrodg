@@ -45,7 +45,7 @@ import java.util.function.Consumer;
  */
 public abstract class AAAAA implements AutoCloseable {
 
-	private final class ActuatorState {
+	private static final class ActuatorState {
 
 		/* The actuator future itself. Is never obtruded. */
 		public final CompletableFuture<Actuator> actuatorFuture;
@@ -58,7 +58,7 @@ public abstract class AAAAA implements AutoCloseable {
 		}
 	}
 
-	public final class LaunchRequest {
+	public static final class LaunchRequest {
 
 		public final UUID[] uuids;
 		public final Resource resource;
@@ -144,8 +144,8 @@ public abstract class AAAAA implements AutoCloseable {
 			}
 
 			/* We've failed, so fail all the individual results, not the request. */
-			Actuator.LaunchResult lr = new LaunchResult(node, t);
-			Actuator.LaunchResult[] lrs = new LaunchResult[uuids.length];
+			LaunchResult lr = new LaunchResult(node, t);
+			LaunchResult[] lrs = new LaunchResult[uuids.length];
 			Arrays.setAll(lrs, i -> lr);
 			return lrs;
 		}, executor));

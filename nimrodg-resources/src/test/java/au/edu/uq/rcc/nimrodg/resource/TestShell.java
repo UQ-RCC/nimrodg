@@ -87,7 +87,6 @@ public class TestShell implements RemoteShell {
 	static TransportFactory.Config createConfig() {
 		return new TransportFactory.Config(
 				Optional.empty(),
-				Optional.empty(),
 				new PublicKey[0],
 				Optional.empty(),
 				Optional.empty()
