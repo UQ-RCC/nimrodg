@@ -32,10 +32,11 @@ public interface Actuator extends AutoCloseable {
 	interface Operations extends AgentProvider {
 
 		/**
-		 * Report an out-of-band failure of the agent.Some examples of an out-of-band failure are:
+		 * Report an out-of-band failure of the agent. Some examples of an out-of-band failure are:
 		 * <ul>
-		 * <li>A local agent is SIGKILL'd and can't send a shutdown message.The actuator was waiting on process
-		 * termination and can report this to the master knows.</li>
+		 * <li>A local agent is SIGKILL'd and can't send a shutdown message.
+		 * The actuator was waiting on process termination and can report this to the master knows.
+		 * </li>
 		 * </ul>
 		 *
 		 * @param act This actuator.
@@ -52,9 +53,9 @@ public interface Actuator extends AutoCloseable {
 		int getAgentCount(Resource res);
 	}
 
-	public Resource getResource() throws NimrodException;
+	Resource getResource() throws NimrodException;
 
-	public static class LaunchResult {
+	class LaunchResult {
 
 		public final Resource node;
 		public final Throwable t;
@@ -94,7 +95,6 @@ public interface Actuator extends AutoCloseable {
 	/**
 	 *
 	 * @param uuid The initial UUIDs of the agent.
-	 * @return
 	 * @throws IOException if the actuator is unable to communicate with the resource, or an IO error occurs.
 	 */
 	LaunchResult[] launchAgents(UUID[] uuid) throws IOException;
@@ -136,7 +136,7 @@ public interface Actuator extends AutoCloseable {
 	 */
 	boolean canSpawnAgents(int num) throws IllegalArgumentException;
 
-	public enum AdoptStatus {
+	enum AdoptStatus {
 		/**
 		 * Agent was adopted.
 		 */
