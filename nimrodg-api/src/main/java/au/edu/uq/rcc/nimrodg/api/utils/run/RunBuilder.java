@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class RunBuilder {
 
@@ -125,9 +126,8 @@ public class RunBuilder {
 		}
 	}
 
-	private static List<CompiledJob> checkJobs(List<CompiledVariable> vars, List<CompiledJob> runJobs) throws RunfileBuildException {
-		List<CompiledJob> initialJobs = new ArrayList<>(runJobs);
-		initialJobs.sort(Comparator.comparingInt(j -> j.index));
+	private static List<CompiledJob> checkJobs(List<CompiledVariable> vars, Stream<CompiledJob> runJobs) throws RunfileBuildException {
+		List<CompiledJob> initialJobs = runJobs.sorted(Comparator.comparingInt(a -> a.index)).collect(Collectors.toList());
 
 		if(!initialJobs.isEmpty() && initialJobs.get(0).index != 1) {
 			throw new RunfileBuildException.FirstJobIndexNonOne(initialJobs.get(0));
@@ -329,13 +329,13 @@ public class RunBuilder {
 		}
 
 		/* Check our supplied initial jobs are valid. */
-		checkJobs(vars, m_Jobs.stream().map(JobBuilder::build).collect(Collectors.toList()));
+		checkJobs(vars, m_Jobs.stream().map(JobBuilder::build));
 
 		/* Apply the parameters to the jobs. */
 		List<CompiledJob> jobs = applyParameters(pars, m_Jobs);
 
 		/* Now the the parameters have been processed, combine them with the variables. */
-		checkJobs(allVars, jobs);
+		checkJobs(allVars, jobs.stream());
 		checkTasks(varNames);
 
 		assert this.getEstimatedJobCount() >= jobs.size();
