@@ -19,12 +19,17 @@
  */
 package au.edu.uq.rcc.nimrodg.agent.messages;
 
+import au.edu.uq.rcc.nimrodg.agent.Agent;
+
 import java.util.UUID;
 
 public class AgentPong extends AgentMessage {
 
-	public AgentPong(UUID agentUuid) {
+	private final Agent.ClientState clientState;
+
+	public AgentPong(UUID agentUuid, Agent.ClientState clientState) {
 		super(agentUuid);
+		this.clientState = clientState;
 	}
 
 	@Override
@@ -32,10 +37,21 @@ public class AgentPong extends AgentMessage {
 		return Type.Pong;
 	}
 
+	public Agent.ClientState getState() {
+		return clientState;
+	}
+
 	public static class Builder extends AgentMessage.Builder<Builder> {
+		private Agent.ClientState clientState;
+
+		public Builder clientState(Agent.ClientState clientState) {
+			this.clientState = clientState;
+			return this;
+		}
+
 		@Override
 		public AgentPong build() {
-			return new AgentPong(agentUuid);
+			return new AgentPong(agentUuid, clientState);
 		}
 	}
 }

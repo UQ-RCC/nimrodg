@@ -80,6 +80,13 @@ public interface Agent {
 		SHUTDOWN
 	}
 
+	enum ClientState {
+		WAITING_FOR_INIT,
+		IDLE,
+		IN_JOB,
+		STOPPED
+	}
+
 	/**
 	 * Retrieve the current server-side state of the agent.
 	 *
@@ -264,6 +271,35 @@ public interface Agent {
 				return State.WAITING_FOR_HELLO;
 		}
 
+		throw new IllegalArgumentException();
+	}
+
+	static String clientStateToString(ClientState state) {
+		switch(state) {
+			case WAITING_FOR_INIT:
+				return "WAITING_FOR_INIT";
+			case IDLE:
+				return "IDLE";
+			case IN_JOB:
+				return "IN_JOB";
+			case STOPPED:
+				return "STOPPED";
+		}
+
+		throw new IllegalArgumentException();
+	}
+
+	static ClientState clientStateFromString(String s) {
+		switch(s) {
+			case "WAITING_FOR_INIT":
+				return ClientState.WAITING_FOR_INIT;
+			case "IDLE":
+				return ClientState.IDLE;
+			case "IN_JOB":
+				return ClientState.IN_JOB;
+			case "STOPPED":
+				return ClientState.STOPPED;
+		}
 		throw new IllegalArgumentException();
 	}
 }

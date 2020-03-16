@@ -19,23 +19,24 @@
  */
 package au.edu.uq.rcc.nimrodg.agent.messages.json;
 
+import au.edu.uq.rcc.nimrodg.agent.Agent;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentMessage;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentPong;
 import java.util.UUID;
+
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
-import javax.json.JsonValue;
 
 public class PongHandler implements JsonHandler {
 
 	@Override
 	public AgentMessage read(JsonObject jo, UUID uuid) {
-		return new AgentPong(uuid);
+		return new AgentPong(uuid, Agent.clientStateFromString(jo.getString("state")));
 	}
 
 	@Override
 	public void write(JsonObjectBuilder jo, AgentMessage msg) {
-
+		jo.add("state", Agent.clientStateToString(((AgentPong)msg).getState()));
 	}
 
 }
