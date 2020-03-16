@@ -34,7 +34,7 @@ public interface Agent {
 	/**
 	 * All the possible server-side states for an agent.
 	 */
-	public enum State {
+	enum State {
 		/**
 		 * No agent is connected, waiting for initialisation.
 		 *
@@ -79,6 +79,13 @@ public interface Agent {
 		 * </ul>
 		 */
 		SHUTDOWN
+	}
+
+	enum ClientState {
+		WAITING_FOR_INIT,
+		IDLE,
+		IN_JOB,
+		STOPPED
 	}
 
 	/**
@@ -239,7 +246,7 @@ public interface Agent {
 	 */
 	void reportStateChange(State oldState, State newState);
 
-	public static String stateToString(State state) {
+	static String stateToString(State state) {
 		switch(state) {
 			case SHUTDOWN:
 				return "SHUTDOWN";
@@ -254,7 +261,7 @@ public interface Agent {
 		throw new IllegalArgumentException();
 	}
 
-	public static State stateFromString(String s) {
+	static State stateFromString(String s) {
 		switch(s) {
 			case "SHUTDOWN":
 				return State.SHUTDOWN;
@@ -266,6 +273,35 @@ public interface Agent {
 				return State.WAITING_FOR_HELLO;
 		}
 
+		throw new IllegalArgumentException();
+	}
+
+	static String clientStateToString(ClientState state) {
+		switch(state) {
+			case WAITING_FOR_INIT:
+				return "WAITING_FOR_INIT";
+			case IDLE:
+				return "IDLE";
+			case IN_JOB:
+				return "IN_JOB";
+			case STOPPED:
+				return "STOPPED";
+		}
+
+		throw new IllegalArgumentException();
+	}
+
+	static ClientState clientStateFromString(String s) {
+		switch(s) {
+			case "WAITING_FOR_INIT":
+				return ClientState.WAITING_FOR_INIT;
+			case "IDLE":
+				return ClientState.IDLE;
+			case "IN_JOB":
+				return ClientState.IN_JOB;
+			case "STOPPED":
+				return ClientState.STOPPED;
+		}
 		throw new IllegalArgumentException();
 	}
 }

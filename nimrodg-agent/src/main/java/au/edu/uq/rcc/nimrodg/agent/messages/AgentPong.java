@@ -19,20 +19,26 @@
  */
 package au.edu.uq.rcc.nimrodg.agent.messages;
 
+import au.edu.uq.rcc.nimrodg.agent.Agent;
+
 import java.util.UUID;
 import javax.json.JsonObject;
 
 public class AgentPong extends AgentMessage {
 
-	public final JsonObject stats;
+	private final Agent.ClientState clientState;
 
-	public AgentPong(UUID agentUuid, JsonObject stats) {
+	public AgentPong(UUID agentUuid, Agent.ClientState clientState) {
 		super(agentUuid);
-		this.stats = stats;
+		this.clientState = clientState;
 	}
 
 	@Override
 	public Type getType() {
 		return Type.Pong;
+	}
+
+	public Agent.ClientState getState() {
+		return clientState;
 	}
 }
