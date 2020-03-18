@@ -105,7 +105,7 @@ class Heart {
 	public void tick(Instant now) {
 		Set<UUID> exps = new HashSet<>();
 		expiryInfo.keySet().forEach(u -> tickAgent(u, now, exps));
-		exps.forEach(u -> expiryInfo.remove(u));
+		exps.forEach(expiryInfo::remove);
 	}
 
 	private void tickAgent(UUID u, Instant now, Set<UUID> exps) {
