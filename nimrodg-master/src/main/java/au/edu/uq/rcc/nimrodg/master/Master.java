@@ -29,6 +29,7 @@ import au.edu.uq.rcc.nimrodg.agent.messages.AgentPong;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentSubmit;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentUpdate;
+import au.edu.uq.rcc.nimrodg.agent.messages.json.JsonBackend;
 import au.edu.uq.rcc.nimrodg.api.Actuator;
 import au.edu.uq.rcc.nimrodg.api.Actuator.LaunchResult;
 import au.edu.uq.rcc.nimrodg.api.CommandResult;
@@ -75,6 +76,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import javax.json.Json;
 
 public class Master implements MessageQueueListener, AutoCloseable {
 
@@ -505,6 +508,18 @@ public class Master implements MessageQueueListener, AutoCloseable {
 	private void processAgents(State state) {
 		List<_AgentMessage> msgs = new ArrayList<>();
 		agentMessages.drainTo(msgs);
+
+		agentMessages.forEach(m -> {
+			String s = Json.createObjectBuilder()
+					.add("tag", m.tag)
+					.add("uuid", m.uuid.toString())
+					.add("remoteTime", m.remoteTime.toString())
+					.add("receivedTime", m.receivedTime.toString())
+					.add("message", JsonBackend.INSTANCE.toJson(m.msg))
+					.toString();
+
+			LOGGER.trace("DRAIN: {}", s);
+		});
 
 		for(_AgentMessage msg : msgs) {
 			MessageOperation mop;
