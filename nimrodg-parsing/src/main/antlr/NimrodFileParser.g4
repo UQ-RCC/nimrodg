@@ -66,11 +66,15 @@ parameterDomain		: domainDefault
 
 parameterStatement	: PARAMETER parameterName (LABEL parameterLabel)? (parameterType parameterDomain)? NEWLINE+ ;
 
+outputName          : IDENTIFIER ;
+outputStatement     : OUTPUT outputName NEWLINE+ ;
+
 /*
 ** Task Mode
 */
 
 sliteral			: STRING_LITERAL
+                    | TM_IDENTIFIER
 					| TM_SLITERAL_ARG
 					| TM_LITERAL_ARG
 					| TM_TASKNAME
@@ -82,6 +86,7 @@ sliteral			: STRING_LITERAL
 					| TM_EXEC
 					| TM_LEXEC
 					| TM_LPEXEC
+					| TM_SLURP
 					| TM_APPEND
 					| TM_STDOUT
 					| TM_STDERR
@@ -91,7 +96,7 @@ sliteral			: STRING_LITERAL
 					| TM_ACTION
 					;
 
-literal				: STRING_LITERAL | TM_LITERAL_ARG ;
+literal				: STRING_LITERAL | TM_LITERAL_ARG | TM_IDENTIFIER;
 
 onerrorCommand		: TM_ONERROR TM_ACTION ;
 
@@ -103,6 +108,10 @@ shexecCommand		: TM_SHEXEC sliteral ;
 execCommand			: TM_EXEC literal argList ;
 lexecCommand		: TM_LEXEC literal argList ;
 lpexecCommand		: TM_LPEXEC literal argList ;
+slurpCommand        : TM_SLURP sliteral slurpArg+ ;
+
+slurpVar            : TM_IDENTIFIER ;
+slurpArg            : slurpVar (TM_COLON literal)?;
 
 redirectStream		: TM_STDOUT | TM_STDERR ;
 redirectTarget		: TM_OFF | TM_APPEND? TM_TO sliteral ;
@@ -115,9 +124,10 @@ taskCommand			: onerrorCommand
 					| execCommand
 					| lexecCommand
 					| lpexecCommand
+					| slurpCommand
 					;
 
-variableBlock		: (variableStatement | parameterStatement)+;
+variableBlock		: (variableStatement | parameterStatement | outputStatement)+;
 taskBlock			: TASK TM_TASKNAME NEWLINE+ (taskCommand NEWLINE+)* TM_ENDTASK NEWLINE* ;
 
 nimrodFile			:

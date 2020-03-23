@@ -41,6 +41,7 @@ STRING_LITERAL			: '"' SCharSequence? '"' ;
 /* Variable and parameter definitions */
 VARIABLE					: 'variable' ;
 PARAMETER				: 'parameter' ;
+OUTPUT                  : 'output' ;
 
 INDEX					: 'index' ;
 LIST						: 'list' ;
@@ -106,6 +107,7 @@ TM_SHEXEC				: 'shexec' ;
 TM_EXEC					: 'exec' ;
 TM_LEXEC					: 'lexec' ;
 TM_LPEXEC				: 'lpexec' ;
+TM_SLURP                : 'slurp' ;
 
 TM_APPEND				: 'append' ;
 TM_STDOUT				: 'stdout' ;
@@ -123,10 +125,12 @@ TM_LITERAL_CHARS			: [./<>&?\-] ;
 
 TM_STRING_LITERAL			: STRING_LITERAL -> type(STRING_LITERAL) ;
 
-fragment
-TM_LITERAL_COMPONENT		: DIGIT | NONDIGIT | IDENTIFIER | TM_LITERAL_CHARS;
 
-TM_LITERAL_ARG			: TM_LITERAL_COMPONENT+ ;
+fragment
+TM_LITERAL_COMPONENT		: DIGIT | NONDIGIT | TM_LITERAL_CHARS;
+
+TM_IDENTIFIER           : IDENTIFIER ;
+TM_LITERAL_ARG			: (TM_LITERAL_COMPONENT | TM_IDENTIFIER)+ ;
 TM_SLITERAL_ARG			: (TM_LITERAL_COMPONENT | TM_SUBSTITUTION)+ ;
 
 TM_COLON					: ':' ;
