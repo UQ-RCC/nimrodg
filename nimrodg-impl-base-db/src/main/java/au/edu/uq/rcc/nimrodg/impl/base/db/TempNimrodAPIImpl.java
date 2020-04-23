@@ -364,7 +364,7 @@ public abstract class TempNimrodAPIImpl implements NimrodAPI, NimrodMasterAPI, N
 
 	@Override
 	public CommandResult addCommandResult(JobAttempt att, CommandResult.CommandResultStatus status, long index, float time, int retval, String message, int errcode, boolean stop) {
-		return db.runSQL(() -> db.addCommandResult(validateJobAttempt(att), status, index, time, retval, message, errcode, stop));
+		return db.runSQLTransaction(() -> db.addCommandResult(validateJobAttempt(att), status, index, time, retval, message, errcode, stop));
 	}
 
 	@Override

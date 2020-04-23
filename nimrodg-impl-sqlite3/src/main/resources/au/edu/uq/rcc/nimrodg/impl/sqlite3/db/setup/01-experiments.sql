@@ -156,5 +156,7 @@ CREATE TABLE nimrod_command_results(
 	retval INT NOT NULL DEFAULT -1,
 	message TEXT NOT NULL DEFAULT '',
 	error_code INT NOT NULL DEFAULT 0,
-	stop BOOLEAN NOT NULL
+	stop BOOLEAN NOT NULL,
+	command_id INTEGER NOT NULL REFERENCES nimrod_commands(id) ON DELETE CASCADE,
+	UNIQUE(attempt_id, command_index)
 );

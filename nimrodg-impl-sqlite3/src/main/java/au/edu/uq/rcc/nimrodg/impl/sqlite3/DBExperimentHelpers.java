@@ -103,6 +103,8 @@ public class DBExperimentHelpers extends DBBaseHelper {
 	private final PreparedStatement qAddCommandResult;
 	private final PreparedStatement qGetCommandResult;
 
+	private final PreparedStatement qGetCommandIdForResult;
+
 	private final PreparedStatement qIsTokenValidForExperimentStorage;
 
 	public DBExperimentHelpers(Connection conn, List<PreparedStatement> statements) throws SQLException {
@@ -157,7 +159,7 @@ public class DBExperimentHelpers extends DBBaseHelper {
 				+ "		j.exp_id = ?\n"
 				+ "	;");
 
-		this.qAddCommandResult = prepareStatement("INSERT INTO nimrod_command_results(attempt_id, status, command_index, time, retval, message, error_code, stop) VALUES(?, ?, ?, ?, ?, ?, ?, ?)", true);
+		this.qAddCommandResult = prepareStatement("INSERT INTO nimrod_command_results(attempt_id, status, command_index, time, retval, message, error_code, stop, command_id) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)", true);
 		this.qGetCommandResult = prepareStatement("SELECT * FROM nimrod_command_results WHERE id = ?");
 
 		this.qIsTokenValidForExperimentStorage = prepareStatement("	SELECT r.* FROM (\n"
@@ -184,6 +186,22 @@ public class DBExperimentHelpers extends DBBaseHelper {
 				+ "	ORDER BY id DESC\n"
 				+ "	LIMIT 1\n"
 				+ ";");
+
+		this.qGetCommandIdForResult = prepareStatement("SELECT\n" +
+				"    c.id AS id\n" +
+				"FROM\n" +
+				"    nimrod_job_attempts AS att,\n" +
+				"    nimrod_jobs         AS j,\n" +
+				"    nimrod_tasks        AS t,\n" +
+				"    nimrod_commands     AS c\n" +
+				"WHERE\n" +
+				"    att.id          = ? AND\n" +
+				"    j.id            = att.id AND\n" +
+				"    t.exp_id        = j.exp_id AND\n" +
+				"    t.name          = 'main' AND\n" +
+				"    c.task_id       = t.id AND\n" +
+				"    c.command_index = ?\n" +
+				";");
 	}
 
 	public List<TempExperiment> listExperiments() throws SQLException {
@@ -828,7 +846,21 @@ public class DBExperimentHelpers extends DBBaseHelper {
 		return atts;
 	}
 
+	private long getCommandIdForResult(long attemptId, long cmdIndex) throws SQLException {
+		qGetCommandIdForResult.setLong(1, attemptId);
+		qGetCommandIdForResult.setLong(2, cmdIndex);
+
+		try(ResultSet rs = qGetCommandIdForResult.executeQuery()) {
+			if(!rs.next()) {
+				throw new SQLException("No such command");
+			}
+			return rs.getLong("id");
+		}
+	}
+
 	public TempCommandResult addCommandResult(long attId, CommandResult.CommandResultStatus status, long index, float time, int retval, String message, int errCode, boolean stop) throws SQLException {
+		long cmdId = getCommandIdForResult(attId, index);
+
 		qAddCommandResult.setLong(1, attId);
 		qAddCommandResult.setString(2, CommandResult.statusToString(status));
 		qAddCommandResult.setLong(3, index);
@@ -837,6 +869,7 @@ public class DBExperimentHelpers extends DBBaseHelper {
 		qAddCommandResult.setString(6, message);
 		qAddCommandResult.setInt(7, errCode);
 		qAddCommandResult.setBoolean(8, stop);
+		qAddCommandResult.setLong(9, cmdId);
 
 		if(qAddCommandResult.executeUpdate() == 0) {
 			throw new SQLException("Creating command result failed, no rows affected");

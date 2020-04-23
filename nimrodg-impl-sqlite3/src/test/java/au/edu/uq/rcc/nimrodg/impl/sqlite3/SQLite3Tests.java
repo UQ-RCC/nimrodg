@@ -29,6 +29,7 @@ import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Map;
 
 public class SQLite3Tests extends APITests {

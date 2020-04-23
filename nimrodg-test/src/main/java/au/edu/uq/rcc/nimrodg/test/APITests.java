@@ -249,6 +249,47 @@ public abstract class APITests {
 		}
 	}
 
+	@Test(expected = NimrodException.DbError.class)
+	public void commandResultTest1() throws RunfileBuildException {
+		NimrodAPI api = getNimrod();
+		Experiment exp = api.addExperiment("test1", TestUtils.getSimpleSampleExperiment());
+
+		Assert.assertTrue(api.getAPICaps().master);
+		NimrodMasterAPI mapi = (NimrodMasterAPI)api;
+
+		Job j = exp.filterJobs(EnumSet.allOf(JobAttempt.Status.class), 0, 1).stream()
+				.findFirst().orElseThrow(IllegalStateException::new);
+
+		UUID agentUuid = UUID.randomUUID();
+		JobAttempt att = mapi.createJobAttempts(List.of(j)).get(0);
+
+		mapi.startJobAttempt(att, agentUuid);
+
+		/* Try adding a command result for a non-existent command. */
+		mapi.addCommandResult(att, CommandResult.CommandResultStatus.SUCCESS, 100, 10.0f, 0, "Success", 0, true);
+	}
+
+	@Test(expected = NimrodException.DbError.class)
+	public void commandResultTest2() throws RunfileBuildException {
+		NimrodAPI api = getNimrod();
+		Experiment exp = api.addExperiment("test1", TestUtils.getSimpleSampleExperiment());
+
+		Assert.assertTrue(api.getAPICaps().master);
+		NimrodMasterAPI mapi = (NimrodMasterAPI)api;
+
+		Job j = exp.filterJobs(EnumSet.allOf(JobAttempt.Status.class), 0, 1).stream()
+				.findFirst().orElseThrow(IllegalStateException::new);
+
+		UUID agentUuid = UUID.randomUUID();
+		JobAttempt att = mapi.createJobAttempts(List.of(j)).get(0);
+
+		mapi.startJobAttempt(att, agentUuid);
+
+		/* Try adding the command result twice. */
+		mapi.addCommandResult(att, CommandResult.CommandResultStatus.SUCCESS, 0, 10.0f, 0, "Success", 0, true);
+		mapi.addCommandResult(att, CommandResult.CommandResultStatus.SUCCESS, 0, 10.0f, 0, "Success", 0, true);
+	}
+
 	@Test
 	public void substitutionApplicationTest() throws RunfileBuildException, PlanfileParseException {
 		NimrodAPI api = getNimrod();
