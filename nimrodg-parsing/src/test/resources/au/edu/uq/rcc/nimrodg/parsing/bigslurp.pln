@@ -1,0 +1,37 @@
+parameter x integer range from 1 to 100
+parameter y integer range from 1 to 100
+
+output xo
+output yo
+
+task main
+    /* <command that generates results.{txt,xml,json,csv} */
+
+    /* Uses JSON Pointer syntax to get a value for each output. */
+    slurp json results.json xo:/results/val1 yo:/results/val2
+
+    /* Uses XPATH for XML (still unsure about this, XPATH is a pain) */
+    slurp xml results.xml xo:/
+
+    /* Use a regex with named groups to extract the outputs. */
+    slurp regex resultx.txt ^(?P<xo>\d+),(?P<yo>\d+)
+
+    /* Can also use a quoted C-string */
+    slurp regex results.txt "^(?P<xo>\\d+),(?P<yo>\\d+)"
+
+    /*
+     * Slurp a non-headered CSV.
+     * xo = first field, yo = second field
+     */
+    slurp csv results.csv xo:0 yo:1
+
+    /*
+     * Slurp a headered CSV file.
+     * Ignores any fields that don't match the output names.
+     */
+    slurp hcsv results.csv
+
+    /* Can also manually override header mappings. */
+    slurp hcsv results.csv xo:header1 yo:header2
+
+endtask

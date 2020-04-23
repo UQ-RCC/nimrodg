@@ -153,4 +153,9 @@ public class CommandVisitor extends NimrodFileParserBaseVisitor<CompiledCommand>
 			throw new ParseCancellationException(e);
 		}
 	}
+
+	@Override
+	public CompiledCommand visitSlurpCommand(NimrodFileParser.SlurpCommandContext ctx) {
+		return super.visitSlurpCommand(ctx);
+	}
 }

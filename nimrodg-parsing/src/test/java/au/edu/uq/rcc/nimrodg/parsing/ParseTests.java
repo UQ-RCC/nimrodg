@@ -522,6 +522,11 @@ public class ParseTests {
 		getRunBuilder(getFile("test_truncparam.pln")).build();
 	}
 
+	@Test
+	public void bigSlurpTest() throws IOException, RunfileBuildException {
+		getRunBuilder(getFile("bigslurp.pln")).build();
+	}
+
 	/*
 	CharStream cs = getString(pln);
 	CommonTokenStream cts = new CommonTokenStream(new NimrodFileLexer(cs));

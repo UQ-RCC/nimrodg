@@ -108,10 +108,13 @@ shexecCommand		: TM_SHEXEC sliteral ;
 execCommand			: TM_EXEC literal argList ;
 lexecCommand		: TM_LEXEC literal argList ;
 lpexecCommand		: TM_LPEXEC literal argList ;
-slurpCommand        : TM_SLURP sliteral slurpArg+ ;
 
-slurpVar            : TM_IDENTIFIER ;
-slurpArg            : slurpVar (TM_COLON literal)?;
+
+regexSlurp          : TM_SLURP_REGEX sliteral literal ;
+nonRegexSlurp       : TM_SLURP_NONREGEX sliteral slurpArg*  ;
+slurpArg            : TM_IDENTIFIER (TM_COLON literal)?;
+
+slurpCommand        : TM_SLURP (regexSlurp | nonRegexSlurp) ;
 
 redirectStream		: TM_STDOUT | TM_STDERR ;
 redirectTarget		: TM_OFF | TM_APPEND? TM_TO sliteral ;

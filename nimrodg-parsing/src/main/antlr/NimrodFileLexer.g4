@@ -117,11 +117,14 @@ TM_TO					: 'to' ;
 TM_CONTEXT				: 'node' | 'root' ;
 TM_ACTION				: 'fail' | 'ignore' ;
 
+TM_SLURP_REGEX          : 'regex' ;
+TM_SLURP_NONREGEX       : 'json' | 'xml' | 'csv' | 'hcsv';
+
 fragment
 TM_SUBSTITUTION			: '$' (IDENTIFIER | '{' IDENTIFIER '}');
 
 fragment
-TM_LITERAL_CHARS			: [./<>&?\-] ;
+TM_LITERAL_CHARS			: [./<>&?\-|^*+()$\\,] | '[' | ']' ;
 
 TM_STRING_LITERAL			: STRING_LITERAL -> type(STRING_LITERAL) ;
 
