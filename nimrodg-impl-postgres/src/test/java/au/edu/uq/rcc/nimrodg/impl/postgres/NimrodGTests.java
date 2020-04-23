@@ -41,14 +41,7 @@ public class NimrodGTests extends APITests {
 	public void setupDb() throws Exception {
 		Path root = tmpDir.getRoot().toPath();
 
-		String pguser = System.getenv("NIMRODG_TEST_PGUSER");
-		String pgpassword = System.getenv("NIMRODG_TEST_PGPASSWORD");
-		String pghost = System.getenv("NIMRODG_TEST_PGHOST");
-		String pgdatabase = System.getenv("NIMRODG_TEST_PGDATABASE");
-
-		if(pguser == null || pgpassword == null || pghost == null || pgdatabase == null) {
-			throw new IllegalArgumentException("NIMRODG_TEST_* environment variables not set.");
-		}
+		TestInfo testInfo = TestInfo.getBestEffort();
 
 		UserConfig ucfg = new UserConfig() {
 			@Override
@@ -60,12 +53,7 @@ public class NimrodGTests extends APITests {
 			public Map<String, Map<String, String>> config() {
 				return Map.of(
 						"config", Map.of("factory", NimrodAPIFactoryImpl.class.getCanonicalName()),
-						"postgres", Map.of(
-								"driver", "org.postgresql.Driver",
-								"url", String.format("jdbc:postgresql://%s/%s", pghost, pgdatabase),
-								"username", pguser,
-								"password", pgpassword
-						)
+						"postgres", testInfo.buildJdbcConfig()
 				);
 			}
 		};
