@@ -30,8 +30,6 @@ public interface CommandResult {
 		SUCCESS
 	}
 
-	JobAttempt getAttempt();
-
 	CommandResultStatus getStatus();
 
 	long getIndex();

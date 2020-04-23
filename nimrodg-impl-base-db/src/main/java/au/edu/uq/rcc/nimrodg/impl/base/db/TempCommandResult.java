@@ -47,25 +47,10 @@ public class TempCommandResult {
 	}
 
 	public Impl create(TempJobAttempt.Impl attempt) {
-		return new Impl(attempt);
+		return new Impl();
 	}
 
 	public class Impl implements CommandResult {
-
-		private final TempJobAttempt.Impl attempt;
-
-		public final TempCommandResult base;
-
-		private Impl(TempJobAttempt.Impl attempt) {
-			this.attempt = attempt;
-			this.base = TempCommandResult.this;
-		}
-
-		@Override
-		public JobAttempt getAttempt() {
-			return attempt;
-		}
-
 		@Override
 		public CommandResultStatus getStatus() {
 			return status;
