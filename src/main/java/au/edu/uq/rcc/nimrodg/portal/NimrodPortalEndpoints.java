@@ -406,6 +406,68 @@ public class NimrodPortalEndpoints {
 		}
 	}
 
+	@RequestMapping(method = {RequestMethod.POST}, value = "/api/experiments/{expName}/control")
+	@ResponseBody
+	public ResponseEntity<Void> controlExperiment(
+			JwtAuthenticationToken jwt,
+			@PathVariable String expName,
+			@RequestParam(value = "action") String action,
+			HttpServletRequest request)  throws SQLException {
+
+		/* Mixing REST and RPC here :/ */
+		if(action == null) {
+			return ResponseEntity.badRequest().build();
+		} else if(action.equalsIgnoreCase("start")) {
+			return startExperiment(jwt, expName, request.getParameter("account"));
+		} else {
+			return ResponseEntity.badRequest().build();
+		}
+	}
+
+	private ResponseEntity<Void> startExperiment(JwtAuthenticationToken jwt, String expName, String account) throws SQLException {
+		if(expName == null || account == null) {
+			return ResponseEntity.badRequest().build();
+		}
+
+		UserState userState = getUserState(jwt);
+
+		try(NimrodAPI nimrod = createNimrod(userState.username)) {
+			Experiment exp = nimrod.getExperiment(expName);
+			if(exp == null) {
+				return ResponseEntity.notFound().build();
+			}
+
+			/* If we're already started, do nothing. */
+			if(exp.getState() != Experiment.State.STOPPED) {
+				return ResponseEntity.noContent().build();
+			}
+
+			/*
+			 * Bail if no resources are assigned.
+			 * This is racy, but it's good enough for now.
+			 */
+			if(nimrod.getAssignedResources(exp).isEmpty()) {
+				return ResponseEntity.unprocessableEntity().build();
+			}
+		}
+
+		try {
+			resource.executeJob("startexperiment", Map.of(
+					"exp_name", expName,
+					"account", account
+			));
+		} catch(HttpStatusCodeException e) {
+			/* If we 401, pass that back to the user so they can refresh the token. */
+			if(e.getStatusCode() == org.springframework.http.HttpStatus.FORBIDDEN) {
+				return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+			}
+
+			return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+		}
+
+		return ResponseEntity.noContent().build();
+	}
+
 	@RequestMapping(method = {RequestMethod.GET}, value = "/api/experiments/{expName}/resources")
 	@ResponseBody
 	public ResponseEntity<JsonNode> getAssignments(JwtAuthenticationToken jwt, @PathVariable String expName) throws SQLException {
