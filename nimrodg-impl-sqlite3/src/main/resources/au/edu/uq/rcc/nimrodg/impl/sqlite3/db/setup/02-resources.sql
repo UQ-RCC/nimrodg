@@ -69,7 +69,7 @@ DROP TABLE IF EXISTS nimrod_resource_assignments;
 CREATE TABLE nimrod_resource_assignments(
 	id						INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
 	exp_id					INTEGER NOT NULL REFERENCES nimrod_experiments(id) ON DELETE CASCADE,
-	resource_id				INTEGER NOT NULL REFERENCES nimrod_resources(id) ON DELETE CASCADE,
+	resource_id				INTEGER NOT NULL REFERENCES nimrod_resources(id) ON DELETE RESTRICT,
 	tx_uri					TEXT,
 	tx_cert_path				TEXT,
 	tx_no_verify_peer		BOOLEAN,

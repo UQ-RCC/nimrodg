@@ -157,6 +157,13 @@ public interface NimrodAPI extends AgentProvider, AutoCloseable {
 	 */
 	Resource addResource(String name, String type, JsonStructure config, NimrodURI amqpUri, NimrodURI txUri) throws IllegalArgumentException;
 
+	/**
+	 * Delete a resource.
+	 *
+	 * The resource must not be assigned to any experiments before deletion.
+	 *
+	 * @param resource The resource instance to delete.
+	 */
 	void deleteResource(Resource resource);
 
 	Collection<Resource> getResources();

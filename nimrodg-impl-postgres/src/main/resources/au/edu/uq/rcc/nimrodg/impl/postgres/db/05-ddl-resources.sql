@@ -76,7 +76,7 @@ DROP TABLE IF EXISTS nimrod_resource_assignments CASCADE;
 CREATE TABLE nimrod_resource_assignments(
 	id						BIGSERIAL NOT NULL PRIMARY KEY,
 	exp_id					BIGINT NOT NULL REFERENCES nimrod_experiments(id) ON DELETE CASCADE,
-	resource_id				BIGINT NOT NULL REFERENCES nimrod_resources(id) ON DELETE CASCADE,
+	resource_id				BIGINT NOT NULL REFERENCES nimrod_resources(id) ON DELETE RESTRICT,
 	tx_uri					TEXT,
 	tx_cert_path			TEXT,
 	tx_no_verify_peer		BOOLEAN,

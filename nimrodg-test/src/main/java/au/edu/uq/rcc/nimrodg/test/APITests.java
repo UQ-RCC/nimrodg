@@ -435,6 +435,19 @@ public abstract class APITests {
 		Assert.assertEquals(-1, as.getShutdownSignal());
 	}
 
+	@Test(expected = NimrodException.DbError.class)
+	public void resourceDeletionWhenAssignedTest() throws RunfileBuildException {
+		NimrodAPI api = getNimrod();
+		TestUtils.createSampleResources(api);
+
+		Resource root = api.getResource("root");
+
+		Experiment exp1 = api.addExperiment("exp1", TestUtils.getSimpleSampleEmptyExperiment());
+		api.assignResource(root, exp1);
+
+		api.deleteResource(root);
+	}
+
 	@Test
 	public void complexResourceAssignmentTest() throws NimrodException, RunfileBuildException, PlanfileParseException {
 		NimrodAPI api = getNimrod();
