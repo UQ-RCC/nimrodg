@@ -1,6 +1,8 @@
 [Unit]
 Description=Nimrod Portal Backend Server
 After=network.target
+ConditionPathExists=/etc/nimrod-portal-backend/application.yml
+ConditionPathExists=/etc/nimrod-portal-backend/logback-spring.xml
 
 [Service]
 Type=simple
