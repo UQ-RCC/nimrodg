@@ -205,7 +205,7 @@ task buildDeb(type: Deb, dependsOn: assembleDist) {
 	arch				'all'
 	url					project.packageUrl
 
-	requires			'default-jre', '1.10', Flags.GREATER | Flags.EQUAL
+	requires			'default-jre-headless', '1.11', Flags.GREATER | Flags.EQUAL
 	suggests			'postgresql', '10', Flags.GREATER | Flags.EQUAL
 	suggests			'rabbitmq-server', '3.5.7', Flags.GREATER | Flags.EQUAL
 
