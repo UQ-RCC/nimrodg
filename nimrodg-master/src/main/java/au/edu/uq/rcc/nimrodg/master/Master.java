@@ -548,7 +548,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 	private MessageOperation doProcessAgentMessage2(_AgentMessage _msg) throws IllegalStateException, IOException {
 		_msg.processedTime = Instant.now();
 		AgentMessage msg = _msg.msg;
-		LOGGER.debug("doProcessAgentMessage({}, {})", msg.getAgentUUID(), msg.getTypeString());
+		LOGGER.debug("doProcessAgentMessage({}, {})", msg.getAgentUUID(), msg.getType().typeString);
 
 		AgentInfo ai = getAgentInfo(msg.getAgentUUID());
 		if(ai == null) {
