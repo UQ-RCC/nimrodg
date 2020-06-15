@@ -202,7 +202,7 @@ public class PureReferenceAgent implements Agent {
 			throw new IllegalStateException("Agent is dead, cannot process messages.");
 		} else if(state == State.WAITING_FOR_HELLO) {
 			if(msg.getType() != AgentMessage.Type.Hello) {
-				throw new IllegalStateException(String.format("%s not valid for state %s", AgentMessage.getTypeString(msg.getType()), state));
+				throw new IllegalStateException(String.format("%s not valid for state %s", msg.getType().typeString, state));
 			}
 			lastHeardFrom = receivedAt;
 
@@ -224,7 +224,7 @@ public class PureReferenceAgent implements Agent {
 				reason = shutdown.reason;
 				setState(State.SHUTDOWN);
 			} else {
-				throw new IllegalStateException(String.format("%s not valid for state %s", AgentMessage.getTypeString(msg.getType()), state));
+				throw new IllegalStateException(String.format("%s not valid for state %s", msg.getType().typeString, state));
 			}
 		} else if(state == State.BUSY) {
 			if(msg.getType() == AgentMessage.Type.Pong) {
@@ -246,7 +246,7 @@ public class PureReferenceAgent implements Agent {
 				reason = shutdown.reason;
 				setState(State.SHUTDOWN);
 			} else {
-				throw new IllegalStateException(String.format("%s not valid for state %s", AgentMessage.getTypeString(msg.getType()), state));
+				throw new IllegalStateException(String.format("%s not valid for state %s", msg.getType().typeString, state));
 			}
 
 		}

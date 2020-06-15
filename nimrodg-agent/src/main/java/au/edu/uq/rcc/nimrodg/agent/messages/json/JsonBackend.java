@@ -82,7 +82,7 @@ public class JsonBackend implements MessageBackend {
 	}
 
 	public static JsonString toJson(AgentMessage.Type type) {
-		return Json.createValue(AgentMessage.getTypeString(type));
+		return Json.createValue(type.typeString);
 	}
 
 	public static AgentMessage.Type readMessageType(String s) {

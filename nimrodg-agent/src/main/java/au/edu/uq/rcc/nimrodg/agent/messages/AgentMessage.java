@@ -19,6 +19,7 @@
  */
 package au.edu.uq.rcc.nimrodg.agent.messages;
 
+import java.util.Objects;
 import java.util.UUID;
 
 public abstract class AgentMessage {
@@ -26,18 +27,28 @@ public abstract class AgentMessage {
 	private final UUID m_AgentUUID;
 
 	public enum Type {
-		Init,
-		LifeControl,
-		Query,
-		Submit,
-		Hello,
-		Shutdown,
-		Update,
-		Ping,
-		Pong
+		Init("agent.init"),
+		LifeControl("agent.lifecontrol"),
+		Query("agent.query"),
+		Submit("agent.submit"),
+		Hello("agent.hello"),
+		Shutdown("agent.shutdown"),
+		Update("agent.update"),
+		Ping("agent.ping"),
+		Pong("agent.pong");
+
+		public final String typeString;
+
+		Type(String typeString) {
+			this.typeString = typeString;
+		}
 	}
 
 	protected AgentMessage(UUID agentUuid) {
+		if(agentUuid == null) {
+			throw new IllegalArgumentException();
+		}
+
 		m_AgentUUID = agentUuid;
 	}
 
@@ -47,31 +58,14 @@ public abstract class AgentMessage {
 
 	public abstract Type getType();
 
+	@Deprecated
 	public String getTypeString() {
 		return getTypeString(getType());
 	}
 
+	@Deprecated
 	public static String getTypeString(Type t) {
-		switch(t) {
-			case Hello:
-				return "agent.hello";
-			case Init:
-				return "agent.init";
-			case LifeControl:
-				return "agent.lifecontrol";
-			case Query:
-				return "agent.query";
-			case Shutdown:
-				return "agent.shutdown";
-			case Submit:
-				return "agent.submit";
-			case Update:
-				return "agent.update";
-			case Ping:
-				return "agent.ping";
-			case Pong:
-				return "agent.pong";
-		}
-		throw new IllegalArgumentException();
+		Objects.requireNonNull(t, "t");
+		return t.typeString;
 	}
 }
