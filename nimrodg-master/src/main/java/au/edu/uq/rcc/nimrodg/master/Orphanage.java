@@ -24,7 +24,7 @@ public final class Orphanage implements Actuator {
 	}
 
 	@Override
-	public Resource getResource() throws NimrodException {
+	public Resource getResource() {
 		return resource;
 	}
 
@@ -51,7 +51,7 @@ public final class Orphanage implements Actuator {
 	}
 
 	@Override
-	public boolean canSpawnAgents(int num) throws IllegalArgumentException {
+	public boolean canSpawnAgents(int num) {
 		return false;
 	}
 
