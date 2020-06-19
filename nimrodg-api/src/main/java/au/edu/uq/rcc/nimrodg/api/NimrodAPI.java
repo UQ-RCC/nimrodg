@@ -20,13 +20,13 @@
 package au.edu.uq.rcc.nimrodg.api;
 
 import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledRun;
-import java.io.IOException;
+
+import javax.json.JsonStructure;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import javax.json.JsonStructure;
 
 /**
  * The public API for Nimrod/G.

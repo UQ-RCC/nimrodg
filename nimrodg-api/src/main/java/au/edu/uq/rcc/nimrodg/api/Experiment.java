@@ -20,8 +20,6 @@
 package au.edu.uq.rcc.nimrodg.api;
 
 import java.time.Instant;
-import java.util.Collection;
-import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -53,7 +51,7 @@ public interface Experiment extends NimrodEntity {
 
 	boolean isActive();
 
-	public static String stateToString(State s) {
+	static String stateToString(State s) {
 		switch(s) {
 			case STOPPED:
 				return "STOPPED";
@@ -66,7 +64,7 @@ public interface Experiment extends NimrodEntity {
 		throw new IllegalArgumentException();
 	}
 
-	public static State stringToState(String s) {
+	static State stringToState(String s) {
 		switch(s) {
 			case "STOPPED":
 				return State.STOPPED;

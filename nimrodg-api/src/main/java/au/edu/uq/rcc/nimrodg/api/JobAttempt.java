@@ -85,7 +85,7 @@ public interface JobAttempt extends NimrodEntity {
 	 */
 	UUID getAgentUUID();
 
-	public static String statusToString(Status status) {
+	static String statusToString(Status status) {
 		switch(status) {
 			case NOT_RUN:
 				return "NOT_RUN";
@@ -100,7 +100,7 @@ public interface JobAttempt extends NimrodEntity {
 		throw new IllegalArgumentException();
 	}
 
-	public static Status stringToStatus(String s) {
+	static Status stringToStatus(String s) {
 		switch(s) {
 			case "NOT_RUN":
 				return Status.NOT_RUN;

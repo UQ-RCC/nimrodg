@@ -44,7 +44,7 @@ public interface CommandResult {
 
 	boolean stopped();
 
-	public static String statusToString(CommandResultStatus s) {
+	static String statusToString(CommandResultStatus s) {
 		switch(s) {
 			case PRECONDITION_FAILURE:
 				return "PRECONDITION_FAILURE";
@@ -63,7 +63,7 @@ public interface CommandResult {
 		throw new IllegalArgumentException();
 	}
 
-	public static CommandResultStatus statusFromString(String s) {
+	static CommandResultStatus statusFromString(String s) {
 		switch(s) {
 			case "PRECONDITION_FAILURE":
 				return CommandResultStatus.PRECONDITION_FAILURE;

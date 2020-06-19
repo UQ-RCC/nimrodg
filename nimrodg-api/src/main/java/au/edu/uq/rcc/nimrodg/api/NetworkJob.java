@@ -25,9 +25,8 @@ import java.util.UUID;
 
 public class NetworkJob {
 
-	public static interface ResolvedCommand {
-
-		public Command.Type getType();
+	public interface ResolvedCommand {
+		Command.Type getType();
 	}
 
 	public static final class OnErrorCommand implements ResolvedCommand {

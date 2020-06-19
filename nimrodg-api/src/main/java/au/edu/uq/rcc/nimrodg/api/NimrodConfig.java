@@ -21,13 +21,13 @@ package au.edu.uq.rcc.nimrodg.api;
 
 public interface NimrodConfig {
 
-	public String getWorkDir();
+	String getWorkDir();
 
-	public String getRootStore();
+	String getRootStore();
 
-	public NimrodURI getAmqpUri();
+	NimrodURI getAmqpUri();
 
-	public String getAmqpRoutingKey();
+	String getAmqpRoutingKey();
 
-	public NimrodURI getTransferUri();
+	NimrodURI getTransferUri();
 }

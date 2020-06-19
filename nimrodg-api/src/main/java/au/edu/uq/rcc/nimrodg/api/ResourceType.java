@@ -34,7 +34,7 @@ public interface ResourceType {
 	/**
 	 * Parse a sequence of command-line arguments into a resource-specific configuration valid for this resource type.
 	 *
-	 * @param ap
+	 * @param ap The agent provider.
 	 * @param args A list of command-line arguments.
 	 * @param out stdout
 	 * @param err stderr
@@ -46,7 +46,7 @@ public interface ResourceType {
 	/**
 	 * Validate a resource-specific configuration blob.
 	 *
-	 * @param ap
+	 * @param ap The agent provider.
 	 * @param cfg The configuration to validate.
 	 * @param errors A list to wrote error messages to.
 	 * @return true, if cfg is valid. Otherwise, false.

@@ -20,6 +20,7 @@
 package au.edu.uq.rcc.nimrodg.api;
 
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -50,13 +51,8 @@ public class PlanfileParseException extends RuntimeException {
 	private final TreeSet<ParseError> errors;
 
 	public PlanfileParseException() {
-		this.errors = new TreeSet<>((a, b) -> {
-			int val = Integer.compare(a.line, b.line);
-			if(val == 0) {
-				val = Integer.compare(a.position, b.position);
-			}
-			return val;
-		});
+		this.errors = new TreeSet<>(Comparator.comparingInt((ParseError a) -> a.line)
+				.thenComparingInt(a -> a.position));
 	}
 
 	public void addError(int line, int position, String message) {
