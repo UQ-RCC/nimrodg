@@ -116,8 +116,7 @@ public interface Agent {
 	/**
 	 * Get the reason the agent shutdown.
 	 *
-	 * @return The reason the agent shutdown. This is only meaningful if {@link #getShutdownReason()} returns
-	 * {@link au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown.Reason#HostSignal}.
+	 * @return The reason the agent shutdown.
 	 */
 	AgentShutdown.Reason getShutdownReason();
 
