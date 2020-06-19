@@ -24,13 +24,13 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import au.edu.uq.rcc.nimrodg.api.Resource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class FailureTracker {
 
-	private static final Logger LOGGER = LogManager.getLogger(FailureTracker.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(FailureTracker.class);
 	private final Map<Resource, Integer> m_FailureCounts;
 
 	private final int m_Threshold;

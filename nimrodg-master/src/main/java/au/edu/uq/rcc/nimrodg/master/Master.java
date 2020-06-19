@@ -50,6 +50,9 @@ import au.edu.uq.rcc.nimrodg.api.utils.NimrodUtils;
 import au.edu.uq.rcc.nimrodg.master.AAAAA.LaunchRequest;
 import au.edu.uq.rcc.nimrodg.api.ActuatorOpsAdapter;
 import au.edu.uq.rcc.nimrodg.resource.act.ActuatorUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
@@ -73,12 +76,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class Master implements MessageQueueListener, AutoCloseable {
 
-	private static final Logger LOGGER = LogManager.getLogger(Master.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(Master.class);
 
 	private enum State {
 		None(0),
@@ -286,8 +287,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 				try {
 					stateHandlers[oldState.value].handler.run(oldState, Mode.Leave);
 				} catch(RuntimeException e) {
-					LOGGER.error("Caught exception during LEAVE transition:");
-					LOGGER.catching(e);
+					LOGGER.error("Caught exception during LEAVE transition", e);
 					state = stateHandlers[state.value].interruptState;
 				}
 			}
@@ -299,8 +299,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 			try {
 				stateHandlers[state.value].handler.run(state, Mode.Enter);
 			} catch(RuntimeException e) {
-				LOGGER.error("Caught exception during ENTER transition:");
-				LOGGER.catching(e);
+				LOGGER.error("Caught exception during ENTER transition", e);
 				state = stateHandlers[state.value].interruptState;
 			}
 		}
@@ -313,8 +312,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 			try {
 				state = stateHandlers[state.value].handler.run(state, Mode.Run);
 			} catch(RuntimeException e) {
-				LOGGER.error("Caught exception during RUN:");
-				LOGGER.catching(e);
+				LOGGER.error("Caught exception during RUN", e);
 				state = stateHandlers[state.value].interruptState;
 			}
 		}
@@ -500,8 +498,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 			try {
 				mop = this.doProcessAgentMessage2(state, msg);
 			} catch(IOException | IllegalStateException e) {
-				LOGGER.error("Caught exception processing agent message ");
-				LOGGER.catching(e);
+				LOGGER.error("Caught exception processing agent message", e);
 				continue;
 			}
 
@@ -675,8 +672,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 					LOGGER.trace("Terminating agent '{}'", ai.uuid);
 					ai.instance.terminate();
 				} catch(IOException e) {
-					LOGGER.warn("Unable to kill agent '{}', mimicking successful shutdown.", ai.uuid);
-					LOGGER.catching(e);
+					LOGGER.warn("Unable to kill agent '{}', mimicking successful shutdown.", ai.uuid, e);
 					ai.instance.disconnect(AgentShutdown.Reason.Requested, -1);
 				}
 			}
@@ -813,8 +809,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 				try {
 					agent.terminate();
 				} catch(IOException e) {
-					LOGGER.trace("Termination failed.");
-					LOGGER.catching(e);
+					LOGGER.trace("Termination failed.", e);
 				}
 			});
 		}
@@ -833,7 +828,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 				agent.submitJob(nj);
 			} catch(IOException | IllegalArgumentException | IllegalStateException e) {
 				t = e;
-				LOGGER.catching(e);
+				LOGGER.error("Unable to submit job '{}' on agent '{}'", job.getPath(), agent.getUUID(), e);
 			}
 
 			if(t == null) {
@@ -1028,7 +1023,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 			try {
 				allAgents.get(u).instance.terminate();
 			} catch(IOException e) {
-				LOGGER.catching(e);
+				LOGGER.error("Unable to terminate agent {}", u, e);
 			}
 		}
 
@@ -1042,7 +1037,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 			try {
 				allAgents.get(u).instance.ping();
 			} catch(IOException e) {
-				LOGGER.catching(e);
+				LOGGER.error("Unable to ping agent {}", u, e);
 			}
 		}
 

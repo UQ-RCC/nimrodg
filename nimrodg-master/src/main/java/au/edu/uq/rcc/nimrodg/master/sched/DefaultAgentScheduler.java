@@ -43,16 +43,14 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.io.IoBuilder;
 import au.edu.uq.rcc.nimrodg.api.Resource;
 import au.edu.uq.rcc.nimrodg.master.Master;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DefaultAgentScheduler implements AgentScheduler {
 
-	private static final Logger LOGGER = LogManager.getLogger(DefaultAgentScheduler.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(DefaultAgentScheduler.class);
 
 	private Operations ops;
 
@@ -65,7 +63,6 @@ public class DefaultAgentScheduler implements AgentScheduler {
 	private final HashSet<Agent> m_ReadyAgents;
 	private final HashSet<UUID> m_LaunchingAgents;
 	private final SetupTracker m_Setups;
-	private final PrintStream m_LogStream;
 
 	int m_LastPendingJobs;
 	int m_LastHeldJobs;
@@ -81,10 +78,6 @@ public class DefaultAgentScheduler implements AgentScheduler {
 		m_ReadyAgents = new HashSet<>();
 		m_LaunchingAgents = new HashSet<>();
 		m_Setups = new SetupTracker();
-		m_LogStream = IoBuilder
-				.forLogger(LOGGER)
-				.setLevel(Level.INFO)
-				.buildPrintStream();
 		m_LastPendingJobs = m_LastHeldJobs = 0;
 	}
 
@@ -203,10 +196,10 @@ public class DefaultAgentScheduler implements AgentScheduler {
 			LOGGER.info("  Failure is soft, rescheduling...");
 			m_PendingJobs.add(att);
 		}
-		if(t != null) {
-			LOGGER.catching(t);
-		}
 
+		if(t != null) {
+			LOGGER.error("Job '{}' failed to launch on agent '{}'", job.uuid, agent.getUUID(), t);
+		}
 	}
 
 	@Override
@@ -339,7 +332,7 @@ public class DefaultAgentScheduler implements AgentScheduler {
 
 		schedulePending(expMap, capMap);
 
-		m_AgentHeuristic.dumpStats(m_LogStream);
+		m_AgentHeuristic.dumpStats();
 		{
 			if(m_PendingJobs.size() != m_LastPendingJobs || m_HeldJobs.size() != m_LastHeldJobs) {
 				LOGGER.trace("{} pending jobs", m_PendingJobs.size());

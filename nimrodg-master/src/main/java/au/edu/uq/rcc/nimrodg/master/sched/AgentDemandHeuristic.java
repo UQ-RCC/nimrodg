@@ -26,13 +26,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import au.edu.uq.rcc.nimrodg.api.Resource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class AgentDemandHeuristic {
 
-	private static final Logger LOGGER = LogManager.getLogger(AgentDemandHeuristic.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(AgentDemandHeuristic.class);
 
 	private class HState {
 
@@ -165,15 +165,16 @@ public class AgentDemandHeuristic {
 		--s.spawning;
 	}
 
-	public void dumpStats(PrintStream out) {
-		if(!m_DumpDirty) {
+	public void dumpStats() {
+		if(!m_DumpDirty || !LOGGER.isInfoEnabled()) {
+			m_DumpDirty = false;
 			return;
 		}
 
-		out.printf("Agent Demands:\n");
+		LOGGER.info("Agent Demands:");
 		for(Map.Entry<Resource, HState> e : m_Demand.entrySet()) {
 			HState s = e.getValue();
-			out.printf("  %16s: Spawning: %d, Demand: %d\n", e.getKey().getPath(), s.spawning, s.demand);
+			LOGGER.info(String.format("  %16s: Spawning: %d, Demand: %d", e.getKey().getPath(), s.spawning, s.demand));
 		}
 
 		m_DumpDirty = false;

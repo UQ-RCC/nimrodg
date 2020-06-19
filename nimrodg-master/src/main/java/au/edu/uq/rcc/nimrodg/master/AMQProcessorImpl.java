@@ -35,6 +35,9 @@ import com.rabbitmq.client.Envelope;
 import com.rabbitmq.client.MessageProperties;
 import com.rabbitmq.client.ReturnListener;
 import com.rabbitmq.client.impl.ForgivingExceptionHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -48,13 +51,10 @@ import javax.json.Json;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class AMQProcessorImpl implements AMQProcessor {
 
-	private static final Logger LOGGER = LogManager.getLogger(Master.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(Master.class);
 
 	private final MessageQueueListener m_Listener;
 	private final Connection m_Connection;
@@ -112,7 +112,7 @@ public class AMQProcessorImpl implements AMQProcessor {
 			@Override
 			protected void log(String message, Throwable e) {
 				super.log(message, e);
-				LOGGER.log(Level.ERROR, e);
+				LOGGER.error(message, e);
 			}
 		});
 

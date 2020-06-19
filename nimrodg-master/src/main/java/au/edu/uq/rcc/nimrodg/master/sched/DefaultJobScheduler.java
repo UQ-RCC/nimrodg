@@ -27,6 +27,8 @@ import au.edu.uq.rcc.nimrodg.api.JobAttempt;
 import au.edu.uq.rcc.nimrodg.api.JobAttempt.Status;
 import au.edu.uq.rcc.nimrodg.api.utils.NimrodUtils;
 import au.edu.uq.rcc.nimrodg.master.JobSchedulerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -40,12 +42,9 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 public class DefaultJobScheduler implements JobScheduler {
 
-	private static final Logger LOGGER = LogManager.getLogger(DefaultJobScheduler.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(DefaultJobScheduler.class);
 	private static final int DEFAULT_BUFFER_SIZE = 1000;
 	private static final int DEFAULT_BUFFER_REFILL_THRESHOLD = 100;
 

@@ -29,9 +29,10 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingDeque;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import au.edu.uq.rcc.nimrodg.api.Resource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -76,7 +77,7 @@ public abstract class AAAAA implements AutoCloseable {
 
 	}
 
-	private static final Logger LOGGER = LogManager.getLogger(AAAAA.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(AAAAA.class);
 
 	private final LinkedBlockingDeque<LaunchRequest> requests;
 	private final ConcurrentHashMap<Resource, ActuatorState> actuators;
@@ -107,8 +108,7 @@ public abstract class AAAAA implements AutoCloseable {
 			}, executor).handleAsync((act, t) -> {
 				// TODO: This needs to be handled better. Any pending launches should be cancelled.
 				if(t != null) {
-					LOGGER.error("Error launching actuator on '{}'", key.getPath());
-					LOGGER.catching(t);
+					LOGGER.error("Error launching actuator on '{}'", key.getPath(), t);
 					actuators.remove(key);
 					if(t instanceof CompletionException) {
 						launchFuture.completeExceptionally(((CompletionException)t).getCause());
@@ -222,8 +222,7 @@ public abstract class AAAAA implements AutoCloseable {
 					a.close();
 				}
 			} catch(IOException | RuntimeException ex) {
-				LOGGER.error("close() failed on actuator for resource '{}'", a.getResource().getName());
-				LOGGER.catching(ex);
+				LOGGER.error("close() failed on actuator for resource '{}'", a.getResource().getName(), ex);
 			}
 			return null;
 		}, executor)).toArray(CompletableFuture[]::new)).join();

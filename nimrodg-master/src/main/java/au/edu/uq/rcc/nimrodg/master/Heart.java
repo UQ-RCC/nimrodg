@@ -21,6 +21,9 @@ package au.edu.uq.rcc.nimrodg.master;
 
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
 import au.edu.uq.rcc.nimrodg.api.utils.NimrodUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -29,15 +32,13 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Heart, manages heartbeats, expiry timeouts, etc.
  */
 class Heart {
 
-	private static final Logger LOGGER = LogManager.getLogger(Heart.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(Heart.class);
 
 	/* Time in seconds between shutdown attempts. */
 	private static final long DEFAULT_EXPIRY_RETRY_INTERVAL = 5;
