@@ -22,6 +22,7 @@ package au.edu.uq.rcc.nimrodg.api;
 import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledRun;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -72,6 +73,20 @@ public interface NimrodAPI extends AgentProvider, AutoCloseable {
 	Job addSingleJob(Experiment exp, Map<String, String> values);
 
 	Collection<Job> addJobs(Experiment exp, Collection<Map<String, String>> values);
+
+
+	/**
+	 * Get a list of jobs that satisfy the given criteria.
+	 *
+	 * This list may not be modified.
+	 *
+	 * @param exp The experiment instance.
+	 * @param status The statuses of the jobs.
+	 * @param start The lowest possible starting number for the job.
+	 * @param limit The maximum number of jobs to return. Set to 0 for no limit.
+	 * @return An immutable list of jobs that satisfy the given criteria.
+	 */
+	Collection<Job> filterJobs(Experiment exp, EnumSet<JobAttempt.Status> status, long start, int limit);
 
 	/**
 	 * Get the status of the job.

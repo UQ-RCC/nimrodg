@@ -252,7 +252,8 @@ public class DefaultJobScheduler implements JobScheduler {
 		boolean empty = false;
 		int cccc = runningAttempts.size() + incomingJobs.size();
 		if(cccc < bufferThreshold) {
-			Collection<Job> nj = exp.filterJobs(
+			Collection<Job> nj = ops.filterJobs(
+					exp,
 					EnumSet.of(JobAttempt.Status.FAILED, JobAttempt.Status.NOT_RUN),
 					highestIndex + 1,
 					bufferSize - cccc

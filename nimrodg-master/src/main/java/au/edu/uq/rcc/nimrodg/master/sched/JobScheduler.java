@@ -28,6 +28,7 @@ import au.edu.uq.rcc.nimrodg.master.sched.AgentScheduler.Operations.FailureReaso
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.UUID;
 
 public interface JobScheduler {
@@ -35,6 +36,8 @@ public interface JobScheduler {
 	public interface Operations {
 
 		Experiment getExperiment();
+
+		Collection<Job> filterJobs(Experiment exp, EnumSet<JobAttempt.Status> status, long start, int limit);
 
 		JobAttempt.Status fetchJobStatus(Job j);
 

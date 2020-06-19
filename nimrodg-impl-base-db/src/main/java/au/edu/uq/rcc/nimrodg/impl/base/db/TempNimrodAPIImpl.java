@@ -107,6 +107,11 @@ public abstract class TempNimrodAPIImpl implements NimrodAPI, NimrodMasterAPI, N
 	}
 
 	@Override
+	public Collection<Job> filterJobs(Experiment exp, EnumSet<JobAttempt.Status> status, long start, int limit) {
+		return db.runSQL(() -> Collections.unmodifiableCollection(db.filterJobs(validateExperiment(exp), status, start, limit)));
+	}
+
+	@Override
 	public List<JobAttempt.Status> getJobStatuses(Collection<Job> jobs) {
 		/* TODO: Evaluate changing dbapi calls to take streams instead of lists. */
 		return db.runSQL(() -> db.getJobStatuses(jobs.stream().map(TempNimrodAPIImpl::validateJob).collect(Collectors.toList())));

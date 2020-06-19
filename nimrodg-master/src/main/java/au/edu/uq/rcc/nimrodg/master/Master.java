@@ -714,6 +714,11 @@ public class Master implements MessageQueueListener, AutoCloseable {
 		}
 
 		@Override
+		public Collection<Job> filterJobs(Experiment exp, EnumSet<JobAttempt.Status> status, long start, int limit) {
+			return nimrod.filterJobs(exp, status, start, limit);
+		}
+
+		@Override
 		public JobAttempt.Status fetchJobStatus(Job j) {
 			return nimrod.getJobStatus(j);
 		}

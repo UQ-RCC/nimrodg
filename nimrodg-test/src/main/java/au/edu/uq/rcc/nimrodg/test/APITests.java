@@ -118,7 +118,7 @@ public abstract class APITests {
 				"jobname", "3"
 		), newJob.getVariables());
 
-		List<Job> jobs = new ArrayList<>(exp.filterJobs(EnumSet.allOf(JobAttempt.Status.class), 0, 0));
+		List<Job> jobs = new ArrayList<>(api.filterJobs(exp, EnumSet.allOf(JobAttempt.Status.class), 0, 0));
 
 		Assert.assertEquals(newJob, jobs.get(2));
 
@@ -153,7 +153,7 @@ public abstract class APITests {
 		Assert.assertTrue(api.getAPICaps().master);
 		NimrodMasterAPI mapi = (NimrodMasterAPI)api;
 
-		Job j = exp.filterJobs(EnumSet.allOf(JobAttempt.Status.class), 0, 1).stream()
+		Job j = api.filterJobs(exp, EnumSet.allOf(JobAttempt.Status.class), 0, 1).stream()
 				.findFirst().orElseThrow(IllegalStateException::new);
 
 		UUID agentUuid = UUID.randomUUID();
@@ -257,7 +257,7 @@ public abstract class APITests {
 		Assert.assertTrue(api.getAPICaps().master);
 		NimrodMasterAPI mapi = (NimrodMasterAPI)api;
 
-		Job j = exp.filterJobs(EnumSet.allOf(JobAttempt.Status.class), 0, 1).stream()
+		Job j = api.filterJobs(exp, EnumSet.allOf(JobAttempt.Status.class), 0, 1).stream()
 				.findFirst().orElseThrow(IllegalStateException::new);
 
 		UUID agentUuid = UUID.randomUUID();
@@ -277,7 +277,7 @@ public abstract class APITests {
 		Assert.assertTrue(api.getAPICaps().master);
 		NimrodMasterAPI mapi = (NimrodMasterAPI)api;
 
-		Job j = exp.filterJobs(EnumSet.allOf(JobAttempt.Status.class), 0, 1).stream()
+		Job j = api.filterJobs(exp, EnumSet.allOf(JobAttempt.Status.class), 0, 1).stream()
 				.findFirst().orElseThrow(IllegalStateException::new);
 
 		UUID agentUuid = UUID.randomUUID();
@@ -295,7 +295,7 @@ public abstract class APITests {
 		NimrodAPI api = getNimrod();
 		Experiment exp = api.addExperiment("test1", TestUtils.getSimpleSampleExperiment());
 
-		Job job = exp.filterJobs(EnumSet.allOf(JobAttempt.Status.class), 0, 1).stream()
+		Job job = api.filterJobs(exp, EnumSet.allOf(JobAttempt.Status.class), 0, 1).stream()
 				.findFirst().orElseThrow(IllegalStateException::new);
 
 		NetworkJob nj = MsgUtils.resolveJob(UUID.randomUUID(), job, Task.Name.Main, URI.create("http://localhost"));
@@ -312,7 +312,7 @@ public abstract class APITests {
 
 		Experiment exp = api.addExperiment("testbench1", cr);
 
-		Job job = exp.filterJobs(EnumSet.allOf(JobAttempt.Status.class), 0, 1).stream()
+		Job job = api.filterJobs(exp, EnumSet.allOf(JobAttempt.Status.class), 0, 1).stream()
 				.findFirst().orElseThrow(IllegalStateException::new);
 
 		NetworkJob nj = MsgUtils.resolveJob(UUID.randomUUID(), job, Task.Name.Main, URI.create("http://localhost"));
@@ -584,7 +584,7 @@ public abstract class APITests {
 		Experiment exp1 = api.addExperiment("exp1", TestUtils.getSimpleSampleEmptyExperiment());
 
 		Assert.assertEquals(Set.of("x", "y"), exp1.getVariables());
-		Assert.assertTrue(exp1.filterJobs(EnumSet.allOf(JobAttempt.Status.class), 0, 0).isEmpty());
+		Assert.assertTrue(api.filterJobs(exp1, EnumSet.allOf(JobAttempt.Status.class), 0, 0).isEmpty());
 	}
 
 	@Test
@@ -600,7 +600,7 @@ public abstract class APITests {
 
 		NimrodMasterAPI mapi = (NimrodMasterAPI)api;
 
-		Job j = exp1.filterJobs(EnumSet.of(JobAttempt.Status.NOT_RUN), 0, 1).stream()
+		Job j = api.filterJobs(exp1, EnumSet.of(JobAttempt.Status.NOT_RUN), 0, 1).stream()
 				.findFirst().orElseThrow(IllegalStateException::new);
 
 		JobAttempt att = mapi.createJobAttempts(List.of(j)).get(0);
@@ -725,13 +725,13 @@ public abstract class APITests {
 
 		Experiment exp = api.addExperiment("exp1", TestUtils.getSimpleSampleEmptyExperiment());
 
-		List<Job> jobs = new ArrayList<>(exp.filterJobs(EnumSet.allOf(JobAttempt.Status.class), 0, 0));
+		List<Job> jobs = new ArrayList<>(api.filterJobs(exp, EnumSet.allOf(JobAttempt.Status.class), 0, 0));
 		Assert.assertEquals(0, jobs.size());
 
 		List<Map<String, String>> newJobs = new ArrayList<>();
 		api.addJobs(exp, newJobs);
 
-		jobs = new ArrayList<>(exp.filterJobs(EnumSet.allOf(JobAttempt.Status.class), 0, 0));
+		jobs = new ArrayList<>(api.filterJobs(exp, EnumSet.allOf(JobAttempt.Status.class), 0, 0));
 		Assert.assertEquals(0, jobs.size());
 
 		newJobs.add(new HashMap<>() {
@@ -742,7 +742,7 @@ public abstract class APITests {
 		});
 		api.addJobs(exp, newJobs);
 
-		jobs = new ArrayList<>(exp.filterJobs(EnumSet.allOf(JobAttempt.Status.class), 0, 0));
+		jobs = new ArrayList<>(api.filterJobs(exp, EnumSet.allOf(JobAttempt.Status.class), 0, 0));
 		Assert.assertEquals(1, jobs.size());
 	}
 

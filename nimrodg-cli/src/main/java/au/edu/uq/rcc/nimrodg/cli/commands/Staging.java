@@ -267,7 +267,7 @@ public class Staging extends DefaultCLICommand {
 
 		exp1 = nimrod.addExperiment("exp1", cr);
 
-		//benchFiltering(exp1, 10000, 0, 10000);
+		//benchFiltering(nimrod, exp1, 10000, 0, 10000);
 
 		// Pre-optimisation, ~111 seconds on an NVME SSD, ~948 seconds on HDD
 		//benchAttemptCreation((NimrodMasterAPI)nimrod, exp1, 0, 10000);
@@ -277,7 +277,7 @@ public class Staging extends DefaultCLICommand {
 	}
 
 	private void benchAttemptCreationBatch(NimrodMasterAPI nimrod, Experiment exp1, int start, int limit) {
-		Collection<Job> jobs = exp1.filterJobs(EnumSet.allOf(JobAttempt.Status.class), start, limit);
+		Collection<Job> jobs = nimrod.filterJobs(exp1, EnumSet.allOf(JobAttempt.Status.class), start, limit);
 
 		long startTime = System.currentTimeMillis();
 		Collection<JobAttempt> atts = nimrod.createJobAttempts(jobs);
@@ -288,7 +288,7 @@ public class Staging extends DefaultCLICommand {
 	}
 
 	private void benchAttemptCreation(NimrodMasterAPI nimrod, Experiment exp1, int start, int limit) {
-		Collection<Job> jobs = exp1.filterJobs(EnumSet.allOf(JobAttempt.Status.class), start, limit);
+		Collection<Job> jobs = nimrod.filterJobs(exp1, EnumSet.allOf(JobAttempt.Status.class), start, limit);
 
 		long totalTime = 0;
 		int i = 0;
@@ -304,12 +304,12 @@ public class Staging extends DefaultCLICommand {
 		System.err.printf("Took %f seconds\n", totalTime / 1000.0);
 	}
 
-	private void benchFiltering(Experiment exp1, int numTimes, int start, int limit) {
+	private void benchFiltering(NimrodAPI nimrod, Experiment exp1, int numTimes, int start, int limit) {
 		double secs = 0.0;
 		for(int i = 0; i < numTimes; ++i) {
 			long startTime = System.currentTimeMillis();
 
-			Collection<Job> jobs = exp1.filterJobs(EnumSet.allOf(JobAttempt.Status.class), start, limit);
+			Collection<Job> jobs = nimrod.filterJobs(exp1, EnumSet.allOf(JobAttempt.Status.class), start, limit);
 			long endTime = System.currentTimeMillis();
 
 			double time = (endTime - startTime) / 1000.0;

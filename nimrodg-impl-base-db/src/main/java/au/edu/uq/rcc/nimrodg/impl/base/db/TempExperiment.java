@@ -100,11 +100,6 @@ public final class TempExperiment {
 		}
 
 		@Override
-		public Collection<Job> filterJobs(EnumSet<JobAttempt.Status> status, long start, int limit) {
-			return db.runSQL(() -> Collections.unmodifiableCollection(db.filterJobs(this, status, start, limit)));
-		}
-
-		@Override
 		public Map<Task.Name, Task> getTasks() {
 			return Collections.unmodifiableMap(tasks);
 		}
