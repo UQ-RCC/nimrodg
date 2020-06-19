@@ -1,7 +1,7 @@
 apply plugin: 'java-library'
 
 dependencies {
-	api group: 'org.slf4j', name: 'slf4j-api', version: '1.7.29'
+	api group: 'org.slf4j', name: 'slf4j-api', version: SLF4J_VERSION
 
 	implementation group: 'net.sourceforge.argparse4j', name: 'argparse4j', version: '0.7.0'
 
