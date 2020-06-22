@@ -234,7 +234,6 @@ public class PureReferenceAgent implements Agent {
 				lastHeardFrom = receivedAt;
 
 				AgentUpdate au = (AgentUpdate)msg;
-				AgentUpdate.CommandResult_ res = au.getCommandResult();
 				if(au.getAction() == AgentUpdate.Action.Stop) {
 					setState(State.READY);
 				}

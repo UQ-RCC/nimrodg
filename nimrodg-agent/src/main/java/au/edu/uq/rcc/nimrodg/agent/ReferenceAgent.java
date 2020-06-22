@@ -237,7 +237,6 @@ public class ReferenceAgent implements Agent {
 				storage.setLastHeardFrom(receivedAt);
 
 				AgentUpdate au = (AgentUpdate)msg;
-				AgentUpdate.CommandResult_ res = au.getCommandResult();
 				if(au.getAction() == AgentUpdate.Action.Stop) {
 					setState(State.READY);
 				}
