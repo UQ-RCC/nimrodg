@@ -28,6 +28,7 @@ import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.PosixFileAttributes;
 import java.nio.file.attribute.PosixFilePermission;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
@@ -52,6 +53,7 @@ public class ShellTests {
 
     private FileSystem memFs;
     private Path memKeyPath;
+    private Path userHomePath;
 
     @Test
     public void sshdClientTest() throws IOException {
@@ -147,6 +149,8 @@ public class ShellTests {
         memKeyPath = memFs.getPath("/key");
         writePEM(memKeyPath, keyPair.getPrivate());
         Files.setPosixFilePermissions(memKeyPath, EnumSet.of(PosixFilePermission.OWNER_READ));
+        userHomePath = Files.createDirectory(memFs.getPath("/home"));
+        Files.setPosixFilePermissions(userHomePath, EnumSet.allOf(PosixFilePermission.class)); //yolo
 
         sshd = SshServer.setUpDefaultServer();
         /* Get a random, non-privileged port and hope it's not taken. */
@@ -155,7 +159,7 @@ public class ShellTests {
         sshd.setKeyPairProvider(KeyPairProvider.wrap(hostKey));
         sshd.setPublickeyAuthenticator((user, key, ses) -> user.equals("user") && key.equals(keyPair.getPublic()));
         sshd.setCommandFactory(new _CommandFactory(memFs));
-        sshd.setFileSystemFactory(new FileSystemFactoryWrapper(memFs));
+        sshd.setFileSystemFactory(new FileSystemFactoryWrapper(memFs, userHomePath));
 
         uri = URI.create(String.format("ssh://user@127.0.0.1:%d", sshd.getPort()));
         sshd.start();

@@ -2,6 +2,7 @@ package au.edu.uq.rcc.nimrodg.shell;
 
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.session.SessionContext;
 
 import java.io.IOException;
 import java.nio.file.FileStore;
@@ -15,13 +16,21 @@ import java.util.Set;
 
 public class FileSystemFactoryWrapper implements FileSystemFactory {
     private final FileSystem fs;
+    private final Path userHome;
 
-    public FileSystemFactoryWrapper(FileSystem fs) {
+    public FileSystemFactoryWrapper(FileSystem fs, Path userHome) {
         this.fs = fs;
+        this.userHome = userHome;
+        assert userHome.getFileSystem() == fs;
     }
 
     @Override
-    public FileSystem createFileSystem(Session session) {
+    public Path getUserHomeDir(SessionContext session) {
+        return userHome;
+    }
+
+    @Override
+    public FileSystem createFileSystem(SessionContext ctx) {
         return new FileSystem() {
             @Override
             public FileSystemProvider provider() {
