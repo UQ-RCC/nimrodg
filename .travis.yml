@@ -8,6 +8,7 @@ cache:
   directories:
     - $TRAVIS_BUILD_DIR/.citemp/caches/
     - $TRAVIS_BUILD_DIR/.citemp/wrapper
+    - $TRAVIS_BUILD_DIR/nimrod/build/agents/
 
 script:
   - ./gradlew --quiet -g .citemp --no-daemon -x :nimrodg-impl-postgres:test check generateArtifacts
