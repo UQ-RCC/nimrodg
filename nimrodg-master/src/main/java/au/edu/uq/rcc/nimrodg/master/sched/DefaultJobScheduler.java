@@ -26,6 +26,7 @@ import au.edu.uq.rcc.nimrodg.api.Job;
 import au.edu.uq.rcc.nimrodg.api.JobAttempt;
 import au.edu.uq.rcc.nimrodg.api.JobAttempt.Status;
 import au.edu.uq.rcc.nimrodg.api.utils.NimrodUtils;
+import au.edu.uq.rcc.nimrodg.master.ConfigListener;
 import au.edu.uq.rcc.nimrodg.master.JobSchedulerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +39,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
@@ -212,31 +214,16 @@ public class DefaultJobScheduler implements JobScheduler {
 
 	@Override
 	public void onConfigChange(String key, String oldValue, String newValue) {
+		Objects.requireNonNull(key, "key");
+
 		switch(key) {
-			case "nimrod.sched.default.job_buf_size": {
-				int size = DEFAULT_BUFFER_SIZE;
-				try {
-					if(newValue != null) {
-						size = Integer.parseUnsignedInt(newValue);
-					}
-				} catch(NumberFormatException e) {
-					size = DEFAULT_BUFFER_SIZE;
-				}
-				bufferSize = size;
+			case "nimrod.sched.default.job_buf_size":
+				bufferSize = ConfigListener.get(newValue, bufferSize, DEFAULT_BUFFER_SIZE, 0, Integer.MAX_VALUE);
 				break;
-			}
-			case "nimrod.sched.default.job_buf_refill_threshold": {
-				int threshold = DEFAULT_BUFFER_REFILL_THRESHOLD;
-				try {
-					if(newValue != null) {
-						threshold = Integer.parseUnsignedInt(newValue);
-					}
-				} catch(NumberFormatException e) {
-					threshold = DEFAULT_BUFFER_REFILL_THRESHOLD;
-				}
-				bufferThreshold = threshold;
+
+			case "nimrod.sched.default.job_buf_refill_threshold":
+				bufferThreshold = ConfigListener.get(newValue, bufferThreshold, DEFAULT_BUFFER_REFILL_THRESHOLD, 0, Integer.MAX_VALUE);
 				break;
-			}
 		}
 	}
 

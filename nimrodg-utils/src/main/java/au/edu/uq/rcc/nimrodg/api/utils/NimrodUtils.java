@@ -108,32 +108,6 @@ public class NimrodUtils {
 		}
 	}
 
-	public static long parseOrDefault(String s, long val) {
-		long ret = val;
-		try {
-			if(s != null) {
-				ret = Long.parseLong(s);
-			}
-		} catch(NumberFormatException e) {
-			/* nop */
-		}
-
-		return ret;
-	}
-
-	public static long parseOrDefaultUnsigned(String s, long val) {
-		long ret = val;
-		try {
-			if(s != null) {
-				ret = Long.parseUnsignedLong(s);
-			}
-		} catch(NumberFormatException e) {
-			/* nop */
-		}
-
-		return ret;
-	}
-
 	@SafeVarargs
 	public static <T> T coalesce(T... args) {
 		for(T arg : args) {

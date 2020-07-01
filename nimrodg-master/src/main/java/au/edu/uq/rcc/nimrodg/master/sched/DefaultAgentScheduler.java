@@ -480,32 +480,7 @@ public class DefaultAgentScheduler implements AgentScheduler {
 
 	@Override
 	public void onConfigChange(String key, String oldValue, String newValue) {
-		switch(key) {
-			case "nimrod.sched.default.launch_penalty": {
-				int pen = -1;
-				try {
-					if(newValue != null) {
-						pen = Integer.parseInt(newValue);
-					}
-				} catch(NumberFormatException e) {
-					pen = -1;
-				}
-				m_AgentHeuristic.setLaunchPenalty(pen);
-				break;
-			}
-			case "nimrod.sched.default.spawn_cap": {
-				int cap = -1;
-				try {
-					if(newValue != null) {
-						cap = Integer.parseInt(newValue);
-					}
-				} catch(NumberFormatException e) {
-					cap = -1;
-				}
-				m_AgentHeuristic.setSpawnCap(cap);
-				break;
-			}
-		}
+		m_AgentHeuristic.onConfigChange(key, oldValue, newValue);
 	}
 
 	public static final AgentSchedulerFactory FACTORY = () -> new DefaultAgentScheduler();

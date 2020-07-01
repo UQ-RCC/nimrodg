@@ -24,6 +24,7 @@ import au.edu.uq.rcc.nimrodg.api.CommandResult;
 import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.Job;
 import au.edu.uq.rcc.nimrodg.api.JobAttempt;
+import au.edu.uq.rcc.nimrodg.master.ConfigListener;
 import au.edu.uq.rcc.nimrodg.master.sched.AgentScheduler.Operations.FailureReason;
 
 import java.util.Collection;
@@ -31,7 +32,7 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.UUID;
 
-public interface JobScheduler {
+public interface JobScheduler extends ConfigListener {
 
 	public interface Operations {
 
@@ -83,8 +84,6 @@ public interface JobScheduler {
 	void recordAttempts(Collection<JobAttempt> atts, Collection<Job> jobs);
 
 	void onJobAdd(Job job);
-
-	void onConfigChange(String key, String oldValue, String newValue);
 
 	/**
 	 * Called when a job attempt has been successfully launched.

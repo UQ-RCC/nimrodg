@@ -29,11 +29,12 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import au.edu.uq.rcc.nimrodg.api.Resource;
+import au.edu.uq.rcc.nimrodg.master.ConfigListener;
 import au.edu.uq.rcc.nimrodg.master.Master;
 import java.util.Optional;
 import java.util.Set;
 
-public interface AgentScheduler {
+public interface AgentScheduler extends ConfigListener {
 
 	interface Operations {
 
@@ -152,8 +153,6 @@ public interface AgentScheduler {
 	void onJobCancel(JobAttempt att);
 
 	void onUnmanagedJobUpdate(NetworkJob job, AgentUpdate au, Agent agent);
-
-	void onConfigChange(String key, String oldValue, String newValue);
 
 	boolean tick();
 }

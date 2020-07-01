@@ -30,13 +30,14 @@ import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
 /**
  * Heart, manages heartbeats, expiry timeouts, etc.
  */
-class Heart {
+class Heart implements ConfigListener {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(Heart.class);
 
@@ -216,23 +217,26 @@ class Heart {
 		}
 	}
 
+	@Override
 	public void onConfigChange(String key, String oldValue, String newValue) {
+		Objects.requireNonNull(key, "key");
+
 		switch(key) {
 			case "nimrod.master.heart.expiry_retry_interval": {
-				expiryRetryInterval = NimrodUtils.parseOrDefaultUnsigned(newValue, expiryRetryInterval);
+				expiryRetryInterval = ConfigListener.get(newValue, expiryRetryInterval, DEFAULT_EXPIRY_RETRY_INTERVAL, 0, Long.MAX_VALUE);
 				break;
 			}
 			case "nimrod.master.heart.expiry_retry_count": {
-				expiryRetryCount = NimrodUtils.parseOrDefault(newValue, expiryRetryCount);
+				expiryRetryCount = ConfigListener.get(newValue, expiryRetryCount, DEFAULT_EXPIRY_RETRY_COUNT);
 				break;
 			}
 			case "nimrod.master.heart.interval": {
-				heartbeatInterval = NimrodUtils.parseOrDefault(newValue, heartbeatInterval);
+				heartbeatInterval = ConfigListener.get(newValue, heartbeatInterval, DEFAULT_HEARTBEAT_INTERVAL);
 				expiryInfo.values().forEach(v -> v.retryCount = 0);
 				break;
 			}
 			case "nimrod.master.heart.missed_threshold": {
-				heartbeatMissedThreshold = NimrodUtils.parseOrDefault(newValue, heartbeatMissedThreshold);
+				heartbeatMissedThreshold = ConfigListener.get(newValue, heartbeatMissedThreshold, DEFAULT_HEARTBEAT_MISSED_THRESHOLD);
 				break;
 			}
 		}

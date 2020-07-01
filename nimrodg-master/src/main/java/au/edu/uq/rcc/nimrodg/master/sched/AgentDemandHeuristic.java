@@ -24,13 +24,15 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import au.edu.uq.rcc.nimrodg.api.Resource;
+import au.edu.uq.rcc.nimrodg.master.ConfigListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class AgentDemandHeuristic {
+public class AgentDemandHeuristic implements ConfigListener {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(AgentDemandHeuristic.class);
 
@@ -178,5 +180,20 @@ public class AgentDemandHeuristic {
 		}
 
 		m_DumpDirty = false;
+	}
+
+	@Override
+	public void onConfigChange(String key, String oldValue, String newValue) {
+		Objects.requireNonNull(key, "key");
+
+		switch(key) {
+			case "nimrod.sched.default.launch_penalty":
+				m_SpawnCap = ConfigListener.get(newValue, m_SpawnCap, DEFAULT_SPAWN_CAP, 0, Integer.MAX_VALUE);
+				break;
+
+			case "nimrod.sched.default.spawn_cap":
+				m_LaunchPenalty = ConfigListener.get(newValue, m_LaunchPenalty, DEAFULT_LAUNCH_FAILURE_PENALTY, 0, Integer.MAX_VALUE);
+				break;
+		}
 	}
 }
