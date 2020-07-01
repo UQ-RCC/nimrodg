@@ -39,6 +39,7 @@ import au.edu.uq.rcc.nimrodg.master.AMQPMessage;
 import au.edu.uq.rcc.nimrodg.master.AMQProcessorImpl;
 import au.edu.uq.rcc.nimrodg.master.MessageQueueListener;
 import au.edu.uq.rcc.nimrodg.master.sig.SigUtils;
+import au.edu.uq.rcc.nimrodg.master.SimpleMovingAverageLong;
 import au.edu.uq.rcc.nimrodg.parsing.ANTLR4ParseAPIImpl;
 
 import java.awt.Color;
@@ -75,6 +76,8 @@ public class Controller {
 	private final MessageWindow m_MessageWindow;
 
 	private final ArrayList<Message> m_Messages;
+
+	private final SimpleMovingAverageLong m_SMA;
 
 	private static final String SAMPLE_PLANFILE = "parameter x int range from 0 to 10\n"
 			+ "parameter y int range from 0 to 10\n"
@@ -116,6 +119,8 @@ public class Controller {
 		m_MessageWindow = new MessageWindow();
 		m_Messages = new ArrayList<>();
 		m_MessageWindow.getMessagePanel().setMessages(m_Messages);
+
+		m_SMA = new SimpleMovingAverageLong(100);
 	}
 
 	public boolean isConnected() {
@@ -140,6 +145,7 @@ public class Controller {
 				m_View.setConnectProgress(1.0f);
 				m_View.setConnectStatus(String.format("%s <===> %s (via %s)", m_AMQP.getQueue(), m_AMQP.getExchange(), routingKey), Color.black);
 				m_View.setConnectionPanelState(AgentGUI.ConnectionPanelState.DISCONNECT);
+				m_SMA.clear();
 			} catch(IOException | URISyntaxException | GeneralSecurityException | TimeoutException e) {
 				m_AMQP = null;
 				m_View.setConnectProgress(0.0f);
@@ -263,8 +269,11 @@ public class Controller {
 			m_Agent.reset(msg.getAgentUUID());
 		}
 
+		Instant now = Instant.now();
+		m_SMA.addSample(Math.abs(now.toEpochMilli() - msg.getTimestamp().toEpochMilli()));
+
 		try {
-			m_Agent.processMessage(msg, Instant.now());
+			m_Agent.processMessage(msg, now);
 			return MessageQueueListener.MessageOperation.Ack;
 		} catch(IllegalStateException e) {
 			m_Logger.log(ILogger.Level.ERR, e);
@@ -295,7 +304,7 @@ public class Controller {
 		}
 
 		m_View.getAgentPanel().setState(newState);
-		m_StatusPanel.update(m_Agent);
+		m_StatusPanel.update(m_Agent, m_SMA.getAverage());
 	}
 
 	private void onAgentJobSubmit(Agent agent, NetworkJob job) {
@@ -303,11 +312,12 @@ public class Controller {
 	}
 
 	private void onAgentJobUpdate(Agent agent, AgentUpdate au) {
-		m_StatusPanel.updateCommand(m_Agent, au);
+		m_StatusPanel.updateCommand(au);
+		m_StatusPanel.update(m_Agent, m_SMA.getAverage());
 	}
 
 	private void onAgentPong(Agent agent, AgentPong pong) {
-		m_StatusPanel.update(m_Agent);
+		m_StatusPanel.update(m_Agent, m_SMA.getAverage());
 	}
 
 	private void onPanelSubmit(String jobText) {

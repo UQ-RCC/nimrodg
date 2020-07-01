@@ -34,10 +34,10 @@ public class AgentStatusPanel extends javax.swing.JPanel {
 		initComponents();
 		m_JobsTable.getTableHeader().setReorderingAllowed(false);
 		m_JobsTable.setModel(new _TableModel());
-		this.update((Agent)null);
+		this.update((Agent)null, 0);
 	}
 
-	public final void update(Agent agent) {
+	public final void update(Agent agent, long ms) {
 		if(agent == null) {
 			m_QueueField.setText("");
 			m_ShutdownReasonField.setText("");
@@ -45,6 +45,7 @@ public class AgentStatusPanel extends javax.swing.JPanel {
 			m_StateField.setText("");
 			m_UUIDField.setText("");
 			m_LastHeardFromField.setText("");
+			m_PingField.setText("");
 			setJob(null);
 		} else {
 			m_QueueField.setText(stringOrEmpty(agent.getQueue()));
@@ -58,6 +59,7 @@ public class AgentStatusPanel extends javax.swing.JPanel {
 			} else {
 				m_LastHeardFromField.setText(ins.toString());
 			}
+			m_PingField.setText(Long.toString(ms));
 		}
 	}
 
@@ -82,14 +84,13 @@ public class AgentStatusPanel extends javax.swing.JPanel {
 
 	}
 
-	public void updateCommand(Agent agent, AgentUpdate au) {
+	public void updateCommand(AgentUpdate au) {
 		if(au == null) {
 			return;
 		}
 
 		_TableModel model = (_TableModel)m_JobsTable.getModel();
 		model.update(au);
-		update(agent);
 	}
 
 	private static String stringOrEmpty(Object o) {
@@ -211,6 +212,8 @@ public class AgentStatusPanel extends javax.swing.JPanel {
         m_JobsTable = new javax.swing.JTable();
         javax.swing.JLabel jLabel8 = new javax.swing.JLabel();
         m_LastHeardFromField = new javax.swing.JTextField();
+        m_PingField = new javax.swing.JTextField();
+        jLabel9 = new javax.swing.JLabel();
 
         m_StateField.setEditable(false);
 
@@ -264,6 +267,10 @@ public class AgentStatusPanel extends javax.swing.JPanel {
 
         m_LastHeardFromField.setEditable(false);
 
+        m_PingField.setEditable(false);
+
+        jLabel9.setText("Ping (ms)");
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
         this.setLayout(layout);
         layout.setHorizontalGroup(
@@ -287,7 +294,12 @@ public class AgentStatusPanel extends javax.swing.JPanel {
                             .addComponent(m_StateField)
                             .addComponent(m_ShutdownReasonField, javax.swing.GroupLayout.DEFAULT_SIZE, 671, Short.MAX_VALUE)
                             .addComponent(m_ShutdownSignalField)
-                            .addComponent(m_LastHeardFromField, javax.swing.GroupLayout.DEFAULT_SIZE, 671, Short.MAX_VALUE))))
+                            .addGroup(layout.createSequentialGroup()
+                                .addComponent(m_LastHeardFromField)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(jLabel9)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(m_PingField, javax.swing.GroupLayout.PREFERRED_SIZE, 143, javax.swing.GroupLayout.PREFERRED_SIZE)))))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
@@ -316,7 +328,9 @@ public class AgentStatusPanel extends javax.swing.JPanel {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(m_LastHeardFromField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel8))
+                    .addComponent(jLabel8)
+                    .addComponent(m_PingField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel9))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 144, Short.MAX_VALUE)
                 .addContainerGap())
@@ -325,9 +339,11 @@ public class AgentStatusPanel extends javax.swing.JPanel {
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JLabel jLabel9;
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JTable m_JobsTable;
     private javax.swing.JTextField m_LastHeardFromField;
+    private javax.swing.JTextField m_PingField;
     private javax.swing.JTextField m_QueueField;
     private javax.swing.JTextField m_ShutdownReasonField;
     private javax.swing.JTextField m_ShutdownSignalField;
