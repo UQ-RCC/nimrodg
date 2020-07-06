@@ -179,24 +179,10 @@ public class AMQProcessorImpl implements AMQProcessor {
 		try {
 			op = m_Listener.processAgentMessage(tag, am, body);
 		} catch(IllegalStateException e) {
-			op = Optional.of(MessageQueueListener.MessageOperation.Terminate);
+			op = Optional.of(MessageQueueListener.MessageOperation.Ack);
 		}
 
-		if(op.isPresent()) {
-			opMessage(op.get(), tag);
-			if(op.get() == MessageQueueListener.MessageOperation.Terminate) {
-				opMessage(MessageQueueListener.MessageOperation.Ack, tag);
-				if(am instanceof AgentHello) {
-					AgentHello ah = (AgentHello)am;
-					sendMessage(ah.queue, new AgentLifeControl.Builder()
-							.agentUuid(am.getAgentUUID())
-							.operation(AgentLifeControl.Operation.Terminate)
-							.build());
-				} else {
-					/* FIXME: Don't really know what to do here as we can't get the routing key :/ */
-				}
-			}
-		}
+		op.ifPresent(mop -> opMessage(mop, tag));
 	}
 
 	@Override
@@ -212,8 +198,6 @@ public class AMQProcessorImpl implements AMQProcessor {
 						break;
 					case RejectAndRequeue:
 						m_Channel.basicReject(tag, true);
-						break;
-					case Terminate:
 						break;
 				}
 			} catch(IOException e) {

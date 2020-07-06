@@ -565,7 +565,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 			 * This might also happen when a local agent dies and the actuator can't be sure
 			 * it shut down properly.
 			 */
-			return MessageQueueListener.MessageOperation.Terminate;
+			return MessageOperation.Ack;
 		}
 
 		/* Process the agent message. */

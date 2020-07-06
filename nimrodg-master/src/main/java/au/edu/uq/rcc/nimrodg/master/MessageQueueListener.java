@@ -28,9 +28,7 @@ public interface MessageQueueListener {
 	enum MessageOperation {
 		Ack,
 		Reject,
-		RejectAndRequeue,
-		@Deprecated
-		Terminate
+		RejectAndRequeue
 	}
 
 	/* Return an empty optional to do nothing. The tag must be passed to opMessage() */
