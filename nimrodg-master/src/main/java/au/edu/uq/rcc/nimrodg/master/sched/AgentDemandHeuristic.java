@@ -188,11 +188,11 @@ public class AgentDemandHeuristic implements ConfigListener {
 
 		switch(key) {
 			case "nimrod.sched.default.launch_penalty":
-				m_SpawnCap = ConfigListener.get(newValue, m_SpawnCap, DEFAULT_SPAWN_CAP, 0, Integer.MAX_VALUE);
+				m_LaunchPenalty = ConfigListener.get(newValue, m_LaunchPenalty, DEAFULT_LAUNCH_FAILURE_PENALTY, 0, Integer.MAX_VALUE);
 				break;
 
 			case "nimrod.sched.default.spawn_cap":
-				m_LaunchPenalty = ConfigListener.get(newValue, m_LaunchPenalty, DEAFULT_LAUNCH_FAILURE_PENALTY, 0, Integer.MAX_VALUE);
+				m_SpawnCap = ConfigListener.get(newValue, m_SpawnCap, DEFAULT_SPAWN_CAP, 0, Integer.MAX_VALUE);
 				break;
 		}
 	}
