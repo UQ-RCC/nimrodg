@@ -65,7 +65,16 @@ public abstract class AAAAA implements AutoCloseable {
 		public final Actuator.Request[] requests;
 		public final Resource resource;
 		public final String rootPath;
+
 		public final CompletableFuture<Actuator> actuatorFuture;
+
+		/**
+		 * The array of launch results. Completed when the actuator has processed
+		 * the launch request.
+		 *
+		 * This will never fail exceptionally. In the case of an actuator failure,
+		 * each individual request will be failed instead of the entire future.
+		 */
 		public final CompletableFuture<LaunchResult[]> launchResults;
 
 		private LaunchRequest(Actuator.Request[] requests, Resource resource, CompletableFuture<Actuator> actuatorFuture, CompletableFuture<LaunchResult[]> launchResults) {
