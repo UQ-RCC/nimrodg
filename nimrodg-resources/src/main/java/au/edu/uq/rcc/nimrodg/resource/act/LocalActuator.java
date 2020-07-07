@@ -112,7 +112,9 @@ public class LocalActuator implements Actuator {
 	public LocalActuator(Operations ops, Resource node, NimrodURI uri, Certificate[] certs, int parallelism, String platString, CaptureMode captureMode) throws IOException {
 		this.ops = ops;
 		NimrodConfig ncfg = ops.getConfig();
-		this.tmpRoot = Paths.get(ncfg.getWorkDir()).resolve("localact-tmp");
+		this.tmpRoot = Paths.get(ncfg.getWorkDir())
+				.resolve("localact-tmp")
+				.resolve(String.format("act-%s-%d", this.getClass().getSimpleName(), (long)uri.hashCode() & 0xFFFFFFFFL));
 		try {
 			Files.createDirectories(tmpRoot);
 		} catch(FileAlreadyExistsException e) {
