@@ -103,7 +103,7 @@ public abstract class POSIXActuator<C extends SSHConfig> implements Actuator {
 
 				nimrodHomeDir = ActuatorUtils.posixJoinPaths(
 						homeDir, ".nimrod",
-						String.format("act-%s-%d", this.getClass().getSimpleName(), (long)uri.hashCode() & 0xFFFFFFFFL)
+						ActuatorUtils.buildUniqueString(this)
 				);
 
 				SshdClient.CommandResult mkdir = client.runCommand("mkdir", "-p", nimrodHomeDir);

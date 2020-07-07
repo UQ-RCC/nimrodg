@@ -51,6 +51,7 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
@@ -62,6 +63,7 @@ import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonStructure;
 
+import au.edu.uq.rcc.nimrodg.api.Resource;
 import au.edu.uq.rcc.nimrodg.shell.ShellUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.bouncycastle.openssl.PEMKeyPair;
@@ -285,6 +287,36 @@ public class ActuatorUtils {
 				.map(k -> Map.entry(k, System.getenv(k)))
 				.filter(e -> e.getValue() != null)
 				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+	}
+
+	/**
+	 * Attempt to build a unique string representing this actuator.
+	 * Is mostly used as a path element for storing per-instance state.
+	 * @param act The actuator.
+	 * @return The string.
+	 */
+	public static String buildUniqueString(Actuator act) {
+		Resource res = act.getResource();
+
+		/* This should be enough for our purposes. Hopefully. */
+		int hash = Objects.hash(
+				res.getTypeName(),
+				res.getAMQPUri().uri,
+				res.getAMQPUri().noVerifyHost,
+				res.getAMQPUri().noVerifyPeer,
+				res.getAMQPUri().certPath,
+				res.getTransferUri().uri,
+				res.getTransferUri().noVerifyHost,
+				res.getTransferUri().noVerifyPeer,
+				res.getTransferUri().certPath,
+				Objects.toString(res.getConfig())
+		);
+
+		return String.format("act-%s-%s-%d",
+				res.getName(),
+				act.getClass().getSimpleName(),
+				(long)hash & 0xFFFFFFFFL
+		);
 	}
 
 	@FunctionalInterface
