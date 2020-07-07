@@ -400,19 +400,6 @@ public class LocalActuator implements Actuator {
 		 * for debugging purposes if something goes wrong. The user can just remove them if they
 		 * really need to.
 		 */
-
-//		while(true) {
-//			try {
-//				af.get();
-//				break;
-//			} catch(InterruptedException e) {
-//				/* nop */
-//			} catch(ExecutionException e) {
-//				LOGGER.error("Error waiting for local agents to die.");
-//				LOGGER.catching(e);
-//				break;
-//			}
-//		}
 	}
 
 	@Override
