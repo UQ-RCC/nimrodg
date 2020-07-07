@@ -29,6 +29,7 @@ import au.edu.uq.rcc.nimrodg.api.Actuator;
 import au.edu.uq.rcc.nimrodg.api.NimrodConfig;
 import au.edu.uq.rcc.nimrodg.api.utils.NimrodUtils;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -38,7 +39,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -99,31 +99,18 @@ public class LocalActuator implements Actuator {
 	private final Operations ops;
 	private final Path tmpRoot;
 	private final Resource node;
-	private final NimrodURI uri;
-	private final String routingKey;
-	private final Certificate[] certs;
 	private final int parallelism;
 	private final AgentInfo agentInfo;
 	private final CaptureMode captureMode;
 	private final Map<UUID, LocalAgent> agents;
+	private final Path configPath;
 
 	private boolean isClosed;
 
 	public LocalActuator(Operations ops, Resource node, NimrodURI uri, Certificate[] certs, int parallelism, String platString, CaptureMode captureMode) throws IOException {
 		this.ops = ops;
 		NimrodConfig ncfg = ops.getConfig();
-		this.tmpRoot = Paths.get(ncfg.getWorkDir())
-				.resolve("localact-tmp")
-				.resolve(String.format("act-%s-%d", this.getClass().getSimpleName(), (long)uri.hashCode() & 0xFFFFFFFFL));
-		try {
-			Files.createDirectories(tmpRoot);
-		} catch(FileAlreadyExistsException e) {
-			/* nop */
-		}
 		this.node = node;
-		this.uri = uri;
-		this.routingKey = ncfg.getAmqpRoutingKey();
-		this.certs = Arrays.copyOf(certs, certs.length);
 		this.parallelism = parallelism;
 		if((this.agentInfo = ops.lookupAgentByPlatform(platString)) == null) {
 			throw new IOException(String.format("No agent for platform string '%s'", platString));
@@ -131,6 +118,38 @@ public class LocalActuator implements Actuator {
 		this.captureMode = captureMode;
 
 		this.agents = new HashMap<>();
+
+		this.tmpRoot = Paths.get(ncfg.getWorkDir())
+				.resolve("localact-tmp")
+				.resolve(ActuatorUtils.buildUniqueString(this));
+		try {
+			Files.createDirectories(tmpRoot);
+		} catch(FileAlreadyExistsException e) {
+			/* nop */
+		}
+
+		Optional<Path> certPath;
+		if(certs.length > 0) {
+			Path _certPath = tmpRoot.resolve("certs.pem");
+			ActuatorUtils.writeCertificatesToPEM(_certPath, certs);
+			certPath = Optional.of(_certPath);
+		} else {
+			certPath = Optional.empty();
+		}
+
+		this.configPath = tmpRoot.resolve("config.json");
+		byte[] config = ActuatorUtils.buildBaseAgentConfig(
+				uri,
+				ncfg.getAmqpRoutingKey(),
+				certPath.map(Path::toString),
+				false,
+				true,
+				false,
+				Map.of()
+		).build().toString().getBytes(StandardCharsets.UTF_8);
+
+		Files.write(configPath, config);
+
 		this.isClosed = false;
 	}
 
@@ -141,37 +160,10 @@ public class LocalActuator implements Actuator {
 
 	private LocalAgent[] buildAgentInfo(UUID[] uuids) throws IOException {
 		List<String> commonArgs = new ArrayList<>();
-		String scheme = uri.uri.getScheme().toLowerCase(Locale.ENGLISH);
-		commonArgs.add("--amqp-uri");
-		commonArgs.add(uri.uri.toASCIIString());
-
-		commonArgs.add("--amqp-routing-key");
-		commonArgs.add(routingKey);
+		commonArgs.add("--config");
+		commonArgs.add(configPath.toString());
 
 		Path tmpDir = Files.createTempDirectory("nimrodg-localact-");
-
-		if(scheme.equals("amqps")) {
-			if(uri.noVerifyPeer) {
-				commonArgs.add("--no-verify-peer");
-			}
-
-			if(uri.noVerifyHost) {
-				commonArgs.add("--no-verify-host");
-			}
-
-			Path certPath = tmpDir.resolve("certs.pem");
-			ActuatorUtils.writeCertificatesToPEM(certPath, certs);
-			commonArgs.add("--cacert");
-			commonArgs.add(certPath.toString());
-
-			commonArgs.add("--caenc");
-			commonArgs.add("plain");
-
-			commonArgs.add("--no-ca-delete");
-
-		} else if(!scheme.equals("amqp")) {
-			throw new IllegalArgumentException("Invalid URI scheme");
-		}
 
 		LocalAgent[] agents = new LocalAgent[uuids.length];
 		for(int i = 0; i < uuids.length; ++i) {
@@ -402,6 +394,13 @@ public class LocalActuator implements Actuator {
 		if(!af.isDone()) {
 			LOGGER.warn("Timed out waiting for {} agents to die.", agents.size());
 		}
+
+		/*
+		 * NB: Deliberately not cleaning up the configuration and certs. They're handy to have
+		 * for debugging purposes if something goes wrong. The user can just remove them if they
+		 * really need to.
+		 */
+
 //		while(true) {
 //			try {
 //				af.get();
