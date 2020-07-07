@@ -196,7 +196,7 @@ public class DBExperimentHelpers extends DBBaseHelper {
 				"    nimrod_commands     AS c\n" +
 				"WHERE\n" +
 				"    att.id          = ? AND\n" +
-				"    j.id            = att.id AND\n" +
+				"    j.id            = att.job_id AND\n" +
 				"    t.exp_id        = j.exp_id AND\n" +
 				"    t.name          = 'main' AND\n" +
 				"    c.task_id       = t.id AND\n" +

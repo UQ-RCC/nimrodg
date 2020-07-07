@@ -291,6 +291,34 @@ public abstract class APITests {
 	}
 
 	@Test
+	public void commandResultTest3() throws RunfileBuildException {
+		NimrodAPI api = getNimrod();
+		Experiment exp = api.addExperiment("test1", TestUtils.getSimpleSampleExperiment());
+
+		Assert.assertTrue(api.getAPICaps().master);
+		NimrodMasterAPI mapi = (NimrodMasterAPI)api;
+
+		Job j = api.filterJobs(exp, EnumSet.allOf(JobAttempt.Status.class), 0, 1).stream()
+				.findFirst().orElseThrow(IllegalStateException::new);
+
+		UUID[] agentUuids = new UUID[2];
+		for(int i = 0; i < agentUuids.length; ++i) {
+			agentUuids[i] = UUID.randomUUID();
+		}
+
+		JobAttempt att1 = mapi.createJobAttempts(List.of(j)).get(0);
+		JobAttempt att2 = mapi.createJobAttempts(List.of(j)).get(0);
+
+		mapi.startJobAttempt(att1, agentUuids[0]);
+		mapi.addCommandResult(att1, CommandResult.CommandResultStatus.SUCCESS, 0, 10.0f, 0, "Success", 0, true);
+
+		mapi.startJobAttempt(att2, agentUuids[1]);
+
+		/* This used to throw "java.sql.SQLException: No such command". */
+		mapi.addCommandResult(att2, CommandResult.CommandResultStatus.SUCCESS, 0, 10.0f, 0, "Success", 0, true);
+	}
+
+	@Test
 	public void substitutionApplicationTest() throws RunfileBuildException, PlanfileParseException {
 		NimrodAPI api = getNimrod();
 		Experiment exp = api.addExperiment("test1", TestUtils.getSimpleSampleExperiment());
