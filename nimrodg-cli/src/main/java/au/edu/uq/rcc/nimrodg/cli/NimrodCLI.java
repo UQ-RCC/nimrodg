@@ -44,6 +44,7 @@ import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
 import net.sourceforge.argparse4j.inf.Subparsers;
+import org.apache.log4j.LogManager;
 
 public class NimrodCLI {
 
@@ -130,6 +131,8 @@ public class NimrodCLI {
 		} catch(Throwable t) {
 			t.printStackTrace(System.err);
 			return 1;
+		} finally {
+			LogManager.shutdown();
 		}
 	}
 

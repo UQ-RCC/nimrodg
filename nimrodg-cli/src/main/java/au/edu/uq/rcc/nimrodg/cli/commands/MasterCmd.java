@@ -22,11 +22,10 @@ package au.edu.uq.rcc.nimrodg.cli.commands;
 import au.edu.uq.rcc.nimrodg.agent.MessageBackend;
 import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
-import au.edu.uq.rcc.nimrodg.api.NimrodException;
 import au.edu.uq.rcc.nimrodg.api.NimrodConfig;
+import au.edu.uq.rcc.nimrodg.api.NimrodException;
 import au.edu.uq.rcc.nimrodg.api.NimrodMasterAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
-import au.edu.uq.rcc.nimrodg.setup.UserConfig;
 import au.edu.uq.rcc.nimrodg.cli.CommandEntry;
 import au.edu.uq.rcc.nimrodg.cli.NimrodCLI;
 import au.edu.uq.rcc.nimrodg.cli.NimrodCLICommand;
@@ -36,6 +35,11 @@ import au.edu.uq.rcc.nimrodg.master.MessageQueueListener;
 import au.edu.uq.rcc.nimrodg.master.sched.DefaultAgentScheduler;
 import au.edu.uq.rcc.nimrodg.master.sched.DefaultJobScheduler;
 import au.edu.uq.rcc.nimrodg.resource.act.ActuatorUtils;
+import au.edu.uq.rcc.nimrodg.setup.UserConfig;
+import net.sourceforge.argparse4j.inf.Namespace;
+import net.sourceforge.argparse4j.inf.Subparser;
+import org.apache.log4j.LogManager;
+
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.URISyntaxException;
@@ -47,8 +51,6 @@ import java.security.cert.CertificateException;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import net.sourceforge.argparse4j.inf.Namespace;
-import net.sourceforge.argparse4j.inf.Subparser;
 
 public class MasterCmd extends NimrodCLICommand {
 
@@ -133,6 +135,8 @@ public class MasterCmd extends NimrodCLICommand {
 							}
 						}
 					}
+
+					LogManager.shutdown();
 				}));
 
 				while(m.tick()) {
