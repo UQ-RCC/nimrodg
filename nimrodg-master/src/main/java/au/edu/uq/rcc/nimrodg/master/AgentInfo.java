@@ -40,7 +40,7 @@ class AgentInfo {
 		this.uuid = uuid;
 		this.resource = resource;
 		this.actuator = new CompletableFuture<>();
-		actuator.ifPresent(act -> this.actuator.complete(act));
+		actuator.ifPresent(this.actuator::complete);
 		this.instance = instance;
 		this.state = state;
 	}

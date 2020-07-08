@@ -37,6 +37,7 @@ import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
 /**
@@ -146,7 +147,7 @@ public abstract class AAAAA implements AutoCloseable {
 			/* We've failed, so fail all the individual results, not the request. */
 			LaunchResult lr = new LaunchResult(node, t);
 			LaunchResult[] lrs = new LaunchResult[uuids.length];
-			Arrays.setAll(lrs, i -> lr);
+			Arrays.fill(lrs, lr);
 			return lrs;
 		}, executor));
 
@@ -263,18 +264,24 @@ public abstract class AAAAA implements AutoCloseable {
 	 * @param res The resource.
 	 * @param proc The consumer to run.
 	 */
-	public void runWithActuator(Resource res, Consumer<Actuator> proc) {
+	public CompletableFuture<Void> runWithActuator(Resource res, Consumer<Actuator> proc) {
 		ActuatorState as = this.actuators.get(res);
 		if(as == null) {
 			throw new IllegalStateException();
 		}
 
-		as.launchFuture.thenAcceptAsync(act -> {
+		return as.launchFuture.thenAcceptAsync(act -> {
 			synchronized(act) {
-				if(!act.isClosed()) {
-					proc.accept(act);
+				if(act.isClosed()) {
+					throw new IllegalStateException("actuator closed");
 				}
+
+				proc.accept(act);
 			}
 		}, executor);
+	}
+
+	public ExecutorService getExecutorService() {
+		return executor;
 	}
 }

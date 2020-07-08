@@ -23,7 +23,6 @@ import au.edu.uq.rcc.nimrodg.agent.Agent;
 import au.edu.uq.rcc.nimrodg.agent.AgentState;
 import au.edu.uq.rcc.nimrodg.agent.DefaultAgentState;
 import au.edu.uq.rcc.nimrodg.agent.ReferenceAgent;
-import au.edu.uq.rcc.nimrodg.agent.messages.AgentHello;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentMessage;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentPong;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
@@ -179,7 +178,6 @@ public class Master implements MessageQueueListener, AutoCloseable {
 
 	private final AAAAA aaaaa;
 	private final ConcurrentHashMap<UUID, AgentInfo> allAgents;
-	private final Map<UUID, CompletableFuture<LaunchRequest>> pendingAgentConnections;
 	private final Orphanage orphanage;
 
 	private final _AgentListener agentListener;
@@ -214,7 +212,6 @@ public class Master implements MessageQueueListener, AutoCloseable {
 
 		this.aaaaa = new _AAAAA();
 		this.allAgents = new ConcurrentHashMap<>();
-		this.pendingAgentConnections = new HashMap<>();
 		this.orphanage = new Orphanage();
 
 		this.agentListener = new _AgentListener();
@@ -496,7 +493,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 		for(_AgentMessage msg : msgs) {
 			MessageOperation mop;
 			try {
-				mop = this.doProcessAgentMessage2(state, msg);
+				mop = this.doProcessAgentMessage2(msg);
 			} catch(IOException | IllegalStateException e) {
 				LOGGER.error("Caught exception processing agent message", e);
 				continue;
@@ -547,98 +544,21 @@ public class Master implements MessageQueueListener, AutoCloseable {
 		_tasks.forEach(qt -> qt.runnable.run());
 	}
 
-	private MessageOperation doProcessAgentMessage2(State state, _AgentMessage _msg) throws IllegalStateException, IOException {
+	private MessageOperation doProcessAgentMessage2(_AgentMessage _msg) throws IllegalStateException, IOException {
 		_msg.processedTime = Instant.now();
 		AgentMessage msg = _msg.msg;
 		LOGGER.debug("doProcessAgentMessage({}, {})", msg.getAgentUUID(), msg.getTypeString());
 
 		AgentInfo ai = getAgentInfo(msg.getAgentUUID());
 		if(ai == null) {
-			if(msg.getType() != AgentMessage.Type.Hello) {
-				LOGGER.warn("Message from unknown agent {}, terminating...", msg.getAgentUUID());
-				return MessageQueueListener.MessageOperation.Terminate;
-			}
-
-			AgentHello hello = (AgentHello)msg;
-			LOGGER.trace("Received agent.hello with (uuid, queue) = ({}, {})", hello.getAgentUUID(), hello.queue);
-
-			CompletableFuture<LaunchRequest> _info = pendingAgentConnections.get(hello.getAgentUUID());
-
-			if(_info == null) {
-				LOGGER.warn("Agent connection unexpected, terminating...");
-				return MessageQueueListener.MessageOperation.Terminate;
-			}
-
-			if(state != State.Started) {
-				pendingAgentConnections.remove(hello.getAgentUUID());
-				LOGGER.warn("Agent connection during shutdown, terminating...");
-				return MessageQueueListener.MessageOperation.Terminate;
-			}
-
-			/*
-			 * Handle cases where the agent's connected before the launch has technically finished. 
-			 * This happens sometimes with PBS, the jobs start before qsub's returned.
-			 */
-			assert !_info.isDone();
-			LOGGER.debug("Agent connected, but launch hasn't finished, deferring...");
-			return MessageQueueListener.MessageOperation.RejectAndRequeue;
+			LOGGER.warn("Message from unknown agent {}, ignoring...", msg.getAgentUUID());
+			return MessageOperation.Ack;
 		}
-
-		assert ai != null;
 
 		// TODO: Consider doing an adoption check here
 		// TODO: Handle expiry (by checking nimrod)
 
-		/* If we're an agent.hello, validate and register it. */
-		if(msg.getType() == AgentMessage.Type.Hello) {
-			AgentHello hello = (AgentHello)msg;
-			LOGGER.trace("Received agent.hello with (uuid, queue) = ({}, {})", hello.getAgentUUID(), hello.queue);
-
-			String queue = ai.state.getQueue();
-			if(queue != null) {
-				if(hello.queue.equals(queue)) {
-					/* Agent sent a superflous hello, we can just ignore this. */
-					return MessageOperation.Ack;
-				} else {
-					/* Okay, there's actually a duplicate UUID. Dafuq? */
-					LOGGER.warn("Agent connection with duplicate UUID, buy a lottery ticket.");
-					return MessageQueueListener.MessageOperation.Terminate;
-				}
-			}
-
-			if(state != State.Started) {
-				LOGGER.warn("Agent connection during shutdown, terminating...");
-				CompletableFuture<LaunchRequest> lrq = pendingAgentConnections.remove(hello.getAgentUUID());
-				return MessageQueueListener.MessageOperation.Terminate;
-			}
-
-			/* If we're this far, this future should be complete. */
-			LaunchRequest lrq = pendingAgentConnections.remove(hello.getAgentUUID()).getNow(null);
-			assert lrq != null && !lrq.launchResults.isCompletedExceptionally() && lrq.launchResults.isDone();
-
-			Actuator.LaunchResult[] launchResults = lrq.launchResults.join();
-			//Actuator.LaunchResult[] launchResults = lrq.launchResults.getNow(null);
-
-			int batchIndex = -1;
-			{
-				for(int i = 0; i < lrq.uuids.length; ++i) {
-					if(lrq.uuids[i] == null) {
-						continue;
-					}
-
-					if(lrq.uuids[i].equals(ai.uuid)) {
-						batchIndex = i;
-						break;
-					}
-				}
-			}
-
-			if(batchIndex < 0) {
-				LOGGER.warn("batchIndex < 0, this should never happen");
-			} else {
-				ai.state.setExpiryTime(launchResults[batchIndex].expiryTime);
-			}
-		} else if(msg.getType() == AgentMessage.Type.Shutdown && ai.state.getState() == Agent.State.SHUTDOWN) {
+		if(msg.getType() == AgentMessage.Type.Shutdown && ai.state.getState() == Agent.State.SHUTDOWN) {
 			/*
 			 * We can ignore a stray shutdown.
 			 *
@@ -648,7 +568,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 			return MessageQueueListener.MessageOperation.Terminate;
 		}
 
-		/* Process the agent message, do this in the main thread. */
+		/* Process the agent message. */
 		Agent _ag = ai.instance;
 		try {
 			_ag.processMessage(msg, _msg.processedTime);
@@ -702,8 +622,8 @@ public class Master implements MessageQueueListener, AutoCloseable {
 
 	@Override
 	public void close() {
-		orphanage.close();
 		aaaaa.close();
+		orphanage.close();
 	}
 
 	private class _JobOperations implements JobScheduler.Operations {
@@ -757,8 +677,77 @@ public class Master implements MessageQueueListener, AutoCloseable {
 
 	}
 
+	/**
+	 * Launch result handler.
+	 *
+	 * It's possible that agents have spawned and are busy before this is run.
+	 * This has been seen in situations such as when:
+	 * <ul>
+	 *     <li>{@link au.edu.uq.rcc.nimrodg.resource.act.LocalActuator} has spawned several subprocesses, and
+	 *     them connecting before it's finished, and</li>
+	 *     <li>{@link au.edu.uq.rcc.nimrodg.resource.cluster.HPCActuator} has submitted a job, but the job's
+	 *     started before the submission command has returned.</li>
+	 * </ul>
+	 *
+	 * If an agent has launched successfully and the actuator hasn't, the agent is orphaned.
+	 * If an agent has launched successfully and the actuator reports a launch error, the agent is killed.
+	 *
+	 * @param agentInfo An array of {@link AgentInfo} structures.
+	 * @param launchRequest The launch request.
+	 */
+	private void launchHandler(AgentInfo[] agentInfo, LaunchRequest launchRequest) {
+		assert launchRequest.actuatorFuture.isDone();
+
+		/* NB: Submitted by a child of this, so this won't fail. */
+		LaunchResult[] lrs = launchRequest.launchResults.join();
+
+		Actuator act;
+		if(launchRequest.actuatorFuture.isCompletedExceptionally() || launchRequest.actuatorFuture.isCancelled()) {
+			act = orphanage;
+		} else {
+			act = launchRequest.actuatorFuture.join();
+		}
+
+		for(int i = 0; i < lrs.length; ++i) {
+			Actuator.LaunchResult lr = lrs[i];
+			AgentInfo ai = agentInfo[i];
+
+			if(lr.t != null) {
+				/* We'll be run during shutdown, so ensure this isn't. */
+				runLater("launchAgents->onAgentLaunchFailure", () -> agentScheduler.onAgentLaunchFailure(ai.uuid, launchRequest.resource, lr.t), false);
+
+				try {
+					ai.instance.terminate();
+				} catch(IOException e) {
+					LOGGER.error("Unable to terminate agent", e);
+				}
+
+				continue;
+			}
+
+			ai.state.setActuatorData(lr.actuatorData);
+			ai.state.setExpiryTime(lr.expiryTime);
+
+			/* FIXME: Double check this, I might not need to do it here. */
+			nimrod.updateAgent(ai.state);
+
+			if(act == orphanage) {
+				orphanage.adopt(ai.state);
+			}
+
+			/* If the agent's started work before the actuator's done, notify it. */
+			if(ai.state.getState() == Agent.State.READY || ai.state.getState() == Agent.State.BUSY) {
+				act.notifyAgentConnection(ai.state);
+			} else if(ai.state.getState() == Agent.State.SHUTDOWN) {
+				act.notifyAgentConnection(ai.state);
+				act.notifyAgentDisconnection(ai.uuid);
+			}
+		}
+	}
+
 	private class _AgentOperations implements AgentScheduler.Operations {
 
+		/* Called in the main thread. */
 		@Override
 		public UUID[] launchAgents(Resource res, int num) {
 			if(!nimrod.isResourceAssigned(res, experiment)) {
@@ -766,45 +755,24 @@ public class Master implements MessageQueueListener, AutoCloseable {
 			}
 
 			UUID[] uuids = AAAAA.generateRandomUUIDs(num);
-			CompletableFuture<LaunchRequest> fff = new CompletableFuture<>();
+
+			/* Create the agents before doing anything, saves us from having to keep a list of pending connections. */
+			AgentInfo[] agentInfo = new AgentInfo[num];
 			for(int i = 0; i < num; ++i) {
-				pendingAgentConnections.put(uuids[i], fff);
+				DefaultAgentState as = new DefaultAgentState();
+				as.setUUID(uuids[i]);
+				agentInfo[i] = registerAgent(as, res, Optional.empty(), true);
 			}
 
+			/* NB: Will not block. */
 			LaunchRequest rq = aaaaa.launchAgents(res, uuids);
 
-			/*
-			 * NB: rq.launchResults will never fail. In the case of an actuator failure,
-			 * AAAAA will fail each request instead of the entire future.
-			 */
-			LaunchResult[] lrs = rq.launchResults.join();
-			for(int i = 0; i < lrs.length; ++i) {
-				Optional<Actuator> act;
-				if(rq.actuatorFuture.isCompletedExceptionally()) {
-					act = Optional.empty();
-				} else {
-					act = Optional.of(rq.actuatorFuture.join());
-				}
+			rq.launchResults.thenAcceptAsync(lrs -> runLater(
+					"launchAgents->handler",
+					() -> launchHandler(agentInfo, rq), true), aaaaa.getExecutorService()
+			);
 
-				Actuator.LaunchResult lr = lrs[i];
-				UUID uuid = rq.uuids[i];
-				runLater("launchAgents", () -> {
-					if(lr.t != null) {
-						/* We'll be run during shutdown, so ensure this isn't. */
-						runLater("launchAgents->onAgentLaunchFailure", () -> agentScheduler.onAgentLaunchFailure(uuid, res, lr.t), false);
-						pendingAgentConnections.remove(uuid);
-					} else {
-						DefaultAgentState as = new DefaultAgentState();
-						as.setUUID(uuid);
-						as.setActuatorData(lr.actuatorData);
-						registerAgent(as, res, act, true);
-					}
-
-					fff.complete(rq);
-				}, true);
-			}
-
-			return rq.uuids;
+			return uuids;
 		}
 
 		@Override

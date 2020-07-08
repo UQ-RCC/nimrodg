@@ -117,8 +117,10 @@ public interface Actuator extends AutoCloseable {
 	/**
 	 * Called by the master when an agent connects.
 	 *
-	 * When this is called, the agent's state hasn't yet been committed yet, so it may provide initial values for
-	 * parameters.
+	 * It is possible that an agent connects and is assigned work before the actuator has finished launching a batch.
+	 * In this case, this will be called as soon as is convenient. No assumptions as to the agent state should be made.
+	 *
+	 * Non-state data such as expiration time and actuator-specific data may be set.
 	 *
 	 * @param state The agent state.
 	 */
