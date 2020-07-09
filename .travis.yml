@@ -1,6 +1,13 @@
 language: java
 jdk: openjdk11
 dist: bionic
+
+services:
+  - postgresql
+
+addons:
+  postgresql: "10"
+
 before_cache:
   - rm -f $TRAVIS_BUILD_DIR/.citemp/caches/modules-2/modules-2.lock
   - rm -rf $TRAVIS_BUILD_DIR/.citemp/caches/*/plugin-resolution
@@ -10,8 +17,19 @@ cache:
     - $TRAVIS_BUILD_DIR/.citemp/wrapper
     - $TRAVIS_BUILD_DIR/nimrod/build/agents/
 
+before_script:
+  - psql -c "CREATE ROLE nimrod LOGIN PASSWORD 'nimrod';" -U postgres
+  - psql -c "CREATE DATABASE nimrod OWNER nimrod;" -U postgres
+
+env:
+  - >
+    NIMRODG_TEST_PGUSER=nimrod
+    NIMRODG_TEST_PGPASSWORD=nimrod
+    NIMRODG_TEST_PGHOST=127.0.0.1
+    NIMRODG_TEST_PGDATABASE=nimrod
+
 script:
-  - ./gradlew --quiet -g .citemp --no-daemon -x :nimrodg-impl-postgres:test check generateArtifacts
+  - ./gradlew -g .citemp --no-daemon check generateArtifacts
 
 install: true
 deploy:
