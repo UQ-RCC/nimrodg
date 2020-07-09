@@ -20,6 +20,8 @@
 package au.edu.uq.rcc.nimrodg.cli.commands;
 
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
+import au.edu.uq.rcc.nimrodg.api.Actuator;
+import au.edu.uq.rcc.nimrodg.api.ActuatorOpsAdapter;
 import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.Job;
 import au.edu.uq.rcc.nimrodg.api.JobAttempt;
@@ -28,33 +30,28 @@ import au.edu.uq.rcc.nimrodg.api.NimrodException;
 import au.edu.uq.rcc.nimrodg.api.NimrodMasterAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodParseAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
-import au.edu.uq.rcc.nimrodg.api.Actuator;
-import au.edu.uq.rcc.nimrodg.api.ActuatorOpsAdapter;
-import au.edu.uq.rcc.nimrodg.setup.UserConfig;
+import au.edu.uq.rcc.nimrodg.api.Resource;
 import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledRun;
 import au.edu.uq.rcc.nimrodg.cli.CommandEntry;
 import au.edu.uq.rcc.nimrodg.cli.DefaultCLICommand;
 import au.edu.uq.rcc.nimrodg.cli.NimrodCLI;
 import au.edu.uq.rcc.nimrodg.cli.NimrodCLICommand;
 import au.edu.uq.rcc.nimrodg.parsing.ANTLR4ParseAPIImpl;
-import au.edu.uq.rcc.nimrodg.resource.HPCResourceType;
+import au.edu.uq.rcc.nimrodg.setup.UserConfig;
+import net.sourceforge.argparse4j.inf.Namespace;
+import net.sourceforge.argparse4j.inf.Subparser;
+
+import javax.json.Json;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.UUID;
-import javax.json.Json;
-import javax.json.JsonObject;
-import javax.json.JsonObjectBuilder;
-import net.sourceforge.argparse4j.inf.Namespace;
-import net.sourceforge.argparse4j.inf.Subparser;
-import au.edu.uq.rcc.nimrodg.api.Resource;
 
 public class Staging extends DefaultCLICommand {
 
@@ -191,66 +188,9 @@ public class Staging extends DefaultCLICommand {
 						+ "endtask", length)).build();
 
 		exp1 = nimrod.addExperiment("exp1", cr);
-//		Resource awoonga = createAwoonga(nimrod, "awoonga");
-//		nimrod.assignResource(awoonga, exp1);
-//
-//		Resource tinaroo = createTinaroo(nimrod, "tinaroo");
-//		nimrod.assignResource(tinaroo, exp1);
-//
-//		Resource flashlite = createFlashlite(nimrod, "flashlite");
-//		nimrod.assignResource(flashlite, exp1);
 
-//		Resource local = createLocal(nimrod, "local", "x86_64-pc-linux-musl", nAgents);
-//		nimrod.assignResource(local, exp1);
-//
-//		Resource[] slaves = createSlaves(nimrod);
-//
-//		for(int i = 0; i < slaves.length; ++i) {
-//			nimrod.assignResource(slaves[i], exp1);
-//		}
-		HPCResourceType hpcr = new HPCResourceType();
-		Resource tinaroo = nimrod.getResource("tinaroo");
-		if(tinaroo != null) {
-			nimrod.deleteResource(tinaroo);
-		}
-
-		JsonObject cfg = hpcr.parseCommandArguments(nimrod, new String[]{
-			"--platform", "x86_64-pc-linux-musl",
-			"--transport", "openssh",
-			"--uri", "ssh://tinaroo1",
-			"--limit", "10",
-			"--tmpvar", "TMPDIR",
-			"--max-batch-size", "10",
-			"--type", "pbspro",
-			"--ncpus", "1",
-			"--mem", "1GiB",
-			"--walltime", "24:00:00",
-			"--account", "UQ-RCC"
-		}, out, err, configDirs).asJsonObject();
-
-		tinaroo = nimrod.addResource("tinaroo", "hpc", cfg, null, null);
-		nimrod.assignResource(tinaroo, exp1);
-
-		Resource wiener = nimrod.getResource("wiener");
-		if(wiener != null) {
-			nimrod.deleteResource(wiener);
-		}
-
-		JsonObject wcfg = hpcr.parseCommandArguments(nimrod, new String[]{
-			"--platform", "x86_64-pc-linux-musl",
-			"--transport", "openssh",
-			"--uri", "ssh://wiener",
-			"--limit", "10",
-			"--tmpvar", "TMPDIR",
-			"--max-batch-size", "10",
-			"--type", "slurm",
-			"--ncpus", "1",
-			"--mem", "1GiB",
-			"--walltime", "24:00:00"
-		}, out, err, configDirs).asJsonObject();
-
-		wiener = nimrod.addResource("wiener", "hpc", wcfg, null, null);
-		nimrod.assignResource(wiener, exp1);
+		Resource local = createLocal(nimrod, "local", "x86_64-pc-linux-musl", nAgents);
+		nimrod.assignResource(local, exp1);
 	}
 
 	public void bigGet(UserConfig config, NimrodAPI nimrod, PrintStream out, PrintStream err, Path[] configDirs, String[] args) throws Exception {
@@ -334,109 +274,6 @@ public class Staging extends DefaultCLICommand {
 	public static void main(String[] args) throws Exception {
 		//System.exit(NimrodCLI.cliMain(new String[]{"-d", "staging", "nAgentSleep", "6", "60"}));
 		System.exit(NimrodCLI.cliMain(new String[]{"-d", "staging", "bigGet"}));
-	}
-
-	private static final Path RCC_CLUSTER_KEY_PATH = Paths.get("/home/zane/.ssh/uqzvanim-tinaroo");
-	private static final Path WIENER_KEY_PATH = Paths.get("/home/zane/.ssh/uqzvanim_weiner");
-
-	private static Resource createTinaroo(NimrodAPI api, String name) {
-		Resource res = api.getResource(name);
-		if(res != null) {
-			api.deleteResource(res);
-		}
-
-		JsonObjectBuilder stor = createBaseRCCConfig("tinaroo.rcc.uq.edu.au", "ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAoOXRIriWGPhnMQCH0+Wbx7b2mudzUVL0NwEu8xpr1H8qHdl2bPVa2gIRGoGWRx9eWFBscpdgzBMZQGVdl92oCIXxPtxbQFfMizRTp24eMLqISVN8591QD7gJst+8Ha0lVIZOcIA62fXUIdBfoFG1AflPW4CzgAbUUY3C4Grp3SkbUHGtdW3GzBYwhy2MvcDH2qYCfUoocQaSnW3yMO/LaYyMH1Lr3ayxb5eiUFjl9AO1R9J7S4O3rhh06xt3EJNwkMb8gIpoZYJQDKcgvbUrY9jwLv3eSPd2TSYRAhho18GrCWAQ5NudIVzSP6T8XvRapEgqzNti6g9l4uUG8RXe+w==");
-		return api.addResource(name, "pbs", stor.build(), null, null);
-	}
-
-	private static Resource createAwoonga(NimrodAPI api, String name) {
-		Resource res = api.getResource(name);
-		if(res != null) {
-			api.deleteResource(res);
-		}
-
-		JsonObjectBuilder stor = createBaseRCCConfig("awoonga.rcc.uq.edu.au", "ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEArWsPn9ERlHtodr8nLUAWHr9PDYgx2yTuOgk4JO9chjuF8+NnRJojbWzoBC1eU1/h4Ukv5VrUmkn/85RQzBJwCM29H24J/c3D58nVnicwNupN3PslYj8W7XGd1X4uV+aQ+v8kQIr8tC6AXURaXwsAuFBTLQ+ldxAa4hTtkxJvCgZWst0K+v7ibOZe8FOICyc3z1JctvJ49614i1wyioO9yh3pojzoDnySHi/PZq9uMkN9SmqUJWriE9EKibBiWennn/lUHxeIO++fe7B3cuJ686wJtqub2e05PX0zuoxFbVJknyx9qrqkUEXZR9RbNftdKZ8xv0h4O9vv3WYwF3Zqxw==");
-		return api.addResource(name, "pbs", stor.build(), null, null);
-	}
-
-	private static Resource createFlashlite(NimrodAPI api, String name) {
-		Resource res = api.getResource(name);
-		if(res != null) {
-			api.deleteResource(res);
-		}
-
-		JsonObjectBuilder stor = createBaseRCCConfig("flashlite.rcc.uq.edu.au", "ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAplbm/kI54sQLlIdGMH5tgf18Z+d6X3Ik3/y1T4l5ddDN6nPvXkVL4WsKJD2boIWo6L7kBiuhz5KY7AtQrLF+NNDoltP/x2j4jdxGnXTUakt59ARrPCcNPAhINOZMNOHqos2B1T0Ca5ZpYeZDu7yJ25Q1J6OpIayxanPot9MvchXTzJ5/dVvVF092ECuGXA9KfclzV0Al486hcWnEENm7KGxfCYY+46hGGpOCBcc+aHtL5mgNj39tRp7d4tK3cNT39SbAvfmd/V5DnTD8ODaPGS3rISYSWuGw/xQq/vpfGDRGtD4/TmKW1I0O+kn95B56HuZ4jiRQSZli5T6WcMdoWw==");
-		return api.addResource(name, "pbs", stor.build(), null, null);
-	}
-
-	private static Resource createWiener(NimrodAPI api, String name) {
-		Resource res = api.getResource(name);
-		if(res != null) {
-			api.deleteResource(res);
-		}
-
-		JsonObject stor = Json.createObjectBuilder()
-				.add("uri", "ssh://uqzvanim@wiener.hpc.net.uq.edu.au")
-				.add("keyfile", WIENER_KEY_PATH.toString())
-				.add("slurmargs", Json.createArrayBuilder(Arrays.asList(
-						"--nodes", "1",
-						"--ntasks", "1",
-						"--mem-per-cpu", "1g",
-						"--cpus-per-task", "1",
-						"--ntasks-per-node", "1")).build())
-				.add("hostkey", "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBC+yRQJovkwmZNLJ14J2k55VhSWIM8IKlFm6UmSrKD7jfTSp7kuriV+Yi3MC9Bo41+sPaHZRNf+6UWhZ1DNJZOg=")
-				.add("limit", 100)
-				.add("max_batch_size", 20)
-				.build();
-
-		return api.addResource(name, "slurm", stor, null, null);
-	}
-
-	private static JsonObjectBuilder createBaseRCCConfig(String hostName, String hostKey) {
-		/*
-		 * Look in PBSRefGuide14.2.pdf, page 241 for a table of these.
-		 * Look in PBSUserGuide14.2.pdf, Section 5.3 for usages.
-		 *
-		 * NB: Job-wide and chunk resources are mutually exclusive.
-		 */
-		return Json.createObjectBuilder()
-				.add("pbsargs", Json.createArrayBuilder(Arrays.asList("-A", "UQ-RCC")).build())
-				.add("batch_dialect", "pbspro")
-				.add("batch_config", Json.createArrayBuilder()
-						.add(Json.createObjectBuilder()
-								.add("name", "walltime")
-								.add("value", 3600L)
-								.add("scale", false)
-						).add(Json.createObjectBuilder()
-								.add("name", "ompthreads")
-								.add("value", 1)
-								.add("scale", false)
-						).add(Json.createObjectBuilder()
-								.add("name", "mpiprocs")
-								.add("value", 1)
-								.add("scale", false)
-						).add(Json.createObjectBuilder()
-								.add("name", "ncpus")
-								.add("value", 1)
-								.add("scale", true)
-						).add(Json.createObjectBuilder()
-								.add("name", "mem")
-								.add("value", 1073741824L)
-								.add("scale", true)
-						)
-				)
-				.add("limit", 100)
-				.add("tmpvar", "TMPDIR")
-				.add("max_batch_size", 4)
-				.add("agent_platform", "x86_64-pc-linux-musl")
-				.add("transport", Json.createObjectBuilder()
-						.add("uri", String.format("ssh://uqzvanim@%s", hostName))
-						.add("keyfile", RCC_CLUSTER_KEY_PATH.toString())
-						//.add("name", "sshd")
-						//.add("hostkey", hostKey)
-						.add("name", "openssh")
-						.add("executable", "ssh")
-				);
 	}
 
 	private static Resource createLocal(NimrodAPI api, String name, String plat, int count) {
