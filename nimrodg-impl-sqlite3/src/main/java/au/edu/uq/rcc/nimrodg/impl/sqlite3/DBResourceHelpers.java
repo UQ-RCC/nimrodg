@@ -101,7 +101,7 @@ public class DBResourceHelpers extends DBBaseHelper {
 				+ "	state, queue, agent_uuid, shutdown_signal, shutdown_reason,\n"
 				+ "	expiry_time, location, actuator_data\n"
 				+ ") VALUES(?, ?, ?, ?, ?, ?, ?, ?)", true);
-		this.qUpdateAgent = prepareStatement("UPDATE nimrod_resource_agents SET state = ?, queue = ?, shutdown_signal = ?, shutdown_reason = ?, connected_at = ?, last_heard_from = ?, expiry_time = ?, expired = ? WHERE agent_uuid = ?");
+		this.qUpdateAgent = prepareStatement("UPDATE nimrod_resource_agents SET state = ?, queue = ?, shutdown_signal = ?, shutdown_reason = ?, connected_at = ?, last_heard_from = ?, expiry_time = ?, expired = ?, actuator_data = ? WHERE agent_uuid = ?");
 	}
 
 	public Optional<TempResourceType> getResourceTypeInfo(String name) throws SQLException {
@@ -329,7 +329,15 @@ public class DBResourceHelpers extends DBBaseHelper {
 		DBUtils.setLongInstant(qUpdateAgent, 6, agent.getLastHeardFrom());
 		DBUtils.setLongInstant(qUpdateAgent, 7, agent.getExpiryTime());
 		qUpdateAgent.setBoolean(8, agent.getExpired());
-		qUpdateAgent.setString(9, agent.getUUID().toString());
+
+		JsonObject data = agent.getActuatorData();
+		if(data == null) {
+			qUpdateAgent.setString(9, null);
+		} else {
+			qUpdateAgent.setString(9, data.toString());
+		}
+
+		qUpdateAgent.setString(10, agent.getUUID().toString());
 
 		return qUpdateAgent.executeUpdate() != 0;
 	}

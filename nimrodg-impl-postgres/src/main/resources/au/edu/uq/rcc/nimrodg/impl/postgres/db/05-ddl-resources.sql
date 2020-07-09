@@ -334,7 +334,7 @@ CREATE OR REPLACE FUNCTION add_agent(_state nimrod_agent_state, _queue TEXT, _uu
 	RETURNING *;
 $$ LANGUAGE SQL;
 
-CREATE OR REPLACE FUNCTION update_agent(_uuid UUID, _state nimrod_agent_state, _queue TEXT, _signal INTEGER, _reason nimrod_agent_shutdown_reason, _connected_at TIMESTAMP WITH TIME ZONE, _last_heard_from TIMESTAMP WITH TIME ZONE, _expiry_time TIMESTAMP WITH TIME ZONE, _expired BOOLEAN) RETURNS SETOF nimrod_resource_agents AS $$
+CREATE OR REPLACE FUNCTION update_agent(_uuid UUID, _state nimrod_agent_state, _queue TEXT, _signal INTEGER, _reason nimrod_agent_shutdown_reason, _connected_at TIMESTAMP WITH TIME ZONE, _last_heard_from TIMESTAMP WITH TIME ZONE, _expiry_time TIMESTAMP WITH TIME ZONE, _expired BOOLEAN, _actuator_data JSONB) RETURNS SETOF nimrod_resource_agents AS $$
 	UPDATE nimrod_resource_agents
 	SET
 		state = _state,
@@ -344,8 +344,17 @@ CREATE OR REPLACE FUNCTION update_agent(_uuid UUID, _state nimrod_agent_state, _
 		connected_at = _connected_at,
 		last_heard_from = _last_heard_from,
 		expiry_time = _expiry_time,
-		expired = _expired
+		expired = _expired,
+		actuator_data = _actuator_data
 	WHERE
 		agent_uuid = _uuid
 	RETURNING *;
+$$ LANGUAGE SQL;
+
+--
+-- DEPRECATED, will remove once schema versioning is implemented.
+-- Last supported in 1.7.2
+--
+CREATE OR REPLACE FUNCTION update_agent(_uuid UUID, _state nimrod_agent_state, _queue TEXT, _signal INTEGER, _reason nimrod_agent_shutdown_reason, _connected_at TIMESTAMP WITH TIME ZONE, _last_heard_from TIMESTAMP WITH TIME ZONE, _expiry_time TIMESTAMP WITH TIME ZONE, _expired BOOLEAN) RETURNS SETOF nimrod_resource_agents AS $$
+    SELECT * FROM update_agent(_uuid, _state, _queue, _signal, _reason, _connected_at, _last_heard_from, _expiry_time, _expired, NULL);
 $$ LANGUAGE SQL;

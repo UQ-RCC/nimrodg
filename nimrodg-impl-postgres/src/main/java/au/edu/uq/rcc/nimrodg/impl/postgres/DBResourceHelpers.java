@@ -40,6 +40,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
 import javax.json.JsonStructure;
 
 public class DBResourceHelpers extends DBBaseHelper {
@@ -90,7 +91,7 @@ public class DBResourceHelpers extends DBBaseHelper {
 		this.qGetAgentResource = prepareStatement("SELECT * FROM get_agent_resource(?::UUID)");
 		this.qGetAgentsOnResource = prepareStatement("SELECT * FROM get_agents_on_resource(?)");
 		this.qAddAgent = prepareStatement("SELECT * FROM add_agent(?::nimrod_agent_state, ?, ?::UUID, ?, ?::nimrod_agent_shutdown_reason, ?, ?, ?::JSONB)");
-		this.qUpdateAgent = prepareStatement("SELECT * FROM update_agent(?::UUID, ?::nimrod_agent_state, ?, ?, ?::nimrod_agent_shutdown_reason, ?, ?, ?, ?)");
+		this.qUpdateAgent = prepareStatement("SELECT * FROM update_agent(?::UUID, ?::nimrod_agent_state, ?, ?, ?::nimrod_agent_shutdown_reason, ?, ?, ?, ?, ?::JSONB)");
 	}
 
 	// <editor-fold defaultstate="collapsed" desc="Resources">
@@ -296,6 +297,14 @@ public class DBResourceHelpers extends DBBaseHelper {
 		DBUtils.setInstant(qUpdateAgent, 7, agent.getLastHeardFrom());
 		DBUtils.setInstant(qUpdateAgent, 8, agent.getExpiryTime());
 		qUpdateAgent.setBoolean(9, agent.getExpired());
+
+		JsonObject data = agent.getActuatorData();
+		if(data == null) {
+			qUpdateAgent.setString(10, null);
+		} else {
+			qUpdateAgent.setString(10, data.toString());
+		}
+
 		try(ResultSet rs = qUpdateAgent.executeQuery()) {
 			return rs.next();
 		}

@@ -372,6 +372,31 @@ public abstract class APITests {
 	}
 
 	@Test
+	public void setActuatorDataAfterAddTest() {
+		NimrodMasterAPI mapi = (NimrodMasterAPI)getNimrod();
+
+		Resource rootResource = mapi.addResource("root", "dummy", JsonValue.EMPTY_JSON_OBJECT, null, null);
+
+		DefaultAgentState as = new DefaultAgentState();
+
+		ReferenceAgent ra = new ReferenceAgent(as, new NoopAgentListener());
+		ra.reset(UUID.randomUUID());
+
+		mapi.addAgent(rootResource, as);
+
+		Assert.assertNull(as.getActuatorData());
+
+		as.setActuatorData(Json.createObjectBuilder()
+				.add("x", 0)
+				.build());
+
+		mapi.updateAgent(as);
+
+		AgentState as2 = mapi.getAgentByUUID(as.getUUID());
+		Assert.assertEquals(as.getActuatorData(), as2.getActuatorData());
+	}
+
+	@Test
 	public void fakeAgentTests() throws IllegalArgumentException, IOException {
 		NimrodAPI api = getNimrod();
 		//onPaperAssignmentTest();
