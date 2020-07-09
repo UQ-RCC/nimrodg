@@ -9,12 +9,12 @@ addons:
   postgresql: "10"
 
 before_cache:
-  - rm -f $TRAVIS_BUILD_DIR/.citemp/caches/modules-2/modules-2.lock
-  - rm -rf $TRAVIS_BUILD_DIR/.citemp/caches/*/plugin-resolution
+  - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
+  - rm -rf $HOME/.gradle/caches/*/plugin-resolution/
 cache:
   directories:
-    - $TRAVIS_BUILD_DIR/.citemp/caches/
-    - $TRAVIS_BUILD_DIR/.citemp/wrapper
+    - $HOME/.gradle/caches/
+    - $HOME/.gradle/wrapper/
     - $TRAVIS_BUILD_DIR/nimrod/build/agents/
 
 before_script:
@@ -29,9 +29,8 @@ env:
     NIMRODG_TEST_PGDATABASE=nimrod
 
 script:
-  - ./gradlew -g .citemp --no-daemon check generateArtifacts
+  - ./gradlew --no-daemon check generateArtifacts
 
-install: true
 deploy:
   provider: releases
   api_key:
