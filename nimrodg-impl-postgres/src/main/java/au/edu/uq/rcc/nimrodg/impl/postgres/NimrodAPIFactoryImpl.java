@@ -27,14 +27,21 @@ import au.edu.uq.rcc.nimrodg.setup.UserConfig;
 
 import java.sql.Connection;
 import java.sql.Driver;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Map;
 import java.util.Properties;
 
 public class NimrodAPIFactoryImpl implements NimrodAPIDatabaseFactory {
 
+	/* Follow Semver 2.0 for these. */
+	public static final int SCHEMA_MAJOR = 1;
+	public static final int SCHEMA_MINOR = 0;
+	public static final int SCHEMA_PATCH = 0;
+
 	@Override
 	public NimrodAPI createNimrod(Connection conn) throws SQLException {
+		checkSchemaVersion(conn);
 		return new NimrodAPIImpl(conn);
 	}
 
@@ -78,6 +85,24 @@ public class NimrodAPIFactoryImpl implements NimrodAPIDatabaseFactory {
 		return c;
 	}
 
+	private static void checkSchemaVersion(Connection c) throws SQLException {
+		/* Check the schema version, this will RAISE if it's incompatible. */
+		try(PreparedStatement ps = c.prepareStatement("SELECT require_schema_compatible(?, ?, ?)")) {
+			ps.setInt(1, SCHEMA_MAJOR);
+			ps.setInt(2, SCHEMA_MINOR);
+			ps.setInt(3, SCHEMA_PATCH);
+			ps.execute();
+		} catch(SQLException e) {
+			switch(e.getSQLState()) {
+				case "P0001": /* raise_exception    */
+				case "42883": /* undefined_function */
+					throw new SchemaMismatch(e);
+				default:
+					throw e;
+			}
+		}
+	}
+
 	@Override
 	public NimrodSetupAPI getSetupAPI(UserConfig config) {
 		try {
@@ -86,4 +111,6 @@ public class NimrodAPIFactoryImpl implements NimrodAPIDatabaseFactory {
 			throw new NimrodException.DbError(e);
 		}
 	}
+
+
 }

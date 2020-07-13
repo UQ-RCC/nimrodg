@@ -47,6 +47,7 @@ public class SetupAPIImpl implements NimrodSetupAPI {
 
 	private final Connection conn;
 	private final boolean managed;
+	private final PreparedStatement qIsSchemaCompatible;
 	private final PreparedStatement qGetProperty;
 	private final PreparedStatement qSetProperty;
 	private final PreparedStatement qAddResourceType;
@@ -64,6 +65,8 @@ public class SetupAPIImpl implements NimrodSetupAPI {
 	SetupAPIImpl(Connection conn, boolean manage) throws SQLException {
 		this.conn = conn;
 		this.managed = manage;
+
+		this.qIsSchemaCompatible = conn.prepareStatement("SELECT is_schema_compatible(?, ?, ?)");
 
 		this.qUpdateConfig = conn.prepareStatement(
 				"SELECT update_config(?, ?, make_uri(?, ?, ?, ?), ?, make_uri(?, ?, ?, ?))"
@@ -93,7 +96,25 @@ public class SetupAPIImpl implements NimrodSetupAPI {
 
 	@Override
 	public synchronized boolean isCompatibleSchema() throws SetupException {
-		return true;
+		try {
+			qIsSchemaCompatible.setInt(1, NimrodAPIFactoryImpl.SCHEMA_MAJOR);
+			qIsSchemaCompatible.setInt(2, NimrodAPIFactoryImpl.SCHEMA_MINOR);
+			qIsSchemaCompatible.setInt(3, NimrodAPIFactoryImpl.SCHEMA_PATCH);
+
+			try(ResultSet rs = qIsSchemaCompatible.executeQuery()) {
+				if(!rs.next()) {
+					return false;
+				}
+				return rs.getBoolean(1);
+			}
+		} catch(SQLException e) {
+			if("42883".equals(e.getSQLState())) {
+				/* undefined_function */
+				return false;
+			}
+
+			throw new SetupException(e);
+		}
 	}
 
 	@Override
