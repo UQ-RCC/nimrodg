@@ -19,11 +19,12 @@
  */
 package au.edu.uq.rcc.nimrodg.setup;
 
+import au.edu.uq.rcc.nimrodg.api.NimrodException;
 import au.edu.uq.rcc.nimrodg.api.ResourceType;
 
 public interface NimrodSetupAPI extends AutoCloseable {
 
-	class SetupException extends RuntimeException {
+	class SetupException extends NimrodException {
 
 		public SetupException() {
 		}

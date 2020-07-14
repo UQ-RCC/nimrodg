@@ -20,17 +20,18 @@
 package au.edu.uq.rcc.nimrodg.impl.postgres;
 
 import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
-import au.edu.uq.rcc.nimrodg.api.NimrodAPIFactory;
+import au.edu.uq.rcc.nimrodg.api.NimrodException;
+import au.edu.uq.rcc.nimrodg.impl.base.db.NimrodAPIDatabaseFactory;
 import au.edu.uq.rcc.nimrodg.setup.NimrodSetupAPI;
-import au.edu.uq.rcc.nimrodg.setup.NimrodSetupAPI.SetupException;
 import au.edu.uq.rcc.nimrodg.setup.UserConfig;
+
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.SQLException;
 import java.util.Map;
 import java.util.Properties;
 
-public class NimrodAPIFactoryImpl implements NimrodAPIFactory {
+public class NimrodAPIFactoryImpl implements NimrodAPIDatabaseFactory {
 
 	@Override
 	public NimrodAPI createNimrod(Connection conn) throws SQLException {
@@ -38,8 +39,12 @@ public class NimrodAPIFactoryImpl implements NimrodAPIFactory {
 	}
 
 	@Override
-	public NimrodAPI createNimrod(UserConfig config) throws SQLException, ReflectiveOperationException {
-		return createNimrod(createConnection(config));
+	public NimrodAPI createNimrod(UserConfig config) {
+		try {
+			return createNimrod(createConnection(config));
+		} catch(SQLException e) {
+			throw new NimrodException.DbError(e);
+		}
 	}
 
 	@Override
@@ -47,7 +52,7 @@ public class NimrodAPIFactoryImpl implements NimrodAPIFactory {
 		return new SetupAPIImpl(conn);
 	}
 
-	private static Connection createConnection(UserConfig config) throws SQLException, ReflectiveOperationException {
+	private static Connection createConnection(UserConfig config) throws SQLException {
 		Properties dbconfig = new Properties();
 
 		Map<String, String> pgconfig = config.config().get("postgres");
@@ -57,7 +62,13 @@ public class NimrodAPIFactoryImpl implements NimrodAPIFactory {
 
 		dbconfig.setProperty("user", pgconfig.getOrDefault("username", ""));
 		dbconfig.setProperty("password", pgconfig.getOrDefault("password", ""));
-		Driver drv = (Driver)Class.forName(pgconfig.getOrDefault("driver", "org.postgresql.Driver")).getConstructor().newInstance();
+		Driver drv;
+
+		try {
+			drv = (Driver)Class.forName(pgconfig.getOrDefault("driver", "org.postgresql.Driver")).getConstructor().newInstance();
+		} catch(ReflectiveOperationException e) {
+			throw new SQLException(e);
+		}
 
 		Connection c = drv.connect(pgconfig.getOrDefault("url", ""), dbconfig);
 		if(c == null) {
@@ -68,11 +79,11 @@ public class NimrodAPIFactoryImpl implements NimrodAPIFactory {
 	}
 
 	@Override
-	public NimrodSetupAPI getSetupAPI(UserConfig config) throws SetupException {
+	public NimrodSetupAPI getSetupAPI(UserConfig config) {
 		try {
 			return getSetupAPI(createConnection(config));
-		} catch(SQLException|ReflectiveOperationException e) {
-			throw new SetupException(e);
+		} catch(SQLException e) {
+			throw new NimrodException.DbError(e);
 		}
 	}
 }

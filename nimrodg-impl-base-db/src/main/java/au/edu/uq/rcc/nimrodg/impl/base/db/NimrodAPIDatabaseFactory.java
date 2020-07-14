@@ -17,14 +17,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package au.edu.uq.rcc.nimrodg.api;
+package au.edu.uq.rcc.nimrodg.impl.base.db;
 
+import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
+import au.edu.uq.rcc.nimrodg.api.NimrodAPIFactory;
 import au.edu.uq.rcc.nimrodg.setup.NimrodSetupAPI;
-import au.edu.uq.rcc.nimrodg.setup.UserConfig;
 
-public interface NimrodAPIFactory {
-	NimrodAPI createNimrod(UserConfig config);
+import java.sql.Connection;
+import java.sql.SQLException;
 
-	NimrodSetupAPI getSetupAPI(UserConfig config);
+public interface NimrodAPIDatabaseFactory extends NimrodAPIFactory {
+	NimrodAPI createNimrod(Connection conn) throws SQLException;
 
+	NimrodSetupAPI getSetupAPI(Connection conn) throws SQLException;
 }

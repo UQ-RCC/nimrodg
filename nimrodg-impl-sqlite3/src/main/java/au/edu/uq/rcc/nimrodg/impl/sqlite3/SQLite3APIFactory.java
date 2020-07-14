@@ -20,7 +20,8 @@
 package au.edu.uq.rcc.nimrodg.impl.sqlite3;
 
 import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
-import au.edu.uq.rcc.nimrodg.api.NimrodAPIFactory;
+import au.edu.uq.rcc.nimrodg.api.NimrodException;
+import au.edu.uq.rcc.nimrodg.impl.base.db.NimrodAPIDatabaseFactory;
 import au.edu.uq.rcc.nimrodg.setup.NimrodSetupAPI;
 import au.edu.uq.rcc.nimrodg.setup.UserConfig;
 
@@ -31,7 +32,7 @@ import java.sql.Statement;
 import java.util.Map;
 import java.util.Properties;
 
-public class SQLite3APIFactory implements NimrodAPIFactory {
+public class SQLite3APIFactory implements NimrodAPIDatabaseFactory {
 
 	@Override
 	public NimrodAPI createNimrod(Connection conn) throws SQLException {
@@ -39,22 +40,32 @@ public class SQLite3APIFactory implements NimrodAPIFactory {
 	}
 
 	@Override
-	public NimrodAPI createNimrod(UserConfig config) throws SQLException, ReflectiveOperationException {
-		return createNimrod(createConnection(config, true));
+	public NimrodAPI createNimrod(UserConfig config) {
+		try {
+			return createNimrod(createConnection(config, true));
+		} catch(SQLException e) {
+			throw new NimrodException.DbError(e);
+		}
 	}
 
 	@Override
-	public NimrodSetupAPI getSetupAPI(Connection conn) throws NimrodSetupAPI.SetupException {
+	public NimrodSetupAPI getSetupAPI(Connection conn) {
 		return new SQLite3SetupAPI(conn);
 	}
 
-	private static Connection createConnection(UserConfig config, boolean foreignKeys) throws SQLException, ReflectiveOperationException {
+	private static Connection createConnection(UserConfig config, boolean foreignKeys) throws SQLException {
 		Map<String, String> pgconfig = config.config().get("sqlite3");
 		if(pgconfig == null) {
 			throw new IllegalArgumentException("No sqlite3 configuration");
 		}
 
-		Driver drv = (Driver)Class.forName(pgconfig.getOrDefault("driver", "org.sqlite.JDBC")).getConstructor().newInstance();
+		Driver drv;
+
+		try {
+			drv = (Driver)Class.forName(pgconfig.getOrDefault("driver", "org.sqlite.JDBC")).getConstructor().newInstance();
+		} catch(ReflectiveOperationException e) {
+			throw new SQLException(e);
+		}
 
 		Connection c = drv.connect(pgconfig.getOrDefault("url", "jdbc:sqlite::memory:"), new Properties());
 		if(c == null) {
@@ -73,11 +84,11 @@ public class SQLite3APIFactory implements NimrodAPIFactory {
 	}
 
 	@Override
-	public NimrodSetupAPI getSetupAPI(UserConfig config) throws NimrodSetupAPI.SetupException {
+	public NimrodSetupAPI getSetupAPI(UserConfig config) {
 		try {
 			return getSetupAPI(createConnection(config, false));
-		} catch(SQLException | ReflectiveOperationException e) {
-			throw new NimrodSetupAPI.SetupException(e);
+		} catch(SQLException e) {
+			throw new NimrodException.DbError(e);
 		}
 	}
 
