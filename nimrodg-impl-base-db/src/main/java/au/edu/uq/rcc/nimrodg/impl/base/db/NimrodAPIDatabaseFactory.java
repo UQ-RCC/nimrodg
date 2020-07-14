@@ -21,12 +21,20 @@ package au.edu.uq.rcc.nimrodg.impl.base.db;
 
 import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPIFactory;
+import au.edu.uq.rcc.nimrodg.api.NimrodException;
 import au.edu.uq.rcc.nimrodg.setup.NimrodSetupAPI;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 
 public interface NimrodAPIDatabaseFactory extends NimrodAPIFactory {
+
+	class SchemaMismatch extends NimrodException.DbError {
+		public SchemaMismatch(SQLException sql) {
+			super(sql);
+		}
+	}
+
 	NimrodAPI createNimrod(Connection conn) throws SQLException;
 
 	NimrodSetupAPI getSetupAPI(Connection conn) throws SQLException;
