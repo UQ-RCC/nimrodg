@@ -26,6 +26,7 @@ import au.edu.uq.rcc.nimrodg.test.APITests;
 import java.nio.file.Path;
 import java.util.Map;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
@@ -61,6 +62,7 @@ public class NimrodGTests extends APITests {
 		NimrodAPIFactoryImpl fimpl = new NimrodAPIFactoryImpl();
 		try(NimrodSetupAPI api = fimpl.getSetupAPI(ucfg)) {
 			api.reset();
+			Assert.assertTrue(api.isCompatibleSchema());
 			api.setup(APITests.getTestSetupConfig(root));
 		}
 

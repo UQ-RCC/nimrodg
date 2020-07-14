@@ -77,6 +77,11 @@ public class SQLite3SetupAPI extends SQLUUUUU<SetupException> implements NimrodS
 	}
 
 	@Override
+	public synchronized boolean isCompatibleSchema() throws SetupException {
+		return true;
+	}
+
+	@Override
 	public synchronized void reset() throws SetupException {
 		String dbData;
 		/* Collate all the schema files together. */

@@ -92,6 +92,11 @@ public class SetupAPIImpl implements NimrodSetupAPI {
 	}
 
 	@Override
+	public synchronized boolean isCompatibleSchema() throws SetupException {
+		return true;
+	}
+
+	@Override
 	public synchronized void reset() throws SetupException {
 		String dbData;
 		/* Collate all the schema files together. */

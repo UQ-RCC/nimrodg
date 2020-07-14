@@ -24,6 +24,7 @@ import au.edu.uq.rcc.nimrodg.setup.NimrodSetupAPI;
 import au.edu.uq.rcc.nimrodg.setup.UserConfig;
 import au.edu.uq.rcc.nimrodg.test.APITests;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
@@ -67,6 +68,7 @@ public class SQLite3Tests extends APITests {
 		SQLite3APIFactory fimpl = new SQLite3APIFactory();
 		try(NimrodSetupAPI api = fimpl.getSetupAPI(ucfg)) {
 			api.reset();
+			Assert.assertTrue(api.isCompatibleSchema());
 			api.setup(APITests.getTestSetupConfig(root));
 		}
 
