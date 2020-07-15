@@ -26,6 +26,13 @@ CREATE DOMAIN nimrod_kv_config_key AS TEXT CHECK (VALUE ~ '^[a-zA-Z0-9_]+(?:\.[a
 DROP DOMAIN IF EXISTS nimrod_path CASCADE;
 CREATE DOMAIN nimrod_path AS TEXT CHECK (VALUE ~ '^[a-zA-Z0-9_]+(?:\/[a-zA-Z0-9_]+)*$');
 
+--
+-- Create a random hex token of a specified length.
+--
+CREATE OR REPLACE FUNCTION _generate_random_token(_length INT) RETURNS TEXT AS $$
+    SELECT string_agg(to_hex(width_bucket(random(), 0, 1, 16)-1), '') FROM generate_series(1, _length);
+$$ LANGUAGE SQL VOLATILE;
+
 DROP TYPE IF EXISTS nimrod_uri CASCADE;
 CREATE TYPE nimrod_uri AS
 (
@@ -250,7 +257,7 @@ VALUES
 ;
 
 CREATE OR REPLACE FUNCTION get_schema_version() RETURNS TABLE(major INTEGER, minor INTEGER, patch INTEGER) AS $$
-    SELECT 2, 0, 0;
+    SELECT 2, 1, 0;
 $$ LANGUAGE SQL IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION is_schema_compatible(_major INTEGER, _minor INTEGER, _patch INTEGER) RETURNS BOOLEAN AS $$

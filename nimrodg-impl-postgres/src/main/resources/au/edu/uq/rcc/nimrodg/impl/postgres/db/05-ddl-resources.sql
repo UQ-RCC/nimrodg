@@ -125,6 +125,7 @@ CREATE TABLE nimrod_resource_agents(
 	expiry_time				TIMESTAMP WITH TIME ZONE CHECK(expiry_time >= created),
 	expired_at				TIMESTAMP WITH TIME ZONE DEFAULT NULL CHECK(expired_at >= created),
 	expired					BOOLEAN NOT NULL DEFAULT FALSE,
+	secret_key				TEXT NOT NULL DEFAULT _generate_random_token(32),
 	location					BIGINT REFERENCES nimrod_resources(id) ON DELETE CASCADE,
 	actuator_data			JSONB
 );
@@ -310,29 +311,69 @@ CREATE OR REPLACE FUNCTION get_agents_on_resource(_res_id BIGINT) RETURNS SETOF 
 	SELECT * FROM nimrod_resource_agents WHERE location = _res_id AND expired = FALSE;
 $$ LANGUAGE SQL;
 
-CREATE OR REPLACE FUNCTION add_agent(_state nimrod_agent_state, _queue TEXT, _uuid UUID, _shutdown_signal INTEGER, _shutdown_reason nimrod_agent_shutdown_reason, _expiry_time TIMESTAMP WITH TIME ZONE, _location BIGINT, _actuator_data JSONB) RETURNS nimrod_resource_agents AS $$
-	INSERT INTO nimrod_resource_agents(
-		state,
-		queue,
-		agent_uuid,
-		shutdown_signal,
-		shutdown_reason,
-		expiry_time,
-		location,
-		actuator_data
-	)
-	VALUES(
-		_state,
-		_queue,
-		_uuid,
-		_shutdown_signal,
-		_shutdown_reason,
-		_expiry_time,
-		_location,
-		_actuator_data
-	)
-	RETURNING *;
+CREATE OR REPLACE FUNCTION add_agent(
+    _state              nimrod_agent_state,
+    _queue              TEXT,
+    _uuid               UUID,
+    _shutdown_signal    INTEGER,
+    _shutdown_reason    nimrod_agent_shutdown_reason,
+    _expiry_time        TIMESTAMP WITH TIME ZONE,
+    _secret_key         TEXT,
+    _location           BIGINT,
+    _actuator_data      JSONB
+) RETURNS nimrod_resource_agents AS $$
+    INSERT INTO nimrod_resource_agents(
+        state,
+        queue,
+        agent_uuid,
+        shutdown_signal,
+        shutdown_reason,
+        expiry_time,
+        secret_key,
+        location,
+        actuator_data
+    )
+    VALUES(
+        _state,
+        _queue,
+        _uuid,
+        _shutdown_signal,
+        _shutdown_reason,
+        _expiry_time,
+        COALESCE(_secret_key, _generate_random_token(32)),
+        _location,
+        _actuator_data
+    )
+    RETURNING *;
 $$ LANGUAGE SQL;
+
+--
+-- Legacy version of add_agent(), generates a random secret key.
+-- DEPRECATED, will remove next major version bump.
+--
+CREATE OR REPLACE FUNCTION add_agent(
+    _state              nimrod_agent_state,
+    _queue              TEXT,
+    _uuid               UUID,
+    _shutdown_signal    INTEGER,
+    _shutdown_reason    nimrod_agent_shutdown_reason,
+    _expiry_time        TIMESTAMP WITH TIME ZONE,
+    _location           BIGINT,
+    _actuator_data      JSONB
+) RETURNS nimrod_resource_agents AS $$
+    SELECT * FROM add_agent(
+        _state,
+        _queue,
+        _uuid,
+        _shutdown_signal,
+        _shutdown_reason,
+        _expiry_time,
+        NULL,
+        _location,
+        _actuator_data
+    );
+$$ LANGUAGE SQL;
+
 
 CREATE OR REPLACE FUNCTION update_agent(_uuid UUID, _state nimrod_agent_state, _queue TEXT, _signal INTEGER, _reason nimrod_agent_shutdown_reason, _connected_at TIMESTAMP WITH TIME ZONE, _last_heard_from TIMESTAMP WITH TIME ZONE, _expiry_time TIMESTAMP WITH TIME ZONE, _expired BOOLEAN, _actuator_data JSONB) RETURNS SETOF nimrod_resource_agents AS $$
 	UPDATE nimrod_resource_agents
@@ -352,8 +393,8 @@ CREATE OR REPLACE FUNCTION update_agent(_uuid UUID, _state nimrod_agent_state, _
 $$ LANGUAGE SQL;
 
 --
--- DEPRECATED, will remove once schema versioning is implemented.
--- Last supported in 1.7.2
+-- DEPRECATED, will remove next major version bump.
+-- Last supported in Nimrod version 1.7.2
 --
 CREATE OR REPLACE FUNCTION update_agent(_uuid UUID, _state nimrod_agent_state, _queue TEXT, _signal INTEGER, _reason nimrod_agent_shutdown_reason, _connected_at TIMESTAMP WITH TIME ZONE, _last_heard_from TIMESTAMP WITH TIME ZONE, _expiry_time TIMESTAMP WITH TIME ZONE, _expired BOOLEAN) RETURNS SETOF nimrod_resource_agents AS $$
     SELECT * FROM update_agent(_uuid, _state, _queue, _signal, _reason, _connected_at, _last_heard_from, _expiry_time, _expired, NULL);

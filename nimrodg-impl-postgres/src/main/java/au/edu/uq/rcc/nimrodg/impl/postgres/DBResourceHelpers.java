@@ -87,7 +87,7 @@ public class DBResourceHelpers extends DBBaseHelper {
 		this.qGetAgentInformation = prepareStatement("SELECT * FROM get_agent_information(?::UUID)");
 		this.qGetAgentResource = prepareStatement("SELECT * FROM get_agent_resource(?::UUID)");
 		this.qGetAgentsOnResource = prepareStatement("SELECT * FROM get_agents_on_resource(?)");
-		this.qAddAgent = prepareStatement("SELECT * FROM add_agent(?::nimrod_agent_state, ?, ?::UUID, ?, ?::nimrod_agent_shutdown_reason, ?, ?, ?::JSONB)");
+		this.qAddAgent = prepareStatement("SELECT * FROM add_agent(?::nimrod_agent_state, ?, ?::UUID, ?, ?::nimrod_agent_shutdown_reason, ?, ?, ?, ?::JSONB)");
 		this.qUpdateAgent = prepareStatement("SELECT * FROM update_agent(?::UUID, ?::nimrod_agent_state, ?, ?, ?::nimrod_agent_shutdown_reason, ?, ?, ?, ?, ?::JSONB)");
 	}
 
@@ -267,12 +267,13 @@ public class DBResourceHelpers extends DBBaseHelper {
 		qAddAgent.setInt(4, agent.getShutdownSignal());
 		qAddAgent.setString(5, AgentShutdown.reasonToString(agent.getShutdownReason()));
 		DBUtils.setInstant(qAddAgent, 6, agent.getExpiryTime());
-		qAddAgent.setLong(7, resId);
+		qAddAgent.setString(7, agent.getSecretKey());
+		qAddAgent.setLong(8, resId);
 		JsonObject data = agent.getActuatorData();
 		if(data == null) {
-			qAddAgent.setString(8, null);
+			qAddAgent.setString(9, null);
 		} else {
-			qAddAgent.setString(8, data.toString());
+			qAddAgent.setString(9, data.toString());
 		}
 
 		try(ResultSet rs = qAddAgent.executeQuery()) {
@@ -358,7 +359,7 @@ public class DBResourceHelpers extends DBBaseHelper {
 				DBUtils.getInstant(rs, "last_heard_from"),
 				DBUtils.getInstant(rs, "expiry_time"),
 				rs.getBoolean("expired"),
-				"abc123",
+				rs.getString("secret_key"),
 				rs.getLong("location"),
 				DBUtils.getJSONObject(rs, "actuator_data")
 		);
