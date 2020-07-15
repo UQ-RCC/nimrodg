@@ -796,6 +796,8 @@ public class Master implements MessageQueueListener, AutoCloseable {
 			for(int i = 0; i < num; ++i) {
 				DefaultAgentState as = new DefaultAgentState();
 				as.setUUID(uuids[i]);
+				/* FIXME: Generate this properly. */
+				as.setSecretKey(UUID.randomUUID().toString().replace("-", ""));
 				agentInfo[i] = registerAgent(as, res, Optional.empty(), true);
 			}
 
