@@ -24,7 +24,6 @@ import java.time.Instant;
 import java.util.UUID;
 import javax.json.JsonObject;
 
-
 public interface AgentState {
 
 	Agent.State getState();
@@ -61,7 +60,7 @@ public interface AgentState {
 	/**
 	 * Get the Unix timestamp at which this agent should be expired.
 	 *
-	 * @return The Unix timestamp at which this agent should be expired. If no expiry, returns {@link Instant.MAX}
+	 * @return The Unix timestamp at which this agent should be expired. If no expiry, returns {@link Instant#MAX}
 	 */
 	Instant getExpiryTime();
 
