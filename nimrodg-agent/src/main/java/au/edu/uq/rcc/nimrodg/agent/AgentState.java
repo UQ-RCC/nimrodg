@@ -70,6 +70,10 @@ public interface AgentState {
 
 	void setExpired(boolean expired);
 
+	String getSecretKey();
+
+	void setSecretKey(String secretKey);
+
 	JsonObject getActuatorData();
 
 	void setActuatorData(JsonObject data);

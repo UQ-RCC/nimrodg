@@ -119,6 +119,10 @@ public class ReferenceAgent implements Agent {
 	}
 
 	public final void reset(UUID uuid) {
+		reset(uuid, null);
+	}
+
+	public final void reset(UUID uuid, String secretKey) {
 		State state = storage.getState();
 		if(state != State.SHUTDOWN && state != null) {
 			throw new IllegalStateException("Cannot reset, disconnect agent first.");
@@ -127,6 +131,7 @@ public class ReferenceAgent implements Agent {
 		storage.setState(null);
 		storage.setQueue(null);
 		storage.setUUID(uuid);
+		storage.setSecretKey(secretKey);
 		storage.setShutdownSignal(-1);
 		storage.setShutdownReason(Reason.HostSignal);
 		setState(State.WAITING_FOR_HELLO);

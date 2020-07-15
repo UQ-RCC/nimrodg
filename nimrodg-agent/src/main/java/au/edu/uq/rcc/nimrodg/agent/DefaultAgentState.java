@@ -36,6 +36,7 @@ public final class DefaultAgentState implements AgentState {
 	private Instant connectionTime;
 	private Instant expiryTime;
 	private boolean expired;
+	private String secretKey;
 	private JsonObject actuatorData;
 
 	public DefaultAgentState() {
@@ -57,6 +58,8 @@ public final class DefaultAgentState implements AgentState {
 		this.connectionTime = as.getConnectionTime();
 		this.expiryTime = as.getExpiryTime();
 		this.expired = as.getExpired();
+		this.secretKey = as.getSecretKey();
+		this.secretKey = as.getSecretKey();
 		this.actuatorData = as.getActuatorData();
 	}
 
@@ -157,6 +160,16 @@ public final class DefaultAgentState implements AgentState {
 	@Override
 	public void setExpired(boolean e) {
 		expired = e;
+	}
+
+	@Override
+	public String getSecretKey() {
+		return secretKey;
+	}
+
+	@Override
+	public void setSecretKey(String secretKey) {
+		this.secretKey = secretKey;
 	}
 
 	@Override

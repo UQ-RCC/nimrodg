@@ -39,10 +39,11 @@ public class TempAgent {
 	public final Instant lastHeardFrom;
 	public final Instant expiryTime;
 	public final boolean expired;
+	public final String secretKey;
 	public final Long location;
 	public final JsonObject actuatorData;
 
-	public TempAgent(long id, Agent.State state, String queue, UUID uuid, int shutdownSignal, AgentShutdown.Reason shutdownReason, Instant created, Instant connectedAt, Instant lastHeardFrom, Instant expiryTime, boolean expired, Long location, JsonObject actuatorData) {
+	public TempAgent(long id, Agent.State state, String queue, UUID uuid, int shutdownSignal, AgentShutdown.Reason shutdownReason, Instant created, Instant connectedAt, Instant lastHeardFrom, Instant expiryTime, boolean expired, String secretKey, Long location, JsonObject actuatorData) {
 		this.id = id;
 		this.state = state;
 		this.queue = queue;
@@ -54,6 +55,7 @@ public class TempAgent {
 		this.lastHeardFrom = lastHeardFrom;
 		this.expiryTime = expiryTime == null ? Instant.MAX : expiryTime;
 		this.expired = expired;
+		this.secretKey = secretKey;
 		this.location = location;
 		this.actuatorData = actuatorData;
 	}
@@ -162,6 +164,16 @@ public class TempAgent {
 
 		@Override
 		public void setExpired(boolean expired) {
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public String getSecretKey() {
+			return ta.secretKey;
+		}
+
+		@Override
+		public void setSecretKey(String secretKey) {
 			throw new UnsupportedOperationException();
 		}
 

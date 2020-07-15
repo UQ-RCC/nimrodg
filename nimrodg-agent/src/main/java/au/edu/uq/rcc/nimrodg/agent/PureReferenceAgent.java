@@ -117,6 +117,10 @@ public class PureReferenceAgent implements Agent {
 	}
 
 	public final void reset(UUID uuid) {
+		reset(uuid, null);
+	}
+
+	public final void reset(UUID uuid, String secretKey) {
 		if(state != State.SHUTDOWN && state != null) {
 			throw new IllegalStateException("Cannot reset, disconnect agent first.");
 		}

@@ -391,6 +391,7 @@ public class DBResourceHelpers extends DBBaseHelper {
 				DBUtils.getLongInstant(rs, "last_heard_from"),
 				DBUtils.getLongInstant(rs, "expiry_time"),
 				rs.getBoolean("expired"),
+				"abc123",
 				rs.getLong("location"),
 				DBUtils.getJSONObject(rs, "actuator_data")
 		);
