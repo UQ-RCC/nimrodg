@@ -27,51 +27,51 @@ import javax.json.JsonObject;
 
 public interface AgentState {
 
-	public Agent.State getState();
+	Agent.State getState();
 
-	public void setState(Agent.State state);
+	void setState(Agent.State state);
 
-	public String getQueue();
+	String getQueue();
 
-	public void setQueue(String q);
+	void setQueue(String q);
 
-	public UUID getUUID();
+	UUID getUUID();
 
-	public void setUUID(UUID uuid);
+	void setUUID(UUID uuid);
 
-	public int getShutdownSignal();
+	int getShutdownSignal();
 
-	public void setShutdownSignal(int s);
+	void setShutdownSignal(int s);
 
-	public AgentShutdown.Reason getShutdownReason();
+	AgentShutdown.Reason getShutdownReason();
 
-	public void setShutdownReason(AgentShutdown.Reason r);
+	void setShutdownReason(AgentShutdown.Reason r);
 
-	public Instant getCreationTime();
+	Instant getCreationTime();
 
 	// The time at which the state changed from WAITING_FOR_HELLO to READY
-	public Instant getConnectionTime();
+	Instant getConnectionTime();
 
-	public void setConnectionTime(Instant time);
+	void setConnectionTime(Instant time);
 
-	public Instant getLastHeardFrom();
+	Instant getLastHeardFrom();
 
-	public void setLastHeardFrom(Instant time);
+	void setLastHeardFrom(Instant time);
 
 	/**
 	 * Get the Unix timestamp at which this agent should be expired.
 	 *
 	 * @return The Unix timestamp at which this agent should be expired. If no expiry, returns {@link Instant.MAX}
 	 */
-	public Instant getExpiryTime();
+	Instant getExpiryTime();
 
-	public void setExpiryTime(Instant time);
+	void setExpiryTime(Instant time);
 
-	public boolean getExpired();
+	boolean getExpired();
 
-	public void setExpired(boolean expired);
+	void setExpired(boolean expired);
 
-	public JsonObject getActuatorData();
+	JsonObject getActuatorData();
 
 	void setActuatorData(JsonObject data);
 }
