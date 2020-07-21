@@ -78,16 +78,20 @@ public class LocalActuator implements Actuator {
 		final UUID uuid;
 		final Path workRoot;
 		final Optional<Path> outputPath;
+		final Path configPath;
+		final JsonObject config;
 		final ProcessBuilder builder;
 		Process process;
 		ProcessHandle handle;
 		CompletableFuture<Void> future;
 		LocalState state;
 
-		private LocalAgent(UUID uuid, Path workRoot, Optional<Path> outputPath, ProcessBuilder builder) {
+		private LocalAgent(UUID uuid, Path workRoot, Optional<Path> outputPath, Path configPath, JsonObject config, ProcessBuilder builder) {
 			this.uuid = uuid;
 			this.workRoot = workRoot;
 			this.outputPath = outputPath;
+			this.configPath = configPath;
+			this.config = config;
 			this.builder = builder;
 			this.process = null;
 			this.future = null;
@@ -103,7 +107,7 @@ public class LocalActuator implements Actuator {
 	private final AgentInfo agentInfo;
 	private final CaptureMode captureMode;
 	private final Map<UUID, LocalAgent> agents;
-	private final Path configPath;
+	private final JsonObject baseConfig;
 
 	private boolean isClosed;
 
@@ -137,8 +141,7 @@ public class LocalActuator implements Actuator {
 			certPath = Optional.empty();
 		}
 
-		this.configPath = tmpRoot.resolve("config.json");
-		byte[] config = ActuatorUtils.buildBaseAgentConfig(
+		this.baseConfig = ActuatorUtils.buildBaseAgentConfig(
 				uri,
 				ncfg.getAmqpRoutingKey(),
 				certPath.map(Path::toString),
@@ -146,9 +149,7 @@ public class LocalActuator implements Actuator {
 				true,
 				false,
 				Map.of()
-		).build().toString().getBytes(StandardCharsets.UTF_8);
-
-		Files.write(configPath, config);
+		).build();
 
 		this.isClosed = false;
 	}
@@ -159,29 +160,27 @@ public class LocalActuator implements Actuator {
 	}
 
 	private LocalAgent[] buildAgentInfo(UUID[] uuids) throws IOException {
-		List<String> commonArgs = new ArrayList<>();
-		commonArgs.add("--config");
-		commonArgs.add(configPath.toString());
-
 		Path tmpDir = Files.createTempDirectory("nimrodg-localact-");
 
 		LocalAgent[] agents = new LocalAgent[uuids.length];
 		for(int i = 0; i < uuids.length; ++i) {
-			List<String> agentArgs = new ArrayList<>();
-			agentArgs.add(agentInfo.getPath());
-
-			agentArgs.add("--uuid");
-			agentArgs.add(uuids[i].toString());
-
-			agentArgs.addAll(commonArgs);
-
 			Path workRoot = tmpDir.resolve(uuids[i].toString());
-			agentArgs.add("--work-root");
-			agentArgs.add(workRoot.toString());
+
+			JsonObject config = Json.createObjectBuilder(baseConfig)
+					.add("uuid", uuids[i].toString())
+					.add("work_root", workRoot.toString())
+					.build();
+
+			Path configPath = Files.write(
+					tmpRoot.resolve("config-" + uuids[i].toString() + ".json"),
+					config.toString().getBytes(StandardCharsets.UTF_8)
+			);
 
 			Optional<Path> outputPath = Optional.empty();
 
-			ProcessBuilder pb = new ProcessBuilder(agentArgs);
+			ProcessBuilder pb = new ProcessBuilder(List.of(
+					agentInfo.getPath(), "--config", configPath.toString()
+			));
 			if(captureMode == CaptureMode.OFF) {
 				pb.redirectOutput(ProcessBuilder.Redirect.DISCARD);
 			} else if(captureMode == CaptureMode.INHERIT) {
@@ -199,7 +198,7 @@ public class LocalActuator implements Actuator {
 
 			pb.redirectErrorStream(true);
 
-			agents[i] = new LocalAgent(uuids[i], workRoot, outputPath, pb);
+			agents[i] = new LocalAgent(uuids[i], workRoot, outputPath, configPath, config, pb);
 		}
 
 		return agents;
@@ -319,6 +318,8 @@ public class LocalActuator implements Actuator {
 					.add("pid", la.handle.pid())
 					.add("work_root", la.workRoot.toString())
 					.add("output_path", la.outputPath.map(Path::toString).orElse(""))
+					.add("config_path", la.configPath.toString())
+					.add("config", la.config)
 					.build()
 			);
 			LOGGER.info("Launched agent {} with PID {}", la.uuid, la.handle.pid());
@@ -472,6 +473,16 @@ public class LocalActuator implements Actuator {
 			return AdoptStatus.Rejected;
 		}
 
+		JsonString jconfigpath = data.getJsonString("config_path");
+		if(jconfigpath == null) {
+			return AdoptStatus.Rejected;
+		}
+
+		JsonObject jconfig = data.getJsonObject("config");
+		if(jconfig == null) {
+			return AdoptStatus.Rejected;
+		}
+
 		Optional<Path> outputPath = Optional.ofNullable(data.getJsonString("output_path"))
 				.map(JsonString::getString)
 				.filter(s -> !s.isEmpty())
@@ -487,6 +498,8 @@ public class LocalActuator implements Actuator {
 				state.getUUID(),
 				Paths.get(jworkroot.getString()),
 				outputPath,
+				Paths.get(jconfigpath.getString()),
+				jconfig,
 				null
 		);
 
