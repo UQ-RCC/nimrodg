@@ -888,7 +888,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 	private class _AgentListener implements ReferenceAgent.AgentListener {
 
 		@Override
-		public void send(Agent agent, AgentMessage.Builder msg) throws IOException {
+		public void send(Agent agent, AgentMessage.Builder<?> msg) throws IOException {
 			amqp.sendMessage(agent.getQueue(), msg.build());
 		}
 
