@@ -134,6 +134,7 @@ CREATE TABLE nimrod_resource_agents(
 	expiry_time				INTEGER DEFAULT NULL CHECK(expiry_time >= created),
 	expired_at				INTEGER DEFAULT NULL CHECK(expired_at >= created),
 	expired					BOOLEAN NOT NULL DEFAULT FALSE,
+	secret_key				TEXT NOT NULL DEFAULT (LOWER(HEX(RANDOMBLOB(16)))),
 	location				INTEGER REFERENCES nimrod_resources(id) ON DELETE CASCADE,
 	actuator_data			TEXT
 );

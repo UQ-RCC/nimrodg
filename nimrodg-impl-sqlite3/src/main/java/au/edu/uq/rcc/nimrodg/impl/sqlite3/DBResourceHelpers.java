@@ -99,8 +99,8 @@ public class DBResourceHelpers extends DBBaseHelper {
 		this.qGetAgentsOnResource = prepareStatement("SELECT * FROM nimrod_resource_agents WHERE location = ? AND expired = FALSE");
 		this.qAddAgent = prepareStatement("INSERT INTO nimrod_resource_agents(\n"
 				+ "	state, queue, agent_uuid, shutdown_signal, shutdown_reason,\n"
-				+ "	expiry_time, location, actuator_data\n"
-				+ ") VALUES(?, ?, ?, ?, ?, ?, ?, ?)", true);
+				+ "	expiry_time, secret_key, location, actuator_data\n"
+				+ ") VALUES(?, ?, ?, ?, ?, ?, COALESCE(?, LOWER(HEX(RANDOMBLOB(16)))), ?, ?)", true);
 		this.qUpdateAgent = prepareStatement("UPDATE nimrod_resource_agents SET state = ?, queue = ?, shutdown_signal = ?, shutdown_reason = ?, connected_at = ?, last_heard_from = ?, expiry_time = ?, expired = ?, actuator_data = ? WHERE agent_uuid = ?");
 	}
 
@@ -289,12 +289,13 @@ public class DBResourceHelpers extends DBBaseHelper {
 		qAddAgent.setInt(4, agent.getShutdownSignal());
 		qAddAgent.setString(5, AgentShutdown.reasonToString(agent.getShutdownReason()));
 		DBUtils.setLongInstant(qAddAgent, 6, agent.getExpiryTime());
-		qAddAgent.setLong(7, resId);
+		qAddAgent.setString(7, agent.getSecretKey());
+		qAddAgent.setLong(8, resId);
 		JsonObject data = agent.getActuatorData();
 		if(data == null) {
-			qAddAgent.setString(8, null);
+			qAddAgent.setString(9, null);
 		} else {
-			qAddAgent.setString(8, data.toString());
+			qAddAgent.setString(9, data.toString());
 		}
 
 		if(qAddAgent.executeUpdate() == 0) {
@@ -391,7 +392,7 @@ public class DBResourceHelpers extends DBBaseHelper {
 				DBUtils.getLongInstant(rs, "last_heard_from"),
 				DBUtils.getLongInstant(rs, "expiry_time"),
 				rs.getBoolean("expired"),
-				"abc123",
+				rs.getString("secret_key"),
 				rs.getLong("location"),
 				DBUtils.getJSONObject(rs, "actuator_data")
 		);
