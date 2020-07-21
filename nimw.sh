@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # A wrapper to invoke nimrod normally via gradle
 
