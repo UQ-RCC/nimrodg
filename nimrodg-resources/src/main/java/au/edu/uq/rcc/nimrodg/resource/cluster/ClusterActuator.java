@@ -34,6 +34,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -49,6 +50,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.json.Json;
 import javax.json.JsonNumber;
 import javax.json.JsonObject;
@@ -60,6 +62,7 @@ public abstract class ClusterActuator<C extends ClusterConfig> extends POSIXActu
 	protected static class TempBatch {
 
 		public final UUID batchUuid;
+		public final String batchDir;
 		public final String scriptPath;
 		public final String script;
 		public final String stdoutPath;
@@ -67,9 +70,12 @@ public abstract class ClusterActuator<C extends ClusterConfig> extends POSIXActu
 		public final int from;
 		public final int to;
 		public final UUID[] uuids;
+		public final String[] configPath;
+		public final JsonObject[] config;
 
-		TempBatch(UUID batchUuid, String scriptPath, String script, String stdoutPath, String stderrPath, int from, int to, UUID[] uuids) {
+		TempBatch(UUID batchUuid, String batchDir, String scriptPath, String script, String stdoutPath, String stderrPath, int from, int to, UUID[] uuids, String[] configPath, JsonObject[] config) {
 			this.batchUuid = batchUuid;
+			this.batchDir = batchDir;
 			this.scriptPath = scriptPath;
 			this.script = script;
 			this.stdoutPath = stdoutPath;
@@ -77,17 +83,22 @@ public abstract class ClusterActuator<C extends ClusterConfig> extends POSIXActu
 			this.from = from;
 			this.to = to;
 			this.uuids = uuids;
+			this.configPath = configPath;
+			this.config = config;
 		}
 	}
 
 	protected static final class Batch {
-
 		final String jobId;
+		final UUID uuid;
+		final String batchDir;
 		final LaunchResult[] results;
 		final UUID[] uuids;
 
-		Batch(String jobId, int size) {
+		Batch(String jobId, UUID uuid, String batchDir, int size) {
 			this.jobId = jobId;
+			this.uuid = uuid;
+			this.batchDir = batchDir;
 			this.results = new LaunchResult[size];
 			this.uuids = new UUID[size];
 		}
@@ -96,13 +107,13 @@ public abstract class ClusterActuator<C extends ClusterConfig> extends POSIXActu
 	private static final Logger LOGGER = LoggerFactory.getLogger(POSIXActuator.class);
 
 	private final ConcurrentHashMap<UUID, Batch> jobNames;
-	protected final String remoteConfigPath;
+	protected final JsonObject baseConfig;
 
 	public ClusterActuator(Operations ops, Resource node, NimrodURI amqpUri, Certificate[] certs, C cfg) throws IOException {
 		super(ops, node, amqpUri, certs, cfg);
 		this.jobNames = new ConcurrentHashMap<>();
 
-		byte[] config = ActuatorUtils.buildBaseAgentConfig(
+		baseConfig = ActuatorUtils.buildBaseAgentConfig(
 				amqpUri,
 				this.routingKey,
 				this.remoteCertPath,
@@ -110,13 +121,7 @@ public abstract class ClusterActuator<C extends ClusterConfig> extends POSIXActu
 				true,
 				false,
 				ActuatorUtils.resolveEnvironment(cfg.forwardedEnvironment)
-		).build().toString().getBytes(StandardCharsets.UTF_8);
-
-		/* Upload the configuration file, it's the same for all of them. */
-		try(RemoteShell shell = makeClient()) {
-			this.remoteConfigPath = ActuatorUtils.posixJoinPaths(this.nimrodHomeDir, "config.json");
-			shell.upload(this.remoteConfigPath, config, O600, Instant.now());
-		}
+		).build();
 	}
 
 	protected abstract String submitBatch(RemoteShell shell, TempBatch batch) throws IOException;
@@ -146,6 +151,10 @@ public abstract class ClusterActuator<C extends ClusterConfig> extends POSIXActu
 		return uuids;
 	}
 
+	private static String buildConfigPath(String batchDir, UUID uuid) {
+		return ActuatorUtils.posixJoinPaths(batchDir, "config-" + uuid.toString() + ".json");
+	}
+
 	/**
 	 * Given a list of agent UUIDs, generate a list of batches to submit.
 	 *
@@ -161,17 +170,29 @@ public abstract class ClusterActuator<C extends ClusterConfig> extends POSIXActu
 			UUID[] agentUuids = Arrays.copyOfRange(uuids, launchIndex, launchIndex + batchSize);
 
 			UUID batchUuid = UUID.randomUUID();
-			String stdout = ActuatorUtils.posixJoinPaths(this.nimrodHomeDir, String.format("batch-%s.stdout.txt", batchUuid));
-			String stderr = ActuatorUtils.posixJoinPaths(this.nimrodHomeDir, String.format("batch-%s.stderr.txt", batchUuid));
-			String pbsPath = ActuatorUtils.posixJoinPaths(this.nimrodHomeDir, batchUuid.toString());
-			String pbsScript = buildSubmissionScript(batchUuid, agentUuids, stdout, stderr);
-			batches[i] = new TempBatch(batchUuid, pbsPath, pbsScript, stdout, stderr, launchIndex, launchIndex + batchSize, agentUuids);
+			String batchDir = ActuatorUtils.posixJoinPaths(this.nimrodHomeDir, "batch-" + batchUuid.toString());
+
+			String[] configPath = Arrays.stream(agentUuids)
+					.map(u -> buildConfigPath(batchDir, u))
+					.toArray(String[]::new);
+
+			JsonObject[] config = Arrays.stream(agentUuids)
+					.map(UUID::toString)
+					.map(u -> Json.createObjectBuilder(baseConfig).add("uuid", u).build())
+					.toArray(JsonObject[]::new);
+
+			String stdout = ActuatorUtils.posixJoinPaths(batchDir, "stdout.txt");
+			String stderr = ActuatorUtils.posixJoinPaths(batchDir, "stderr.txt");
+			String pbsPath = ActuatorUtils.posixJoinPaths(batchDir, "job.sh");
+			String pbsScript = buildSubmissionScript(batchUuid, agentUuids, configPath, stdout, stderr);
+
+			batches[i] = new TempBatch(batchUuid, batchDir, pbsPath, pbsScript, stdout, stderr, launchIndex, launchIndex + batchSize, agentUuids, configPath, config);
 			launchIndex = batches[i].to;
 		}
 		return batches;
 	}
 
-	protected abstract String buildSubmissionScript(UUID batchUuid, UUID[] agentUuids, String out, String err);
+	protected abstract String buildSubmissionScript(UUID batchUuid, UUID[] agentUuids, String[] configPaths, String out, String err);
 
 	@Override
 	public LaunchResult[] launchAgents(RemoteShell shell, UUID[] uuids) throws IOException {
@@ -184,15 +205,28 @@ public abstract class ClusterActuator<C extends ClusterConfig> extends POSIXActu
 		Instant utcNow = Instant.now(Clock.systemUTC());
 
 		for(TempBatch tb : batches) {
+			RemoteShell.CommandResult cr;
+
+			cr = shell.runCommand("mkdir", "-p", tb.batchDir);
+			if(cr.status != 0) {
+				throw new IOException("Unable to create batch directory");
+			}
+
 			shell.upload(tb.scriptPath, tb.script.getBytes(StandardCharsets.UTF_8), EnumSet.of(PosixFilePermission.OWNER_READ), utcNow);
+
+			for(int i = 0; i < tb.uuids.length; ++i) {
+				shell.upload(tb.configPath[i], tb.config[i].toString().getBytes(StandardCharsets.UTF_8), EnumSet.of(PosixFilePermission.OWNER_READ), utcNow);
+			}
 
 			String jobId;
 			try {
 				jobId = submitBatch(shell, tb);
-				Batch b = new Batch(jobId, tb.to - tb.from);
+				Batch b = new Batch(jobId, tb.batchUuid, tb.batchDir, tb.to - tb.from);
 				for(int i = 0; i < b.results.length; ++i) {
 					b.results[i] = new LaunchResult(node, null, null, Json.createObjectBuilder()
 							.add("batch_id", b.jobId)
+							.add("batch_uuid", b.uuid.toString())
+							.add("batch_dir", b.batchDir)
 							.add("batch_size", b.results.length)
 							.add("batch_index", i)
 							.build());
@@ -238,12 +272,20 @@ public abstract class ClusterActuator<C extends ClusterConfig> extends POSIXActu
 
 	@Override
 	protected final void close(RemoteShell shell) {
+		/*
+		 * Attempt to cleanup the config files as they may contain secrets.
+		 * Leave the rest for easier debugging.
+		 */
+		String[] args = Stream.concat(Stream.of("rm", "-f"), this.jobNames.values().stream()
+				.flatMap(b -> Arrays.stream(b.uuids)
+						.filter(Objects::nonNull) /* NB: Will happen if only a partial batch has been adopted. */
+						.map(u -> buildConfigPath(b.batchDir, u)))
+		).toArray(String[]::new);
+
 		try {
-			shell.runCommand("rm", "-f", this.remoteConfigPath);
+			shell.runCommand(args);
 		} catch(IOException e) {
-			if(LOGGER.isWarnEnabled()) {
-				LOGGER.warn(String.format("Unable to remove configuration file %s", this.remoteConfigPath), e);
-			}
+			LOGGER.warn("Unable to remove configuration files", e);
 		}
 
 		String[] jobs = jobNames.values().stream().map(b -> b.jobId).distinct().toArray(String[]::new);
@@ -286,6 +328,24 @@ public abstract class ClusterActuator<C extends ClusterConfig> extends POSIXActu
 			return AdoptStatus.Rejected;
 		}
 
+		JsonString jbatchuuid = data.getJsonString("batch_uuid");
+		if(jbatchuuid == null) {
+			return AdoptStatus.Rejected;
+		}
+
+		UUID batchUuid;
+
+		try {
+			batchUuid = UUID.fromString(jbatchuuid.getString());
+		} catch(IllegalArgumentException e) {
+			return AdoptStatus.Rejected;
+		}
+
+		JsonString jbatchdir = data.getJsonString("batch_dir");
+		if(jbatchdir == null) {
+			return AdoptStatus.Rejected;
+		}
+
 		JsonNumber jbatchsize = data.getJsonNumber("batch_size");
 		if(jbatchsize == null) {
 			return AdoptStatus.Rejected;
@@ -297,15 +357,24 @@ public abstract class ClusterActuator<C extends ClusterConfig> extends POSIXActu
 		}
 
 		String batchId = jbatchid.getString();
+		String batchDir = jbatchdir.getString();
 		int batchSize = jbatchsize.intValue();
 		int batchIndex = jbatchindex.intValue();
 
 		Batch batch = jobNames.get(state.getUUID());
 		if(batch == null) {
-			batch = new Batch(batchId, jbatchsize.intValue());
+			batch = new Batch(batchId, batchUuid, batchDir, batchSize);
 		}
 
 		if(!batch.jobId.equals(batchId)) {
+			return AdoptStatus.Rejected;
+		}
+
+		if(!batch.uuid.equals(batchUuid)) {
+			return AdoptStatus.Rejected;
+		}
+
+		if(!batch.batchDir.equals(batchDir)) {
 			return AdoptStatus.Rejected;
 		}
 

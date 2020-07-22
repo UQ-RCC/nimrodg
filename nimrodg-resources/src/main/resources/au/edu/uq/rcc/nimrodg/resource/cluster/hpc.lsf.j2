@@ -18,9 +18,8 @@ PIDS=""
 # Agent {{ i }}, UUID: {{ agent_uuids[i] }}
 ##
 {{ agent_binary|quote }} \
-	--uuid {{ agent_uuids[i]|quote }} \
-	--work-root ${TMPDIR} \
-	--config {{ config_path|quote }} &
+	--config {{ config_path[i]|quote }} \
+	--work-root ${TMPDIR} &
 PIDS="$PIDS $!"
 {% endfor %}
 

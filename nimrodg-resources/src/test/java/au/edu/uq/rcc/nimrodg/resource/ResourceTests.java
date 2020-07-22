@@ -242,10 +242,15 @@ public class ResourceTests {
 		}
 
 		@Override
-		protected String buildSubmissionScript(UUID batchUuid, UUID[] agentUuids, String out, String err) {
+		protected String buildSubmissionScript(UUID batchUuid, UUID[] agentUuids, String[] configPath, String out, String err) {
 			JsonArrayBuilder jab = Json.createArrayBuilder();
 			for(UUID agentUuid : agentUuids) {
 				jab.add(agentUuid.toString());
+			}
+
+			JsonArrayBuilder jab2 = Json.createArrayBuilder();
+			for(String p : configPath) {
+				jab2.add(p);
 			}
 
 			return Json.createObjectBuilder()
@@ -253,6 +258,7 @@ public class ResourceTests {
 					.add("out", out)
 					.add("err", err)
 					.add("agent_uuids", jab)
+					.add("config_paths", jab2)
 					.build().toString();
 		}
 

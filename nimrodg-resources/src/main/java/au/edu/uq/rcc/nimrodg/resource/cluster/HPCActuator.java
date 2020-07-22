@@ -56,7 +56,7 @@ public class HPCActuator extends ClusterActuator<HPCConfig> {
 	}
 
 	@Override
-	protected String buildSubmissionScript(UUID batchUuid, UUID[] agentUuids, String out, String err) {
+	protected String buildSubmissionScript(UUID batchUuid, UUID[] agentUuids, String[] configPath, String out, String err) {
 		Map<String, Object> agentVars = new HashMap<>();
 		agentVars.put("amqp_uri", uri.uri);
 		agentVars.put("amqp_routing_key", routingKey);
@@ -84,7 +84,7 @@ public class HPCActuator extends ClusterActuator<HPCConfig> {
 		vars.put("agent_binary", this.remoteAgentPath);
 		vars.put("agent_uuids", agentUuids);
 		vars.put("agent_args", agentVars);
-		vars.put("config_path", this.remoteConfigPath);
+		vars.put("config_path", configPath);
 		return jj.render(config.hpc.template, vars);
 	}
 
