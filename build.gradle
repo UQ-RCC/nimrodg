@@ -29,7 +29,7 @@ subprojects {
 
 	version = rootProject.description
 
-	sourceCompatibility = 10
+	sourceCompatibility = 11
 	[compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
 
 	repositories {
