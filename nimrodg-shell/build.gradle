@@ -14,3 +14,8 @@ dependencies {
 	testImplementation group: 'org.bouncycastle', name: 'bcpkix-jdk15on', version: '1.+'
 	testImplementation group: 'org.slf4j', name: 'slf4j-simple', version: SLF4J_VERSION
 }
+
+test {
+	systemProperty 'org.slf4j.simpleLogger.log.au.edu.uq.rcc.nimrodg.shell', 'trace'
+	systemProperty 'org.slf4j.simpleLogger.log.org.apache.sshd', 'info'
+}
