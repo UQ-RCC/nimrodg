@@ -298,7 +298,15 @@ public class OpenSSHClient implements RemoteShell {
             }
 
             int ret = p.exitValue();
-            if(ret != 0) {
+            if(ret == 255) {
+                /* There's special handling for this in runSsh(). */
+                return new CommandResult(
+                        "",
+                        ret,
+                        new String(stdout.readAllBytes(), StandardCharsets.UTF_8),
+                        new String(stderr.readAllBytes(), StandardCharsets.UTF_8)
+                );
+            } else if(ret != 0) {
                 throw new IOException(new String(stderr.readAllBytes(), StandardCharsets.UTF_8));
             }
 
