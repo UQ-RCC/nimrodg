@@ -29,7 +29,7 @@ env:
     NIMRODG_TEST_PGDATABASE=nimrod
 
 script:
-  - ./gradlew --no-daemon check generateArtifacts
+  - ./gradlew --no-daemon --info check generateArtifacts
 
 deploy:
   provider: releases
