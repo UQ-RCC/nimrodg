@@ -72,12 +72,18 @@ public class ShellTests {
         }
 
         /* Use the on-disk key. */
-        try(OpenSSHClient client = new OpenSSHClient(uri, tmpDir.getRoot().toPath(), Optional.of(keyPath), Optional.of(openSsh), Map.of("StrictHostKeyChecking", "no"))) {
+        try(OpenSSHClient client = new OpenSSHClient(uri, tmpDir.getRoot().toPath(), Optional.of(keyPath), Optional.of(openSsh), Map.of(
+                "StrictHostKeyChecking", "no",
+                "UserKnownHostsFile", "/dev/null"
+        ))) {
             testClient(client);
         }
 
         /* Use the in-memory key. */
-        try(OpenSSHClient client = new OpenSSHClient(uri, tmpDir.getRoot().toPath(), Optional.of(memKeyPath), Optional.of(openSsh), Map.of("StrictHostKeyChecking", "no"))) {
+        try(OpenSSHClient client = new OpenSSHClient(uri, tmpDir.getRoot().toPath(), Optional.of(memKeyPath), Optional.of(openSsh), Map.of(
+                "StrictHostKeyChecking", "no",
+                "UserKnownHostsFile", "/dev/null"
+        ))) {
             testClient(client);
         }
     }
