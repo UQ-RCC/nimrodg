@@ -1,0 +1,1005 @@
+From b4f5a9e3a7d72e4ab0b4e9431fd32ab06ac6cd7c Mon Sep 17 00:00:00 2001
+From: Zane van Iperen <z.vaniperen@uq.edu.au>
+Date: Mon, 2 Dec 2019 00:13:11 +1000
+Subject: [PATCH] [skip ci] [wip] Experiment with passing environment variables
+ over SSH.
+
+This added functionality of sending environment variables over SSH.
+- For SshdClient, Mina's had inbuilt functionality for this
+- For OpenSSHClient, the SendEnv option was used.
+
+This was a dead end, as environment variables are limited by default and
+need the sysadmin to explicitly allow them. Keeping for posterity.
+---
+ .../rcc/nimrodg/resource/SSHResourceType.java | 67 ++++++++++++-------
+ .../nimrodg/resource/act/ActuatorUtils.java   | 61 +++++++++++++++++
+ .../nimrodg/resource/act/POSIXActuator.java   |  8 ++-
+ .../nimrodg/resource/act/RemoteActuator.java  | 16 ++---
+ .../resource/cluster/ClusterActuator.java     | 29 ++++++++
+ .../nimrodg/resource/cluster/HPCActuator.java |  2 +
+ .../cluster/LegacyClusterActuator.java        |  1 +
+ .../nimrodg/resource/ssh/ClientFactories.java | 23 +++++--
+ .../resource/ssh/TransportFactory.java        |  5 +-
+ .../rcc/nimrodg/resource/cluster/hpc.lsf.j2   | 19 +-----
+ .../nimrodg/resource/cluster/hpc.pbspro.j2    | 19 +-----
+ .../rcc/nimrodg/resource/cluster/hpc.slurm.j2 | 19 +-----
+ .../rcc/nimrodg/resource/resource_base.json   | 24 +++++--
+ .../edu/uq/rcc/nimrodg/shell/LocalShell.java  |  4 +-
+ .../uq/rcc/nimrodg/shell/OpenSSHClient.java   | 15 ++---
+ .../edu/uq/rcc/nimrodg/shell/RemoteShell.java |  6 +-
+ .../edu/uq/rcc/nimrodg/shell/ShellUtils.java  |  2 +-
+ .../edu/uq/rcc/nimrodg/shell/SshdClient.java  | 54 ++++++++-------
+ .../edu/uq/rcc/nimrodg/shell/ShellTests.java  |  8 ++-
+ 19 files changed, 239 insertions(+), 143 deletions(-)
+
+diff --git a/nimrodg-resources/src/main/java/au/edu/uq/rcc/nimrodg/resource/SSHResourceType.java b/nimrodg-resources/src/main/java/au/edu/uq/rcc/nimrodg/resource/SSHResourceType.java
+index d89dfd9b..8de54958 100644
+--- a/nimrodg-resources/src/main/java/au/edu/uq/rcc/nimrodg/resource/SSHResourceType.java
++++ b/nimrodg-resources/src/main/java/au/edu/uq/rcc/nimrodg/resource/SSHResourceType.java
+@@ -19,41 +19,44 @@
+  */
+ package au.edu.uq.rcc.nimrodg.resource;
+ 
+-import au.edu.uq.rcc.nimrodg.api.AgentInfo;
+-import au.edu.uq.rcc.nimrodg.api.NimrodURI;
+ import au.edu.uq.rcc.nimrodg.api.Actuator;
++import au.edu.uq.rcc.nimrodg.api.AgentInfo;
+ import au.edu.uq.rcc.nimrodg.api.AgentProvider;
++import au.edu.uq.rcc.nimrodg.api.NimrodURI;
++import au.edu.uq.rcc.nimrodg.api.Resource;
+ import au.edu.uq.rcc.nimrodg.resource.act.ActuatorUtils;
+ import au.edu.uq.rcc.nimrodg.resource.ssh.ClientFactories;
+ import au.edu.uq.rcc.nimrodg.resource.ssh.SystemInformation;
++import au.edu.uq.rcc.nimrodg.resource.ssh.TransportFactory;
++import au.edu.uq.rcc.nimrodg.shell.RemoteShell;
++import au.edu.uq.rcc.nimrodg.shell.ShellUtils;
++import net.sourceforge.argparse4j.impl.Arguments;
++import net.sourceforge.argparse4j.inf.ArgumentParser;
++import net.sourceforge.argparse4j.inf.FeatureControl;
++import net.sourceforge.argparse4j.inf.Namespace;
++
++import javax.json.JsonObject;
++import javax.json.JsonObjectBuilder;
++import javax.json.JsonString;
++import javax.json.JsonStructure;
+ import java.io.IOException;
+ import java.io.PrintStream;
+ import java.net.URI;
++import java.nio.file.Files;
+ import java.nio.file.Path;
+ import java.nio.file.Paths;
++import java.nio.file.attribute.PosixFilePermission;
++import java.nio.file.attribute.PosixFilePermissions;
+ import java.security.GeneralSecurityException;
+ import java.security.PublicKey;
+ import java.security.cert.Certificate;
+ import java.util.ArrayList;
+-import java.util.List;
+-import javax.json.JsonObject;
+-import javax.json.JsonObjectBuilder;
+-import javax.json.JsonStructure;
+-
+-import au.edu.uq.rcc.nimrodg.shell.RemoteShell;
+-import au.edu.uq.rcc.nimrodg.shell.ShellUtils;
+-import net.sourceforge.argparse4j.inf.ArgumentParser;
+-import net.sourceforge.argparse4j.inf.Namespace;
+-import au.edu.uq.rcc.nimrodg.api.Resource;
+-import au.edu.uq.rcc.nimrodg.resource.ssh.TransportFactory;
+-import java.nio.file.Files;
+-import java.nio.file.attribute.PosixFilePermission;
+-import java.nio.file.attribute.PosixFilePermissions;
++import java.util.Collections;
+ import java.util.EnumSet;
++import java.util.List;
+ import java.util.Map;
+ import java.util.Optional;
+-import net.sourceforge.argparse4j.impl.Arguments;
+-import net.sourceforge.argparse4j.inf.FeatureControl;
++import java.util.stream.Collectors;
+ 
+ public abstract class SSHResourceType extends BaseResourceType {
+ 
+@@ -79,6 +82,7 @@ public abstract class SSHResourceType extends BaseResourceType {
+ 
+ 	@Override
+ 	protected boolean parseArguments(AgentProvider ap, Namespace ns, PrintStream out, PrintStream err, Path[] configDirs, JsonObjectBuilder jb) {
++		System.err.println(ns);
+ 		boolean valid = super.parseArguments(ap, ns, out, err, configDirs, jb);
+ 
+ 		boolean noValidatePrivateKey = ns.getBoolean("no_validate_private_key");
+@@ -139,12 +143,17 @@ public abstract class SSHResourceType extends BaseResourceType {
+ 			}
+ 		}
+ 
++		List<String> envs = ns.get("send_env");
++		if(envs == null) {
++			envs = new ArrayList<>();
++		}
+ 		TransportFactory.Config rawConfig = new TransportFactory.Config(
+ 				uri,
+ 				user,
+ 				hkk.map(k -> new PublicKey[]{k}).orElse(new PublicKey[0]),
+ 				keyFile,
+-				Optional.ofNullable(ns.getString("openssh_executable")).map(s -> Paths.get(s))
++				Optional.ofNullable(ns.getString("openssh_executable")).map(s -> Paths.get(s)),
++				envs
+ 		);
+ 
+ 		TransportFactory.Config cfg;
+@@ -171,7 +180,6 @@ public abstract class SSHResourceType extends BaseResourceType {
+ 
+ 		jb.add("agent_platform", platform);
+ 		jb.add("transport", tf.buildJsonConfiguration(cfg));
+-
+ 		return valid;
+ 	}
+ 
+@@ -234,6 +242,13 @@ public abstract class SSHResourceType extends BaseResourceType {
+ 				.help("Path to the OpenSSH executable. Ignored if not using OpenSSH transport.")
+ 				.setDefault("ssh");
+ 
++		parser.addArgument("--send-env")
++				.dest("send_env")
++				.type(String.class)
++				.help("Pass an environment variable through to agents spawned on the remote system. Can be specified multiple times.")
++				.required(false)
++				.action(Arguments.append());
++
+ 		/* Hidden argument mainly used for testing. Don't attempt to load the private key if set. */
+ 		parser.addArgument("--no-validate-private-key")
+ 				.dest("no_validate_private_key")
+@@ -312,7 +327,11 @@ public abstract class SSHResourceType extends BaseResourceType {
+ 			throw new IOException(errors.get(0));
+ 		}
+ 
+-		return createActuator(ops, node, amqpUri, certs, new SSHConfig(ai.get(), tf, transConfig.get()));
++//		List<String> envs = cfg.getJsonArray("environment_passthrough").stream()
++//				.map(js -> ((JsonString)js).getString())
++//				.collect(Collectors.toList());
++
++		return createActuator(ops, node, amqpUri, certs, new SSHConfig(ai.get(), tf, transConfig.get(), List.of()));
+ 
+ 	}
+ 
+@@ -323,15 +342,17 @@ public abstract class SSHResourceType extends BaseResourceType {
+ 		public final AgentInfo agentInfo;
+ 		public final TransportFactory transportFactory;
+ 		public final TransportFactory.Config transportConfig;
++		public final List<String> environmentPassthrough;
+ 
+-		public SSHConfig(AgentInfo ai, TransportFactory transportFactory, TransportFactory.Config transportConfig) {
++		public SSHConfig(AgentInfo ai, TransportFactory transportFactory, TransportFactory.Config transportConfig, List<String> environmentPassthrough) {
+ 			this.agentInfo = ai;
+ 			this.transportFactory = transportFactory;
+ 			this.transportConfig = transportConfig;
++			this.environmentPassthrough = Collections.unmodifiableList(environmentPassthrough);
+ 		}
+ 
+ 		protected SSHConfig(SSHConfig cfg) {
+-			this(cfg.agentInfo, cfg.transportFactory, cfg.transportConfig);
++			this(cfg.agentInfo, cfg.transportFactory, cfg.transportConfig, cfg.environmentPassthrough);
+ 		}
+ 	}
+ }
+diff --git a/nimrodg-resources/src/main/java/au/edu/uq/rcc/nimrodg/resource/act/ActuatorUtils.java b/nimrodg-resources/src/main/java/au/edu/uq/rcc/nimrodg/resource/act/ActuatorUtils.java
+index 31bd3c2b..0a890c79 100644
+--- a/nimrodg-resources/src/main/java/au/edu/uq/rcc/nimrodg/resource/act/ActuatorUtils.java
++++ b/nimrodg-resources/src/main/java/au/edu/uq/rcc/nimrodg/resource/act/ActuatorUtils.java
+@@ -23,6 +23,7 @@ import au.edu.uq.rcc.nimrodg.api.Actuator;
+ import au.edu.uq.rcc.nimrodg.api.AgentInfo;
+ import au.edu.uq.rcc.nimrodg.api.AgentProvider;
+ import au.edu.uq.rcc.nimrodg.api.NimrodURI;
++
+ import java.io.ByteArrayInputStream;
+ import java.io.ByteArrayOutputStream;
+ import java.io.IOException;
+@@ -53,7 +54,9 @@ import java.util.Optional;
+ import java.util.UUID;
+ import java.util.function.Function;
+ import java.util.stream.Collectors;
++import javax.json.Json;
+ import javax.json.JsonObject;
++import javax.json.JsonObjectBuilder;
+ import javax.json.JsonStructure;
+ 
+ import au.edu.uq.rcc.nimrodg.shell.ShellUtils;
+@@ -196,6 +199,7 @@ public class ActuatorUtils {
+ 		return FilenameUtils.separatorsToUnix(path);
+ 	}
+ 
++	@Deprecated
+ 	public static ArrayList<String> posixBuildLaunchCommand(String agentPath, UUID uuid, String workRoot, NimrodURI uri, String routingKey, Optional<String> certPath, boolean b64cert, boolean keepCerts, boolean batch) {
+ 		ArrayList<String> args = new ArrayList<>();
+ 		args.add(agentPath);
+@@ -243,6 +247,63 @@ public class ActuatorUtils {
+ 		return args;
+ 	}
+ 
++	@Deprecated
++	public static JsonObject buildAgentConfig(UUID uuid, String workRoot, NimrodURI uri, String routingKey, Optional<String> certPath, boolean b64cert, boolean keepCerts, boolean batch) {
++		JsonObjectBuilder cfg = Json.createObjectBuilder()
++				.add("uuid", uuid.toString())
++				.add("work_root", workRoot)
++				.add("amqp", Json.createObjectBuilder()
++						.add("uri", uri.uri.toString())
++						.add("routing_key", routingKey)
++				).add("no_verify_peer", uri.noVerifyPeer)
++				.add("no_verify_host", uri.noVerifyHost);
++
++
++		certPath.ifPresent(s -> cfg.add("ca", Json.createObjectBuilder()
++				.add("cert", s)
++				.add("encoding", b64cert ? "base64" : "plain")
++				.add("no_delete", keepCerts)));
++
++		String scheme = uri.uri.getScheme().toLowerCase(Locale.ENGLISH);
++		if(!"amqps".equals(scheme) && !"amqp".equals(scheme)) {
++			throw new IllegalArgumentException("Invalid URI scheme");
++		}
++
++		cfg.add("batch", batch);
++		if(batch) {
++			cfg.add("output", "workroot");
++		}
++
++		return cfg.build();
++	}
++
++	public static JsonObjectBuilder buildBaseAgentConfig(NimrodURI uri, String routingKey, Optional<String> certPath, boolean b64cert, boolean keepCerts, boolean batch) {
++		JsonObjectBuilder cfg = Json.createObjectBuilder()
++				.add("amqp", Json.createObjectBuilder()
++						.add("uri", uri.uri.toString())
++						.add("routing_key", routingKey)
++				).add("no_verify_peer", uri.noVerifyPeer)
++				.add("no_verify_host", uri.noVerifyHost);
++
++
++		certPath.ifPresent(s -> cfg.add("ca", Json.createObjectBuilder()
++				.add("cert", s)
++				.add("encoding", b64cert ? "base64" : "plain")
++				.add("no_delete", keepCerts)));
++
++		String scheme = uri.uri.getScheme().toLowerCase(Locale.ENGLISH);
++		if(!"amqps".equals(scheme) && !"amqp".equals(scheme)) {
++			throw new IllegalArgumentException("Invalid URI scheme");
++		}
++
++		cfg.add("batch", batch);
++		if(batch) {
++			cfg.add("output", "workroot");
++		}
++
++		return cfg;
++	}
++
+ 	@FunctionalInterface
+ 	public interface ArgGenerator {
+ 
+diff --git a/nimrodg-resources/src/main/java/au/edu/uq/rcc/nimrodg/resource/act/POSIXActuator.java b/nimrodg-resources/src/main/java/au/edu/uq/rcc/nimrodg/resource/act/POSIXActuator.java
+index 3faa1f4e..91563959 100644
+--- a/nimrodg-resources/src/main/java/au/edu/uq/rcc/nimrodg/resource/act/POSIXActuator.java
++++ b/nimrodg-resources/src/main/java/au/edu/uq/rcc/nimrodg/resource/act/POSIXActuator.java
+@@ -28,6 +28,8 @@ import au.edu.uq.rcc.nimrodg.resource.SSHResourceType.SSHConfig;
+ import org.slf4j.Logger;
+ import org.slf4j.LoggerFactory;
+ 
++import javax.json.Json;
++import javax.json.JsonObjectBuilder;
+ import java.io.IOException;
+ import java.nio.file.Path;
+ import java.nio.file.Paths;
+@@ -47,7 +49,7 @@ public abstract class POSIXActuator<C extends SSHConfig> implements Actuator {
+ 
+ 	private static final Logger LOGGER = LoggerFactory.getLogger(POSIXActuator.class);
+ 
+-	private static final Pattern ENV_PATTERN = Pattern.compile("^([a-zA-Z0-9_]+)=(.*)$");
++	private static final Pattern ENV_PATTERN = Pattern.compile("^([A-Za-z_][A-Za-z0-9_+]*)=(.*)$");
+ 
+ 	protected final Operations ops;
+ 	protected final Resource node;
+@@ -84,7 +86,7 @@ public abstract class POSIXActuator<C extends SSHConfig> implements Actuator {
+ 			PosixFilePermission.OWNER_WRITE
+ 	);
+ 
+-	public POSIXActuator(Operations ops, Resource node, NimrodURI amqpUri, Certificate[] certs, C config) throws IOException {
++	protected POSIXActuator(Operations ops, Resource node, NimrodURI amqpUri, Certificate[] certs, C config) throws IOException {
+ 		this.ops = ops;
+ 		this.config = config;
+ 		this.node = node;
+@@ -179,7 +181,7 @@ public abstract class POSIXActuator<C extends SSHConfig> implements Actuator {
+ 		Max
+ 	}
+ 
+-	private RemoteShell makeClient() throws IOException {
++	protected final RemoteShell makeClient() throws IOException {
+ 		return config.transportFactory.create(config.transportConfig, Paths.get(ops.getConfig().getWorkDir()));
+ 	}
+ 
+diff --git a/nimrodg-resources/src/main/java/au/edu/uq/rcc/nimrodg/resource/act/RemoteActuator.java b/nimrodg-resources/src/main/java/au/edu/uq/rcc/nimrodg/resource/act/RemoteActuator.java
+index f31e5478..3a775947 100644
+--- a/nimrodg-resources/src/main/java/au/edu/uq/rcc/nimrodg/resource/act/RemoteActuator.java
++++ b/nimrodg-resources/src/main/java/au/edu/uq/rcc/nimrodg/resource/act/RemoteActuator.java
+@@ -27,6 +27,7 @@ import au.edu.uq.rcc.nimrodg.api.ResourceFullException;
+ import au.edu.uq.rcc.nimrodg.resource.SSHResourceType;
+ 
+ import java.io.IOException;
++import java.nio.charset.StandardCharsets;
+ import java.security.cert.Certificate;
+ import java.time.Instant;
+ import java.util.ArrayList;
+@@ -76,12 +77,14 @@ public class RemoteActuator extends POSIXActuator<SSHResourceType.SSHConfig> {
+ 	private final int limit;
+ 	private final String tmpDir;
+ 	private final Map<UUID, RemoteAgent> agents;
++	private final String[] agentCommand;
+ 
+ 	public RemoteActuator(Operations ops, Resource node, NimrodURI amqpUri, Certificate[] certs, int limit, String tmpDir, SSHResourceType.SSHConfig config) throws IOException {
+ 		super(ops, node, amqpUri, certs, config);
+ 		this.limit = limit;
+ 		this.tmpDir = tmpDir;
+ 		this.agents = new HashMap<>();
++		this.agentCommand = new String[]{this.remoteAgentPath, "-c", "-"};
+ 	}
+ 
+ 	@Override
+@@ -113,21 +116,18 @@ public class RemoteActuator extends POSIXActuator<SSHResourceType.SSHConfig> {
+ 				shell.upload(certPath.get(), bcert, O600, Instant.now());
+ 			}
+ 
+-			/* Build the agent launch command line */
+-			ArrayList<String> args = ActuatorUtils.posixBuildLaunchCommand(
+-					this.remoteAgentPath,
+-					uuids[i],
+-					workRoot,
++			/* Generate the agent configuration. It's dumped straight to stdin and doesn't touch the disk. */
++			byte[] input = ActuatorUtils.buildBaseAgentConfig(
+ 					uri,
+ 					routingKey,
+ 					certPath,
+ 					false,
+ 					false,
+ 					true
+-			);
++			).add("uuid", uuids[i].toString()).add("work_root", workRoot)
++					.build().toString().getBytes(StandardCharsets.UTF_8);
+ 
+-			String[] _args = args.stream().toArray(String[]::new);
+-			RemoteShell.CommandResult cr = shell.runCommand(_args);
++			RemoteShell.CommandResult cr = shell.runCommand(agentCommand, input);
+ 			if(cr.status != 0) {
+ 				results[i] = new LaunchResult(null, new IOException(String.format("Remote command execution failed: %s", cr.stderr.trim())));
+ 				continue;
+diff --git a/nimrodg-resources/src/main/java/au/edu/uq/rcc/nimrodg/resource/cluster/ClusterActuator.java b/nimrodg-resources/src/main/java/au/edu/uq/rcc/nimrodg/resource/cluster/ClusterActuator.java
+index aa1e2d23..dd59d6fe 100644
+--- a/nimrodg-resources/src/main/java/au/edu/uq/rcc/nimrodg/resource/cluster/ClusterActuator.java
++++ b/nimrodg-resources/src/main/java/au/edu/uq/rcc/nimrodg/resource/cluster/ClusterActuator.java
+@@ -42,6 +42,8 @@ import au.edu.uq.rcc.nimrodg.api.Resource;
+ import au.edu.uq.rcc.nimrodg.api.utils.NimrodUtils;
+ import au.edu.uq.rcc.nimrodg.resource.act.POSIXActuator;
+ import au.edu.uq.rcc.nimrodg.shell.RemoteShell;
++import org.slf4j.Logger;
++import org.slf4j.LoggerFactory;
+ 
+ import java.util.HashSet;
+ import java.util.List;
+@@ -91,11 +93,29 @@ public abstract class ClusterActuator<C extends ClusterConfig> extends POSIXActu
+ 		}
+ 	}
+ 
++	private static final Logger LOGGER = LoggerFactory.getLogger(POSIXActuator.class);
++
+ 	private final ConcurrentHashMap<UUID, Batch> jobNames;
++	protected final String remoteConfigPath;
+ 
+ 	public ClusterActuator(Operations ops, Resource node, NimrodURI amqpUri, Certificate[] certs, C cfg) throws IOException {
+ 		super(ops, node, amqpUri, certs, cfg);
+ 		this.jobNames = new ConcurrentHashMap<>();
++
++		byte[] config = ActuatorUtils.buildBaseAgentConfig(
++				amqpUri,
++				this.routingKey,
++				this.remoteCertPath,
++				false,
++				true,
++				false
++		).build().toString().getBytes(StandardCharsets.UTF_8);
++
++		/* Upload the configuration file, it's the same for all of them. */
++		try(RemoteShell shell = makeClient()) {
++			this.remoteConfigPath = ActuatorUtils.posixJoinPaths(this.nimrodHomeDir, "config.json");
++			shell.upload(this.remoteConfigPath, config, O600, Instant.now());
++		}
+ 	}
+ 
+ 	protected abstract String submitBatch(RemoteShell shell, TempBatch batch) throws IOException;
+@@ -161,6 +181,7 @@ public abstract class ClusterActuator<C extends ClusterConfig> extends POSIXActu
+ 
+ 		/* Now do things that can actually fail. */
+ 		Instant utcNow = Instant.now(Clock.systemUTC());
++
+ 		for(TempBatch tb : batches) {
+ 			shell.upload(tb.scriptPath, tb.script.getBytes(StandardCharsets.UTF_8), EnumSet.of(PosixFilePermission.OWNER_READ), utcNow);
+ 
+@@ -216,6 +237,14 @@ public abstract class ClusterActuator<C extends ClusterConfig> extends POSIXActu
+ 
+ 	@Override
+ 	protected final void close(RemoteShell shell) {
++		try {
++			shell.runCommand("rm", "-f", this.remoteConfigPath);
++		} catch(IOException e) {
++			if(LOGGER.isWarnEnabled()) {
++				LOGGER.warn(String.format("Unable to remove configuration file %s", this.remoteConfigPath), e);
++			}
++		}
++
+ 		String[] jobs = jobNames.values().stream().map(b -> b.jobId).distinct().toArray(String[]::new);
+ 		if(jobs.length > 0)
+ 			killJobs(shell, jobs);
+diff --git a/nimrodg-resources/src/main/java/au/edu/uq/rcc/nimrodg/resource/cluster/HPCActuator.java b/nimrodg-resources/src/main/java/au/edu/uq/rcc/nimrodg/resource/cluster/HPCActuator.java
+index c53b11d6..feef2872 100644
+--- a/nimrodg-resources/src/main/java/au/edu/uq/rcc/nimrodg/resource/cluster/HPCActuator.java
++++ b/nimrodg-resources/src/main/java/au/edu/uq/rcc/nimrodg/resource/cluster/HPCActuator.java
+@@ -84,6 +84,7 @@ public class HPCActuator extends ClusterActuator<HPCConfig> {
+ 		vars.put("agent_binary", this.remoteAgentPath);
+ 		vars.put("agent_uuids", agentUuids);
+ 		vars.put("agent_args", agentVars);
++		vars.put("config_path", this.remoteConfigPath);
+ 		return jj.render(config.hpc.template, vars);
+ 	}
+ 
+@@ -197,6 +198,7 @@ public class HPCActuator extends ClusterActuator<HPCConfig> {
+ 				"caenc", "b64",
+ 				"no_ca_delete", true
+ 		));
++		vars.put("config_path", "/path/to/remote/config.json");
+ 		return vars;
+ 	}
+ 
+diff --git a/nimrodg-resources/src/main/java/au/edu/uq/rcc/nimrodg/resource/cluster/LegacyClusterActuator.java b/nimrodg-resources/src/main/java/au/edu/uq/rcc/nimrodg/resource/cluster/LegacyClusterActuator.java
+index 8370cd7d..e8dc0522 100644
+--- a/nimrodg-resources/src/main/java/au/edu/uq/rcc/nimrodg/resource/cluster/LegacyClusterActuator.java
++++ b/nimrodg-resources/src/main/java/au/edu/uq/rcc/nimrodg/resource/cluster/LegacyClusterActuator.java
+@@ -9,6 +9,7 @@ import java.io.IOException;
+ import java.security.cert.Certificate;
+ import java.util.UUID;
+ 
++@Deprecated
+ public abstract class LegacyClusterActuator extends ClusterActuator<DialectConfig> {
+ 
+ 	protected LegacyClusterActuator(Operations ops, Resource node, NimrodURI amqpUri, Certificate[] certs, DialectConfig cfg) throws IOException {
+diff --git a/nimrodg-resources/src/main/java/au/edu/uq/rcc/nimrodg/resource/ssh/ClientFactories.java b/nimrodg-resources/src/main/java/au/edu/uq/rcc/nimrodg/resource/ssh/ClientFactories.java
+index 322788c8..0a0c8788 100644
+--- a/nimrodg-resources/src/main/java/au/edu/uq/rcc/nimrodg/resource/ssh/ClientFactories.java
++++ b/nimrodg-resources/src/main/java/au/edu/uq/rcc/nimrodg/resource/ssh/ClientFactories.java
+@@ -34,6 +34,7 @@ import java.security.PublicKey;
+ import java.util.List;
+ import java.util.Map;
+ import java.util.Optional;
++import java.util.stream.Collectors;
+ import javax.json.Json;
+ import javax.json.JsonArray;
+ import javax.json.JsonArrayBuilder;
+@@ -63,7 +64,8 @@ public class ClientFactories {
+ 					Optional.empty(),
+ 					new PublicKey[0],
+ 					Optional.empty(),
+-					Optional.empty()
++					Optional.empty(),
++					List.of()
+ 			));
+ 		}
+ 
+@@ -87,7 +89,7 @@ public class ClientFactories {
+ 				throw new IOException("No URI provided.");
+ 			}
+ 
+-			return new OpenSSHClient(cfg.uri.get(), workDir, cfg.privateKey, cfg.executablePath, Map.of());
++			return new OpenSSHClient(cfg.uri.get(), workDir, cfg.privateKey, cfg.executablePath, cfg.environmentPassthrough, Map.of());
+ 		}
+ 
+ 		@Override
+@@ -105,6 +107,7 @@ public class ClientFactories {
+ 					.add("uri", cfg.uri.map(URI::toString).orElse(""))
+ 					.add("keyfile", cfg.privateKey.map(p -> p.toUri().toString()).orElse(""))
+ 					.add("executable", cfg.executablePath.map(Path::toString).orElse(""))
++					.add("environment_passthrough", Json.createArrayBuilder(cfg.environmentPassthrough))
+ 					.build();
+ 		}
+ 
+@@ -131,7 +134,10 @@ public class ClientFactories {
+ 					ShellUtils.getUriUser(uri),
+ 					new PublicKey[0],
+ 					TransportFactory.getOrNullIfEmpty(cfg, "keyfile").map(s -> Paths.get(URI.create(s))),
+-					TransportFactory.getOrNullIfEmpty(cfg, "executable").map(s -> Paths.get(s))
++					TransportFactory.getOrNullIfEmpty(cfg, "executable").map(s -> Paths.get(s)),
++					cfg.getJsonArray("environment_passthrough").stream()
++							.map(jv -> ((JsonString)jv).getString())
++							.collect(Collectors.toList())
+ 			));
+ 		}
+ 	};
+@@ -152,7 +158,7 @@ public class ClientFactories {
+ 				throw new IOException("No private key provided");
+ 			}
+ 
+-			return new SshdClient(cfg.uri.get(), cfg.hostKeys, ActuatorUtils.readPEMKey(cfg.privateKey.get()));
++			return new SshdClient(cfg.uri.get(), cfg.hostKeys, ActuatorUtils.readPEMKey(cfg.privateKey.get()), cfg.environmentPassthrough);
+ 		}
+ 
+ 		@Override
+@@ -182,7 +188,8 @@ public class ClientFactories {
+ 					cfg.user,
+ 					hostKeys,
+ 					cfg.privateKey,
+-					Optional.empty()
++					Optional.empty(),
++					cfg.environmentPassthrough
+ 			);
+ 		}
+ 
+@@ -198,6 +205,7 @@ public class ClientFactories {
+ 					.add("uri", cfg.uri.map(URI::toString).orElse(""))
+ 					.add("keyfile", cfg.privateKey.map(p -> p.toUri().toString()).orElse(""))
+ 					.add("hostkeys", ja)
++					.add("environment_passthrough", Json.createArrayBuilder(cfg.environmentPassthrough))
+ 					.build();
+ 		}
+ 
+@@ -253,7 +261,10 @@ public class ClientFactories {
+ 					user,
+ 					hostKeys,
+ 					privateKey,
+-					Optional.empty()
++					Optional.empty(),
++					cfg.getJsonArray("environment_passthrough").stream()
++							.map(jv -> ((JsonString)jv).getString())
++							.collect(Collectors.toList())
+ 			));
+ 		}
+ 	};
+diff --git a/nimrodg-resources/src/main/java/au/edu/uq/rcc/nimrodg/resource/ssh/TransportFactory.java b/nimrodg-resources/src/main/java/au/edu/uq/rcc/nimrodg/resource/ssh/TransportFactory.java
+index cbab9ada..7b81da78 100644
+--- a/nimrodg-resources/src/main/java/au/edu/uq/rcc/nimrodg/resource/ssh/TransportFactory.java
++++ b/nimrodg-resources/src/main/java/au/edu/uq/rcc/nimrodg/resource/ssh/TransportFactory.java
+@@ -26,6 +26,7 @@ import java.net.URI;
+ import java.nio.file.Path;
+ import java.security.PublicKey;
+ import java.util.Arrays;
++import java.util.Collections;
+ import java.util.List;
+ import java.util.Optional;
+ import javax.json.JsonObject;
+@@ -41,13 +42,15 @@ public interface TransportFactory {
+ 		public final PublicKey[] hostKeys;
+ 		public final Optional<Path> privateKey;
+ 		public final Optional<Path> executablePath;
++		public final List<String> environmentPassthrough;
+ 
+-		public Config(Optional<URI> uri, Optional<String> user, PublicKey[] hostKeys, Optional<Path> privateKey, Optional<Path> executablePath) {
++		public Config(Optional<URI> uri, Optional<String> user, PublicKey[] hostKeys, Optional<Path> privateKey, Optional<Path> executablePath, List<String> environmentPassthrough) {
+ 			this.uri = uri;
+ 			this.user = user;
+ 			this.hostKeys = Arrays.copyOf(hostKeys, hostKeys.length);
+ 			this.privateKey = privateKey;
+ 			this.executablePath = executablePath;
++			this.environmentPassthrough = Collections.unmodifiableList(environmentPassthrough);
+ 		}
+ 
+ 	};
+diff --git a/nimrodg-resources/src/main/resources/au/edu/uq/rcc/nimrodg/resource/cluster/hpc.lsf.j2 b/nimrodg-resources/src/main/resources/au/edu/uq/rcc/nimrodg/resource/cluster/hpc.lsf.j2
+index 2544e833..f08d298d 100644
+--- a/nimrodg-resources/src/main/resources/au/edu/uq/rcc/nimrodg/resource/cluster/hpc.lsf.j2
++++ b/nimrodg-resources/src/main/resources/au/edu/uq/rcc/nimrodg/resource/cluster/hpc.lsf.j2
+@@ -19,25 +19,8 @@ PIDS=""
+ ##
+ {{ agent_binary|quote }} \
+ 	--uuid {{ agent_uuids[i]|quote }} \
+-	--amqp-uri {{ agent_args.amqp_uri|quote }} \
+-	--amqp-routing-key {{ agent_args.amqp_routing_key|quote }} \
+-	{% if agent_args.amqp_no_verify_peer|default(false) -%}
+-	--no-verify-peer \
+-	{% endif -%}
+-	{% if agent_args.amqp_no_verify_host|default(false) -%}
+-	--no-verify-host \
+-	{% endif -%}
+-	{% if agent_args.cacert is defined -%}
+-	--cacert {{ agent_args.cacert|quote }} \
+-	{% endif -%}
+-	{% if agent_args.caenc is defined -%}
+-	--caenc {{ agent_args.caenc|quote }} \
+-	{% endif -%}
+-	{%- if agent_args.no_ca_delete|default(false) -%}
+-	--no-ca-delete \
+-	{% endif -%}
+ 	--work-root ${TMPDIR} \
+-	--output workroot &
++	--config {{ config_path|quote }} &
+ PIDS="$PIDS $!"
+ {% endfor %}
+ 
+diff --git a/nimrodg-resources/src/main/resources/au/edu/uq/rcc/nimrodg/resource/cluster/hpc.pbspro.j2 b/nimrodg-resources/src/main/resources/au/edu/uq/rcc/nimrodg/resource/cluster/hpc.pbspro.j2
+index fb781f2a..4b75b4f6 100644
+--- a/nimrodg-resources/src/main/resources/au/edu/uq/rcc/nimrodg/resource/cluster/hpc.pbspro.j2
++++ b/nimrodg-resources/src/main/resources/au/edu/uq/rcc/nimrodg/resource/cluster/hpc.pbspro.j2
+@@ -20,25 +20,8 @@ PIDS=""
+ ##
+ {{ agent_binary|quote }} \
+ 	--uuid {{ agent_uuids[i]|quote }} \
+-	--amqp-uri {{ agent_args.amqp_uri|quote }} \
+-	--amqp-routing-key {{ agent_args.amqp_routing_key|quote }} \
+-	{% if agent_args.amqp_no_verify_peer|default(false) -%}
+-	--no-verify-peer \
+-	{% endif -%}
+-	{% if agent_args.amqp_no_verify_host|default(false) -%}
+-	--no-verify-host \
+-	{% endif -%}
+-	{% if agent_args.cacert is defined -%}
+-	--cacert {{ agent_args.cacert|quote }} \
+-	{% endif -%}
+-	{% if agent_args.caenc is defined -%}
+-	--caenc {{ agent_args.caenc|quote }} \
+-	{% endif -%}
+-	{%- if agent_args.no_ca_delete|default(false) -%}
+-	--no-ca-delete \
+-	{% endif -%}
+ 	--work-root ${TMPDIR} \
+-	--output workroot &
++	--config {{ config_path|quote }} &
+ PIDS="$PIDS $!"
+ {% endfor %}
+ 
+diff --git a/nimrodg-resources/src/main/resources/au/edu/uq/rcc/nimrodg/resource/cluster/hpc.slurm.j2 b/nimrodg-resources/src/main/resources/au/edu/uq/rcc/nimrodg/resource/cluster/hpc.slurm.j2
+index c532fc86..5a994c44 100644
+--- a/nimrodg-resources/src/main/resources/au/edu/uq/rcc/nimrodg/resource/cluster/hpc.slurm.j2
++++ b/nimrodg-resources/src/main/resources/au/edu/uq/rcc/nimrodg/resource/cluster/hpc.slurm.j2
+@@ -21,25 +21,8 @@ PIDS=""
+ ##
+ {{ agent_binary|quote }} \
+ 	--uuid {{ agent_uuids[i]|quote }} \
+-	--amqp-uri {{ agent_args.amqp_uri|quote }} \
+-	--amqp-routing-key {{ agent_args.amqp_routing_key|quote }} \
+-	{% if agent_args.amqp_no_verify_peer|default(false) -%}
+-	--no-verify-peer \
+-	{% endif -%}
+-	{% if agent_args.amqp_no_verify_host|default(false) -%}
+-	--no-verify-host \
+-	{% endif -%}
+-	{% if agent_args.cacert is defined -%}
+-	--cacert {{ agent_args.cacert|quote }} \
+-	{% endif -%}
+-	{% if agent_args.caenc is defined -%}
+-	--caenc {{ agent_args.caenc|quote }} \
+-	{% endif -%}
+-	{%- if agent_args.no_ca_delete|default(false) -%}
+-	--no-ca-delete \
+-	{% endif -%}
+ 	--work-root ${TMPDIR} \
+-	--output workroot &
++	--config {{ config_path|quote }} &
+ PIDS="$PIDS $!"
+ {% endfor %}
+ 
+diff --git a/nimrodg-resources/src/main/resources/au/edu/uq/rcc/nimrodg/resource/resource_base.json b/nimrodg-resources/src/main/resources/au/edu/uq/rcc/nimrodg/resource/resource_base.json
+index 54b2b74b..7f73303a 100644
+--- a/nimrodg-resources/src/main/resources/au/edu/uq/rcc/nimrodg/resource/resource_base.json
++++ b/nimrodg-resources/src/main/resources/au/edu/uq/rcc/nimrodg/resource/resource_base.json
+@@ -1,6 +1,10 @@
+ {
+ 	"$schema": "http://json-schema.org/draft-04/schema#",
+ 	"definitions": {
++		"environment_variable": {
++			"type": "string",
++			"pattern": "^[A-Za-z_][A-Za-z0-9_+]*$"
++		},
+ 		"ssh_resource": {
+ 			"type": "object",
+ 			"properties": {
+@@ -17,9 +21,13 @@
+                                     "type": "array",
+                                     "minItems": 1,
+                                     "items": { "type": "string" }
+-                                }
++                                },
++								"environment_passthrough": {
++									"type": "array",
++									"items": { "$ref":  "#/definitions/environment_variable" }
++								}
+ 							},
+-							"required": ["name", "uri", "keyfile", "hostkeys"]
++							"required": ["name", "uri", "keyfile", "hostkeys", "environment_passthrough"]
+ 						},
+ 						{
+ 							"type": "object",
+@@ -29,11 +37,16 @@
+ 								"keyfile": { "type": "string" },
+ 								"executable": { "type": "string" }
+ 							},
++							"environment_passthrough": {
++								"type": "array",
++								"items": { "$ref":  "#/definitions/environment_variable" }
++							},
+ 							"required": [
+ 								"name",
+ 								"uri",
+ 								"keyfile",
+-								"executable"
++								"executable",
++								"environment_passthrough"
+ 							]
+ 						},
+ 						{
+@@ -55,10 +68,7 @@
+ 					"type": "object",
+ 					"properties": {
+ 						"limit": { "type": "integer", "minimum": 1 },
+-						"tmpvar": {
+-							"type": "string",
+-							"pattern": "^([A-Z_][A-Z0-9+]*)$"
+-						},
++						"tmpvar": { "$ref":  "#/definitions/environment_variable" },
+ 						"max_batch_size": { "type": "integer", "minimum": 1 }
+ 					},
+ 					"required": ["limit", "tmpvar", "max_batch_size"]
+diff --git a/nimrodg-shell/src/main/java/au/edu/uq/rcc/nimrodg/shell/LocalShell.java b/nimrodg-shell/src/main/java/au/edu/uq/rcc/nimrodg/shell/LocalShell.java
+index ce3e2e69..f12a10cf 100644
+--- a/nimrodg-shell/src/main/java/au/edu/uq/rcc/nimrodg/shell/LocalShell.java
++++ b/nimrodg-shell/src/main/java/au/edu/uq/rcc/nimrodg/shell/LocalShell.java
+@@ -36,8 +36,8 @@ public class LocalShell implements RemoteShell {
+ 	private static final Logger LOGGER = LoggerFactory.getLogger(LocalShell.class);
+ 
+ 	@Override
+-	public CommandResult runCommand(String... args) throws IOException {
+-		return ShellUtils.doProcessOneshot(args, LOGGER);
++	public CommandResult runCommand(String[] args, byte[] stdin) throws IOException {
++		return ShellUtils.doProcessOneshot(args, stdin, LOGGER);
+ 	}
+ 
+ 	@Override
+diff --git a/nimrodg-shell/src/main/java/au/edu/uq/rcc/nimrodg/shell/OpenSSHClient.java b/nimrodg-shell/src/main/java/au/edu/uq/rcc/nimrodg/shell/OpenSSHClient.java
+index f07abdaa..67bf8312 100644
+--- a/nimrodg-shell/src/main/java/au/edu/uq/rcc/nimrodg/shell/OpenSSHClient.java
++++ b/nimrodg-shell/src/main/java/au/edu/uq/rcc/nimrodg/shell/OpenSSHClient.java
+@@ -59,7 +59,7 @@ public class OpenSSHClient implements RemoteShell {
+     private final String[] sshArgs;
+     private final String[] closeArgs;
+ 
+-    public OpenSSHClient(URI uri, Path workDir, Optional<Path> privateKey, Optional<Path> executable, Map<String, String> opts) throws IOException {
++    public OpenSSHClient(URI uri, Path workDir, Optional<Path> privateKey, Optional<Path> executable, List<String> environmentPassthrough, Map<String, String> opts) throws IOException {
+         this.uri = uri;
+         this.executable = executable.orElse(Paths.get("ssh"));
+ 
+@@ -74,7 +74,7 @@ public class OpenSSHClient implements RemoteShell {
+         }
+ 
+         /* Option order always takes precedence, so use ours first. */
+-        List<String> commonArgs = Stream.concat(Stream.of(
++        List<String> commonArgs = Stream.concat(Stream.concat(Stream.of(
+                 "-q",
+                 "-oPasswordAuthentication=no",
+                 "-oKbdInteractiveAuthentication=no",
+@@ -83,6 +83,7 @@ public class OpenSSHClient implements RemoteShell {
+                 "-oControlMaster=auto",
+                 "-oControlPersist=yes",
+                 String.format("-oControlPath=%s", socketPath)
++                ), environmentPassthrough.stream().map(e -> String.format("-oSendEnv=%s", e))
+         ), opts.entrySet().stream().map(e -> String.format("-o%s=%s", e.getKey(), e.getValue())))
+                 .collect(Collectors.toList());
+ 
+@@ -192,8 +193,8 @@ public class OpenSSHClient implements RemoteShell {
+     }
+ 
+     @Override
+-    public CommandResult runCommand(String... args) throws IOException {
+-        return runCommandInternal(args, new byte[0]);
++    public CommandResult runCommand(String[] args, byte[] stdin) throws IOException {
++        return this.runSsh(args, p -> ShellUtils.doProcessOneshot(p, args, stdin));
+     }
+ 
+     @FunctionalInterface
+@@ -235,10 +236,6 @@ public class OpenSSHClient implements RemoteShell {
+         return cr;
+     }
+ 
+-    private CommandResult runCommandInternal(String[] args, byte[] input) throws IOException {
+-        return this.runSsh(args, p -> ShellUtils.doProcessOneshot(p, args, input));
+-    }
+-
+     private String readNextLine(InputStream is) throws IOException {
+         try(ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+             for(int c; (c = is.read()) != '\n'; ) {
+@@ -350,7 +347,7 @@ public class OpenSSHClient implements RemoteShell {
+     }
+ 
+     public static void main(String[] args) throws IOException {
+-        try(OpenSSHClient c = new OpenSSHClient(URI.create("ssh://0.0.0.0"), Paths.get("/tmp"), Optional.empty(), Optional.empty(), Map.of())) {
++        try(OpenSSHClient c = new OpenSSHClient(URI.create("ssh://0.0.0.0"), Paths.get("/tmp"), Optional.empty(), Optional.empty(), List.of(), Map.of())) {
+ 
+             c.forwardLocal(8080, "192.168.0.1", 443);
+             c.forwardLocal(0, "192.168.0.1", 443);
+diff --git a/nimrodg-shell/src/main/java/au/edu/uq/rcc/nimrodg/shell/RemoteShell.java b/nimrodg-shell/src/main/java/au/edu/uq/rcc/nimrodg/shell/RemoteShell.java
+index 0c01e6f3..9c57b911 100644
+--- a/nimrodg-shell/src/main/java/au/edu/uq/rcc/nimrodg/shell/RemoteShell.java
++++ b/nimrodg-shell/src/main/java/au/edu/uq/rcc/nimrodg/shell/RemoteShell.java
+@@ -48,7 +48,11 @@ public interface RemoteShell extends Closeable {
+ 		}
+ 	}
+ 
+-	CommandResult runCommand(String... args) throws IOException;
++	default CommandResult runCommand(String... args) throws IOException {
++		return this.runCommand(args, new byte[0]);
++	}
++
++	CommandResult runCommand(String[] args, byte[] stdin) throws IOException;
+ 
+ 	void upload(String destPath, byte[] bytes, Collection<PosixFilePermission> perms, Instant timestamp) throws IOException;
+ 
+diff --git a/nimrodg-shell/src/main/java/au/edu/uq/rcc/nimrodg/shell/ShellUtils.java b/nimrodg-shell/src/main/java/au/edu/uq/rcc/nimrodg/shell/ShellUtils.java
+index c6729572..c3484c89 100644
+--- a/nimrodg-shell/src/main/java/au/edu/uq/rcc/nimrodg/shell/ShellUtils.java
++++ b/nimrodg-shell/src/main/java/au/edu/uq/rcc/nimrodg/shell/ShellUtils.java
+@@ -70,7 +70,7 @@ public class ShellUtils {
+         return doProcessOneshot(p, args, new byte[0]);
+     }
+ 
+-    private static RemoteShell.CommandResult doProcessOneshot(String[] args, byte[] input, Logger logger) throws IOException {
++    public static RemoteShell.CommandResult doProcessOneshot(String[] args, byte[] input, Logger logger) throws IOException {
+         ProcessBuilder pb = new ProcessBuilder(args);
+         pb.redirectOutput(ProcessBuilder.Redirect.PIPE);
+         pb.redirectError(ProcessBuilder.Redirect.PIPE);
+diff --git a/nimrodg-shell/src/main/java/au/edu/uq/rcc/nimrodg/shell/SshdClient.java b/nimrodg-shell/src/main/java/au/edu/uq/rcc/nimrodg/shell/SshdClient.java
+index c24d1489..566d5097 100644
+--- a/nimrodg-shell/src/main/java/au/edu/uq/rcc/nimrodg/shell/SshdClient.java
++++ b/nimrodg-shell/src/main/java/au/edu/uq/rcc/nimrodg/shell/SshdClient.java
+@@ -19,6 +19,23 @@
+  */
+ package au.edu.uq.rcc.nimrodg.shell;
+ 
++import org.apache.sshd.client.ClientBuilder;
++import org.apache.sshd.client.ClientFactoryManager;
++import org.apache.sshd.client.SshClient;
++import org.apache.sshd.client.channel.ChannelExec;
++import org.apache.sshd.client.channel.ClientChannelEvent;
++import org.apache.sshd.client.future.AuthFuture;
++import org.apache.sshd.client.future.ConnectFuture;
++import org.apache.sshd.client.future.OpenFuture;
++import org.apache.sshd.client.scp.ScpClient;
++import org.apache.sshd.client.scp.ScpClientCreator;
++import org.apache.sshd.client.session.ClientSession;
++import org.apache.sshd.common.scp.ScpTimestamp;
++import org.apache.sshd.common.signature.BuiltinSignatures;
++import org.slf4j.Logger;
++import org.slf4j.LoggerFactory;
++
++import java.io.ByteArrayInputStream;
+ import java.io.ByteArrayOutputStream;
+ import java.io.IOException;
+ import java.io.InterruptedIOException;
+@@ -32,27 +49,11 @@ import java.time.Instant;
+ import java.util.ArrayList;
+ import java.util.Arrays;
+ import java.util.Collection;
++import java.util.Collections;
+ import java.util.EnumSet;
+ import java.util.List;
+-import java.util.Set;
+ import java.util.concurrent.TimeUnit;
+ import java.util.concurrent.atomic.AtomicBoolean;
+-import java.util.stream.Collectors;
+-import org.apache.sshd.client.ClientBuilder;
+-import org.apache.sshd.client.ClientFactoryManager;
+-import org.apache.sshd.client.SshClient;
+-import org.apache.sshd.client.channel.ChannelExec;
+-import org.apache.sshd.client.channel.ClientChannelEvent;
+-import org.apache.sshd.client.future.AuthFuture;
+-import org.apache.sshd.client.future.ConnectFuture;
+-import org.apache.sshd.client.future.OpenFuture;
+-import org.apache.sshd.client.scp.ScpClient;
+-import org.apache.sshd.client.scp.ScpClientCreator;
+-import org.apache.sshd.client.session.ClientSession;
+-import org.apache.sshd.common.scp.ScpTimestamp;
+-import org.apache.sshd.common.signature.BuiltinSignatures;
+-import org.slf4j.Logger;
+-import org.slf4j.LoggerFactory;
+ 
+ public class SshdClient implements RemoteShell {
+ 
+@@ -64,17 +65,15 @@ public class SshdClient implements RemoteShell {
+ 	private final SshClient client;
+ 	private final ClientSession session;
+ 	private final ScpClient scp;
++	private final List<String> environmentPassthrough;
+ 
+ 	private boolean closed;
+ 
+-	public SshdClient(URI uri, PublicKey hostKey, KeyPair keyPair) throws IOException, IllegalArgumentException {
+-		this(uri, new PublicKey[]{hostKey}, keyPair);
+-	}
+-
+-	public SshdClient(URI uri, PublicKey[] hostKeys, KeyPair keyPair) throws IOException, IllegalArgumentException {
++	public SshdClient(URI uri, PublicKey[] hostKeys, KeyPair keyPair, List<String> environmentPassthrough) throws IOException, IllegalArgumentException {
+ 		this.uri = uri;
+ 		this.hostKeys = Arrays.copyOf(hostKeys, hostKeys.length);
+ 		this.keyPair = keyPair;
++		this.environmentPassthrough = Collections.unmodifiableList(environmentPassthrough);
+ 
+ 		String scheme = uri.getScheme();
+ 		if(!scheme.equals("ssh")) {
+@@ -159,8 +158,8 @@ public class SshdClient implements RemoteShell {
+ 	}
+ 
+ 	@Override
+-	public CommandResult runCommand(String... args) throws IOException {
+-		return runCommand(session, args);
++	public CommandResult runCommand(String[] args, byte[] stdin) throws IOException {
++		return runCommand(session, environmentPassthrough, args, stdin);
+ 	}
+ 
+ 	@Override
+@@ -174,19 +173,24 @@ public class SshdClient implements RemoteShell {
+ 		runCommand("chmod", Integer.toString(operms, 8), destPath);
+ 	}
+ 
+-	public static CommandResult runCommand(ClientSession ses, String... args) throws IOException {
++	public static CommandResult runCommand(ClientSession ses, List<String> environmentPassthrough, String[] args, byte[] stdin) throws IOException {
+ 		ByteArrayOutputStream baosout = new ByteArrayOutputStream();
+ 		ByteArrayOutputStream baoserr = new ByteArrayOutputStream();
++		ByteArrayInputStream baisin = new ByteArrayInputStream(stdin);
++
+ 		int ret;
+ 		String cmdline = ShellUtils.buildEscapedCommandLine(args);
+ 
+ 		LOGGER.trace("Executing command: {}", cmdline);
+ 
+ 		try(ChannelExec ch = ses.createExecChannel(cmdline)) {
++			environmentPassthrough.forEach(e -> ch.setEnv(e, System.getenv(e)));
+ 			ch.setEnv("LANG", "POSIX");
+ 			ch.setEnv("LC_ALL", "POSIX");
++
+ 			ch.setOut(baosout);
+ 			ch.setErr(baoserr);
++			ch.setIn(baisin);
+ 			OpenFuture of = ch.open();
+ 			if(!of.await()) {
+ 				throw new IOException(of.getException());
+diff --git a/nimrodg-shell/src/test/java/au/edu/uq/rcc/nimrodg/shell/ShellTests.java b/nimrodg-shell/src/test/java/au/edu/uq/rcc/nimrodg/shell/ShellTests.java
+index 5d842549..ac7a9c3a 100644
+--- a/nimrodg-shell/src/test/java/au/edu/uq/rcc/nimrodg/shell/ShellTests.java
++++ b/nimrodg-shell/src/test/java/au/edu/uq/rcc/nimrodg/shell/ShellTests.java
+@@ -33,8 +33,10 @@ import java.security.GeneralSecurityException;
+ import java.security.KeyPair;
+ import java.security.KeyPairGenerator;
+ import java.security.PrivateKey;
++import java.security.PublicKey;
+ import java.time.Instant;
+ import java.util.EnumSet;
++import java.util.List;
+ import java.util.Map;
+ import java.util.Optional;
+ 
+@@ -55,7 +57,7 @@ public class ShellTests {
+ 
+     @Test
+     public void sshdClientTest() throws IOException {
+-        try(SshdClient client = new SshdClient(uri, hostKey.getPublic(), keyPair)) {
++        try(SshdClient client = new SshdClient(uri, new PublicKey[]{hostKey.getPublic()}, keyPair, List.of())) {
+             testClient(client);
+         }
+     }
+@@ -70,12 +72,12 @@ public class ShellTests {
+         }
+ 
+         /* Use the on-disk key. */
+-        try(OpenSSHClient client = new OpenSSHClient(uri, tmpDir.getRoot().toPath(), Optional.of(keyPath), Optional.of(openSsh), Map.of("StrictHostKeyChecking", "no"))) {
++        try(OpenSSHClient client = new OpenSSHClient(uri, tmpDir.getRoot().toPath(), Optional.of(keyPath), Optional.of(openSsh), List.of(), Map.of("StrictHostKeyChecking", "no"))) {
+             testClient(client);
+         }
+ 
+         /* Use the in-memory key. */
+-        try(OpenSSHClient client = new OpenSSHClient(uri, tmpDir.getRoot().toPath(), Optional.of(memKeyPath), Optional.of(openSsh), Map.of("StrictHostKeyChecking", "no"))) {
++        try(OpenSSHClient client = new OpenSSHClient(uri, tmpDir.getRoot().toPath(), Optional.of(memKeyPath), Optional.of(openSsh), List.of(), Map.of("StrictHostKeyChecking", "no"))) {
+             testClient(client);
+         }
+     }
+-- 
+2.25.1
+
