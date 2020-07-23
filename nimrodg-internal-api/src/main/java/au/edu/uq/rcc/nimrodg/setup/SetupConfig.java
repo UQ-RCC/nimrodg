@@ -21,6 +21,7 @@ package au.edu.uq.rcc.nimrodg.setup;
 
 import au.edu.uq.rcc.nimrodg.api.MachinePair;
 
+import java.nio.file.Path;
 import java.util.Map;
 
 public final class SetupConfig {
@@ -29,12 +30,12 @@ public final class SetupConfig {
 	private final String storeDir;
 	private final AMQPConfig amqp;
 	private final TransferConfig tx;
-	private final Map<String, String> agents;
+	private final Map<String, Path> agents;
 	private final Map<MachinePair, String> agentMappings;
 	private final Map<String, String> resourceTypes;
 	private final Map<String, String> properties;
 
-	SetupConfig(String workDir, String storeDir, AMQPConfig amqp, TransferConfig tx, Map<String, String> agents, Map<MachinePair, String> agentMappings, Map<String, String> resourceTypes, Map<String, String> properties) {
+	SetupConfig(String workDir, String storeDir, AMQPConfig amqp, TransferConfig tx, Map<String, Path> agents, Map<MachinePair, String> agentMappings, Map<String, String> resourceTypes, Map<String, String> properties) {
 		this.workDir = workDir;
 		this.storeDir = storeDir;
 		this.amqp = amqp;
@@ -61,7 +62,7 @@ public final class SetupConfig {
 		return this.tx;
 	}
 
-	public Map<String, String> agents() {
+	public Map<String, Path> agents() {
 		return this.agents;
 	}
 

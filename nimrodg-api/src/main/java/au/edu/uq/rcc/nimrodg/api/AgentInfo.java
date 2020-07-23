@@ -19,13 +19,29 @@
  */
 package au.edu.uq.rcc.nimrodg.api;
 
+import java.nio.file.Path;
 import java.util.Set;
 
 public interface AgentInfo {
 
 	String getPlatformString();
 
-	String getPath();
+	/**
+	 * TODO: Will be removed next major version bump.
+	 *  Replaced with {@link AgentInfo#getAgentPath()}.
+	 */
+	@Deprecated
+	default String getPath() {
+		return this.getAgentPath().toString();
+	}
+
+	/**
+	 * TODO: Temporary replacement for {@link AgentInfo#getPath()}.
+	 *  Will be replaced with {@code Path AgentInfo#getPath()} next major
+	 *  version bump.
+	 */
+	@Deprecated
+	Path getAgentPath();
 
 	Set<MachinePair> posixMappings();
 }

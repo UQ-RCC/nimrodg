@@ -856,7 +856,7 @@ public abstract class APITests {
 
 
 		ap.lookupAgents().forEach((p, ai) -> {
-			b.agent(p, ai.getPath());
+			b.agent(p, ai.getAgentPath());
 			ai.posixMappings().forEach(e -> b.agentMapping(e, p));
 		});
 

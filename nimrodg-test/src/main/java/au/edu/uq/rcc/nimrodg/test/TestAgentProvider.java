@@ -25,8 +25,8 @@ public class TestAgentProvider implements AgentProvider {
 					}
 
 					@Override
-					public String getPath() {
-						return path.resolve(".agents").resolve("x86_64-pc-linux-musl").toString();
+					public Path getAgentPath() {
+						return path.resolve(".agents").resolve("x86_64-pc-linux-musl");
 					}
 
 					@Override
@@ -44,8 +44,8 @@ public class TestAgentProvider implements AgentProvider {
 					}
 
 					@Override
-					public String getPath() {
-						return path.resolve(".agents").resolve("i686-pc-linux-musl").toString();
+					public Path getAgentPath() {
+						return path.resolve(".agents").resolve("i686-pc-linux-musl");
 					}
 
 					@Override
@@ -60,8 +60,8 @@ public class TestAgentProvider implements AgentProvider {
 					}
 
 					@Override
-					public String getPath() {
-						return "/bin/true";
+					public Path getAgentPath() {
+						return path.resolve("bin").resolve("true");
 					}
 
 					@Override

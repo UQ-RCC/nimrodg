@@ -34,6 +34,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -173,11 +174,11 @@ public class SQLite3SetupAPI extends SQLUUUUU<SetupException> implements NimrodS
 
 		{
 			/* Agents */
-			Map<String, String> agents = cfg.agents();
+			Map<String, Path> agents = cfg.agents();
 			try(PreparedStatement ps = prepareAddAgent()) {
-				for(Map.Entry<String, String> a : agents.entrySet()) {
+				for(Map.Entry<String, Path> a : agents.entrySet()) {
 					ps.setString(1, a.getKey());
-					ps.setString(2, a.getValue());
+					ps.setString(2, a.getValue().toString());
 					ps.addBatch();
 				}
 				ps.executeBatch();
@@ -313,11 +314,11 @@ public class SQLite3SetupAPI extends SQLUUUUU<SetupException> implements NimrodS
 	}
 
 	@Override
-	public synchronized boolean addAgent(String platformString, String path) throws SetupException {
+	public synchronized boolean addAgent(String platformString, Path path) throws SetupException {
 		return this.runSQL(() -> {
 			try(PreparedStatement ps = prepareAddAgent()) {
 				ps.setString(1, platformString);
-				ps.setString(2, path);
+				ps.setString(2, path.toString());
 				return ps.executeUpdate() == 1;
 			}
 		});

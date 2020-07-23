@@ -28,10 +28,12 @@ import org.ini4j.Profile.Section;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public final class IniSetupConfig {
 
@@ -82,7 +84,8 @@ public final class IniSetupConfig {
 				.build()
 		);
 
-		builder.agents(IniUserConfig.requireSection(ini, "agents"));
+		builder.agents(IniUserConfig.requireSection(ini, "agents").entrySet().stream()
+				.collect(Collectors.toMap(Map.Entry::getKey, e -> Paths.get(e.getValue()))));
 
 		Pattern p = Pattern.compile("^([^,]+),([^,]+)$");
 		Section _agentmap = IniUserConfig.requireSection(ini, "agentmap");

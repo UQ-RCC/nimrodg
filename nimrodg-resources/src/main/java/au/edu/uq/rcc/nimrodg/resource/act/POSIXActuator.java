@@ -92,7 +92,7 @@ public abstract class POSIXActuator<C extends SSHConfig> implements Actuator {
 		CleanupStage cs = CleanupStage.Client;
 		try(RemoteShell client = makeClient()) {
 			try {
-				Path agentPath = Paths.get(config.agentInfo.getPath());
+				Path agentPath = config.agentInfo.getAgentPath();
 
 				remoteEnvironment = client.getEnvironment();
 

@@ -22,6 +22,8 @@ package au.edu.uq.rcc.nimrodg.impl.base.db;
 import au.edu.uq.rcc.nimrodg.api.AgentInfo;
 import au.edu.uq.rcc.nimrodg.api.MachinePair;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Set;
 
 public class TempAgentInfo {
@@ -56,8 +58,8 @@ public class TempAgentInfo {
 		}
 
 		@Override
-		public String getPath() {
-			return path;
+		public Path getAgentPath() {
+			return Paths.get(path);
 		}
 
 		@Override

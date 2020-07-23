@@ -150,7 +150,7 @@ public class Setup extends DefaultCLICommand {
 			}
 			case "addagent": {
 				try(NimrodSetupAPI api = fact.getSetupAPI(config)) {
-					api.addAgent(args.getString("platform_string"), args.getString("path"));
+					api.addAgent(args.getString("platform_string"), Paths.get(args.getString("path")));
 				}
 				return 0;
 			}

@@ -178,8 +178,9 @@ public class LocalActuator implements Actuator {
 			Optional<Path> outputPath = Optional.empty();
 
 			ProcessBuilder pb = new ProcessBuilder(List.of(
-					agentInfo.getPath(), "--config", configPath.toString()
+					agentInfo.getAgentPath().toString(), "--config", configPath.toString()
 			));
+
 			if(captureMode == CaptureMode.OFF) {
 				pb.redirectOutput(ProcessBuilder.Redirect.DISCARD);
 			} else if(captureMode == CaptureMode.INHERIT) {

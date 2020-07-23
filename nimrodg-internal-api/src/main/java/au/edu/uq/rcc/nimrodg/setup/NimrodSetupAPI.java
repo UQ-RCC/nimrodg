@@ -22,6 +22,8 @@ package au.edu.uq.rcc.nimrodg.setup;
 import au.edu.uq.rcc.nimrodg.api.NimrodException;
 import au.edu.uq.rcc.nimrodg.api.ResourceType;
 
+import java.nio.file.Path;
+
 public interface NimrodSetupAPI extends AutoCloseable {
 
 	class SetupException extends NimrodException {
@@ -72,7 +74,7 @@ public interface NimrodSetupAPI extends AutoCloseable {
 
 	boolean deleteResourceType(String name) throws SetupException;
 
-	boolean addAgent(String platformString, String path) throws SetupException;
+	boolean addAgent(String platformString, Path path) throws SetupException;
 
 	boolean deleteAgent(String platformString) throws SetupException;
 

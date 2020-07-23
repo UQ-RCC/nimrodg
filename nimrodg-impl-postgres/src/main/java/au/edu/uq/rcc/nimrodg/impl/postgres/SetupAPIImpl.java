@@ -26,6 +26,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -239,14 +240,14 @@ public class SetupAPIImpl implements NimrodSetupAPI {
 	}
 
 	@Override
-	public synchronized boolean addAgent(String platformString, String path) throws SetupException {
+	public synchronized boolean addAgent(String platformString, Path path) throws SetupException {
 		if(platformString == null || path == null) {
 			throw new IllegalArgumentException();
 		}
 
 		try {
 			qAddAgent.setString(1, platformString);
-			qAddAgent.setString(2, path);
+			qAddAgent.setString(2, path.toString());
 			return qAddAgent.executeUpdate() == 1;
 		} catch(SQLException e) {
 			throw new SetupException(e);

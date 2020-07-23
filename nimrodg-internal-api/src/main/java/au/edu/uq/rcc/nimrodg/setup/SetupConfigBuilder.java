@@ -22,6 +22,7 @@ package au.edu.uq.rcc.nimrodg.setup;
 import au.edu.uq.rcc.nimrodg.api.MachinePair;
 import au.edu.uq.rcc.nimrodg.api.ResourceType;
 
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -31,7 +32,7 @@ public class SetupConfigBuilder {
 	private String storeDir;
 	private AMQPConfig amqp;
 	private TransferConfig transfer;
-	private Map<String, String> agents;
+	private Map<String, Path> agents;
 	private Map<MachinePair, String> agentMappings;
 	private Map<String, String> resourceTypes;
 	private Map<String, String> properties;
@@ -63,7 +64,7 @@ public class SetupConfigBuilder {
 		return this;
 	}
 
-	public SetupConfigBuilder agent(String platform, String path) {
+	public SetupConfigBuilder agent(String platform, Path path) {
 		if(platform == null) {
 			return this;
 		}
@@ -77,7 +78,7 @@ public class SetupConfigBuilder {
 		return this;
 	}
 
-	public SetupConfigBuilder agents(Map<String, String> agents) {
+	public SetupConfigBuilder agents(Map<String, Path> agents) {
 		if(agents == null) {
 			return this;
 		}

@@ -196,7 +196,7 @@ public class ResourceTests {
 
 		/* Create placeholder files for the agents. */
 		for(AgentInfo ai : agentProvider.lookupAgents().values()) {
-			Path p = memFs.getPath(ai.getPath());
+			Path p = ai.getAgentPath();
 			Files.createDirectories(p.getParent());
 			Files.write(p, new byte[0]);
 		}
