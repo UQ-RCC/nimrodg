@@ -18,6 +18,7 @@ cache:
     - $TRAVIS_BUILD_DIR/nimrod/build/agents/
 
 before_script:
+  - rm -f $HOME/.ssh/known_hosts $HOME/.ssh/known_hosts.old
   - psql -c "CREATE ROLE nimrod LOGIN PASSWORD 'nimrod';" -U postgres
   - psql -c "CREATE DATABASE nimrod OWNER nimrod;" -U postgres
 
