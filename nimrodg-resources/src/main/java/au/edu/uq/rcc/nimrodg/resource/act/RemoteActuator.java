@@ -87,8 +87,8 @@ public class RemoteActuator extends POSIXActuator<SSHResourceType.SSHConfig> {
 	}
 
 	@Override
-	protected LaunchResult[] launchAgents(RemoteShell shell, UUID[] uuids) throws IOException {
-		LaunchResult[] results = new LaunchResult[uuids.length];
+	protected LaunchResult[] launchAgents(RemoteShell shell, Request[] requests) throws IOException {
+		LaunchResult[] results = new LaunchResult[requests.length];
 		LaunchResult failedResult = new LaunchResult(null, new NimrodException.ResourceFull(node));
 
 		if(agents.size() >= limit) {
@@ -97,14 +97,14 @@ public class RemoteActuator extends POSIXActuator<SSHResourceType.SSHConfig> {
 		}
 
 		//RemoteAgent[] _agents = buildAgentInfo(uuids);
-		for(int i = 0; i < uuids.length; ++i) {
+		for(int i = 0; i < requests.length; ++i) {
 			/* If we're full, fail the launch. */
 			if(agents.size() >= limit) {
 				results[i] = failedResult;
 				continue;
 			}
 
-			String workRoot = ActuatorUtils.posixJoinPaths(tmpDir, String.format("agent-%s", uuids[i]));
+			String workRoot = ActuatorUtils.posixJoinPaths(tmpDir, String.format("agent-%s", requests[i].uuid));
 
 			shell.runCommand("mkdir", "-p", workRoot);
 
@@ -124,7 +124,7 @@ public class RemoteActuator extends POSIXActuator<SSHResourceType.SSHConfig> {
 					false,
 					true,
 					ActuatorUtils.resolveEnvironment(this.config.forwardedEnvironment)
-			).add("uuid", uuids[i].toString()).add("work_root", workRoot)
+			).add("uuid", requests[i].uuid.toString()).add("work_root", workRoot)
 					.build().toString().getBytes(StandardCharsets.UTF_8);
 
 			RemoteShell.CommandResult cr = shell.runCommand(agentCommand, input);
@@ -145,7 +145,7 @@ public class RemoteActuator extends POSIXActuator<SSHResourceType.SSHConfig> {
 				continue;
 			}
 
-			agents.put(uuids[i], new RemoteAgent(uuids[i], pid, workRoot));
+			agents.put(requests[i].uuid, new RemoteAgent(requests[i].uuid, pid, workRoot));
 			results[i] = new LaunchResult(node, null, null, Json.createObjectBuilder()
 					.add("pid", pid)
 					.add("work_root", workRoot)
