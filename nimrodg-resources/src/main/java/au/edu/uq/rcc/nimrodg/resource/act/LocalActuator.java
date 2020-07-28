@@ -158,20 +158,20 @@ public class LocalActuator implements Actuator {
 		return node;
 	}
 
-	private LocalAgent[] buildAgentInfo(UUID[] uuids) throws IOException {
+	private LocalAgent[] buildAgentInfo(Request[] requests) throws IOException {
 		Path tmpDir = Files.createTempDirectory("nimrodg-localact-");
 
-		LocalAgent[] agents = new LocalAgent[uuids.length];
-		for(int i = 0; i < uuids.length; ++i) {
-			Path workRoot = tmpDir.resolve(uuids[i].toString());
+		LocalAgent[] agents = new LocalAgent[requests.length];
+		for(int i = 0; i < requests.length; ++i) {
+			Path workRoot = tmpDir.resolve(requests[i].uuid.toString());
 
 			JsonObject config = Json.createObjectBuilder(baseConfig)
-					.add("uuid", uuids[i].toString())
+					.add("uuid", requests[i].uuid.toString())
 					.add("work_root", workRoot.toString())
 					.build();
 
 			Path configPath = Files.write(
-					tmpRoot.resolve("config-" + uuids[i].toString() + ".json"),
+					tmpRoot.resolve("config-" + requests[i].uuid.toString() + ".json"),
 					config.toString().getBytes(StandardCharsets.UTF_8)
 			);
 
@@ -186,7 +186,7 @@ public class LocalActuator implements Actuator {
 			} else if(captureMode == CaptureMode.INHERIT) {
 				pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);
 			} else {
-				String fname = String.format("agent-%s.txt", uuids[i]);
+				String fname = String.format("agent-%s.txt", requests[i].uuid);
 				if(captureMode == CaptureMode.COPY) {
 					outputPath = Optional.of(tmpDir.resolve(fname));
 				} else {
@@ -198,7 +198,7 @@ public class LocalActuator implements Actuator {
 
 			pb.redirectErrorStream(true);
 
-			agents[i] = new LocalAgent(uuids[i], workRoot, outputPath, configPath, config, pb);
+			agents[i] = new LocalAgent(requests[i].uuid, workRoot, outputPath, configPath, config, pb);
 		}
 
 		return agents;
@@ -273,12 +273,12 @@ public class LocalActuator implements Actuator {
 	}
 
 	@Override
-	public LaunchResult[] launchAgents(UUID[] uuids) throws IOException {
+	public LaunchResult[] launchAgents(Request... requests) throws IOException {
 		if(isClosed) {
-			return ActuatorUtils.makeFailedLaunch(uuids, new IllegalStateException("actuator closed"));
+			return ActuatorUtils.makeFailedLaunch(requests, new IllegalStateException("actuator closed"));
 		}
 
-		LaunchResult[] results = new LaunchResult[uuids.length];
+		LaunchResult[] results = new LaunchResult[requests.length];
 		LaunchResult failedResult = new LaunchResult(null, new NimrodException.ResourceFull(node));
 
 		/* If we're chockers, just die */
@@ -289,7 +289,7 @@ public class LocalActuator implements Actuator {
 			}
 		}
 
-		LocalAgent[] _agents = buildAgentInfo(uuids);
+		LocalAgent[] _agents = buildAgentInfo(requests);
 
 		for(int i = 0; i < _agents.length; ++i) {
 			/* If we're full, fail the launch. */
