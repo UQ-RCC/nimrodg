@@ -158,10 +158,13 @@ public abstract class ClusterActuator<C extends ClusterConfig> extends POSIXActu
 	/**
 	 * Given a list of agent UUIDs, generate a list of batches to submit.
 	 *
-	 * @param uuids An array of agent UUIDs.
+	 * @param requests The list of agent requests.
+	 * @param uuids The list of agent UUIDs, for convenience.
 	 * @return A list of batches to submit.
 	 */
-	protected TempBatch[] calculateBatches(UUID[] uuids) {
+	protected TempBatch[] calculateBatches(Request[] requests, UUID[] uuids) {
+		assert requests.length == uuids.length;
+
 		int nBatches = (uuids.length / config.maxBatchSize) + ((uuids.length % config.maxBatchSize) >= 1 ? 1 : 0);
 		TempBatch[] batches = new TempBatch[nBatches];
 
@@ -176,9 +179,8 @@ public abstract class ClusterActuator<C extends ClusterConfig> extends POSIXActu
 					.map(u -> buildConfigPath(batchDir, u))
 					.toArray(String[]::new);
 
-			JsonObject[] config = Arrays.stream(agentUuids)
-					.map(UUID::toString)
-					.map(u -> Json.createObjectBuilder(baseConfig).add("uuid", u).build())
+			JsonObject[] config = Arrays.stream(requests)
+					.map(r -> Json.createObjectBuilder(baseConfig).add("uuid", r.uuid.toString()).build())
 					.toArray(JsonObject[]::new);
 
 			String stdout = ActuatorUtils.posixJoinPaths(batchDir, "stdout.txt");
@@ -195,11 +197,14 @@ public abstract class ClusterActuator<C extends ClusterConfig> extends POSIXActu
 	protected abstract String buildSubmissionScript(UUID batchUuid, UUID[] agentUuids, String[] configPaths, String out, String err);
 
 	@Override
-	public LaunchResult[] launchAgents(RemoteShell shell, UUID[] uuids) throws IOException {
-		LaunchResult[] lr = new LaunchResult[uuids.length];
+	public LaunchResult[] launchAgents(RemoteShell shell, Request[] requests) throws IOException {
+		LaunchResult[] lr = new LaunchResult[requests.length];
+		UUID[] uuids = Arrays.stream(requests)
+				.map(r -> r.uuid)
+				.toArray(UUID[]::new);
 		uuids = applyFullCap(uuids, lr);
 		/* Calculate each batch. */
-		TempBatch[] batches = calculateBatches(uuids);
+		TempBatch[] batches = calculateBatches(requests, uuids);
 
 		/* Now do things that can actually fail. */
 		Instant utcNow = Instant.now(Clock.systemUTC());
