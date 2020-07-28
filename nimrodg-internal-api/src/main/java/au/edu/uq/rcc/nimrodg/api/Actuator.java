@@ -24,6 +24,7 @@ import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.UUID;
 import javax.json.JsonObject;
 
@@ -75,12 +76,31 @@ public interface Actuator extends AutoCloseable {
 
 	}
 
+	class Request {
+		public final UUID uuid;
+
+		public Request(UUID uuid) {
+			this.uuid = uuid;
+		}
+
+		public static Request forAgent(UUID uuid) {
+			return new Request(uuid);
+		}
+	}
+
 	/**
 	 *
-	 * @param uuid The initial UUIDs of the agent.
+	 * @param requests The list of agent launch requests.
 	 * @throws IOException if the actuator is unable to communicate with the resource, or an IO error occurs.
 	 */
-	LaunchResult[] launchAgents(UUID[] uuid) throws IOException;
+	default LaunchResult[] launchAgents(Request... requests) throws IOException {
+		return launchAgents(Arrays.stream(requests).map(r -> r.uuid).toArray(UUID[]::new));
+	}
+
+	@Deprecated
+	default LaunchResult[] launchAgents(UUID[] uuids) throws IOException {
+		return launchAgents(Arrays.stream(uuids).map(Request::forAgent).toArray(Request[]::new));
+	}
 
 	/**
 	 * Force terminate an agent. This is only ever called as a last-ditch-effort after normal methods have failed.
