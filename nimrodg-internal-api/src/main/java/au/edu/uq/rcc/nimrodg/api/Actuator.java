@@ -93,14 +93,7 @@ public interface Actuator extends AutoCloseable {
 	 * @param requests The list of agent launch requests.
 	 * @throws IOException if the actuator is unable to communicate with the resource, or an IO error occurs.
 	 */
-	default LaunchResult[] launchAgents(Request... requests) throws IOException {
-		return launchAgents(Arrays.stream(requests).map(r -> r.uuid).toArray(UUID[]::new));
-	}
-
-	@Deprecated
-	default LaunchResult[] launchAgents(UUID[] uuids) throws IOException {
-		return launchAgents(Arrays.stream(uuids).map(Request::forAgent).toArray(Request[]::new));
-	}
+	LaunchResult[] launchAgents(Request... requests) throws IOException;
 
 	/**
 	 * Force terminate an agent. This is only ever called as a last-ditch-effort after normal methods have failed.
