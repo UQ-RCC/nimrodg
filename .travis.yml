@@ -32,6 +32,9 @@ env:
 script:
   - ./gradlew --no-daemon --info check generateArtifacts
 
+# See https://github.com/travis-ci/travis-ci/issues/8667
+install: true
+
 deploy:
   provider: releases
   api_key:
