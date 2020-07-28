@@ -537,14 +537,13 @@ public class ResourceTests {
 
 		MasterResourceType type = (MasterResourceType)testClusterResource.getType();
 
-		UUID[] uuids = new UUID[10];
-		for(int i = 0; i < uuids.length; ++i) {
-			uuids[i] = UUID.randomUUID();
+		Actuator.Request[] requests = new Actuator.Request[10];
+		for(int i = 0; i < requests.length; ++i) {
+			requests[i] = Actuator.Request.forAgent(UUID.randomUUID());
 		}
 
-
 		try(Actuator act = type.createActuator(ops, testClusterResource, nimrodConfig.getAmqpUri(), new Certificate[0])) {
-			Actuator.LaunchResult[] lrs = act.launchAgents(uuids);
+			Actuator.LaunchResult[] lrs = act.launchAgents(requests);
 
 			for(int i = 0; i < lrs.length; ++i) {
 				if(lrs[i].t != null) {
