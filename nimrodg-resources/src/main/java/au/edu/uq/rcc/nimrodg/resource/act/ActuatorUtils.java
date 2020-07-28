@@ -436,6 +436,13 @@ public class ActuatorUtils {
 		return op;
 	}
 
+	public static Actuator.LaunchResult[] makeFailedLaunch(Actuator.Request[] requests, Throwable t) {
+		Actuator.LaunchResult[] lrs = new Actuator.LaunchResult[requests.length];
+		Arrays.fill(lrs, new Actuator.LaunchResult(null, t));
+		return lrs;
+	}
+
+	@Deprecated
 	public static Actuator.LaunchResult[] makeFailedLaunch(UUID[] uuid, Throwable t) {
 		Actuator.LaunchResult[] lrs = new Actuator.LaunchResult[uuid.length];
 		Arrays.fill(lrs, new Actuator.LaunchResult(null, t));
