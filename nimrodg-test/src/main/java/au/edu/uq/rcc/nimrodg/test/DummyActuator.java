@@ -49,15 +49,15 @@ public class DummyActuator implements Actuator {
 	}
 
 	@Override
-	public LaunchResult[] launchAgents(UUID[] uuid) {
+	public LaunchResult[] launchAgents(Request... requests) {
 		if(closed) {
-			LaunchResult[] lrs = new LaunchResult[uuid.length];
+			LaunchResult[] lrs = new LaunchResult[requests.length];
 			Arrays.fill(lrs, new LaunchResult(null, new IllegalStateException("actuator closed")));
 			return lrs;
 		}
-		LaunchResult[] lr = new LaunchResult[uuid.length];
+		LaunchResult[] lr = new LaunchResult[requests.length];
 		for(int i = 0; i < lr.length; ++i) {
-			pendingAgents.add(uuid[i]);
+			pendingAgents.add(requests[i].uuid);
 			lr[i] = new LaunchResult(resource, null);
 		}
 

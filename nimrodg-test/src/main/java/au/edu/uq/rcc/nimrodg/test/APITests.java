@@ -411,12 +411,12 @@ public abstract class APITests {
 		 */
 		List<AgentHello> hellos;
 		try(DummyActuator act = createDummyActuator(rootResource, napi)) {
-			UUID[] uuids = new UUID[10];
-			for(int i = 0; i < uuids.length; ++i) {
-				uuids[i] = UUID.randomUUID();
+			Actuator.Request[] requests = new Actuator.Request[10];
+			for(int i = 0; i < requests.length; ++i) {
+				requests[i] = Actuator.Request.forAgent(UUID.randomUUID());
 			}
 
-			act.launchAgents(uuids);
+			act.launchAgents(requests);
 
 			hellos = act.simulateHellos();
 
@@ -430,7 +430,7 @@ public abstract class APITests {
 				as.setActuatorData(Json.createObjectBuilder()
 						.add("hashCode", as.hashCode())
 						.build());
-				agents[i].reset(uuids[i]);
+				agents[i].reset(requests[i].uuid);
 				agents[i].processMessage(hellos.get(i), Instant.now());
 
 				Assert.assertEquals(
@@ -443,7 +443,7 @@ public abstract class APITests {
 
 			for(int i = 0; i < agents.length; ++i) {
 				ReferenceAgent ra = agents[i];
-				AgentShutdown as = new AgentShutdown(uuids[i], AgentShutdown.Reason.HostSignal, 15);
+				AgentShutdown as = new AgentShutdown(requests[i].uuid, AgentShutdown.Reason.HostSignal, 15);
 				ra.processMessage(as, Instant.now());
 			}
 		}
@@ -467,7 +467,7 @@ public abstract class APITests {
 		try(DummyActuator act = createDummyActuator(rootResource, napi)) {
 			FakeAgentListener l = new FakeAgentListener(napi, act);
 
-			Actuator.LaunchResult lr = act.launchAgents(new UUID[]{uuid})[0];
+			Actuator.LaunchResult lr = act.launchAgents(Actuator.Request.forAgent(uuid))[0];
 			Assert.assertNull(lr.t);
 
 			DefaultAgentState as = new DefaultAgentState();
