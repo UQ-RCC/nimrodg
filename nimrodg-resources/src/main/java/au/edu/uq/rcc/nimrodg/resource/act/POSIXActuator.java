@@ -192,14 +192,7 @@ public abstract class POSIXActuator<C extends SSHConfig> implements Actuator {
 		}
 	}
 
-	protected LaunchResult[] launchAgents(RemoteShell shell, Request[] requests) throws IOException {
-		return launchAgents(shell, Arrays.stream(requests).map(r -> r.uuid).toArray(UUID[]::new));
-	}
-
-	@Deprecated
-	protected LaunchResult[] launchAgents(RemoteShell shell, UUID[] uuids) throws IOException {
-		return launchAgents(shell, Arrays.stream(uuids).map(Request::forAgent).toArray(Request[]::new));
-	}
+	protected abstract LaunchResult[] launchAgents(RemoteShell shell, Request[] requests) throws IOException;
 
 	@Override
 	public final Resource getResource() {
