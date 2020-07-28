@@ -29,8 +29,8 @@ public final class Orphanage implements Actuator {
 	}
 
 	@Override
-	public LaunchResult[] launchAgents(UUID[] uuids) {
-		LaunchResult[] lrs = new LaunchResult[uuids.length];
+	public LaunchResult[] launchAgents(Request... requests) {
+		LaunchResult[] lrs = new LaunchResult[requests.length];
 		Arrays.fill(lrs, new LaunchResult(null, new NimrodException.ResourceFull(resource)));
 		return lrs;
 	}

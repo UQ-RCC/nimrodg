@@ -57,6 +57,7 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -765,7 +766,9 @@ public class Master implements MessageQueueListener, AutoCloseable {
 			}
 
 			/* NB: Will not block. */
-			LaunchRequest rq = aaaaa.launchAgents(res, uuids);
+			LaunchRequest rq = aaaaa.launchAgents(res,
+					Arrays.stream(uuids).map(Actuator.Request::forAgent).toArray(Actuator.Request[]::new)
+			);
 
 			rq.launchResults.thenAcceptAsync(lrs -> runLater(
 					"launchAgents->handler",

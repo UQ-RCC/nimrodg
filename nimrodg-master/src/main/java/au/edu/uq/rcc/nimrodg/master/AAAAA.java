@@ -62,14 +62,14 @@ public abstract class AAAAA implements AutoCloseable {
 
 	public static final class LaunchRequest {
 
-		public final UUID[] uuids;
+		public final Actuator.Request[] requests;
 		public final Resource resource;
 		public final String rootPath;
 		public final CompletableFuture<Actuator> actuatorFuture;
 		public final CompletableFuture<LaunchResult[]> launchResults;
 
-		private LaunchRequest(UUID[] uuids, Resource resource, CompletableFuture<Actuator> actuatorFuture, CompletableFuture<LaunchResult[]> launchResults) {
-			this.uuids = uuids;
+		private LaunchRequest(Actuator.Request[] requests, Resource resource, CompletableFuture<Actuator> actuatorFuture, CompletableFuture<LaunchResult[]> launchResults) {
+			this.requests = requests;
 			this.resource = resource;
 			this.rootPath = this.resource.getPath();
 			this.actuatorFuture = actuatorFuture;
@@ -134,19 +134,19 @@ public abstract class AAAAA implements AutoCloseable {
 		return u;
 	}
 
-	public LaunchRequest launchAgents(Resource node, UUID[] uuids) {
+	public LaunchRequest launchAgents(Resource node, Actuator.Request... launchRequests) {
 		ActuatorState as = getOrLaunchActuatorInternal(node);
 
 		CompletableFuture<LaunchResult[]> launchAnchor = new CompletableFuture<>();
 
-		LaunchRequest rq = new LaunchRequest(uuids, node, as.launchFuture, launchAnchor.handleAsync((r, t) -> {
+		LaunchRequest rq = new LaunchRequest(launchRequests, node, as.launchFuture, launchAnchor.handleAsync((r, t) -> {
 			if(r != null) {
 				return r;
 			}
 
 			/* We've failed, so fail all the individual results, not the request. */
 			LaunchResult lr = new LaunchResult(node, t);
-			LaunchResult[] lrs = new LaunchResult[uuids.length];
+			LaunchResult[] lrs = new LaunchResult[launchRequests.length];
 			Arrays.fill(lrs, lr);
 			return lrs;
 		}, executor));
@@ -170,7 +170,7 @@ public abstract class AAAAA implements AutoCloseable {
 			try {
 				synchronized(a) {
 					/* NB: getNow() will never fail. */
-					launchResults = a.launchAgents(rq.uuids);
+					launchResults = a.launchAgents(rq.requests);
 				}
 			} catch(IOException | RuntimeException e) {
 				launchAnchor.completeExceptionally(e);
