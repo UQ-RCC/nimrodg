@@ -75,23 +75,6 @@ public interface Actuator extends AutoCloseable {
 
 	}
 
-	@Deprecated
-	default Resource launchAgent(UUID uuid) throws IOException {
-		LaunchResult lr = launchAgents(new UUID[]{uuid})[0];
-
-		if(lr.t != null) {
-			try {
-				throw lr.t;
-			} catch(IOException | RuntimeException e) {
-				throw e;
-			} catch(Throwable t) {
-				throw new RuntimeException(t);
-			}
-		}
-
-		return lr.node;
-	}
-
 	/**
 	 *
 	 * @param uuid The initial UUIDs of the agent.
