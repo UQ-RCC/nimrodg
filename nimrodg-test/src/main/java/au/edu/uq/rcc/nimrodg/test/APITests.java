@@ -454,7 +454,7 @@ public abstract class APITests {
 		try(DummyActuator act = createDummyActuator(rootResource, api)) {
 			Actuator.Request[] requests = new Actuator.Request[10];
 			for(int i = 0; i < requests.length; ++i) {
-				requests[i] = Actuator.Request.forAgent(UUID.randomUUID());
+				requests[i] = Actuator.Request.forAgent(UUID.randomUUID(), "secret");
 			}
 
 			act.launchAgents(requests);
@@ -512,7 +512,7 @@ public abstract class APITests {
 		try(DummyActuator act = createDummyActuator(rootResource, api)) {
 			FakeAgentListener l = new FakeAgentListener(api, act);
 
-			Actuator.LaunchResult lr = act.launchAgents(Actuator.Request.forAgent(uuid))[0];
+			Actuator.LaunchResult lr = act.launchAgents(Actuator.Request.forAgent(uuid, "secret"))[0];
 			Assert.assertNull(lr.t);
 
 			DefaultAgentState as = new DefaultAgentState();

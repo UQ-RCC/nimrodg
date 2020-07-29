@@ -167,6 +167,7 @@ public class LocalActuator implements Actuator {
 
 			JsonObject config = Json.createObjectBuilder(baseConfig)
 					.add("uuid", requests[i].uuid.toString())
+					.add("secret_key", requests[i].secretKey)
 					.add("work_root", workRoot.toString())
 					.build();
 

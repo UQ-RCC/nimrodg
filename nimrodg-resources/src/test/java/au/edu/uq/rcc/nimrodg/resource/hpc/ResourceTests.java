@@ -402,7 +402,7 @@ public class ResourceTests {
 
 		Actuator.Request[] requests = new Actuator.Request[10];
 		for(int i = 0; i < requests.length; ++i) {
-			requests[i] = Actuator.Request.forAgent(UUID.randomUUID());
+			requests[i] = Actuator.Request.forAgent(UUID.randomUUID(), "secret");
 		}
 
 		try(Actuator act = type.createActuator(ops, testClusterResource, nimrodConfig.getAmqpUri(), new Certificate[0])) {

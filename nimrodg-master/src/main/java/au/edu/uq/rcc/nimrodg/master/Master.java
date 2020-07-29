@@ -802,8 +802,9 @@ public class Master implements MessageQueueListener, AutoCloseable {
 			}
 
 			/* NB: Will not block. */
-			LaunchRequest rq = aaaaa.launchAgents(res,
-					Arrays.stream(uuids).map(Actuator.Request::forAgent).toArray(Actuator.Request[]::new)
+			LaunchRequest rq = aaaaa.launchAgents(res, Arrays.stream(agentInfo)
+					.map(ai -> Actuator.Request.forAgent(ai.uuid, ai.state.getSecretKey()))
+					.toArray(Actuator.Request[]::new)
 			);
 
 			rq.launchResults.thenAcceptAsync(lrs -> runLater(

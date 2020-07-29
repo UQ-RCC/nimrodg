@@ -124,7 +124,9 @@ public class RemoteActuator extends POSIXActuator<SSHResourceType.SSHConfig> {
 					false,
 					true,
 					ActuatorUtils.resolveEnvironment(this.config.forwardedEnvironment)
-			).add("uuid", requests[i].uuid.toString()).add("work_root", workRoot)
+			).add("uuid", requests[i].uuid.toString())
+					.add("secret_key", requests[i].secretKey)
+					.add("work_root", workRoot)
 					.build().toString().getBytes(StandardCharsets.UTF_8);
 
 			RemoteShell.CommandResult cr = shell.runCommand(agentCommand, input);

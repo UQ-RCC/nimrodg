@@ -263,7 +263,10 @@ public final class HPCActuator extends POSIXActuator<HPCConfig> {
 				.toArray(String[]::new);
 
 		JsonObject[] config = requests.stream()
-				.map(r -> Json.createObjectBuilder(baseConfig).add("uuid", r.uuid.toString()).build())
+				.map(r -> Json.createObjectBuilder(baseConfig)
+						.add("uuid", r.uuid.toString())
+						.add("secret_key", r.secretKey)
+						.build())
 				.toArray(JsonObject[]::new);
 
 		String stdout = ActuatorUtils.posixJoinPaths(batchDir, "stdout.txt");

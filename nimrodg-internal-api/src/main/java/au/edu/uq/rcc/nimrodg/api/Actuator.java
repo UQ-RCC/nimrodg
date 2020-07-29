@@ -78,13 +78,15 @@ public interface Actuator extends AutoCloseable {
 
 	class Request {
 		public final UUID uuid;
+		public final String secretKey;
 
-		public Request(UUID uuid) {
+		public Request(UUID uuid, String secretKey) {
 			this.uuid = uuid;
+			this.secretKey = secretKey;
 		}
 
-		public static Request forAgent(UUID uuid) {
-			return new Request(uuid);
+		public static Request forAgent(UUID uuid, String secretKey) {
+			return new Request(uuid, secretKey);
 		}
 	}
 
