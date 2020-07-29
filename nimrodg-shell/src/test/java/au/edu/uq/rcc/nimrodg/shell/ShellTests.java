@@ -18,6 +18,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
@@ -63,6 +64,22 @@ public class ShellTests {
         }
     }
 
+    private static Path findSsh() {
+        String path = System.getenv("PATH");
+        if(Objects.isNull(path)) {
+            return null;
+        }
+
+        for(String p : path.split(File.pathSeparator)) {
+            Path ssh = Paths.get(p).resolve("ssh");
+            if(Files.isExecutable(ssh)) {
+                return ssh;
+            }
+        }
+
+        return null;
+    }
+
     @Test
     public void opensshClientTest() throws IOException {
         String travis = System.getenv("TRAVIS");
@@ -72,9 +89,9 @@ public class ShellTests {
         }
 
         /* Only test OpenSSH if its available. */
-        Path openSsh = Paths.get("/usr/bin/ssh");
-        if(!Files.exists(openSsh)) {
-            System.err.printf("'%s' doesn't exist, skipping OpenSSH backend test...\n", openSsh);
+        Path openSsh = findSsh();
+        if(openSsh == null) {
+            System.err.println("Unable to find ssh binary, skipping...");
             return;
         }
 
