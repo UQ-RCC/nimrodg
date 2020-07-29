@@ -30,22 +30,15 @@ import javax.swing.table.AbstractTableModel;
 
 public class AgentStatusPanel extends javax.swing.JPanel {
 
-	private Agent m_Agent;
-
 	public AgentStatusPanel() {
 		initComponents();
 		m_JobsTable.getTableHeader().setReorderingAllowed(false);
 		m_JobsTable.setModel(new _TableModel());
-		setAgent(null);
+		this.update((Agent)null);
 	}
 
-	public final void setAgent(Agent agent) {
-		m_Agent = agent;
-		update();
-	}
-
-	public void update() {
-		if(m_Agent == null) {
+	public final void update(Agent agent) {
+		if(agent == null) {
 			m_QueueField.setText("");
 			m_ShutdownReasonField.setText("");
 			m_ShutdownSignalField.setText("");
@@ -54,12 +47,12 @@ public class AgentStatusPanel extends javax.swing.JPanel {
 			m_LastHeardFromField.setText("");
 			setJob(null);
 		} else {
-			m_QueueField.setText(stringOrEmpty(m_Agent.getQueue()));
-			m_ShutdownReasonField.setText(stringOrEmpty(m_Agent.getShutdownReason()));
-			m_ShutdownSignalField.setText(stringOrEmpty(m_Agent.getShutdownSignal()));
-			m_StateField.setText(stringOrEmpty(m_Agent.getState()));
-			m_UUIDField.setText(stringOrEmpty(m_Agent.getUUID()));
-			Instant ins = m_Agent.getLastHeardFrom();
+			m_QueueField.setText(stringOrEmpty(agent.getQueue()));
+			m_ShutdownReasonField.setText(stringOrEmpty(agent.getShutdownReason()));
+			m_ShutdownSignalField.setText(stringOrEmpty(agent.getShutdownSignal()));
+			m_StateField.setText(stringOrEmpty(agent.getState()));
+			m_UUIDField.setText(stringOrEmpty(agent.getUUID()));
+			Instant ins = agent.getLastHeardFrom();
 			if(ins == null) {
 				m_LastHeardFromField.setText("");
 			} else {
@@ -78,7 +71,7 @@ public class AgentStatusPanel extends javax.swing.JPanel {
 
 		for(int i = 0; i < job.numCommands; ++i) {
 			model.addInstance(new AgentUpdate.Builder()
-					.agentUuid(m_Agent.getUUID())
+					.agentUuid(UUID.randomUUID()) /* This doesn't matter here. */
 					.timestamp(Instant.now())
 					.jobUuid(UUID.randomUUID())
 					.commandResult(new AgentUpdate.CommandResult_(null, i, 0.0f, 0, "", 0))
@@ -89,14 +82,14 @@ public class AgentStatusPanel extends javax.swing.JPanel {
 
 	}
 
-	public void updateCommand(AgentUpdate au) {
+	public void updateCommand(Agent agent, AgentUpdate au) {
 		if(au == null) {
 			return;
 		}
 
 		_TableModel model = (_TableModel)m_JobsTable.getModel();
 		model.update(au);
-		update();
+		update(agent);
 	}
 
 	private static String stringOrEmpty(Object o) {

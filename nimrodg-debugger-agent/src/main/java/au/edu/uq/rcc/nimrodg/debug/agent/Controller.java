@@ -111,7 +111,6 @@ public class Controller {
 		m_AgentListener = new _AgentListener();
 
 		m_Agent = new ReferenceAgent(new DefaultAgentState(), m_AgentListener);
-		m_StatusPanel.setAgent(m_Agent);
 		m_MessageWindow = new MessageWindow();
 		m_Messages = new ArrayList<>();
 		m_MessageWindow.getMessagePanel().setMessages(m_Messages);
@@ -213,7 +212,7 @@ public class Controller {
 	}
 
 	private MessageQueueListener.MessageOperation handleAgentMessage(long tag, AMQPMessage amsg) throws IOException {
-		m_Messages.add(Message.create(amsg.body, true));
+		m_Messages.add(Message.create(amsg, true));
 		m_MessageWindow.getMessagePanel().refreshMessages();
 
 		AgentMessage msg = amsg.message;
@@ -255,7 +254,7 @@ public class Controller {
 
 	private void sendMessage(String key, AgentMessage.Builder<?> msg) throws IOException {
 		AMQPMessage amsg = m_AMQP.sendMessage(key, msg.timestamp(Instant.now()).build());
-		m_Messages.add(Message.create(amsg.body, false));
+		m_Messages.add(Message.create(amsg, false));
 		m_MessageWindow.getMessagePanel().refreshMessages();
 	}
 
@@ -271,7 +270,7 @@ public class Controller {
 		}
 
 		m_View.getAgentPanel().setState(newState);
-		m_StatusPanel.update();
+		m_StatusPanel.update(m_Agent);
 	}
 
 	private void onAgentJobSubmit(Agent agent, NetworkJob job) {
@@ -279,11 +278,11 @@ public class Controller {
 	}
 
 	private void onAgentJobUpdate(Agent agent, AgentUpdate au) {
-		m_StatusPanel.updateCommand(au);
+		m_StatusPanel.updateCommand(m_Agent, au);
 	}
 
 	private void onAgentPong(Agent agent, AgentPong pong) {
-		m_StatusPanel.update();
+		m_StatusPanel.update(m_Agent);
 	}
 
 	private void onPanelSubmit(String jobText) {
