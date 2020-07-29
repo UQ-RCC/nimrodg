@@ -74,7 +74,8 @@ public class ShellTests {
         /* Use the on-disk key. */
         try(OpenSSHClient client = new OpenSSHClient(uri, tmpDir.getRoot().toPath(), Optional.of(keyPath), Optional.of(openSsh), Map.of(
                 "StrictHostKeyChecking", "no",
-                "UserKnownHostsFile", "/dev/null"
+                "UserKnownHostsFile", "/dev/null",
+                "LogLevel", "DEBUG3"
         ))) {
             testClient(client);
         }
@@ -82,7 +83,8 @@ public class ShellTests {
         /* Use the in-memory key. */
         try(OpenSSHClient client = new OpenSSHClient(uri, tmpDir.getRoot().toPath(), Optional.of(memKeyPath), Optional.of(openSsh), Map.of(
                 "StrictHostKeyChecking", "no",
-                "UserKnownHostsFile", "/dev/null"
+                "UserKnownHostsFile", "/dev/null",
+                "LogLevel", "DEBUG3"
         ))) {
             testClient(client);
         }
