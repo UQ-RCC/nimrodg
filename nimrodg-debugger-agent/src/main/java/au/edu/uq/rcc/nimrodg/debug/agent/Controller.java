@@ -62,7 +62,7 @@ import javax.json.Json;
 import javax.json.JsonException;
 import javax.json.JsonReader;
 import javax.json.JsonStructure;
-import javax.swing.SwingUtilities;
+import javax.swing.*;
 
 public class Controller {
 
@@ -192,6 +192,11 @@ public class Controller {
 	}
 
 	public static void main(String[] args) {
+		try {
+			UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
+		} catch(Exception e) {
+
+		}
 		new Controller();
 	}
 
