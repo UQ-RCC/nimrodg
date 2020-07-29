@@ -38,6 +38,7 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
@@ -56,13 +57,17 @@ public class OpenSSHClient implements RemoteShell {
     private final URI uri;
     private final Optional<Path> privateKey;
     private final Path executable;
+    private final Path workDir;
 
     private final String[] sshArgs;
     private final String[] closeArgs;
 
+    private int commandCount;
+
     public OpenSSHClient(URI uri, Path workDir, Optional<Path> privateKey, Optional<Path> executable, Map<String, String> opts) throws IOException {
         this.uri = uri;
         this.executable = executable.orElse(Paths.get("ssh"));
+        this.workDir = workDir;
 
         Path socketPath = workDir.resolve(String.format("openssh-%d-control", (long)uri.hashCode() & 0xFFFFFFFFL));
 
@@ -76,7 +81,6 @@ public class OpenSSHClient implements RemoteShell {
 
         /* Option order always takes precedence, so use ours first. */
         List<String> commonArgs = Stream.concat(Stream.of(
-                "-q",
                 "-oPasswordAuthentication=no",
                 "-oKbdInteractiveAuthentication=no",
                 "-oChallengeResponseAuthentication=no",
@@ -116,8 +120,6 @@ public class OpenSSHClient implements RemoteShell {
         }
 
         ssh.addAll(commonArgs);
-        ssh.add(uri.getHost());
-        ssh.add("--");
         sshArgs = ssh.stream().toArray(String[]::new);
 
         {
@@ -130,7 +132,7 @@ public class OpenSSHClient implements RemoteShell {
             closeArgs = ssh.stream().toArray(String[]::new);
         }
 
-        LOGGER.trace("OpenSSH: {}", ShellUtils.buildEscapedCommandLine(sshArgs));
+        commandCount = 0;
     }
 
 //        -L port:host:hostport
@@ -208,36 +210,76 @@ public class OpenSSHClient implements RemoteShell {
     }
 
     private CommandResult runSsh(String[] args, ProcProc proc) throws IOException {
-        String[] aa = Stream.concat(
-                Arrays.stream(sshArgs),
-                Arrays.stream(args)
-        ).toArray(String[]::new);
+        Path logPath = workDir.resolve(String.format("openssh-%d-log%02d.txt", (long)uri.hashCode() & 0xFFFFFFFFL, commandCount++));
+
+        ArrayList<String> aa = new ArrayList<>(sshArgs.length + 3 + args.length);
+        aa.addAll(Arrays.asList(sshArgs));
+        aa.add("-E");
+        aa.add(logPath.toString());
+        aa.add(uri.getHost());
+        aa.add("--");
+        aa.addAll(Arrays.asList(args));
+
         ProcessBuilder pb = new ProcessBuilder(aa);
         pb.redirectOutput(ProcessBuilder.Redirect.PIPE);
         pb.redirectError(ProcessBuilder.Redirect.PIPE);
         pb.redirectInput(ProcessBuilder.Redirect.PIPE);
 
         String escCmd = ShellUtils.buildEscapedCommandLine(aa);
+
         LOGGER.trace("Executing command: {}", escCmd);
         Process p = pb.start();
 
+        boolean forceLog = false;
         CommandResult cr;
         try {
             cr = proc.run(p);
         } catch(IOException e) {
-            String err = new String(p.getErrorStream().readAllBytes(), StandardCharsets.UTF_8);
-            LOGGER.error(err);
+            forceLog = true;
             throw e;
         } finally {
             p.destroyForcibly();
+            handleLog(logPath, forceLog);
         }
 
         if(cr.status == 255) {
             LOGGER.error("OpenSSH execution failed: {}", escCmd);
-            LOGGER.error(cr.stderr);
             throw new IOException("OpenSSH execution failed");
         }
         return cr;
+    }
+
+    /* Try our damned hardest to dump the log file for tracing purposes. */
+    private void handleLog(Path logPath, boolean force) {
+        if(!LOGGER.isTraceEnabled() && !force) {
+            return;
+        }
+
+        LOGGER.trace("Attempting to dump OpenSSH log file at {}", logPath);
+
+        byte[] log;
+        try {
+            log = Files.readAllBytes(logPath);
+        } catch(IOException e) {
+            LOGGER.trace("Unable to read log file", e);
+            return;
+        }
+
+        String slog;
+        try {
+            slog = new String(log, StandardCharsets.UTF_8);
+        } catch(IllegalArgumentException e) {
+            LOGGER.trace("Unable to parse log file as UTF-8, dumping as base64", e);
+            slog = Base64.getEncoder().encodeToString(log);
+        }
+
+        LOGGER.trace(slog);
+
+        try {
+            Files.delete(logPath);
+        } catch(IOException e) {
+            LOGGER.trace("Unable to remove log file", e);
+        }
     }
 
     private String readNextLine(InputStream is) throws IOException {
