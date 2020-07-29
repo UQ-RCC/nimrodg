@@ -37,6 +37,7 @@ import java.security.PrivateKey;
 import java.time.Instant;
 import java.util.EnumSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 public class ShellTests {
@@ -64,6 +65,12 @@ public class ShellTests {
 
     @Test
     public void opensshClientTest() throws IOException {
+        String travis = System.getenv("TRAVIS");
+        if(Objects.equals("true", travis)) {
+            System.err.println("Skipping OpenSSH tests on Travis due to https://github.com/UQ-RCC/nimrodg/issues/36");
+            return;
+        }
+
         /* Only test OpenSSH if its available. */
         Path openSsh = Paths.get("/usr/bin/ssh");
         if(!Files.exists(openSsh)) {
