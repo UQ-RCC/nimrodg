@@ -34,7 +34,7 @@ public interface Agent {
 	/**
 	 * All the possible server-side states for an agent.
 	 */
-	public enum State {
+	enum State {
 		/**
 		 * No agent is connected, waiting for initialisation.
 		 *
@@ -239,7 +239,7 @@ public interface Agent {
 	 */
 	void reportStateChange(State oldState, State newState);
 
-	public static String stateToString(State state) {
+	static String stateToString(State state) {
 		switch(state) {
 			case SHUTDOWN:
 				return "SHUTDOWN";
@@ -254,7 +254,7 @@ public interface Agent {
 		throw new IllegalArgumentException();
 	}
 
-	public static State stateFromString(String s) {
+	static State stateFromString(String s) {
 		switch(s) {
 			case "SHUTDOWN":
 				return State.SHUTDOWN;
