@@ -35,6 +35,8 @@ import javax.json.JsonObjectBuilder;
 import javax.json.JsonReader;
 import javax.json.JsonReaderFactory;
 import javax.json.JsonString;
+import javax.mail.internet.ContentType;
+import javax.mail.internet.ParameterList;
 
 public class JsonBackend implements MessageBackend {
 	private static final Map<AgentMessage.Type, JsonHandler> MESSAGE_HANDLERS = Map.of(
@@ -48,6 +50,7 @@ public class JsonBackend implements MessageBackend {
 			AgentMessage.Type.Pong, new PongHandler()
 	);
 
+	private static final ContentType CONTENT_TYPE = new ContentType("application", "json", new ParameterList());
 	private static final JsonReaderFactory READER_FACTORY = Json.createReaderFactory(Map.of());
 	public static final JsonBackend INSTANCE = new JsonBackend();
 
@@ -98,6 +101,21 @@ public class JsonBackend implements MessageBackend {
 				UUID.fromString(jo.getString("uuid")),
 				Instant.from(DateTimeFormatter.ISO_INSTANT.parse(jo.getString("timestamp")))
 		);
+	}
+
+	/* TODO: Move this out of here if there's ever more than one message backend. */
+	private static ContentType duplicateContentType(ContentType ct) {
+		ParameterList parms = new ParameterList();
+		ct.getParameterList().getNames().asIterator().forEachRemaining(s -> {
+			parms.set(s, ct.getParameterList().get(s));
+		});
+
+		return new ContentType(ct.getPrimaryType(), ct.getSubType(), parms);
+	}
+
+	@Override
+	public ContentType getContentType() {
+		return duplicateContentType(CONTENT_TYPE);
 	}
 
 	public static JsonString toJson(AgentMessage.Type type) {

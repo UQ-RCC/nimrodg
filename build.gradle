@@ -57,5 +57,6 @@ allprojects {
 		LOG4J_VERSION = '2.10.0'
 		SLF4J_VERSION = '1.7.29'
 		JAVAX_JSON_VERSION = '1.1'
+		JAKARTA_MAIL_VERSION = '1.6.4'
 	}
 }

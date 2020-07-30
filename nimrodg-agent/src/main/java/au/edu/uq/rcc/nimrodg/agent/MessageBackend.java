@@ -21,6 +21,7 @@ package au.edu.uq.rcc.nimrodg.agent;
 
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentMessage;
 
+import javax.mail.internet.ContentType;
 import java.nio.charset.Charset;
 
 public interface MessageBackend {
@@ -41,4 +42,13 @@ public interface MessageBackend {
 	 * @return The agent message represented by the bytes.
 	 */
 	AgentMessage fromBytes(byte[] bytes, Charset charset);
+
+	/**
+	 * Get the MIME Content-Type this handler produces/consumes.
+	 * <p>
+	 * This is a new copy, and may be modified.
+	 *
+	 * @return The MIME Content-Type this handler produces/consumes.
+	 */
+	ContentType getContentType();
 }

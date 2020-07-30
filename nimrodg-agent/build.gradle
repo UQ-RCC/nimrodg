@@ -2,4 +2,6 @@ apply plugin: 'java-library'
 
 dependencies {
 	api project(':nimrodg-api')
+
+	api group: 'jakarta.mail', name: 'jakarta.mail-api', version: JAKARTA_MAIL_VERSION
 }
