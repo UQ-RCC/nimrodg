@@ -20,10 +20,8 @@
 package au.edu.uq.rcc.nimrodg.agent;
 
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentMessage;
-import au.edu.uq.rcc.nimrodg.agent.messages.json.JsonBackend;
 
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 
 public interface MessageBackend {
 	/**
@@ -43,19 +41,4 @@ public interface MessageBackend {
 	 * @return The agent message represented by the bytes.
 	 */
 	AgentMessage fromBytes(byte[] bytes, Charset charset);
-
-	@Deprecated
-	default byte[] toBytes(AgentMessage msg) {
-		return toBytes(msg, StandardCharsets.UTF_8);
-	}
-
-	@Deprecated
-	default AgentMessage fromBytes(byte[] bytes) {
-		return fromBytes(bytes, StandardCharsets.UTF_8);
-	}
-
-	@Deprecated
-	static MessageBackend createBackend() {
-		return JsonBackend.INSTANCE;
-	}
 }
