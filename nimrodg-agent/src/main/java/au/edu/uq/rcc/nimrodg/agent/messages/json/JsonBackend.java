@@ -23,7 +23,6 @@ import au.edu.uq.rcc.nimrodg.agent.messages.AgentMessage;
 import au.edu.uq.rcc.nimrodg.agent.MessageBackend;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import javax.json.Json;
@@ -33,19 +32,16 @@ import javax.json.JsonReader;
 import javax.json.JsonString;
 
 public class JsonBackend implements MessageBackend {
-
-	private static final Map<AgentMessage.Type, JsonHandler> MESSAGE_HANDLERS = new HashMap<AgentMessage.Type, JsonHandler>() {
-		{
-			put(AgentMessage.Type.Hello, new HelloHandler());
-			put(AgentMessage.Type.Init, new InitHandler());
-			put(AgentMessage.Type.LifeControl, new LifeControlHandler());
-			put(AgentMessage.Type.Shutdown, new ShutdownHandler());
-			put(AgentMessage.Type.Submit, new SubmitHandler());
-			put(AgentMessage.Type.Update, new UpdateHandler());
-			put(AgentMessage.Type.Ping, new PingHandler());
-			put(AgentMessage.Type.Pong, new PongHandler());
-		}
-	};
+	private static final Map<AgentMessage.Type, JsonHandler> MESSAGE_HANDLERS = Map.of(
+			AgentMessage.Type.Hello, new HelloHandler(),
+			AgentMessage.Type.Init, new InitHandler(),
+			AgentMessage.Type.LifeControl, new LifeControlHandler(),
+			AgentMessage.Type.Shutdown, new ShutdownHandler(),
+			AgentMessage.Type.Submit, new SubmitHandler(),
+			AgentMessage.Type.Update, new UpdateHandler(),
+			AgentMessage.Type.Ping, new PingHandler(),
+			AgentMessage.Type.Pong, new PongHandler()
+	);
 
 	private static JsonHandler getHandlerForType(AgentMessage.Type type) {
 		JsonHandler h = MESSAGE_HANDLERS.getOrDefault(type, null);
