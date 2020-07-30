@@ -21,7 +21,6 @@ package au.edu.uq.rcc.nimrodg.debug.agent;
 
 import au.edu.uq.rcc.nimrodg.agent.Agent;
 import au.edu.uq.rcc.nimrodg.agent.DefaultAgentState;
-import au.edu.uq.rcc.nimrodg.agent.MessageBackend;
 import au.edu.uq.rcc.nimrodg.agent.ReferenceAgent;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentHello;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentLifeControl;
@@ -30,6 +29,7 @@ import au.edu.uq.rcc.nimrodg.agent.messages.AgentPong;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentSubmit;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentUpdate;
+import au.edu.uq.rcc.nimrodg.agent.messages.json.JsonBackend;
 import au.edu.uq.rcc.nimrodg.api.NetworkJob;
 import au.edu.uq.rcc.nimrodg.api.PlanfileParseException;
 import au.edu.uq.rcc.nimrodg.api.Task;
@@ -50,6 +50,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.cert.Certificate;
 import java.time.Instant;
@@ -77,7 +78,6 @@ public class Controller {
 
 	private final MessageWindow m_MessageWindow;
 
-	private final MessageBackend m_MessageBackend;
 	private final ArrayList<Message> m_Messages;
 
 	private static final String SAMPLE_PLANFILE = "parameter x int range from 0 to 10\n"
@@ -119,7 +119,6 @@ public class Controller {
 		m_Agent = new ReferenceAgent(new DefaultAgentState(), m_AgentListener);
 		m_StatusPanel.setAgent(m_Agent);
 		m_MessageWindow = new MessageWindow();
-		m_MessageBackend = MessageBackend.createBackend();
 		m_Messages = new ArrayList<>();
 		m_MessageWindow.getMessagePanel().setMessages(m_Messages);
 	}
@@ -255,7 +254,7 @@ public class Controller {
 	}
 
 	private void sendMessage(String key, AgentMessage msg) throws IOException {
-		byte[] bytes = m_MessageBackend.toBytes(msg);
+		byte[] bytes = JsonBackend.INSTANCE.toBytes(msg, StandardCharsets.UTF_8);
 		if(bytes == null) {
 			throw new IOException("Message serialisation failure");
 		}
