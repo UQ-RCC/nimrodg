@@ -58,11 +58,15 @@ public class JsonBackend implements MessageBackend {
 
 	@Override
 	public byte[] toBytes(AgentMessage msg, Charset charset) {
+		return toJson(msg).toString().getBytes(charset);
+	}
+
+	public JsonObject toJson(AgentMessage msg) {
 		JsonObjectBuilder jo = Json.createObjectBuilder();
 		jo.add("uuid", msg.getAgentUUID().toString());
 		jo.add("type", toJson(msg.getType()));
 		getHandlerForType(msg.getType()).write(jo, msg);
-		return jo.build().toString().getBytes(charset);
+		return jo.build();
 	}
 
 	@Override
