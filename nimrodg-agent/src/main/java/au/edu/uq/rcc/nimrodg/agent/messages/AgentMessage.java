@@ -57,15 +57,4 @@ public abstract class AgentMessage {
 	}
 
 	public abstract Type getType();
-
-	@Deprecated
-	public String getTypeString() {
-		return getTypeString(getType());
-	}
-
-	@Deprecated
-	public static String getTypeString(Type t) {
-		Objects.requireNonNull(t, "t");
-		return t.typeString;
-	}
 }
