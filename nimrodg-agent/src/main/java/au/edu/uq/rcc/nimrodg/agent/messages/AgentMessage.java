@@ -37,7 +37,7 @@ public abstract class AgentMessage {
 		Pong
 	}
 
-	public AgentMessage(UUID agentUuid) {
+	protected AgentMessage(UUID agentUuid) {
 		m_AgentUUID = agentUuid;
 	}
 
