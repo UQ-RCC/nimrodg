@@ -26,7 +26,7 @@ import javax.json.JsonObjectBuilder;
 
 public interface JsonHandler {
 
-	public abstract AgentMessage read(JsonObject jo, UUID uuid);
+	AgentMessage read(JsonObject jo, UUID uuid);
 
-	public abstract void write(JsonObjectBuilder jo, AgentMessage msg);
+	void write(JsonObjectBuilder jo, AgentMessage msg);
 }
