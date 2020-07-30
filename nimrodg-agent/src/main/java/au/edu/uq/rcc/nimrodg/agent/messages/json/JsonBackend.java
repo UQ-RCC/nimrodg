@@ -45,6 +45,7 @@ public class JsonBackend implements MessageBackend {
 	);
 
 	private static final JsonReaderFactory READER_FACTORY = Json.createReaderFactory(Map.of());
+	public static final JsonBackend INSTANCE = new JsonBackend();
 
 	private static JsonHandler getHandlerForType(AgentMessage.Type type) {
 		JsonHandler h = MESSAGE_HANDLERS.getOrDefault(type, null);

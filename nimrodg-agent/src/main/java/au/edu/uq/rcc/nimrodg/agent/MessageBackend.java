@@ -54,7 +54,8 @@ public interface MessageBackend {
 		return fromBytes(bytes, StandardCharsets.UTF_8);
 	}
 
-	public static MessageBackend createBackend() {
-		return new JsonBackend();
+	@Deprecated
+	static MessageBackend createBackend() {
+		return JsonBackend.INSTANCE;
 	}
 }
