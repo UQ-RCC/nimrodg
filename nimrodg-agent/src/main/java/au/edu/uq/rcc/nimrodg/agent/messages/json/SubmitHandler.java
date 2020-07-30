@@ -26,6 +26,7 @@ import au.edu.uq.rcc.nimrodg.api.CopyCommand;
 import au.edu.uq.rcc.nimrodg.api.NetworkJob;
 import au.edu.uq.rcc.nimrodg.api.OnErrorCommand;
 import au.edu.uq.rcc.nimrodg.api.RedirectCommand;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -65,7 +66,10 @@ public class SubmitHandler implements JsonHandler {
 			commands.add(readCommand(j.asJsonObject()));
 		}
 
-		return new AgentSubmit(uuid, new NetworkJob(jobUuid, index, txuri, token, commands, env));
+		return new AgentSubmit.Builder()
+				.agentUuid(uuid)
+				.job(new NetworkJob(jobUuid, index, txuri, token, commands, env))
+				.build();
 	}
 
 	private NetworkJob.ResolvedCommand readCommand(JsonObject jo) {

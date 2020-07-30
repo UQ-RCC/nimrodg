@@ -22,7 +22,6 @@ package au.edu.uq.rcc.nimrodg.agent;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentMessage;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentPong;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
-import au.edu.uq.rcc.nimrodg.agent.messages.AgentSubmit;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentUpdate;
 import au.edu.uq.rcc.nimrodg.api.NetworkJob;
 import java.io.IOException;
@@ -130,8 +129,8 @@ public interface Agent {
 	 * Submit a job to the agent.
 	 *
 	 * <ul>
-	 * <li>This will invoke the {@link #sendMessage(AgentMessage)}.</li>
-	 * <li> If successful, this will invoke {@link #reportJobSubmit(AgentSubmit)}.</li>
+	 * <li>This will invoke the {@link #sendMessage(AgentMessage.Builder)}.</li>
+	 * <li> If successful, this will invoke {@link #reportJobSubmit(NetworkJob)}.</li>
 	 * </ul>
 	 *
 	 * @param job The processed job definition.
@@ -208,14 +207,14 @@ public interface Agent {
 	 * @param msg The message to send.
 	 * @throws IOException If sending the message fails.
 	 */
-	void sendMessage(AgentMessage msg) throws IOException;
+	void sendMessage(AgentMessage.Builder msg) throws IOException;
 
 	/**
 	 * Called after submit message has been sent.
 	 *
-	 * @param as The submit message.
+	 * @param job The submitted job.
 	 */
-	void reportJobSubmit(AgentSubmit as);
+	void reportJobSubmit(NetworkJob job);
 
 	/**
 	 * Called when the agent has received a job status update.

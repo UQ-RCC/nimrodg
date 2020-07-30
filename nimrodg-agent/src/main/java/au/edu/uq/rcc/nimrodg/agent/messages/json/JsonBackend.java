@@ -21,6 +21,7 @@ package au.edu.uq.rcc.nimrodg.agent.messages.json;
 
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentMessage;
 import au.edu.uq.rcc.nimrodg.agent.MessageBackend;
+
 import java.io.ByteArrayInputStream;
 import java.nio.charset.Charset;
 import java.util.Map;
@@ -76,9 +77,10 @@ public class JsonBackend implements MessageBackend {
 			jo = p.readObject();
 		}
 
-		UUID uuid = UUID.fromString(jo.getString("uuid"));
-		AgentMessage.Type msgType = readMessageType(jo.getString("type"));
-		return getHandlerForType(msgType).read(jo, uuid);
+		return getHandlerForType(readMessageType(jo.getString("type"))).read(
+				jo,
+				UUID.fromString(jo.getString("uuid"))
+		);
 	}
 
 	public static JsonString toJson(AgentMessage.Type type) {

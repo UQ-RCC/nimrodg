@@ -4,12 +4,12 @@ import au.edu.uq.rcc.nimrodg.agent.Agent;
 import au.edu.uq.rcc.nimrodg.agent.ReferenceAgent;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentMessage;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentPong;
-import au.edu.uq.rcc.nimrodg.agent.messages.AgentSubmit;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentUpdate;
+import au.edu.uq.rcc.nimrodg.api.NetworkJob;
 
 public class NoopAgentListener implements ReferenceAgent.AgentListener {
 	@Override
-	public void send(Agent agent, AgentMessage msg) {
+	public void send(Agent agent, AgentMessage.Builder<?> msg) {
 
 	}
 
@@ -19,7 +19,7 @@ public class NoopAgentListener implements ReferenceAgent.AgentListener {
 	}
 
 	@Override
-	public void onJobSubmit(Agent agent, AgentSubmit as) {
+	public void onJobSubmit(Agent agent, NetworkJob job) {
 
 	}
 

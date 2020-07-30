@@ -19,19 +19,35 @@
  */
 package au.edu.uq.rcc.nimrodg.agent.messages;
 
+import java.util.Objects;
 import java.util.UUID;
 
 public class AgentHello extends AgentMessage {
 
 	public final String queue;
 
-	public AgentHello(UUID agentUuid, String queue) {
+	private AgentHello(UUID agentUuid, String queue) {
 		super(agentUuid);
+		Objects.requireNonNull(queue, "queue");
 		this.queue = queue;
 	}
 
 	@Override
 	public Type getType() {
 		return Type.Hello;
+	}
+
+	public static class Builder extends AgentMessage.Builder<Builder> {
+		private String queue;
+
+		public Builder queue(String queue) {
+			this.queue = queue;
+			return this;
+		}
+
+		@Override
+		public AgentHello build() {
+			return new AgentHello(agentUuid, queue);
+		}
 	}
 }

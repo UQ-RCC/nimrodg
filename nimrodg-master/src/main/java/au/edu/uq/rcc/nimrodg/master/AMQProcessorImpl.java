@@ -46,6 +46,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.security.cert.Certificate;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeoutException;
@@ -187,7 +188,10 @@ public class AMQProcessorImpl implements AMQProcessor {
 				opMessage(MessageQueueListener.MessageOperation.Ack, tag);
 				if(am instanceof AgentHello) {
 					AgentHello ah = (AgentHello)am;
-					sendMessage(ah.queue, new AgentLifeControl(am.getAgentUUID(), AgentLifeControl.Operation.Terminate));
+					sendMessage(ah.queue, new AgentLifeControl.Builder()
+							.agentUuid(am.getAgentUUID())
+							.operation(AgentLifeControl.Operation.Terminate)
+							.build());
 				} else {
 					/* FIXME: Don't really know what to do here as we can't get the routing key :/ */
 				}

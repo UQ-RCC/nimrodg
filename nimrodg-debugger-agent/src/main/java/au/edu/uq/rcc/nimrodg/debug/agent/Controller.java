@@ -27,7 +27,6 @@ import au.edu.uq.rcc.nimrodg.agent.messages.AgentLifeControl;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentMessage;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentPong;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
-import au.edu.uq.rcc.nimrodg.agent.messages.AgentSubmit;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentUpdate;
 import au.edu.uq.rcc.nimrodg.agent.messages.json.JsonBackend;
 import au.edu.uq.rcc.nimrodg.api.NetworkJob;
@@ -230,7 +229,9 @@ public class Controller {
 			if(msg.getType() == AgentMessage.Type.Hello) {
 				AgentHello hello = (AgentHello)msg;
 				m_Logger.log(ILogger.Level.WARN, "Received agent.hello with key '%s', sending termination...", hello.queue);
-				sendMessage(hello.queue, new AgentLifeControl(uuid, AgentLifeControl.Operation.Terminate));
+				sendMessage(hello.queue, new AgentLifeControl.Builder()
+						.agentUuid(uuid)
+						.operation(AgentLifeControl.Operation.Terminate));
 			} else {
 				m_Logger.log(ILogger.Level.WARN, "Ignoring message from unknown agent %s", uuid);
 			}
@@ -253,15 +254,16 @@ public class Controller {
 		}
 	}
 
-	private void sendMessage(String key, AgentMessage msg) throws IOException {
-		byte[] bytes = JsonBackend.INSTANCE.toBytes(msg, StandardCharsets.UTF_8);
+	private void sendMessage(String key, AgentMessage.Builder msg) throws IOException {
+		AgentMessage amsg = msg.build();
+		byte[] bytes = JsonBackend.INSTANCE.toBytes(amsg, StandardCharsets.UTF_8);
 		if(bytes == null) {
 			throw new IOException("Message serialisation failure");
 		}
 
 		m_Messages.add(Message.create(bytes, false));
 		m_MessageWindow.getMessagePanel().refreshMessages();
-		m_AMQP.sendMessage(key, msg);
+		m_AMQP.sendMessage(key, amsg);
 	}
 
 	private void onAgentStateChange(Agent agent, Agent.State oldState, Agent.State newState) {
@@ -279,8 +281,8 @@ public class Controller {
 		m_StatusPanel.update();
 	}
 
-	private void onAgentJobSubmit(Agent agent, AgentSubmit as) {
-		m_StatusPanel.setJob(as.getJob());
+	private void onAgentJobSubmit(Agent agent, NetworkJob job) {
+		m_StatusPanel.setJob(job);
 	}
 
 	private void onAgentJobUpdate(Agent agent, AgentUpdate au) {
@@ -361,7 +363,7 @@ public class Controller {
 	private class _AgentListener implements ReferenceAgent.AgentListener {
 
 		@Override
-		public void send(Agent agent, AgentMessage msg) throws IOException {
+		public void send(Agent agent, AgentMessage.Builder msg) throws IOException {
 			Controller.this.sendMessage(agent.getQueue(), msg);
 		}
 
@@ -376,8 +378,8 @@ public class Controller {
 		}
 
 		@Override
-		public void onJobSubmit(Agent agent, AgentSubmit as) {
-			Controller.this.onAgentJobSubmit(agent, as);
+		public void onJobSubmit(Agent agent, NetworkJob job) {
+			Controller.this.onAgentJobSubmit(agent, job);
 		}
 
 		@Override

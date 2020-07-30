@@ -24,7 +24,7 @@ import java.util.UUID;
 
 public abstract class AgentMessage {
 
-	private final UUID m_AgentUUID;
+	private final UUID agentUuid;
 
 	public enum Type {
 		Init("agent.init"),
@@ -45,16 +45,26 @@ public abstract class AgentMessage {
 	}
 
 	protected AgentMessage(UUID agentUuid) {
-		if(agentUuid == null) {
-			throw new IllegalArgumentException();
-		}
+		Objects.requireNonNull(agentUuid, "agentUuid");
 
-		m_AgentUUID = agentUuid;
+		this.agentUuid = agentUuid;
 	}
 
 	public UUID getAgentUUID() {
-		return m_AgentUUID;
+		return agentUuid;
 	}
 
 	public abstract Type getType();
+
+	@SuppressWarnings("unchecked")
+	public static abstract class Builder<T extends Builder> {
+		protected UUID agentUuid;
+
+		public T agentUuid(UUID uuid) {
+			this.agentUuid = uuid;
+			return (T)this;
+		}
+
+		public abstract AgentMessage build();
+	}
 }

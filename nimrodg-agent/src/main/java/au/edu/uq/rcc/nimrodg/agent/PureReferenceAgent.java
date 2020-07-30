@@ -43,11 +43,11 @@ public class PureReferenceAgent implements Agent {
 
 	public interface AgentListener {
 
-		void send(Agent agent, AgentMessage msg) throws IOException;
+		void send(Agent agent, AgentMessage.Builder<?> msg) throws IOException;
 
 		void onStateChange(Agent agent, State oldState, State newState);
 
-		void onJobSubmit(Agent agent, AgentSubmit as);
+		void onJobSubmit(Agent agent, NetworkJob job);
 
 		void onJobUpdate(Agent agent, AgentUpdate au);
 
@@ -102,10 +102,8 @@ public class PureReferenceAgent implements Agent {
 	}
 
 	private void setState(State state) {
-		State old = state;
-
+		State old = this.state;
 		this.state = state;
-
 		reportStateChange(old, state);
 	}
 
@@ -144,14 +142,16 @@ public class PureReferenceAgent implements Agent {
 		}
 
 		setState(State.BUSY);
-		AgentSubmit as = new AgentSubmit(uuid, job);
 		try {
-			sendMessage(as);
+			sendMessage(new AgentSubmit.Builder()
+					.agentUuid(uuid)
+					.job(job)
+			);
 		} catch(IOException e) {
 			setState(State.READY);
 			throw e;
 		}
-		reportJobSubmit(as);
+		reportJobSubmit(job);
 
 	}
 
@@ -161,7 +161,10 @@ public class PureReferenceAgent implements Agent {
 			throw new IllegalStateException("Can't cancel a nonexistent job");
 		}
 
-		sendMessage(new AgentLifeControl(uuid, AgentLifeControl.Operation.Cancel));
+		sendMessage(new AgentLifeControl.Builder()
+				.agentUuid(uuid)
+				.operation(AgentLifeControl.Operation.Cancel)
+		);
 	}
 
 	@Override
@@ -169,7 +172,7 @@ public class PureReferenceAgent implements Agent {
 		if(state == State.SHUTDOWN) {
 			throw new IllegalStateException("Can't ping a stopped agent");
 		} else if(state == State.WAITING_FOR_HELLO) {
-			sendMessage(new AgentPing(uuid));
+			sendMessage(new AgentPing.Builder().agentUuid(uuid));
 		}
 	}
 
@@ -183,11 +186,14 @@ public class PureReferenceAgent implements Agent {
 			/* Fake a shutdown */
 			shutdownSignal = -1;
 			reason = Reason.Requested;
-			state = State.SHUTDOWN;
+			this.setState(State.SHUTDOWN);
 			return;
 		}
 
-		sendMessage(new AgentLifeControl(uuid, AgentLifeControl.Operation.Terminate));
+		sendMessage(new AgentLifeControl.Builder()
+				.agentUuid(uuid)
+				.operation(AgentLifeControl.Operation.Terminate)
+		);
 	}
 
 	@Override
@@ -210,7 +216,7 @@ public class PureReferenceAgent implements Agent {
 			uuid = hello.getAgentUUID();
 			queue = hello.queue;
 
-			sendMessage(new AgentInit(msg.getAgentUUID()));
+			sendMessage(new AgentInit.Builder().agentUuid(msg.getAgentUUID()));
 			setState(State.READY);
 		} else if(state == State.READY) {
 			if(msg.getType() == AgentMessage.Type.Pong) {
@@ -253,13 +259,13 @@ public class PureReferenceAgent implements Agent {
 	}
 
 	@Override
-	public void sendMessage(AgentMessage msg) throws IOException {
+	public void sendMessage(AgentMessage.Builder msg) throws IOException {
 		listener.send(this, msg);
 	}
 
 	@Override
-	public void reportJobSubmit(AgentSubmit as) {
-		listener.onJobSubmit(this, as);
+	public void reportJobSubmit(NetworkJob job) {
+		listener.onJobSubmit(this, job);
 	}
 
 	@Override

@@ -43,11 +43,11 @@ public class ReferenceAgent implements Agent {
 
 	public interface AgentListener {
 
-		void send(Agent agent, AgentMessage msg) throws IOException;
+		void send(Agent agent, AgentMessage.Builder<?> msg) throws IOException;
 
 		void onStateChange(Agent agent, State oldState, State newState);
 
-		void onJobSubmit(Agent agent, AgentSubmit as);
+		void onJobSubmit(Agent agent, NetworkJob job);
 
 		void onJobUpdate(Agent agent, AgentUpdate au);
 
@@ -144,14 +144,16 @@ public class ReferenceAgent implements Agent {
 		}
 
 		setState(State.BUSY);
-		AgentSubmit as = new AgentSubmit(storage.getUUID(), job);
 		try {
-			sendMessage(as);
+			sendMessage(new AgentSubmit.Builder()
+					.agentUuid(storage.getUUID())
+					.job(job)
+			);
 		} catch(IOException e) {
 			setState(State.READY);
 			throw e;
 		}
-		reportJobSubmit(as);
+		reportJobSubmit(job);
 
 	}
 
@@ -161,7 +163,10 @@ public class ReferenceAgent implements Agent {
 			throw new IllegalStateException("Can't cancel a nonexistent job");
 		}
 
-		sendMessage(new AgentLifeControl(storage.getUUID(), AgentLifeControl.Operation.Cancel));
+		sendMessage(new AgentLifeControl.Builder()
+				.agentUuid(storage.getUUID())
+				.operation(AgentLifeControl.Operation.Cancel)
+		);
 	}
 
 	@Override
@@ -169,7 +174,7 @@ public class ReferenceAgent implements Agent {
 		if(storage.getState() == State.SHUTDOWN) {
 			throw new IllegalStateException("Can't ping a stopped agent");
 		} else if(storage.getState() != State.WAITING_FOR_HELLO) {
-			sendMessage(new AgentPing(storage.getUUID()));
+			sendMessage(new AgentPing.Builder().agentUuid(storage.getUUID()));
 		}
 	}
 
@@ -187,7 +192,10 @@ public class ReferenceAgent implements Agent {
 			return;
 		}
 
-		sendMessage(new AgentLifeControl(storage.getUUID(), AgentLifeControl.Operation.Terminate));
+		sendMessage(new AgentLifeControl.Builder()
+				.agentUuid(storage.getUUID())
+				.operation(AgentLifeControl.Operation.Terminate)
+		);
 	}
 
 	@Override
@@ -213,7 +221,7 @@ public class ReferenceAgent implements Agent {
 			storage.setUUID(hello.getAgentUUID());
 			storage.setQueue(hello.queue);
 
-			sendMessage(new AgentInit(msg.getAgentUUID()));
+			sendMessage(new AgentInit.Builder().agentUuid(msg.getAgentUUID()));
 			setState(State.READY);
 		} else if(state == State.READY) {
 			if(msg.getType() == AgentMessage.Type.Pong) {
@@ -256,13 +264,13 @@ public class ReferenceAgent implements Agent {
 	}
 
 	@Override
-	public void sendMessage(AgentMessage msg) throws IOException {
+	public void sendMessage(AgentMessage.Builder msg) throws IOException {
 		listener.send(this, msg);
 	}
 
 	@Override
-	public void reportJobSubmit(AgentSubmit as) {
-		listener.onJobSubmit(this, as);
+	public void reportJobSubmit(NetworkJob job) {
+		listener.onJobSubmit(this, job);
 	}
 
 	@Override

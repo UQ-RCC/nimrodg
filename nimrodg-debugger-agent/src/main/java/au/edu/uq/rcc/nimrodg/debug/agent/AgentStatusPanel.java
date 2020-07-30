@@ -77,7 +77,13 @@ public class AgentStatusPanel extends javax.swing.JPanel {
 		}
 
 		for(int i = 0; i < job.numCommands; ++i) {
-			model.addInstance(new AgentUpdate(m_Agent.getUUID(), UUID.randomUUID(), new AgentUpdate.CommandResult_(null, i, 0.0f, 0, "", 0), null));
+			model.addInstance(new AgentUpdate.Builder()
+					.agentUuid(m_Agent.getUUID())
+					.jobUuid(UUID.randomUUID())
+					.commandResult(new AgentUpdate.CommandResult_(null, i, 0.0f, 0, "", 0))
+					.action(AgentUpdate.Action.Continue)
+					.build()
+			);
 		}
 
 	}

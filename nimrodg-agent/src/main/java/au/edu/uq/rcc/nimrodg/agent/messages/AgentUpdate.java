@@ -20,6 +20,8 @@
 package au.edu.uq.rcc.nimrodg.agent.messages;
 
 import au.edu.uq.rcc.nimrodg.api.CommandResult;
+
+import java.util.Objects;
 import java.util.UUID;
 
 public final class AgentUpdate extends AgentMessage {
@@ -48,15 +50,18 @@ public final class AgentUpdate extends AgentMessage {
 		}
 	}
 
-	private final UUID m_JobUUID;
-	private final CommandResult_ m_CommandResult;
-	private final Action m_Action;
+	private final UUID jobUuid;
+	private final CommandResult_ commandResult;
+	private final Action action;
 
-	public AgentUpdate(UUID agentUuid, UUID jobUuid, CommandResult_ result, Action action) {
+	private AgentUpdate(UUID agentUuid, UUID jobUuid, CommandResult_ result, Action action) {
 		super(agentUuid);
-		m_JobUUID = jobUuid;
-		m_CommandResult = result;
-		m_Action = action;
+		Objects.requireNonNull(jobUuid, "jobUuid");
+		Objects.requireNonNull(result, "result");
+		Objects.requireNonNull(action, "action");
+		this.jobUuid = jobUuid;
+		this.commandResult = result;
+		this.action = action;
 	}
 
 	@Override
@@ -65,14 +70,40 @@ public final class AgentUpdate extends AgentMessage {
 	}
 
 	public UUID getJobUUID() {
-		return m_JobUUID;
+		return jobUuid;
 	}
 
 	public CommandResult_ getCommandResult() {
-		return m_CommandResult;
+		return commandResult;
 	}
 
 	public Action getAction() {
-		return m_Action;
+		return action;
+	}
+
+	public static class Builder extends AgentMessage.Builder<Builder> {
+		private UUID jobUuid;
+		private CommandResult_ commandResult;
+		private Action action;
+
+		public Builder jobUuid(UUID jobUuid) {
+			this.jobUuid = jobUuid;
+			return this;
+		}
+
+		public Builder commandResult(CommandResult_ commandResult) {
+			this.commandResult = commandResult;
+			return this;
+		}
+
+		public Builder action(Action action) {
+			this.action = action;
+			return this;
+		}
+
+		@Override
+		public AgentUpdate build() {
+			return new AgentUpdate(agentUuid, jobUuid, commandResult, action);
+		}
 	}
 }

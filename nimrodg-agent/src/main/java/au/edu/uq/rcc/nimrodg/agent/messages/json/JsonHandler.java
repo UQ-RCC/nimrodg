@@ -20,6 +20,7 @@
 package au.edu.uq.rcc.nimrodg.agent.messages.json;
 
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentMessage;
+
 import java.util.UUID;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;

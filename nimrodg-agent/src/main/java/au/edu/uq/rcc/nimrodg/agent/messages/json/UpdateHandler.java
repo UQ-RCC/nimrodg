@@ -22,6 +22,7 @@ package au.edu.uq.rcc.nimrodg.agent.messages.json;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentMessage;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentUpdate;
 import au.edu.uq.rcc.nimrodg.api.CommandResult;
+
 import java.util.UUID;
 import javax.json.Json;
 import javax.json.JsonObject;
@@ -32,12 +33,12 @@ public class UpdateHandler implements JsonHandler {
 
 	@Override
 	public AgentMessage read(JsonObject jo, UUID uuid) {
-		return new AgentUpdate(
-				uuid,
-				UUID.fromString(jo.getString("job_uuid")),
-				readCommandResult(jo.getJsonObject("command_result")),
-				stringToUpdateAction(jo.getString("action"))
-		);
+		return new AgentUpdate.Builder()
+				.agentUuid(uuid)
+				.jobUuid(UUID.fromString(jo.getString("job_uuid")))
+				.commandResult(readCommandResult(jo.getJsonObject("command_result")))
+				.action(stringToUpdateAction(jo.getString("action")))
+				.build();
 	}
 
 	private AgentUpdate.CommandResult_ readCommandResult(JsonObject jo) {

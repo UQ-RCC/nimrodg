@@ -23,6 +23,8 @@ import au.edu.uq.rcc.nimrodg.agent.AgentState;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentHello;
 import au.edu.uq.rcc.nimrodg.api.NimrodException;
 import au.edu.uq.rcc.nimrodg.api.Actuator;
+
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -65,7 +67,10 @@ public class DummyActuator implements Actuator {
 	}
 
 	public List<AgentHello> simulateHellos() {
-		return pendingAgents.stream().map(uuid -> new AgentHello(uuid, UUID.randomUUID().toString())).collect(Collectors.toList());
+		return pendingAgents.stream().map(uuid -> new AgentHello.Builder()
+				.agentUuid(uuid)
+				.queue(UUID.randomUUID().toString())
+				.build()).collect(Collectors.toList());
 	}
 
 	@Override

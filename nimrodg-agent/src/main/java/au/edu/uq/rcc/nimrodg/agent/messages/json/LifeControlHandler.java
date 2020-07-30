@@ -21,6 +21,7 @@ package au.edu.uq.rcc.nimrodg.agent.messages.json;
 
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentLifeControl;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentMessage;
+
 import java.util.UUID;
 import javax.json.Json;
 import javax.json.JsonObject;
@@ -31,7 +32,10 @@ public class LifeControlHandler implements JsonHandler {
 
 	@Override
 	public AgentMessage read(JsonObject jo, UUID uuid) {
-		return new AgentLifeControl(uuid, readLifeControlOperation(jo.getString("operation")));
+		return new AgentLifeControl.Builder()
+				.agentUuid(uuid)
+				.operation(readLifeControlOperation(jo.getString("operation")))
+				.build();
 	}
 
 	@Override

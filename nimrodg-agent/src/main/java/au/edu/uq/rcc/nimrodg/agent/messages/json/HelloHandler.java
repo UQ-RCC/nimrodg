@@ -21,6 +21,7 @@ package au.edu.uq.rcc.nimrodg.agent.messages.json;
 
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentHello;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentMessage;
+
 import java.util.UUID;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
@@ -29,7 +30,10 @@ public class HelloHandler implements JsonHandler {
 
 	@Override
 	public AgentMessage read(JsonObject jo, UUID uuid) {
-		return new AgentHello(uuid, jo.getString("queue"));
+		return new AgentHello.Builder()
+				.agentUuid(uuid)
+				.queue(jo.getString("queue"))
+				.build();
 	}
 
 	@Override

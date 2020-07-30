@@ -443,8 +443,11 @@ public abstract class APITests {
 
 			for(int i = 0; i < agents.length; ++i) {
 				ReferenceAgent ra = agents[i];
-				AgentShutdown as = new AgentShutdown(requests[i].uuid, AgentShutdown.Reason.HostSignal, 15);
-				ra.processMessage(as, Instant.now());
+				ra.processMessage(new AgentShutdown.Builder()
+						.agentUuid(requests[i].uuid)
+						.reason(AgentShutdown.Reason.HostSignal)
+						.signal(15)
+						.build(), Instant.now());
 			}
 		}
 	}

@@ -31,4 +31,11 @@ public class AgentPong extends AgentMessage {
 	public Type getType() {
 		return Type.Pong;
 	}
+
+	public static class Builder extends AgentMessage.Builder<Builder> {
+		@Override
+		public AgentPong build() {
+			return new AgentPong(agentUuid);
+		}
+	}
 }

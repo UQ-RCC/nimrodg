@@ -23,12 +23,19 @@ import java.util.UUID;
 
 public class AgentPing extends AgentMessage {
 
-	public AgentPing(UUID agentUuid) {
+	private AgentPing(UUID agentUuid) {
 		super(agentUuid);
 	}
 
 	@Override
 	public Type getType() {
 		return Type.Ping;
+	}
+
+	public static class Builder extends AgentMessage.Builder<Builder> {
+		@Override
+		public AgentPing build() {
+			return new AgentPing(agentUuid);
+		}
 	}
 }

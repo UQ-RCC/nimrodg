@@ -20,14 +20,17 @@
 package au.edu.uq.rcc.nimrodg.agent.messages;
 
 import au.edu.uq.rcc.nimrodg.api.NetworkJob;
+
+import java.util.Objects;
 import java.util.UUID;
 
 public final class AgentSubmit extends AgentMessage {
 
 	private final NetworkJob m_Job;
 
-	public AgentSubmit(UUID agentUuid, NetworkJob job) {
+	private AgentSubmit(UUID agentUuid, NetworkJob job) {
 		super(agentUuid);
+		Objects.requireNonNull(job, "job");
 		m_Job = job;
 	}
 
@@ -38,5 +41,19 @@ public final class AgentSubmit extends AgentMessage {
 
 	public NetworkJob getJob() {
 		return m_Job;
+	}
+
+	public static class Builder extends AgentMessage.Builder<Builder> {
+		private NetworkJob job;
+
+		public Builder job(NetworkJob job) {
+			this.job = job;
+			return this;
+		}
+
+		@Override
+		public AgentSubmit build() {
+			return new AgentSubmit(agentUuid, job);
+		}
 	}
 }

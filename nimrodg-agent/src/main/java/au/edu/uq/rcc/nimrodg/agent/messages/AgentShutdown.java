@@ -19,6 +19,7 @@
  */
 package au.edu.uq.rcc.nimrodg.agent.messages;
 
+import java.util.Objects;
 import java.util.UUID;
 
 public class AgentShutdown extends AgentMessage {
@@ -31,8 +32,9 @@ public class AgentShutdown extends AgentMessage {
 	public final Reason reason;
 	public final int signal;
 
-	public AgentShutdown(UUID agentUuid, Reason reason, int signal) {
+	private AgentShutdown(UUID agentUuid, Reason reason, int signal) {
 		super(agentUuid);
+		Objects.requireNonNull(reason, "reason");
 		this.reason = reason;
 		this.signal = signal;
 	}
@@ -40,6 +42,26 @@ public class AgentShutdown extends AgentMessage {
 	@Override
 	public Type getType() {
 		return Type.Shutdown;
+	}
+
+	public static class Builder extends AgentMessage.Builder<Builder> {
+		private Reason reason;
+		private int signal;
+
+		public Builder reason(Reason reason) {
+			this.reason = reason;
+			return this;
+		}
+
+		public Builder signal(int signal) {
+			this.signal = signal;
+			return this;
+		}
+
+		@Override
+		public AgentShutdown build() {
+			return new AgentShutdown(agentUuid, reason, signal);
+		}
 	}
 
 	public static String reasonToString(Reason r) {

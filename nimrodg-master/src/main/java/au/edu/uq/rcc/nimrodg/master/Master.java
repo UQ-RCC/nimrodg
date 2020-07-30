@@ -888,8 +888,8 @@ public class Master implements MessageQueueListener, AutoCloseable {
 	private class _AgentListener implements ReferenceAgent.AgentListener {
 
 		@Override
-		public void send(Agent agent, AgentMessage msg) throws IOException {
-			amqp.sendMessage(agent.getQueue(), msg);
+		public void send(Agent agent, AgentMessage.Builder msg) throws IOException {
+			amqp.sendMessage(agent.getQueue(), msg.build());
 		}
 
 		@Override
@@ -925,7 +925,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 		}
 
 		@Override
-		public void onJobSubmit(Agent agent, AgentSubmit as) {
+		public void onJobSubmit(Agent agent, NetworkJob job) {
 			/* nop */
 		}
 
@@ -975,7 +975,14 @@ public class Master implements MessageQueueListener, AutoCloseable {
 
 		@Override
 		public void reportAgentFailure(Actuator act, UUID uuid, AgentShutdown.Reason reason, int signal) throws IllegalArgumentException {
-			agentMessages.offer(new _AgentMessage(-1, new AgentShutdown(uuid, reason, signal), Instant.now()));
+			Instant now = Instant.now();
+			// FIXME: Should probably be some way to tell this message was faked.
+			agentMessages.offer(new _AgentMessage(-1, new AgentShutdown.Builder()
+					.agentUuid(uuid)
+					.reason(reason)
+					.signal(signal)
+					.build(),
+					now));
 		}
 
 	}

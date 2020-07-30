@@ -23,12 +23,19 @@ import java.util.UUID;
 
 public final class AgentInit extends AgentMessage {
 
-	public AgentInit(UUID agentUuid) {
+	private AgentInit(UUID agentUuid) {
 		super(agentUuid);
 	}
 
 	@Override
 	public Type getType() {
 		return Type.Init;
+	}
+
+	public static class Builder extends AgentMessage.Builder<Builder> {
+		@Override
+		public AgentInit build() {
+			return new AgentInit(agentUuid);
+		}
 	}
 }
