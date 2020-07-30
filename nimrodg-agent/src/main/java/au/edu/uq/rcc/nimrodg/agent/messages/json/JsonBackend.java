@@ -22,13 +22,14 @@ package au.edu.uq.rcc.nimrodg.agent.messages.json;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentMessage;
 import au.edu.uq.rcc.nimrodg.agent.MessageBackend;
 import java.io.ByteArrayInputStream;
-import java.nio.charset.StandardCharsets;
+import java.nio.charset.Charset;
 import java.util.Map;
 import java.util.UUID;
 import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonReader;
+import javax.json.JsonReaderFactory;
 import javax.json.JsonString;
 
 public class JsonBackend implements MessageBackend {
@@ -43,6 +44,8 @@ public class JsonBackend implements MessageBackend {
 			AgentMessage.Type.Pong, new PongHandler()
 	);
 
+	private static final JsonReaderFactory READER_FACTORY = Json.createReaderFactory(Map.of());
+
 	private static JsonHandler getHandlerForType(AgentMessage.Type type) {
 		JsonHandler h = MESSAGE_HANDLERS.getOrDefault(type, null);
 		if(h == null) {
@@ -53,18 +56,18 @@ public class JsonBackend implements MessageBackend {
 	}
 
 	@Override
-	public byte[] toBytes(AgentMessage msg) {
+	public byte[] toBytes(AgentMessage msg, Charset charset) {
 		JsonObjectBuilder jo = Json.createObjectBuilder();
 		jo.add("uuid", msg.getAgentUUID().toString());
 		jo.add("type", toJson(msg.getType()));
 		getHandlerForType(msg.getType()).write(jo, msg);
-		return jo.build().toString().getBytes(StandardCharsets.UTF_8);
+		return jo.build().toString().getBytes(charset);
 	}
 
 	@Override
-	public AgentMessage fromBytes(byte[] bytes) {
+	public AgentMessage fromBytes(byte[] bytes, Charset charset) {
 		JsonObject jo;
-		try(JsonReader p = Json.createReader(new ByteArrayInputStream(bytes))) {
+		try(JsonReader p = READER_FACTORY.createReader(new ByteArrayInputStream(bytes), charset)) {
 			jo = p.readObject();
 		}
 
