@@ -108,7 +108,6 @@ public class MasterCmd extends NimrodCLICommand {
 					cfg.getAmqpRoutingKey(),
 					amqpUri.noVerifyPeer,
 					amqpUri.noVerifyHost,
-					MessageBackend.createBackend(),
 					(msg, body) -> {
 						MessageQueueListener.MessageOperation op = m.processAgentMessage(msg, body);
 						synchronized(monitor) {

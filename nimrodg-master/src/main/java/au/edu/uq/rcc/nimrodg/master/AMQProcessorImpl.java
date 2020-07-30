@@ -23,6 +23,7 @@ import au.edu.uq.rcc.nimrodg.agent.messages.AgentHello;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentLifeControl;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentMessage;
 import au.edu.uq.rcc.nimrodg.agent.MessageBackend;
+import au.edu.uq.rcc.nimrodg.agent.messages.json.JsonBackend;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.AlreadyClosedException;
 import com.rabbitmq.client.BuiltinExchangeType;
@@ -64,9 +65,9 @@ public class AMQProcessorImpl implements AMQProcessor {
 	private final AMQP.Queue.DeclareOk m_QueueOk;
 	private final _Consumer m_Consumer;
 
-	private final MessageBackend m_MessageBackend;
+	private static final MessageBackend DEFAULT_MESSAGE_BACKEND = JsonBackend.INSTANCE;
 
-	public AMQProcessorImpl(URI uri, Certificate[] certs, String tlsProtocol, String routingKey, boolean noVerifyPeer, boolean noVerifyHost, MessageBackend msgBackend, MessageQueueListener listener, ExecutorService execs) throws IOException, TimeoutException, URISyntaxException, GeneralSecurityException {
+	public AMQProcessorImpl(URI uri, Certificate[] certs, String tlsProtocol, String routingKey, boolean noVerifyPeer, boolean noVerifyHost, MessageQueueListener listener, ExecutorService execs) throws IOException, TimeoutException, URISyntaxException, GeneralSecurityException {
 		m_Listener = listener;
 		ConnectionFactory cf = new ConnectionFactory();
 
@@ -135,8 +136,6 @@ public class AMQProcessorImpl implements AMQProcessor {
 
 		m_Consumer = new _Consumer(m_Channel);
 		m_Channel.basicConsume(m_QueueOk.getQueue(), false, m_Consumer);
-
-		m_MessageBackend = msgBackend;
 	}
 
 	@Override
@@ -162,7 +161,7 @@ public class AMQProcessorImpl implements AMQProcessor {
 
 	@Override
 	public void sendMessage(String key, AgentMessage msg) throws IOException {
-		byte[] bytes = m_MessageBackend.toBytes(msg);
+		byte[] bytes = DEFAULT_MESSAGE_BACKEND.toBytes(msg, StandardCharsets.UTF_8);
 		if(bytes == null) {
 			throw new IOException("Message serialisation failure");
 		}
@@ -171,7 +170,7 @@ public class AMQProcessorImpl implements AMQProcessor {
 	}
 
 	private void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
-		AgentMessage am = m_MessageBackend.fromBytes(body);
+		AgentMessage am = DEFAULT_MESSAGE_BACKEND.fromBytes(body, StandardCharsets.UTF_8);
 		if(am == null) {
 			throw new IOException("Message deserialisation failed");
 		}
