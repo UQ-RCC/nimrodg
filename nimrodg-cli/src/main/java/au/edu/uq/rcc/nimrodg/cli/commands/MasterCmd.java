@@ -20,6 +20,7 @@
 package au.edu.uq.rcc.nimrodg.cli.commands;
 
 import au.edu.uq.rcc.nimrodg.agent.MessageBackend;
+import au.edu.uq.rcc.nimrodg.agent.messages.AgentMessage;
 import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodConfig;
@@ -69,6 +70,27 @@ public class MasterCmd extends NimrodCLICommand {
 		}
 	}
 
+	private static class _MessageQueueListener implements MessageQueueListener {
+
+		public final Master m;
+		public final Object monitor;
+
+		public _MessageQueueListener(Master m, Object monitor) {
+			this.m = m;
+			this.monitor = monitor;
+		}
+
+		@Override
+		public MessageOperation processAgentMessage(AgentMessage msg, byte[] body) throws IllegalStateException {
+			MessageQueueListener.MessageOperation op = m.processAgentMessage(msg, body);
+			synchronized(monitor) {
+				monitor.notify();
+			}
+			return op;
+		}
+
+	}
+
 	@Override
 	public int execute(Namespace args, UserConfig config, NimrodAPI nimrod, PrintStream out, PrintStream err, Path[] configDirs) throws IOException, NimrodException {
 		String expName = args.getString("exp_name");
@@ -108,13 +130,7 @@ public class MasterCmd extends NimrodCLICommand {
 					cfg.getAmqpRoutingKey(),
 					amqpUri.noVerifyPeer,
 					amqpUri.noVerifyHost,
-					(msg, body) -> {
-						MessageQueueListener.MessageOperation op = m.processAgentMessage(msg, body);
-						synchronized(monitor) {
-							monitor.notify();
-						}
-						return op;
-					},
+					new _MessageQueueListener(m, monitor),
 					ForkJoinPool.commonPool()
 			)) {
 				m.setAMQP(amqp);
