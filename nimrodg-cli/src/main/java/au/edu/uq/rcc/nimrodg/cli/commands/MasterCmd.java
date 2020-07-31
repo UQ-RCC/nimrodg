@@ -48,6 +48,7 @@ import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
+import java.util.Optional;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -80,8 +81,8 @@ public class MasterCmd extends NimrodCLICommand {
 		}
 
 		@Override
-		public MessageOperation processAgentMessage(AgentMessage msg, byte[] body) throws IllegalStateException {
-			MessageQueueListener.MessageOperation op = m.processAgentMessage(msg, body);
+		public Optional<MessageOperation> processAgentMessage(long tag, AgentMessage msg, byte[] body) throws IllegalStateException {
+			Optional<MessageQueueListener.MessageOperation> op = m.processAgentMessage(tag, msg, body);
 			synchronized(monitor) {
 				monitor.notify();
 			}

@@ -46,6 +46,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.security.cert.Certificate;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeoutException;
 import javax.json.Json;
@@ -176,39 +177,47 @@ public class AMQProcessorImpl implements AMQProcessor {
 		}
 
 		long tag = envelope.getDeliveryTag();
-		MessageQueueListener.MessageOperation op;
+		Optional<MessageQueueListener.MessageOperation> op;
 		try {
-			op = m_Listener.processAgentMessage(am, body);
+			op = m_Listener.processAgentMessage(tag, am, body);
 		} catch(IllegalStateException e) {
-			op = MessageQueueListener.MessageOperation.RejectAndRequeue;
-		} catch(IOException e) {
-			m_Channel.basicReject(tag, true);
-			throw e;
+			op = Optional.of(MessageQueueListener.MessageOperation.Terminate);
 		}
 
-		switch(op) {
-			case Ack:
-				m_Channel.basicAck(tag, false);
-				break;
-			case Reject:
-				m_Channel.basicReject(tag, false);
-				break;
-			case RejectAndRequeue:
-				m_Channel.basicReject(tag, true);
-				break;
-			case Terminate:
-				m_Channel.basicAck(tag, false);
-
+		if(op.isPresent()) {
+			opMessage(op.get(), tag);
+			if(op.get() == MessageQueueListener.MessageOperation.Terminate) {
+				opMessage(MessageQueueListener.MessageOperation.Ack, tag);
 				if(am instanceof AgentHello) {
 					AgentHello ah = (AgentHello)am;
 					sendMessage(ah.queue, new AgentLifeControl(am.getAgentUUID(), AgentLifeControl.Operation.Terminate));
 				} else {
 					/* FIXME: Don't really know what to do here as we can't get the routing key :/ */
 				}
+			}
+		}
+	}
 
-				break;
-			default:
-				throw new IllegalStateException();
+	@Override
+	public void opMessage(MessageQueueListener.MessageOperation op, long tag) {
+		synchronized(m_Channel) {
+			try {
+				switch(op) {
+					case Ack:
+						m_Channel.basicAck(tag, false);
+						break;
+					case Reject:
+						m_Channel.basicReject(tag, false);
+						break;
+					case RejectAndRequeue:
+						m_Channel.basicReject(tag, true);
+						break;
+					case Terminate:
+						break;
+				}
+			} catch(IOException e) {
+				LOGGER.error("Unable to {} message, delivery tag = {}", op, tag, e);
+			}
 		}
 	}
 

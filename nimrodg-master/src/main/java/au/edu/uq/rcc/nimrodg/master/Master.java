@@ -136,11 +136,13 @@ public class Master implements MessageQueueListener, AutoCloseable {
 
 	private static class _AgentMessage {
 
+		public final long tag;
 		public final AgentMessage msg;
 		public final Instant receivedTime;
 		public Instant processedTime;
 
-		public _AgentMessage(AgentMessage msg, Instant receivedTime) {
+		public _AgentMessage(long tag, AgentMessage msg, Instant receivedTime) {
+			this.tag = tag;
 			this.msg = msg;
 			this.receivedTime = receivedTime;
 		}
@@ -228,12 +230,12 @@ public class Master implements MessageQueueListener, AutoCloseable {
 
 	/* This runs out-of-band with the state machine. */
 	@Override
-	public MessageOperation processAgentMessage(AgentMessage msg, byte[] body) throws IllegalStateException {
-		if(!agentMessages.offer(new _AgentMessage(msg, Instant.now()))) {
-			return MessageOperation.RejectAndRequeue;
+	public Optional<MessageOperation> processAgentMessage(long tag, AgentMessage msg, byte[] body) throws IllegalStateException {
+		if(!agentMessages.offer(new _AgentMessage(tag, msg, Instant.now()))) {
+			return Optional.of(MessageOperation.RejectAndRequeue);
 		}
 
-		return MessageOperation.Ack;
+		return Optional.empty();
 	}
 
 	public void setAMQP(AMQProcessor amqp) {
@@ -500,10 +502,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 				continue;
 			}
 
-			/* Requeue the message if the handler bounced it */
-			if(mop == MessageOperation.RejectAndRequeue) {
-				agentMessages.offer(msg);
-			}
+			amqp.opMessage(mop, msg.tag);
 		}
 
 		heart.tick(Instant.now());
@@ -976,7 +975,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 
 		@Override
 		public void reportAgentFailure(Actuator act, UUID uuid, AgentShutdown.Reason reason, int signal) throws IllegalArgumentException {
-			agentMessages.offer(new _AgentMessage(new AgentShutdown(uuid, reason, signal), Instant.now()));
+			agentMessages.offer(new _AgentMessage(-1, new AgentShutdown(uuid, reason, signal), Instant.now()));
 		}
 
 	}

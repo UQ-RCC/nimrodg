@@ -418,8 +418,8 @@ public class Controller {
 	private class _MessageQueueListener implements MessageQueueListener {
 
 		@Override
-		public MessageOperation processAgentMessage(AgentMessage msg, byte[] body) throws IllegalStateException, IOException {
-			return handleAgentMessage(msg, body);
+		public Optional<MessageOperation> processAgentMessage(long tag, AgentMessage msg, byte[] body) throws IllegalStateException, IOException {
+			return Optional.of(handleAgentMessage(msg, body));
 		}
 	}
 }
