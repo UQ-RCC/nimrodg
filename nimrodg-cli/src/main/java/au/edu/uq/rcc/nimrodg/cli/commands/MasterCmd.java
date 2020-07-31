@@ -19,7 +19,6 @@
  */
 package au.edu.uq.rcc.nimrodg.cli.commands;
 
-import au.edu.uq.rcc.nimrodg.agent.MessageBackend;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentMessage;
 import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
@@ -92,7 +91,7 @@ public class MasterCmd extends NimrodCLICommand {
 	}
 
 	@Override
-	public int execute(Namespace args, UserConfig config, NimrodAPI nimrod, PrintStream out, PrintStream err, Path[] configDirs) throws IOException, NimrodException {
+	public int execute(Namespace args, UserConfig config, NimrodAPI nimrod, PrintStream out, PrintStream err, Path[] configDirs) throws NimrodException {
 		String expName = args.getString("exp_name");
 		Experiment exp = nimrod.getExperiment(expName);
 		if(exp == null) {
@@ -116,7 +115,7 @@ public class MasterCmd extends NimrodCLICommand {
 		long tickRate = args.getLong("tick_rate");
 
 		if(!nimrod.getAPICaps().master) {
-			err.printf("API Implementation doesn't provide master capabilities.\n");
+			err.println("API Implementation doesn't provide master capabilities.");
 			return 1;
 		}
 
