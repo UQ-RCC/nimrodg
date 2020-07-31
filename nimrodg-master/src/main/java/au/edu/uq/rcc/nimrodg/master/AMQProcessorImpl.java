@@ -139,7 +139,7 @@ public class AMQProcessorImpl implements AMQProcessor {
 	}
 
 	@Override
-	public void close() throws IOException, TimeoutException {
+	public void close() throws IOException {
 		try(m_Connection) {
 			//m_Channel.close();
 			/* abort() will wait for the close to finish. */
@@ -212,18 +212,9 @@ public class AMQProcessorImpl implements AMQProcessor {
 		}
 	}
 
-	private void handleAck(long deliveryTag, boolean multiple) throws IOException {
-		//assert !multiple;
-
-	}
-
-	private void handleNack(long deliveryTag, boolean multiple) throws IOException {
-		//throw new IllegalStateException("handleNack() called. We don't use nacks.");
-	}
-
 	private class _Consumer extends DefaultConsumer {
 
-		public _Consumer(Channel channel) {
+		private _Consumer(Channel channel) {
 			super(channel);
 		}
 
@@ -233,20 +224,20 @@ public class AMQProcessorImpl implements AMQProcessor {
 		}
 	}
 
-	private class _ConfirmListener implements ConfirmListener {
+	private static class _ConfirmListener implements ConfirmListener {
 
 		@Override
-		public void handleAck(long deliveryTag, boolean multiple) throws IOException {
-			AMQProcessorImpl.this.handleAck(deliveryTag, multiple);
+		public void handleAck(long deliveryTag, boolean multiple) {
+			/* nop */
 		}
 
 		@Override
-		public void handleNack(long deliveryTag, boolean multiple) throws IOException {
-			AMQProcessorImpl.this.handleNack(deliveryTag, multiple);
+		public void handleNack(long deliveryTag, boolean multiple) {
+			/* nop */
 		}
 	}
 
-	private class _ReturnListener implements ReturnListener {
+	private static class _ReturnListener implements ReturnListener {
 
 		@Override
 		public void handleReturn(int replyCode, String replyText, String exchange, String routingKey, AMQP.BasicProperties properties, byte[] body) throws IOException {
