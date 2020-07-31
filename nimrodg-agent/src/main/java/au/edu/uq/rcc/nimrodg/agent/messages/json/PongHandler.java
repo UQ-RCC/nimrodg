@@ -30,12 +30,12 @@ public class PongHandler implements JsonHandler {
 
 	@Override
 	public AgentMessage read(JsonObject jo, UUID uuid) {
-		return new AgentPong(uuid, jo.getJsonObject("stats"));
+		return new AgentPong(uuid);
 	}
 
 	@Override
 	public void write(JsonObjectBuilder jo, AgentMessage msg) {
-		jo.add("stats", JsonValue.EMPTY_JSON_OBJECT);
+
 	}
 
 }

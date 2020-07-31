@@ -20,15 +20,11 @@
 package au.edu.uq.rcc.nimrodg.agent.messages;
 
 import java.util.UUID;
-import javax.json.JsonObject;
 
 public class AgentPong extends AgentMessage {
 
-	public final JsonObject stats;
-
-	public AgentPong(UUID agentUuid, JsonObject stats) {
+	public AgentPong(UUID agentUuid) {
 		super(agentUuid);
-		this.stats = stats;
 	}
 
 	@Override
