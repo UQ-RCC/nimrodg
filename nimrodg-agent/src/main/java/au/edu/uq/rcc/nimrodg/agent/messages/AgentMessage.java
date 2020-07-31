@@ -19,14 +19,16 @@
  */
 package au.edu.uq.rcc.nimrodg.agent.messages;
 
+import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 
 public abstract class AgentMessage {
 
-	public static final int PROTOCOL_VERSION = 3;
+	public static final int PROTOCOL_VERSION = 4;
 
 	private final UUID agentUuid;
+	private final Instant timestamp;
 
 	public enum Type {
 		Init("agent.init"),
@@ -46,10 +48,12 @@ public abstract class AgentMessage {
 		}
 	}
 
-	protected AgentMessage(UUID agentUuid) {
+	protected AgentMessage(UUID agentUuid, Instant timestamp) {
 		Objects.requireNonNull(agentUuid, "agentUuid");
+		Objects.requireNonNull(timestamp, "timestamp");
 
 		this.agentUuid = agentUuid;
+		this.timestamp = timestamp;
 	}
 
 	public UUID getAgentUUID() {
@@ -62,12 +66,22 @@ public abstract class AgentMessage {
 		return PROTOCOL_VERSION;
 	}
 
+	public Instant getTimestamp() {
+		return timestamp;
+	}
+
 	@SuppressWarnings("unchecked")
 	public static abstract class Builder<T extends Builder> {
 		protected UUID agentUuid;
+		protected Instant timestamp;
 
 		public T agentUuid(UUID uuid) {
 			this.agentUuid = uuid;
+			return (T)this;
+		}
+
+		public T timestamp(Instant timestamp) {
+			this.timestamp = timestamp;
 			return (T)this;
 		}
 

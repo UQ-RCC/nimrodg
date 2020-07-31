@@ -916,7 +916,9 @@ public class Master implements MessageQueueListener, AutoCloseable {
 
 		@Override
 		public void send(Agent agent, AgentMessage.Builder<?> msg) throws IOException {
-			amqp.sendMessage(agent.getQueue(), msg.build());
+			amqp.sendMessage(agent.getQueue(), msg
+					.timestamp(Instant.now())
+					.build());
 		}
 
 		@Override

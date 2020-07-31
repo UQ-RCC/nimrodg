@@ -19,6 +19,7 @@
  */
 package au.edu.uq.rcc.nimrodg.agent.messages;
 
+import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -31,8 +32,8 @@ public final class AgentLifeControl extends AgentMessage {
 
 	public final Operation operation;
 
-	private AgentLifeControl(UUID agentUuid, Operation op) {
-		super(agentUuid);
+	private AgentLifeControl(UUID agentUuid, Instant timestamp, Operation op) {
+		super(agentUuid, timestamp);
 		Objects.requireNonNull(op, "op");
 		this.operation = op;
 	}
@@ -52,7 +53,7 @@ public final class AgentLifeControl extends AgentMessage {
 
 		@Override
 		public AgentLifeControl build() {
-			return new AgentLifeControl(agentUuid, op);
+			return new AgentLifeControl(agentUuid, timestamp, op);
 		}
 	}
 }

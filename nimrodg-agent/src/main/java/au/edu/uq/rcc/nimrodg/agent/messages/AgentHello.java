@@ -19,6 +19,7 @@
  */
 package au.edu.uq.rcc.nimrodg.agent.messages;
 
+import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -26,8 +27,8 @@ public class AgentHello extends AgentMessage {
 
 	public final String queue;
 
-	private AgentHello(UUID agentUuid, String queue) {
-		super(agentUuid);
+	private AgentHello(UUID agentUuid, Instant timestamp, String queue) {
+		super(agentUuid, timestamp);
 		Objects.requireNonNull(queue, "queue");
 		this.queue = queue;
 	}
@@ -47,7 +48,7 @@ public class AgentHello extends AgentMessage {
 
 		@Override
 		public AgentHello build() {
-			return new AgentHello(agentUuid, queue);
+			return new AgentHello(agentUuid, timestamp, queue);
 		}
 	}
 }

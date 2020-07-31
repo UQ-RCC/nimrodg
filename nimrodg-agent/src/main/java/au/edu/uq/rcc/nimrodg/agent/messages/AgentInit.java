@@ -19,12 +19,13 @@
  */
 package au.edu.uq.rcc.nimrodg.agent.messages;
 
+import java.time.Instant;
 import java.util.UUID;
 
 public final class AgentInit extends AgentMessage {
 
-	private AgentInit(UUID agentUuid) {
-		super(agentUuid);
+	private AgentInit(UUID agentUuid, Instant timestamp) {
+		super(agentUuid, timestamp);
 	}
 
 	@Override
@@ -35,7 +36,7 @@ public final class AgentInit extends AgentMessage {
 	public static class Builder extends AgentMessage.Builder<Builder> {
 		@Override
 		public AgentInit build() {
-			return new AgentInit(agentUuid);
+			return new AgentInit(agentUuid, timestamp);
 		}
 	}
 }

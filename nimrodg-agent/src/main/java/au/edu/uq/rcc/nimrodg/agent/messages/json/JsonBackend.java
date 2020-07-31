@@ -24,6 +24,8 @@ import au.edu.uq.rcc.nimrodg.agent.MessageBackend;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.Charset;
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.UUID;
 import javax.json.Json;
@@ -68,6 +70,7 @@ public class JsonBackend implements MessageBackend {
 		jo.add("uuid", msg.getAgentUUID().toString());
 		jo.add("version", msg.getVersion());
 		jo.add("type", toJson(msg.getType()));
+		jo.add("timestamp", DateTimeFormatter.ISO_INSTANT.format(msg.getTimestamp()));
 		getHandlerForType(msg.getType()).write(jo, msg);
 		return jo.build();
 	}
@@ -92,7 +95,8 @@ public class JsonBackend implements MessageBackend {
 
 		return getHandlerForType(readMessageType(jo.getString("type"))).read(
 				jo,
-				UUID.fromString(jo.getString("uuid"))
+				UUID.fromString(jo.getString("uuid")),
+				Instant.from(DateTimeFormatter.ISO_INSTANT.parse(jo.getString("timestamp")))
 		);
 	}
 

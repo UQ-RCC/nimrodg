@@ -21,14 +21,17 @@ package au.edu.uq.rcc.nimrodg.agent.messages;
 
 import au.edu.uq.rcc.nimrodg.agent.Agent;
 
+import java.time.Instant;
+import java.util.Objects;
 import java.util.UUID;
 
 public class AgentPong extends AgentMessage {
 
 	private final Agent.ClientState clientState;
 
-	public AgentPong(UUID agentUuid, Agent.ClientState clientState) {
-		super(agentUuid);
+	private AgentPong(UUID agentUuid, Instant timestamp, Agent.ClientState clientState) {
+		super(agentUuid, timestamp);
+		Objects.requireNonNull(clientState, "clientState");
 		this.clientState = clientState;
 	}
 
@@ -51,7 +54,7 @@ public class AgentPong extends AgentMessage {
 
 		@Override
 		public AgentPong build() {
-			return new AgentPong(agentUuid, clientState);
+			return new AgentPong(agentUuid, timestamp, clientState);
 		}
 	}
 }

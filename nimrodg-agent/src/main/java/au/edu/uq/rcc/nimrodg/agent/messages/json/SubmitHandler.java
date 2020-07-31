@@ -27,6 +27,7 @@ import au.edu.uq.rcc.nimrodg.agent.messages.NetworkJob;
 import au.edu.uq.rcc.nimrodg.api.OnErrorCommand;
 import au.edu.uq.rcc.nimrodg.api.RedirectCommand;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -43,7 +44,7 @@ import javax.json.JsonValue;
 public class SubmitHandler implements JsonHandler {
 
 	@Override
-	public AgentMessage read(JsonObject jo, UUID uuid) {
+	public AgentMessage read(JsonObject jo, UUID uuid, Instant timestamp) {
 		JsonObject joo = jo.getJsonObject("job");
 
 		UUID jobUuid = UUID.fromString(joo.getString("uuid"));
@@ -68,6 +69,7 @@ public class SubmitHandler implements JsonHandler {
 
 		return new AgentSubmit.Builder()
 				.agentUuid(uuid)
+				.timestamp(timestamp)
 				.job(new NetworkJob(jobUuid, index, txuri, token, commands, env))
 				.build();
 	}

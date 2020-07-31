@@ -22,6 +22,7 @@ package au.edu.uq.rcc.nimrodg.agent.messages.json;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentHello;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentMessage;
 
+import java.time.Instant;
 import java.util.UUID;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
@@ -29,9 +30,10 @@ import javax.json.JsonObjectBuilder;
 public class HelloHandler implements JsonHandler {
 
 	@Override
-	public AgentMessage read(JsonObject jo, UUID uuid) {
+	public AgentMessage read(JsonObject jo, UUID uuid, Instant timestamp) {
 		return new AgentHello.Builder()
 				.agentUuid(uuid)
+				.timestamp(timestamp)
 				.queue(jo.getString("queue"))
 				.build();
 	}

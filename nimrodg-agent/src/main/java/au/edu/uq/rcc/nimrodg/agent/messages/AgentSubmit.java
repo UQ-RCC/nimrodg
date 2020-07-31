@@ -19,6 +19,7 @@
  */
 package au.edu.uq.rcc.nimrodg.agent.messages;
 
+import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -26,8 +27,8 @@ public final class AgentSubmit extends AgentMessage {
 
 	private final NetworkJob m_Job;
 
-	private AgentSubmit(UUID agentUuid, NetworkJob job) {
-		super(agentUuid);
+	private AgentSubmit(UUID agentUuid, Instant timestamp, NetworkJob job) {
+		super(agentUuid, timestamp);
 		Objects.requireNonNull(job, "job");
 		m_Job = job;
 	}
@@ -51,7 +52,7 @@ public final class AgentSubmit extends AgentMessage {
 
 		@Override
 		public AgentSubmit build() {
-			return new AgentSubmit(agentUuid, job);
+			return new AgentSubmit(agentUuid, timestamp, job);
 		}
 	}
 }

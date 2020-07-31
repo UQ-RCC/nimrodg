@@ -462,6 +462,7 @@ public abstract class APITests {
 				ReferenceAgent ra = agents[i];
 				ra.processMessage(new AgentShutdown.Builder()
 						.agentUuid(requests[i].uuid)
+						.timestamp(Instant.now())
 						.reason(AgentShutdown.Reason.HostSignal)
 						.signal(15)
 						.build(), Instant.now());

@@ -249,7 +249,7 @@ public class Controller {
 	}
 
 	private void sendMessage(String key, AgentMessage.Builder<?> msg) throws IOException {
-		AgentMessage amsg = msg.build();
+		AgentMessage amsg = msg.timestamp(Instant.now()).build();
 		byte[] bytes = JsonBackend.INSTANCE.toBytes(amsg, StandardCharsets.UTF_8);
 		if(bytes == null) {
 			throw new IOException("Message serialisation failure");

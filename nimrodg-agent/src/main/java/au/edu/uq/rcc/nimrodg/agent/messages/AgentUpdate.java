@@ -21,6 +21,7 @@ package au.edu.uq.rcc.nimrodg.agent.messages;
 
 import au.edu.uq.rcc.nimrodg.api.CommandResult;
 
+import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -54,8 +55,8 @@ public final class AgentUpdate extends AgentMessage {
 	private final CommandResult_ commandResult;
 	private final Action action;
 
-	private AgentUpdate(UUID agentUuid, UUID jobUuid, CommandResult_ result, Action action) {
-		super(agentUuid);
+	private AgentUpdate(UUID agentUuid, Instant timestamp, UUID jobUuid, CommandResult_ result, Action action) {
+		super(agentUuid, timestamp);
 		Objects.requireNonNull(jobUuid, "jobUuid");
 		Objects.requireNonNull(result, "result");
 		Objects.requireNonNull(action, "action");
@@ -103,7 +104,7 @@ public final class AgentUpdate extends AgentMessage {
 
 		@Override
 		public AgentUpdate build() {
-			return new AgentUpdate(agentUuid, jobUuid, commandResult, action);
+			return new AgentUpdate(agentUuid, timestamp, jobUuid, commandResult, action);
 		}
 	}
 }

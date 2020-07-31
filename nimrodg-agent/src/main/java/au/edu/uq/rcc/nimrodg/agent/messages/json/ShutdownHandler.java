@@ -22,6 +22,7 @@ package au.edu.uq.rcc.nimrodg.agent.messages.json;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentMessage;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
 
+import java.time.Instant;
 import java.util.UUID;
 import javax.json.Json;
 import javax.json.JsonObject;
@@ -31,9 +32,10 @@ import javax.json.JsonString;
 public class ShutdownHandler implements JsonHandler {
 
 	@Override
-	public AgentMessage read(JsonObject jo, UUID uuid) {
+	public AgentMessage read(JsonObject jo, UUID uuid, Instant timestamp) {
 		return new AgentShutdown.Builder()
 				.agentUuid(uuid)
+				.timestamp(timestamp)
 				.reason(readShutdownReason(jo.getString("reason")))
 				.signal(jo.getInt("signal"))
 				.build();

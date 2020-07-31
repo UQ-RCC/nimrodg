@@ -21,13 +21,14 @@ package au.edu.uq.rcc.nimrodg.agent.messages.json;
 
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentMessage;
 
+import java.time.Instant;
 import java.util.UUID;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 
 public interface JsonHandler {
 
-	AgentMessage read(JsonObject jo, UUID uuid);
+	AgentMessage read(JsonObject jo, UUID uuid, Instant timestamp);
 
 	void write(JsonObjectBuilder jo, AgentMessage msg);
 }

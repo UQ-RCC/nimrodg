@@ -19,6 +19,7 @@
  */
 package au.edu.uq.rcc.nimrodg.agent.messages;
 
+import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -32,8 +33,8 @@ public class AgentShutdown extends AgentMessage {
 	public final Reason reason;
 	public final int signal;
 
-	private AgentShutdown(UUID agentUuid, Reason reason, int signal) {
-		super(agentUuid);
+	private AgentShutdown(UUID agentUuid, Instant timestamp, Reason reason, int signal) {
+		super(agentUuid, timestamp);
 		Objects.requireNonNull(reason, "reason");
 		this.reason = reason;
 		this.signal = signal;
@@ -60,7 +61,7 @@ public class AgentShutdown extends AgentMessage {
 
 		@Override
 		public AgentShutdown build() {
-			return new AgentShutdown(agentUuid, reason, signal);
+			return new AgentShutdown(agentUuid, timestamp, reason, signal);
 		}
 	}
 

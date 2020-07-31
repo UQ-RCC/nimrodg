@@ -23,6 +23,7 @@ import au.edu.uq.rcc.nimrodg.agent.Agent;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentMessage;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentPong;
 import java.util.UUID;
+import java.time.Instant;
 
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
@@ -30,8 +31,12 @@ import javax.json.JsonObjectBuilder;
 public class PongHandler implements JsonHandler {
 
 	@Override
-	public AgentMessage read(JsonObject jo, UUID uuid) {
-		return new AgentPong(uuid, Agent.clientStateFromString(jo.getString("state")));
+	public AgentMessage read(JsonObject jo, UUID uuid, Instant timestamp) {
+		return new AgentPong.Builder()
+				.agentUuid(uuid)
+				.timestamp(timestamp)
+				.clientState(Agent.clientStateFromString(jo.getString("state")))
+				.build();
 	}
 
 	@Override

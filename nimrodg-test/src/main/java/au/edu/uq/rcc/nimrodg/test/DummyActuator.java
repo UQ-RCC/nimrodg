@@ -69,6 +69,7 @@ public class DummyActuator implements Actuator {
 	public List<AgentHello> simulateHellos() {
 		return pendingAgents.stream().map(uuid -> new AgentHello.Builder()
 				.agentUuid(uuid)
+				.timestamp(Instant.now())
 				.queue(UUID.randomUUID().toString())
 				.build()).collect(Collectors.toList());
 	}
