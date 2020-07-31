@@ -122,9 +122,6 @@ public class AMQProcessorImpl implements AMQProcessor {
 
 		m_Channel = m_Connection.createChannel();
 
-		/* Don't schedule messages that haven't been ACK'd */
-		m_Channel.basicQos(1);
-
 		m_Channel.addConfirmListener(new _ConfirmListener());
 		m_Channel.addReturnListener(new _ReturnListener());
 
