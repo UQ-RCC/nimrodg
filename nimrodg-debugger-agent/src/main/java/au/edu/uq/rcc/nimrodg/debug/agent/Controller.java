@@ -162,7 +162,7 @@ public class Controller {
 
 		try {
 			m_AMQP.close();
-		} catch(IOException | TimeoutException e) {
+		} catch(IOException e) {
 			m_Logger.log(ILogger.Level.ERR, e);
 		}
 
