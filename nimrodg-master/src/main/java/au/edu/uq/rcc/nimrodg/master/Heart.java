@@ -142,6 +142,7 @@ class Heart {
 	}
 
 	private void tickHeartbeat(UUID u, ExpiryInfo ei, Instant now, Set<UUID> exps) {
+		/* FIXME: This logic needs to be redone. */
 		//long commDiff = ops.getLastHeardFrom(u).until(now.plus(1, ChronoUnit.SECONDS), ChronoUnit.SECONDS);
 		long commDiff = ops.getLastHeardFrom(u).until(now, ChronoUnit.SECONDS);
 		//LOGGER.trace("Agent {} commDiff = {}", u, commDiff);
