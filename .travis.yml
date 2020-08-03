@@ -1,5 +1,6 @@
 language: java
 jdk: openjdk11
+os: linux
 dist: bionic
 
 services:
@@ -36,9 +37,8 @@ install: true
 
 deploy:
   provider: releases
-  api_key:
+  token:
     secure: EZIKib7ApY8+o5IgfplecwA3ioCi8Vza/Y3Ly85jf1F6lw3o6yaEaCw5J8cYp9JbhjYHVMA/eVrqbi77ReGL9W/gNuzvvU0Ca7RVeZ2F0iF/oqXOsD0OpTq+M0U70fyGYgB24oPYih1+4NyZusCWIWn7e3o7DYBc6L3plCR/sF0Q7IF7tIGJ2H3HCU26feSIddVRFCbii6428I4z5nyFcEC2FJAZfT5HOzlhJAmC6oxo8z+Tr3r/UKcZCNx6sSyogrQO32RoFr7Ym1HLJrimoLPutwnjbJYx1FsemtOu7UlV+xdvgwFKfPTSivvFrlr019Eh0DDqSc26GubiONkNwYk93yKC8ZCOUj2BtVvbxFuzG3IwWwf9Apsht5DValy2Htu8CfLaeC28qQJaesOU0ooPAXqyglTh5cAcMcVjB61rvqOj6ssGmCYVY9L807rd2AZrB2SjLZeUwv05QeN9396PW81sR+5ioeDrKJMbean4+nFkOOR71Jccs0IqGNu+oH0KkE18Y+Ajcacc990YCXpNwc4dYkZhMEJxNlA9AhFkWPYyae+P21rjs3QizSN2sYImVJrg9YszbIvb+s1fQ+IG/EoOyJqo6klnJqSI3Tza/iXP38FeXhvBEVvzTtqgsH+SSYWDADVTYER/MSk/fofykvDtMbr6FvLMyV4zwvQ=
-  skip_cleanup: true
   file_glob: true
   file:
     - nimrod/build/distributions/nimrod-*.tar.*
