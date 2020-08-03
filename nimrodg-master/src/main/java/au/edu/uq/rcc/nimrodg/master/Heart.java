@@ -91,7 +91,7 @@ class Heart implements ConfigListener {
 
 		Instant getLastHeardFrom(UUID u);
 
-		Instant getExpiryTime(UUID u);
+		Instant getWalltime(UUID u);
 	}
 
 	Heart(Operations ops) {
@@ -112,7 +112,7 @@ class Heart implements ConfigListener {
 	private void tickAgent(UUID u, Instant now, Set<UUID> exps) {
 		ExpiryInfo ei = expiryInfo.get(u);
 
-		tickExpiry(u, ei, now);
+		tickWalltime(u, ei, now);
 
 		if(!ei.isExpiring()) {
 			tickHeartbeat(u, ei, now, exps);
@@ -120,8 +120,8 @@ class Heart implements ConfigListener {
 
 	}
 
-	private void tickExpiry(UUID u, ExpiryInfo ei, Instant now) {
-		if(now.isBefore(ops.getExpiryTime(u))) {
+	private void tickWalltime(UUID u, ExpiryInfo ei, Instant now) {
+		if(now.isBefore(ops.getWalltime(u))) {
 			return;
 		}
 

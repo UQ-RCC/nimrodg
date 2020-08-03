@@ -1035,7 +1035,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 		}
 
 		@Override
-		public Instant getExpiryTime(UUID u) {
+		public Instant getWalltime(UUID u) {
 			return allAgents.get(u).state.getExpiryTime();
 		}
 
