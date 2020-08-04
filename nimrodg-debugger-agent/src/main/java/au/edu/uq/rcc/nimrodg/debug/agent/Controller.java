@@ -45,7 +45,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -58,10 +57,6 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeoutException;
-import javax.json.Json;
-import javax.json.JsonException;
-import javax.json.JsonReader;
-import javax.json.JsonStructure;
 import javax.swing.*;
 
 public class Controller {
@@ -254,7 +249,7 @@ public class Controller {
 		}
 	}
 
-	private void sendMessage(String key, AgentMessage.Builder msg) throws IOException {
+	private void sendMessage(String key, AgentMessage.Builder<?> msg) throws IOException {
 		AgentMessage amsg = msg.build();
 		byte[] bytes = JsonBackend.INSTANCE.toBytes(amsg, StandardCharsets.UTF_8);
 		if(bytes == null) {
@@ -363,7 +358,7 @@ public class Controller {
 	private class _AgentListener implements ReferenceAgent.AgentListener {
 
 		@Override
-		public void send(Agent agent, AgentMessage.Builder msg) throws IOException {
+		public void send(Agent agent, AgentMessage.Builder<?> msg) throws IOException {
 			Controller.this.sendMessage(agent.getQueue(), msg);
 		}
 
