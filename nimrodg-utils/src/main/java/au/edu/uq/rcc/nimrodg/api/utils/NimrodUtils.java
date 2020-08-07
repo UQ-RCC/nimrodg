@@ -30,6 +30,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -41,6 +42,9 @@ public class NimrodUtils {
 	}
 
 	public static <T> T selectRandomFromContainer(Collection<T> c, Random rnd) {
+		Objects.requireNonNull(c, "c");
+		Objects.requireNonNull(rnd, "rnd");
+
 		if(c.isEmpty()) {
 			return null;
 		}
@@ -52,10 +56,12 @@ public class NimrodUtils {
 	}
 
 	public static <T, U> Map<T, List<U>> mapToParent(Collection<U> vals, Function<U, T> mapper) {
+		Objects.requireNonNull(vals, "vals");
 		return mapToParent(vals.stream(), mapper);
 	}
 
 	public static <T, U, V> Map<T, List<V>> mapToParent(Collection<U> vals, Function<U, T> keyMapper, Function<U, V> valueMapper) {
+		Objects.requireNonNull(vals, "vals");
 		return mapToParent(vals.stream(), keyMapper, valueMapper);
 	}
 
@@ -64,12 +70,19 @@ public class NimrodUtils {
 	}
 
 	public static <T, U, V> Map<T, List<V>> mapToParent(Stream<U> vals, Function<U, T> keyMapper, Function<U, V> valueMapper) {
+		Objects.requireNonNull(vals, "vals");
+		Objects.requireNonNull(keyMapper, "keyMapper");
+		Objects.requireNonNull(valueMapper, "valueMapper");
 		Map<T, List<V>> map = new HashMap<>();
 		vals.forEach(u -> getOrAddLazy(map, keyMapper.apply(u), tt -> new ArrayList<>()).add(valueMapper.apply(u)));
 		return map;
 	}
 
 	public static <K, V> V getOrAddLazy(Map<K, V> map, K key, Function<K, V> proc) {
+		Objects.requireNonNull(map, "map");
+		Objects.requireNonNull(key, "key");
+		Objects.requireNonNull(proc, "proc");
+
 		V val = map.getOrDefault(key, null);
 		if(val == null) {
 			val = proc.apply(key);
@@ -80,6 +93,8 @@ public class NimrodUtils {
 	}
 
 	public static void deltree(Path path) throws IOException {
+		Objects.requireNonNull(path, "path");
+
 		if(!Files.exists(path)) {
 			return;
 		}
