@@ -226,26 +226,29 @@ public abstract class ClusterActuator<C extends ClusterConfig> extends POSIXActu
 			String jobId;
 			try {
 				jobId = submitBatch(shell, tb);
-				Batch b = new Batch(jobId, tb.batchUuid, tb.batchDir, tb.to - tb.from);
-				for(int i = 0; i < b.results.length; ++i) {
-					b.results[i] = new LaunchResult(node, null, null, Json.createObjectBuilder()
-							.add("batch_id", b.jobId)
-							.add("batch_uuid", b.uuid.toString())
-							.add("batch_dir", b.batchDir)
-							.add("batch_size", b.results.length)
-							.add("batch_index", i)
-							.build());
-
-					lr[tb.from + i] = b.results[i];
-				}
-				Arrays.setAll(b.uuids, i -> tb.uuids[i]);
-				Arrays.stream(tb.uuids).forEach(u -> jobNames.put(u, b));
 			} catch(IOException e) {
 				LaunchResult res = new LaunchResult(null, e);
 				for(int i = tb.from; i < tb.to; ++i) {
 					lr[i] = res;
 				}
+
+				return lr;
 			}
+
+			Batch b = new Batch(jobId, tb.batchUuid, tb.batchDir, tb.to - tb.from);
+			for(int i = 0; i < b.results.length; ++i) {
+				b.results[i] = new LaunchResult(node, null, null, Json.createObjectBuilder()
+						.add("batch_id", b.jobId)
+						.add("batch_uuid", b.uuid.toString())
+						.add("batch_dir", b.batchDir)
+						.add("batch_size", b.results.length)
+						.add("batch_index", i)
+						.build());
+
+				lr[tb.from + i] = b.results[i];
+			}
+			Arrays.setAll(b.uuids, i -> tb.uuids[i]);
+			Arrays.stream(tb.uuids).forEach(u -> jobNames.put(u, b));
 		}
 
 		return lr;
