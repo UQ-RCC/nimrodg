@@ -38,11 +38,15 @@ import java.util.stream.Stream;
 public class NimrodUtils {
 
 	public static <T> T selectRandomFromContainer(Collection<T> c) {
+		return selectRandomFromContainer(c, new Random());
+	}
+
+	public static <T> T selectRandomFromContainer(Collection<T> c, Random rnd) {
 		if(c.isEmpty()) {
 			return null;
 		}
 
-		int index = new Random().nextInt(c.size()) + 1;
+		int index = rnd.nextInt(c.size()) + 1;
 
 		Iterator<T> it = c.iterator();
 		T r = null;
