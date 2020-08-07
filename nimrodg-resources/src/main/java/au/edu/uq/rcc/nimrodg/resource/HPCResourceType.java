@@ -271,7 +271,7 @@ public class HPCResourceType extends ClusterResourceType {
 		if(jo.containsKey("template")) {
 			template = jo.getString("template");
 		} else if(jo.containsKey("template_file")) {
-			template = new String(Files.readAllBytes(Paths.get(jo.getString("template_file"))), StandardCharsets.UTF_8);
+			template = Files.readString(Paths.get(jo.getString("template_file")), StandardCharsets.UTF_8);
 		} else if(jo.containsKey("template_classpath")) {
 			try(InputStream is = HPCResourceType.class.getClassLoader().getResourceAsStream(jo.getString("template_classpath"))) {
 				if(is == null) {
