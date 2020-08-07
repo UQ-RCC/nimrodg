@@ -28,7 +28,6 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -46,18 +45,10 @@ public class NimrodUtils {
 			return null;
 		}
 
-		int index = rnd.nextInt(c.size()) + 1;
-
-		Iterator<T> it = c.iterator();
-		T r = null;
-		for(int i = 0; i < index; ++i) {
-			if(!it.hasNext()) {
-				return null;
-			}
-			r = it.next();
-		}
-
-		return r;
+		return c.stream()
+				.skip(rnd.nextInt(c.size()))
+				.findFirst()
+				.orElse(null);
 	}
 
 	public static <T, U> Map<T, List<U>> mapToParent(Collection<U> vals, Function<U, T> mapper) {
