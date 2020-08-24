@@ -51,6 +51,16 @@ public class StringTests {
 		Assert.assertEquals("Hello, World", StringUtils.unescape("\\110\\145\\154\\154\\157\\54\\40\\127\\157\\162\\154\\144"));
 	}
 
+	@Test(expected = SubstitutionException.class)
+	public void substStartsWithDigitTest() throws SubstitutionException {
+		StringUtils.findSubstitutions("$0a");
+	}
+
+	@Test(expected = SubstitutionException.class)
+	public void substEmptyTest() throws SubstitutionException {
+		StringUtils.findSubstitutions("$");
+	}
+
 	@Test
 	public void substNoTest() throws SubstitutionException {
 		String s = "Yo ho ho";

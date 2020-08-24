@@ -77,21 +77,20 @@ public class StringUtils {
 	}
 
 	/**
-	 * Is the given code point a nondigit? [a-zA-Z]
+	 * Is the given code point a nondigit? [a-zA-Z_]
 	 */
 	private static boolean isIdentifierNonDigit(int cp) {
 		return (cp >= 'a' && cp <= 'z') || (cp >= 'A' && cp <= 'Z') || cp == '_';
 	}
 
 	/**
-	 * Drain at most pair of hex digits from a queue of code points.
+	 * Drain at most a pair of hex digits from a queue of code points.
 	 *
 	 * @param d The queue of code points.
 	 * @param out The StringBuilder to receive the decoded hex.
 	 * @return true, if hex digits were drained. Otherwise, false.
-	 * @throws EscapeException
 	 */
-	private static boolean drainHexPair(Queue<Integer> d, StringBuilder out) throws EscapeException {
+	private static boolean drainHexPair(Queue<Integer> d, StringBuilder out) {
 		int p1 = toHex(d.peek());
 		if(p1 < 0) {
 			return false;
@@ -117,9 +116,8 @@ public class StringUtils {
 	 * @param d The queue of code points.
 	 * @param out The StringBuilder to receive the decoded hex.
 	 * @return The number of hex pairs drained.
-	 * @throws EscapeException
 	 */
-	private static int drainHexSequence(Queue<Integer> d, StringBuilder out) throws EscapeException {
+	private static int drainHexSequence(Queue<Integer> d, StringBuilder out) {
 		int num = 0;
 		while(drainHexPair(d, out)) {
 			++num;
@@ -128,7 +126,7 @@ public class StringUtils {
 		return num;
 	}
 
-	private static boolean drainOctal(Queue<Integer> d, StringBuilder out) throws EscapeException {
+	private static boolean drainOctal(Queue<Integer> d, StringBuilder out) {
 		int val = 0, i;
 		for(i = 0; i < 3; ++i) {
 			int p = toOctal(d.peek());
@@ -158,23 +156,20 @@ public class StringUtils {
 			throw new IllegalStateException();
 		}
 
-		if(!isIdentifierNonDigit(c)) {
+		if(isIdentifierDigit(c)) {
 			throw new SubstitutionException("Identifier cannot begin with a digit");
 		}
 
 		sb.appendCodePoint(c);
 		d.poll();
 
-		for(;;) {
-			c = d.peek();
-			if(c == null) {
+		for(c = d.peek(); c != null; c = d.peek()) {
+			if(!isIdentifierDigit(c) && !isIdentifierNonDigit(c)) {
 				break;
-			} else if(!isIdentifierDigit(c) && !isIdentifierNonDigit(c)) {
-				break;
-			} else {
-				sb.appendCodePoint(c);
-				d.poll();
 			}
+
+			sb.appendCodePoint(c);
+			d.poll();
 		}
 
 		return sb.toString();
@@ -256,7 +251,6 @@ public class StringUtils {
 	 *
 	 * @param s The string.
 	 * @return A list of Nimrod/G substitutions.
-	 * @throws au.edu.uq.rcc.nimrodg.api.utils.SubstitutionException
 	 */
 	public static List<Substitution> findSubstitutions(String s) throws SubstitutionException {
 		/*
@@ -294,14 +288,10 @@ public class StringUtils {
 					braceFlag = false;
 					d.poll();
 					++pos;
-					subs.add(new CompiledSubstitution(name, start, pos, start - prevEnd));
-					mode = 0;
-					prevEnd = pos;
-				} else {
-					subs.add(new CompiledSubstitution(name, start, pos, start - prevEnd));
-					mode = 0;
-					prevEnd = pos;
 				}
+				subs.add(new CompiledSubstitution(name, start, pos, start - prevEnd));
+				mode = 0;
+				prevEnd = pos;
 			} else if(mode == 1) {
 				if(c == null) {
 					throw new SubstitutionException("Unexpected EOL");
@@ -317,7 +307,7 @@ public class StringUtils {
 					pos += name.length();
 					mode = 2;
 				}
-			} else if(mode == 0) {
+			} else /* if(mode == 0) */ {
 				if(c == null) {
 					break;
 				} else if(c == '\\') {
