@@ -2,11 +2,11 @@ package au.edu.uq.rcc.nimrodg.resource;
 
 import au.edu.uq.rcc.nimrodg.resource.ssh.TransportFactory;
 import au.edu.uq.rcc.nimrodg.shell.RemoteShell;
-import au.edu.uq.rcc.nimrodg.shell.ShellUtils;
 
 import javax.json.JsonObject;
 import javax.json.JsonValue;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -14,48 +14,47 @@ import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.PosixFilePermission;
 import java.security.PublicKey;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiFunction;
 
 public class TestShell implements RemoteShell {
 
 	private final Path home;
 	private final FileSystem fs;
+	private final Map<String, BiFunction<String[], byte[], CommandResult>> commands;
 
 	private TestShell(Path home) {
 		this.home = home;
 		this.fs = home.getFileSystem();
+		this.commands = new HashMap<>();
+
+		commands.put("env", this::env);
+		commands.put("mkdir", this::mkdir);
+	}
+
+	public void addCommandProcessor(String argv0, BiFunction<String[], byte[], CommandResult> proc) {
+		Objects.requireNonNull(argv0, "argv0");
+		Objects.requireNonNull(proc, "proc");
+		commands.put(argv0, proc);
 	}
 
 	@Override
-	public CommandResult runCommand(String[] args, byte[] stdin) throws IOException {
+	public CommandResult runCommand(String[] args, byte[] stdin) {
 		if(args == null || args.length == 0) {
 			throw new IllegalArgumentException();
 		}
 
-		String cmdline = ShellUtils.buildEscapedCommandLine(args);
-
-		switch(args[0]) {
-			case "env":
-				return new CommandResult(cmdline, 0, String.format("HOME=%s\n", home), "");
-			case "mkdir": {
-				if(args.length == 1) {
-					break;
-				}
-
-				for(int i = 1; i < args.length; ++i) {
-					if("-p".equals(args[i])) {
-						continue;
-					}
-
-					/* In-memory filesystem, break it as much as you please. */
-					Files.createDirectories(fs.getPath(args[i]));
-				}
-				return new CommandResult(cmdline, 0, "", "");
-			}
+		BiFunction<String[], byte[], CommandResult> proc = commands.get(args[0]);
+		if(proc == null) {
+			return new CommandResult(args, 1, "", "");
 		}
-		return new CommandResult(cmdline, 1, "", "");
+
+		return proc.apply(args, stdin);
 	}
 
 	@Override
@@ -71,7 +70,31 @@ public class TestShell implements RemoteShell {
 
 	}
 
-	static TestShellFactory createFactory(Path home) {
+	private CommandResult env(String[] argv, byte[] stdin) {
+		return new CommandResult(argv, 0, String.format("HOME=%s\n", home), "");
+	}
+
+	private CommandResult mkdir(String[] argv, byte[] stdin) {
+		if(argv.length == 1) {
+			return new CommandResult(argv, 1, "", "");
+		}
+
+		for(int i = 1; i < argv.length; ++i) {
+			if("-p".equals(argv[i])) {
+				continue;
+			}
+
+			/* In-memory filesystem, break it as much as you please. */
+			try {
+				Files.createDirectories(fs.getPath(argv[i]));
+			} catch(IOException e) {
+				throw new UncheckedIOException(e);
+			}
+		}
+		return new CommandResult(argv, 0, "", "");
+	}
+
+	public static TestShellFactory createFactory(Path home) {
 		return new TestShellFactory(home);
 	}
 
