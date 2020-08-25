@@ -26,6 +26,7 @@ import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
 import java.time.Instant;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -46,6 +47,10 @@ public interface RemoteShell extends Closeable {
 			this.status = status;
 			this.stdout = stdout;
 			this.stderr = stderr;
+		}
+
+		public CommandResult(String[] argv, int status, String stdout, String stderr) {
+			this(ShellUtils.buildEscapedCommandLine(argv), status, stdout, stderr);
 		}
 	}
 
