@@ -35,6 +35,7 @@ import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonString;
+import javax.json.JsonStructure;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
@@ -307,16 +308,16 @@ public class HPCResourceType extends ClusterResourceType {
 	}
 
 	public static Map<String, HPCDefinition> loadConfig(Path[] configDirs, List<String> errors) throws IOException {
-		JsonObject internalConfig;
+		JsonStructure _cfg;
 		try(InputStream is = HPCActuator.class.getResourceAsStream("hpc.json")) {
-			internalConfig = Json.createReader(is).readObject();
+			_cfg = Json.createReader(is).read();
 		}
 
-		if(!ActuatorUtils.validateAgainstSchemaStandalone(SCHEMA_HPC_DEFINITION, internalConfig, errors)) {
+		if(!ActuatorUtils.validateAgainstSchemaStandalone(SCHEMA_HPC_DEFINITION, _cfg, errors)) {
 			throw new RuntimeException("Invalid internal HPC configuration, this is a bug");
 		}
 
-		JsonObjectBuilder job = Json.createObjectBuilder(internalConfig);
+		JsonObjectBuilder job = Json.createObjectBuilder(_cfg.asJsonObject());
 
 		{
 			List<Path> confDirs = new ArrayList<>(Arrays.asList(configDirs));
