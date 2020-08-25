@@ -43,14 +43,40 @@ public interface RemoteShell extends Closeable {
 		public final String stderr;
 
 		public CommandResult(String commandLine, int status, String stdout, String stderr) {
-			this.commandLine = commandLine;
+			this.commandLine = Objects.requireNonNull(commandLine, "commandLine");
 			this.status = status;
-			this.stdout = stdout;
-			this.stderr = stderr;
+			this.stdout = Objects.requireNonNull(stdout, "stdout");
+			this.stderr = Objects.requireNonNull(stderr, "stderr");
 		}
 
 		public CommandResult(String[] argv, int status, String stdout, String stderr) {
 			this(ShellUtils.buildEscapedCommandLine(argv), status, stdout, stderr);
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if(this == o) return true;
+			if(o == null || getClass() != o.getClass()) return false;
+			CommandResult that = (CommandResult)o;
+			return status == that.status &&
+					commandLine.equals(that.commandLine) &&
+					stdout.equals(that.stdout) &&
+					stderr.equals(that.stderr);
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(commandLine, status, stdout, stderr);
+		}
+
+		@Override
+		public String toString() {
+			return "CommandResult{" +
+					"commandLine='" + commandLine + '\'' +
+					", status=" + status +
+					", stdout='" + stdout + '\'' +
+					", stderr='" + stderr + '\'' +
+					'}';
 		}
 	}
 
