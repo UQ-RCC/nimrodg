@@ -17,72 +17,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package au.edu.uq.rcc.nimrodg.resource;
+package au.edu.uq.rcc.nimrodg.resource.hpc;
 
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
+import au.edu.uq.rcc.nimrodg.api.Actuator;
 import au.edu.uq.rcc.nimrodg.api.AgentInfo;
+import au.edu.uq.rcc.nimrodg.api.AgentProvider;
 import au.edu.uq.rcc.nimrodg.api.MasterResourceType;
 import au.edu.uq.rcc.nimrodg.api.NimrodConfig;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
-import au.edu.uq.rcc.nimrodg.api.Actuator;
-import au.edu.uq.rcc.nimrodg.api.AgentProvider;
-
-import java.io.IOException;
-import java.io.StringReader;
-import java.net.URI;
-import java.nio.file.FileSystem;
-import java.security.cert.Certificate;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Stream;
-import javax.json.Json;
-import javax.json.JsonArrayBuilder;
-import javax.json.JsonObject;
-import javax.json.JsonReader;
-import javax.json.JsonStructure;
-import javax.json.JsonValue;
-
+import au.edu.uq.rcc.nimrodg.api.Resource;
 import au.edu.uq.rcc.nimrodg.api.ResourceType;
 import au.edu.uq.rcc.nimrodg.api.utils.NimrodUtils;
-import au.edu.uq.rcc.nimrodg.resource.cluster.ClusterActuator;
-import au.edu.uq.rcc.nimrodg.resource.cluster.ClusterResourceType;
+import au.edu.uq.rcc.nimrodg.api.utils.StringUtils;
+import au.edu.uq.rcc.nimrodg.resource.SSHResourceType;
+import au.edu.uq.rcc.nimrodg.resource.TestShell;
+import au.edu.uq.rcc.nimrodg.resource.act.ActuatorUtils;
 import au.edu.uq.rcc.nimrodg.resource.ssh.ClientFactories;
-import au.edu.uq.rcc.nimrodg.shell.RemoteShell;
+import au.edu.uq.rcc.nimrodg.resource.ssh.TransportFactory;
 import au.edu.uq.rcc.nimrodg.test.TestAgentProvider;
 import au.edu.uq.rcc.nimrodg.test.TestNimrodConfig;
 import au.edu.uq.rcc.nimrodg.test.TestResource;
+import au.edu.uq.rcc.nimrodg.test.TestUtils;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
-import org.junit.Assert;
-import org.junit.Test;
-import au.edu.uq.rcc.nimrodg.api.Resource;
-import au.edu.uq.rcc.nimrodg.resource.HPCResourceType.HPCDefinition;
-import au.edu.uq.rcc.nimrodg.resource.act.ActuatorUtils;
-import au.edu.uq.rcc.nimrodg.resource.cluster.HPCActuator;
-import au.edu.uq.rcc.nimrodg.resource.ssh.TransportFactory;
-import au.edu.uq.rcc.nimrodg.test.TestUtils;
-import com.hubspot.jinjava.Jinjava;
-
-import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.security.KeyPair;
-import java.security.PublicKey;
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.Optional;
-import java.util.Random;
-import java.util.stream.Collectors;
-
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x500.X500NameBuilder;
 import org.bouncycastle.asn1.x500.style.BCStyle;
@@ -100,7 +58,38 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
+import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Test;
+
+import javax.json.JsonObject;
+import javax.json.JsonStructure;
+import javax.json.JsonValue;
+import java.io.IOException;
+import java.math.BigInteger;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystem;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.security.KeyPair;
+import java.security.PublicKey;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Random;
+import java.util.Set;
+import java.util.UUID;
+import java.util.regex.Pattern;
 
 public class ResourceTests {
 
@@ -209,7 +198,7 @@ public class ResourceTests {
 				JsonValue.EMPTY_JSON_OBJECT
 		);
 
-		ClusterResourceType.ClusterConfig ccfg = new ClusterResourceType.ClusterConfig(
+		HPCConfig ccfg = new HPCConfig(
 				new SSHResourceType.SSHConfig(
 						agentProvider.lookupAgentByPlatform(DEFAULT_AGENT),
 						TestShell.createFactory(fsRoot.resolve("home")),
@@ -218,59 +207,51 @@ public class ResourceTests {
 				),
 				10,
 				"TMPDIR",
-				3
+				3,
+				1,
+				StringUtils.parseMemory("1GiB"),
+				StringUtils.parseWalltime("24:00:00"),
+				"UQ-X",
+				"workq",
+				"tinmgr2",
+				new HPCDefinition(
+						"dummy",
+						new SubmitCommand.Builder()
+								.argv("qsub", "{{ script_path }}")
+								.parser(new LineRegexParser(Pattern.compile("^(?<jobid>.+)$"), "jobid", 1))
+								.build(),
+						new DeleteCommand.Builder()
+								.argv("qdel")
+								.appendJobIds(true)
+								.parser(new NoopParser())
+								.build(),
+						new DeleteCommand.Builder()
+								.argv("qdel", "-Wforce")
+								.appendJobIds(true)
+								.parser(new NoopParser())
+								.build(),
+						new QueryCommand.Builder()
+								.argv("qstat")
+								.appendJobIds(true)
+								.parser(new NoopParser())
+								.build(),
+						""
+				)
 		);
+
 		testClusterResource = new TestResource(
 				"testcluster",
-				new _TestClusterResourceType("testcluster", "TestCluster", ccfg),
+				new HPCResourceType() {
+					@Override
+					protected TransportFactory createTransportFactory(String name) {
+						assert TestShell.TEST_TRANSPORT_NAME.equals(name);
+						return TestShell.createFactory(fsRoot.resolve("home"));
+					}
+				},
 				nimrodConfig.getAmqpUri(),
 				nimrodConfig.getTransferUri(),
-				JsonValue.EMPTY_JSON_OBJECT
+				ccfg.toJson()
 		);
-	}
-
-	private static class _TestClusterActuator extends ClusterActuator<ClusterResourceType.ClusterConfig> {
-
-		_TestClusterActuator(Operations ops, Resource node, NimrodURI amqpUri, Certificate[] certs, ClusterResourceType.ClusterConfig cfg) throws IOException {
-			super(ops, node, amqpUri, certs, cfg);
-		}
-
-		@Override
-		protected String submitBatch(RemoteShell shell, TempBatch batch) {
-			return Integer.toString(Arrays.hashCode(batch.uuids));
-		}
-
-		@Override
-		protected String buildSubmissionScript(UUID batchUuid, UUID[] agentUuids, String[] configPath, String out, String err) {
-			JsonArrayBuilder jab = Json.createArrayBuilder();
-			for(UUID agentUuid : agentUuids) {
-				jab.add(agentUuid.toString());
-			}
-
-			JsonArrayBuilder jab2 = Json.createArrayBuilder();
-			for(String p : configPath) {
-				jab2.add(p);
-			}
-
-			return Json.createObjectBuilder()
-					.add("batch_uuid", batchUuid.toString())
-					.add("out", out)
-					.add("err", err)
-					.add("agent_uuids", jab)
-					.add("config_paths", jab2)
-					.build().toString();
-		}
-
-		@Override
-		protected boolean killJobs(RemoteShell shell, String[] jobIds) {
-			Assert.assertEquals(jobIds.length, Arrays.stream(jobIds).distinct().count());
-			return true;
-		}
-
-		@Override
-		protected AgentStatus queryStatus(RemoteShell shell, UUID uuid, String jobId) {
-			return AgentStatus.Unknown;
-		}
 	}
 
 	private static class _TestSSHResourceType extends SSHResourceType {
@@ -283,27 +264,6 @@ public class ResourceTests {
 			throw new UnsupportedOperationException("really?");
 		}
 	}
-
-	private static class _TestClusterResourceType extends ClusterResourceType {
-
-		private ClusterConfig config;
-
-		_TestClusterResourceType(String name, String displayName, ClusterConfig config) {
-			super(name, displayName);
-			this.config = config;
-		}
-
-		@Override
-		protected Actuator createActuator(Actuator.Operations ops, Resource node, NimrodURI amqpUri, Certificate[] certs, ClusterConfig ccfg) throws IOException {
-			return new _TestClusterActuator(ops, node, amqpUri, certs, config);
-		}
-
-		@Override
-		public Actuator createActuator(Actuator.Operations ops, Resource node, NimrodURI amqpUri, Certificate[] certs) throws IOException {
-			return this.createActuator(ops, node, amqpUri, certs, config);
-		}
-	}
-
 
 	private void testSSHParser(ResourceType ssh, URI uri) {
 		{
@@ -398,109 +358,6 @@ public class ResourceTests {
 		Certificate[] cert = ActuatorUtils.readX509Certificates(x509Path);
 		Assert.assertArrayEquals(new Certificate[]{x509}, cert);
 	}
-
-	@Test
-	public void hpcJsonTest() throws IOException {
-		HPCResourceType hpc = new HPCResourceType();
-
-//		JsonObject internalConfig;
-//		try(InputStream is = HPCActuator.class.getResourceAsStream("hpc.json")) {
-//			internalConfig = Json.createReader(is).readObject();
-//		}
-		JsonObject userCfg = Json.createObjectBuilder().add("asdfa", Json.createObjectBuilder()
-				.add("submit", Json.createArrayBuilder(List.of("alfalfa")))
-				.add("delete", Json.createArrayBuilder(List.of("por", "que", "no", "los", "dos")))
-				.add("delete_force", Json.createArrayBuilder(List.of("sudo", "por", "que", "no", "los", "dos")))
-				.add("regex", "^(.+)$")
-				.add("template_classpath", "au/edu/uq/rcc/nimrodg/resource/cluster/hpc.pbspro.j2")
-		).build();
-
-		Path p = fsRoot.resolve("hpc.json");
-		Files.write(p, userCfg.toString().getBytes(StandardCharsets.UTF_8));
-
-		String args[] = new String[]{
-				"--platform", "x86_64-pc-linux-musl",
-				"--transport", "openssh",
-				"--uri", "ssh://nowhere",
-				"--limit", "10",
-				"--max-batch-size", "10",
-				"--type", "asdfa",
-				"--ncpus", "1",
-				"--walltime", "24:00:00",
-				"--mem", "1GiB"
-		};
-
-		JsonStructure _cfg = hpc.parseCommandArguments(agentProvider, args, System.out, System.err, new Path[]{fsRoot});
-		Assert.assertNotNull(_cfg);
-
-		_cfg = hpc.parseCommandArguments(agentProvider, args, System.out, System.err, new Path[0]);
-		Assert.assertNull(_cfg);
-
-		/* Now test with an invalid hpc.json */
-		JsonObject badUserCfg = Json.createObjectBuilder().add("not your friend", Json.createObjectBuilder()
-				.add("submit2", Json.createArrayBuilder(List.of("alfalfa")))
-		).build();
-
-		Path badDir = fsRoot;
-		Files.write(badDir.resolve("hpc.json"), badUserCfg.toString().getBytes(StandardCharsets.UTF_8));
-
-		Throwable t = null;
-		try {
-			hpc.parseCommandArguments(agentProvider, args, System.out, System.err, new Path[]{badDir});
-		} catch(Throwable e) {
-			t = e;
-		}
-		Assert.assertNotNull(t);
-	}
-
-	private static void testTemplate(HPCDefinition def, String marker, Set<String> expected) {
-		Jinjava jj = HPCActuator.createTemplateEngine();
-		Map<String, Object> vars = HPCActuator.createSampleVars();
-
-		String renderedTemplate = jj.render(def.template, vars);
-		Set<String> hash = Arrays.stream(renderedTemplate.split("\n"))
-				.map(String::trim)
-				.filter(l -> l.startsWith(marker))
-				.collect(Collectors.toSet());
-
-		Assert.assertEquals(expected, hash);
-	}
-
-	@Test
-	public void hpcTemplateTests() throws IOException {
-		Map<String, HPCDefinition> hpcDefs = HPCResourceType.loadConfig(new Path[0], new ArrayList<>());
-
-		testTemplate(hpcDefs.get("pbspro"), "#PBS", Set.of(
-				"#PBS -N nimrod-hpc-57ace1d4-0f8d-4439-9181-0fe91d6d73d4",
-				"#PBS -l walltime=86400",
-				"#PBS -l select=1:ncpus=120:mem=42949672960b",
-				"#PBS -o /remote/path/to/stdout.txt",
-				"#PBS -e /remote/path/to/stderr.txt",
-				"#PBS -A account",
-				"#PBS -q workq@tinmgr2.ib0"
-		));
-
-		testTemplate(hpcDefs.get("slurm"), "#SBATCH", Set.of(
-				"#SBATCH --job-name nimrod-hpc-57ace1d4-0f8d-4439-9181-0fe91d6d73d4",
-				"#SBATCH --time=1440",
-				"#SBATCH --ntasks=10",
-				"#SBATCH --cpus-per-task=12",
-				"#SBATCH --mem-per-cpu=349526K",
-				"#SBATCH --output /remote/path/to/stdout.txt",
-				"#SBATCH --error /remote/path/to/stderr.txt",
-				"#SBATCH --account account"
-		));
-
-		testTemplate(hpcDefs.get("lsf"), "#BSUB", Set.of(
-				"#BSUB -J nimrod-hpc-57ace1d4-0f8d-4439-9181-0fe91d6d73d4",
-				"#BSUB -W 1440",
-				"#BSUB -n 120",
-				"#BSUB -M 41943040KB",
-				"#BSUB -o /remote/path/to/stdout.txt",
-				"#BSUB -e /remote/path/to/stderr.txt"
-		));
-	}
-
 
 	private class _TestOps implements Actuator.Operations {
 		public int agentCount = 0;

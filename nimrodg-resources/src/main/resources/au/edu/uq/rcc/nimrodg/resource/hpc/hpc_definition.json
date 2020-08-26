@@ -1,0 +1,143 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "definitions": {
+    "response": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": {"enum": ["json"]},
+            "attributes": {
+              "type": "object",
+              "patternProperties": {
+                "^.*$": { "type": "string" }
+              }
+            }
+          },
+          "required": ["type", "attributes"]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {"enum": ["line_regex"]},
+            "regex": {"type": "string"}
+          },
+          "required": ["type", "regex"]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {"enum": ["none"]}
+          },
+          "required": ["type"]
+        }
+      ]
+    },
+    "command": {
+      "type": "object",
+      "properties": {
+        "argv": {
+          "type": "array",
+          "items": {"type": "string"},
+          "minItems": 1
+        },
+        "response": {"$ref": "#/definitions/response"}
+      },
+      "required": ["argv", "response"]
+    },
+    "job_command": {
+      "allOf": [
+        { "$ref": "#/definitions/command" },
+        {
+          "type": "object",
+          "properties": {
+            "append_jobids": { "type": "boolean" }
+          }
+        }
+      ]
+    },
+    "query_command": {
+      "allOf": [
+        { "$ref": "#/definitions/job_command" },
+        {
+          "type": "object",
+          "properties": {
+            "state_map": {
+              "type": "object",
+              "patternProperties": {
+                "^.*$": {
+                  "enum": [ "Launching", "Launched", "Connected", "Disconnected", "Unknown" ]
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "submit_command": {
+      "allOf": [
+        {"$ref": "#/definitions/command"},
+        {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "template": { "type": "string" }
+              },
+              "required": ["template"]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "template_file": { "type": "string" }
+              },
+              "required": ["template_file"]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "template_classpath": { "type": "string" }
+              },
+              "required": ["template_classpath"]
+            }
+          ]
+        }
+      ]
+    },
+    "hpc_definition_base": {
+      "type": "object",
+      "properties": {
+        "submit": { "$ref": "#/definitions/submit_command" },
+        "delete": { "$ref": "#/definitions/job_command" },
+        "delete_force": { "$ref": "#/definitions/job_command" },
+        "query": { "$ref": "#/definitions/query_command" }
+      },
+      "required": ["submit", "delete", "delete_force", "query"]
+    },
+    "hpc_definition": {
+      "$ref": "#/definitions/hpc_definition_base"
+    },
+    "hpc_definition_file": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/definitions/hpc_definition" }
+    },
+    "hpc_definition_config": {
+      "allOf": [
+        { "$ref": "#/definitions/hpc_definition_base" },
+        {
+          "type": "object",
+          "properties": {
+            "submit": {
+              "type": "object",
+              "properties": {
+                "template": { "type": "string" }
+              },
+              "required": ["template"]
+            }
+          }
+        }
+      ]
+    }
+  },
+  "$ref": "#/definitions/hpc_definition_file"
+}

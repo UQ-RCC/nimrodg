@@ -3,6 +3,7 @@ package au.edu.uq.rcc.nimrodg.resource;
 import au.edu.uq.rcc.nimrodg.resource.ssh.TransportFactory;
 import au.edu.uq.rcc.nimrodg.shell.RemoteShell;
 
+import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.JsonValue;
 import java.io.IOException;
@@ -35,6 +36,7 @@ public class TestShell implements RemoteShell {
 
 		commands.put("env", this::env);
 		commands.put("mkdir", this::mkdir);
+		commands.put("qsub", this::qsub);
 	}
 
 	public void addCommandProcessor(String argv0, BiFunction<String[], byte[], CommandResult> proc) {
@@ -94,6 +96,14 @@ public class TestShell implements RemoteShell {
 		return new CommandResult(argv, 0, "", "");
 	}
 
+	private CommandResult qsub(String[] argv, byte[] stdin) {
+		if(argv.length != 2) {
+			return new CommandResult(argv, 1, "", "");
+		}
+
+		return new CommandResult(argv, 0, String.format("%.0f.test", Math.random() * Integer.MAX_VALUE), "");
+	}
+
 	public static TestShellFactory createFactory(Path home) {
 		return new TestShellFactory(home);
 	}
@@ -106,6 +116,8 @@ public class TestShell implements RemoteShell {
 				Optional.empty()
 		);
 	}
+
+	public static final String TEST_TRANSPORT_NAME = "test";
 
 	private static class TestShellFactory implements TransportFactory {
 		final Path home;
@@ -131,7 +143,7 @@ public class TestShell implements RemoteShell {
 
 		@Override
 		public JsonObject buildJsonConfiguration(Config cfg) {
-			return JsonValue.EMPTY_JSON_OBJECT;
+			return Json.createObjectBuilder().add("name", TEST_TRANSPORT_NAME).build();
 		}
 	}
 }

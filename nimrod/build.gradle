@@ -168,9 +168,9 @@ def distConfigs = copySpec {
 
 	from('setup-defaults.ini')
 	from('hpc.json')
-	from(nimres.file("src/main/resources/au/edu/uq/rcc/nimrodg/resource/cluster/hpc.pbspro.j2"))
-	from(nimres.file("src/main/resources/au/edu/uq/rcc/nimrodg/resource/cluster/hpc.slurm.j2"))
-	from(nimres.file("src/main/resources/au/edu/uq/rcc/nimrodg/resource/cluster/hpc.lsf.j2"))
+	from(nimres.file("src/main/resources/au/edu/uq/rcc/nimrodg/resource/hpc/hpc.pbspro.j2"))
+	from(nimres.file("src/main/resources/au/edu/uq/rcc/nimrodg/resource/hpc/hpc.slurm.j2"))
+	from(nimres.file("src/main/resources/au/edu/uq/rcc/nimrodg/resource/hpc/hpc.lsf.j2"))
 
 	fileMode 0644
 
