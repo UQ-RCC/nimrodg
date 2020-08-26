@@ -71,7 +71,9 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.BlockingDeque;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -364,7 +366,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 						LOGGER.info("Resource {} marked orphaned agent {} as stale, expiring...", r.getPath(), as.getUUID());
 						orphanage.adopt(as);
 						ai.actuator.complete(orphanage);
-						runLater("checkOrphanage", () -> Master.this.doExpire(as));
+						runLater("checkOrphanage", () -> Master.this.doExpire(ai), true);
 					} else {
 						LOGGER.info("Resource {} rejected orphaned agent {}.", r.getPath(), as.getUUID());
 						orphanage.adopt(as);
@@ -513,7 +515,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 					.filter(Objects::nonNull)
 					.collect(Collectors.toList());
 
-			ais.forEach(ai -> this.doExpire(ai.state));
+			ais.forEach(this::doExpire);
 
 			Map<Resource, List<UUID>> aa = NimrodUtils.mapToParent(ais, ai -> ai.resource, ai -> ai.uuid);
 			aa.forEach((k, v) -> aaaaa.runWithActuator(k, a -> a.forceTerminateAgent(v.stream().toArray(UUID[]::new))));
@@ -523,18 +525,40 @@ public class Master implements MessageQueueListener, AutoCloseable {
 	}
 
 	/* Expire an agent. */
-	private void doExpire(AgentState as) {
-		as.setExpired(true);
+	private void doExpire(AgentInfo ai) {
+		if(ai.state.getState() == Agent.State.WAITING_FOR_HELLO) {
+			/*
+			 * We're still WAITING_FOR_HELLO, ask the actuator what's going on.
+			 * This could just be a really slow launch, i.e. stuck in a PBS/SLURM queue.
+			 */
+			Actuator act;
 
-		/*
-		 * If we're still WAITING_FOR_HELLO, don't notify the scheduler as it doesn't
-		 * know about it yet.
-		 */
-		if(as.getState() != Agent.State.WAITING_FOR_HELLO) {
-			runLater("heartExpireAgent", () -> agentScheduler.onAgentExpiry(as.getUUID()));
+			try {
+				act = ai.actuator.getNow(null);
+			} catch(CancellationException | CompletionException e) {
+				LOGGER.warn("Actuator future for resource {} failed. This is a bug.", ai.resource.getName(), e);
+				act = null;
+			}
+
+			if(act == null) {
+				/* Actuator isn't ready, the agent gets a pass. */
+				return;
+			}
+
+			Actuator.AgentStatus status = act.queryStatus(ai.uuid);
+
+			/*
+			 * Probably stuck in a queue. Or, if it can't connect back, it'll die
+			 * eventually and the state would change to Unknown or Dead.
+			 */
+			if(status == Actuator.AgentStatus.Launching || status == Actuator.AgentStatus.Launched) {
+				return;
+			}
 		}
 
-		nimrod.updateAgent(as);
+		ai.state.setExpired(true);
+		runLater("heartExpireAgent", () -> agentScheduler.onAgentExpiry(ai.state.getUUID()));
+		nimrod.updateAgent(ai.state);
 	}
 
 	private void processQueue(BlockingDeque<QTask> tasks) {
