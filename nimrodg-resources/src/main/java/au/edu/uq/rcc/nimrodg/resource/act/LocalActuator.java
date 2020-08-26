@@ -519,4 +519,28 @@ public class LocalActuator implements Actuator {
 
 		return AdoptStatus.Adopted;
 	}
+
+	@Override
+	public AgentStatus queryStatus(UUID uuid) {
+
+		LocalAgent la;
+		synchronized(agents) {
+			la = agents.get(uuid);
+		}
+
+		if(la == null) {
+			return AgentStatus.Unknown;
+		}
+
+		switch(la.state) {
+			case CONNECTED:
+				return AgentStatus.Connected;
+			case DISCONNECTED:
+				return AgentStatus.Disconnected;
+			case NOT_CONNECTED:
+				return AgentStatus.Launched;
+		}
+
+		return AgentStatus.Unknown;
+	}
 }

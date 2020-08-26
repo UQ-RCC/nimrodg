@@ -94,6 +94,7 @@ public abstract class ClusterActuator<C extends ClusterConfig> extends POSIXActu
 		final String batchDir;
 		final LaunchResult[] results;
 		final UUID[] uuids;
+		final AgentStatus[] statuses;
 
 		Batch(String jobId, UUID uuid, String batchDir, int size) {
 			this.jobId = jobId;
@@ -101,6 +102,7 @@ public abstract class ClusterActuator<C extends ClusterConfig> extends POSIXActu
 			this.batchDir = batchDir;
 			this.results = new LaunchResult[size];
 			this.uuids = new UUID[size];
+			this.statuses = new AgentStatus[size];
 		}
 	}
 
@@ -248,6 +250,7 @@ public abstract class ClusterActuator<C extends ClusterConfig> extends POSIXActu
 				lr[tb.from + i] = b.results[i];
 			}
 			Arrays.setAll(b.uuids, i -> tb.uuids[i]);
+			Arrays.fill(b.statuses, AgentStatus.Launching);
 			Arrays.stream(tb.uuids).forEach(u -> jobNames.put(u, b));
 		}
 
@@ -301,9 +304,27 @@ public abstract class ClusterActuator<C extends ClusterConfig> extends POSIXActu
 			killJobs(shell, jobs);
 	}
 
+
+	private static int findBatchIndex(Batch b, UUID uuid) {
+		int i;
+		for(i = 0; i < b.uuids.length; ++i) {
+			if(b.uuids[i] == uuid) {
+				return i;
+			}
+		}
+
+		return -1;
+	}
+
 	@Override
 	public void notifyAgentConnection(AgentState state) {
+		Batch b = jobNames.get(state.getUUID());
+		if(b == null) {
+			return;
+		}
 
+		int i = findBatchIndex(b, state.getUUID());
+		b.statuses[i] = AgentStatus.Connected;
 	}
 
 	@Override
@@ -413,4 +434,23 @@ public abstract class ClusterActuator<C extends ClusterConfig> extends POSIXActu
 
 		return jobNames.size() + num <= config.limit;
 	}
+
+	protected abstract AgentStatus queryStatus(RemoteShell shell, UUID uuid, String jobId) throws IOException;
+
+	@Override
+	public final AgentStatus queryStatus(RemoteShell shell, UUID uuid) {
+		Batch b = jobNames.get(uuid);
+		if(b == null) {
+			return AgentStatus.Unknown;
+		}
+
+		return b.statuses[findBatchIndex(b, uuid)];
+//		try {
+//			return queryStatus(shell, uuid, b.jobId);
+//		} catch(IOException e) {
+//			LOGGER.error("Unable to query status of job {}", b.jobId, e);
+//			return AgentStatus.Unknown;
+//		}
+	}
+
 }

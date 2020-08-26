@@ -131,6 +131,12 @@ public class HPCActuator extends ClusterActuator<HPCConfig> {
 	}
 
 	@Override
+	protected AgentStatus queryStatus(RemoteShell shell, UUID uuid, String jobId) {
+		/* FIXME: Until "query" support is added. */
+		return AgentStatus.Unknown;
+	}
+
+	@Override
 	protected boolean killJobs(RemoteShell shell, String[] jobIds) {
 		String[] args = Stream.concat(Arrays.stream(config.hpc.deleteForce), Stream.of(jobIds)).toArray(String[]::new);
 		try {

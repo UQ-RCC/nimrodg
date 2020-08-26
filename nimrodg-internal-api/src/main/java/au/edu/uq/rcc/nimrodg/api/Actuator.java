@@ -152,4 +152,34 @@ public interface Actuator extends AutoCloseable {
 	}
 
 	AdoptStatus adopt(AgentState state);
+
+	/**
+	 * Agent status from an actuator's POV.
+	 */
+	enum AgentStatus {
+		/**
+		 * Agent is still launching. May be stuck in a queue.
+		 */
+		Launching,
+		/**
+		 * Agent has launched, but not connected yet.
+		 */
+		Launched,
+		/**
+		 * Agent has connected.
+		 */
+		Connected,
+		/**
+		 * Agent has disconnected.
+		 */
+		Disconnected,
+		/**
+		 * Unknown. The agent may not be ours, or we have stopped tracking it.
+		 */
+		Unknown
+	}
+
+	default AgentStatus queryStatus(UUID uuid) {
+		return AgentStatus.Unknown;
+	}
 }

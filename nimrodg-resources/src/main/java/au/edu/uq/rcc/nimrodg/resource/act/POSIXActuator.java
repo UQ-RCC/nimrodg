@@ -19,10 +19,12 @@
  */
 package au.edu.uq.rcc.nimrodg.resource.act;
 
+import au.edu.uq.rcc.nimrodg.agent.AgentState;
 import au.edu.uq.rcc.nimrodg.api.Actuator;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.api.Resource;
 import au.edu.uq.rcc.nimrodg.resource.SSHResourceType.SSHConfig;
+import au.edu.uq.rcc.nimrodg.resource.cluster.ClusterActuator;
 import au.edu.uq.rcc.nimrodg.shell.RemoteShell;
 import au.edu.uq.rcc.nimrodg.shell.SshdClient;
 import org.slf4j.Logger;
@@ -37,6 +39,7 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -239,5 +242,23 @@ public abstract class POSIXActuator<C extends SSHConfig> implements Actuator {
 
 	protected void close(RemoteShell shell) throws IOException {
 
+	}
+
+	protected abstract AgentStatus queryStatus(RemoteShell shell, UUID uuid) throws IOException;
+
+	@Override
+	public final AgentStatus queryStatus(UUID uuid) {
+		Objects.requireNonNull(uuid, "uuid");
+
+		if(isClosed) {
+			throw new IllegalStateException();
+		}
+
+		try(RemoteShell client = makeClient()) {
+			return queryStatus(client, uuid);
+		} catch(IOException e) {
+			LOGGER.error("Unable to query status for agent {}", uuid, e);
+			return AgentStatus.Unknown;
+		}
 	}
 }

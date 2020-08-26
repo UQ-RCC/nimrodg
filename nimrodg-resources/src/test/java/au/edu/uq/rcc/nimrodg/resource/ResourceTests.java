@@ -267,6 +267,11 @@ public class ResourceTests {
 			Assert.assertEquals(jobIds.length, Arrays.stream(jobIds).distinct().count());
 			return true;
 		}
+
+		@Override
+		protected AgentStatus queryStatus(RemoteShell shell, UUID uuid, String jobId) {
+			return AgentStatus.Unknown;
+		}
 	}
 
 	private static class _TestSSHResourceType extends SSHResourceType {

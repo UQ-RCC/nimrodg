@@ -255,4 +255,22 @@ public class RemoteActuator extends POSIXActuator<SSHResourceType.SSHConfig> {
 
 		return AdoptStatus.Adopted;
 	}
+
+	@Override
+	protected AgentStatus queryStatus(RemoteShell shell, UUID uuid) {
+		RemoteAgent ra = agents.get(uuid);
+		if(ra == null) {
+			return AgentStatus.Unknown;
+		}
+
+		switch(ra.state) {
+			case CONNECTED:
+				return AgentStatus.Connected;
+			case DISCONNECTED:
+				return AgentStatus.Disconnected;
+			case NOT_CONNECTED:
+				return AgentStatus.Launched;
+		}
+		return AgentStatus.Unknown;
+	}
 }
