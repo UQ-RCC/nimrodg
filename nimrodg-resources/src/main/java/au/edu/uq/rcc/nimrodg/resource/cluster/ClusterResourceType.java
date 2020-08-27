@@ -19,24 +19,21 @@
  */
 package au.edu.uq.rcc.nimrodg.resource.cluster;
 
-import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.api.Actuator;
 import au.edu.uq.rcc.nimrodg.api.AgentProvider;
-import java.io.IOException;
-import java.io.PrintStream;
-import java.security.cert.Certificate;
-import java.util.List;
-import javax.json.Json;
-import javax.json.JsonObject;
-import javax.json.JsonObjectBuilder;
-import net.sourceforge.argparse4j.inf.ArgumentParser;
-import net.sourceforge.argparse4j.inf.Namespace;
+import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.api.Resource;
 import au.edu.uq.rcc.nimrodg.resource.SSHResourceType;
-import java.nio.file.Path;
-import javax.json.JsonArray;
+import net.sourceforge.argparse4j.inf.ArgumentParser;
+import net.sourceforge.argparse4j.inf.Namespace;
+
+import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
 import javax.json.JsonString;
-import javax.json.JsonStructure;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.nio.file.Path;
+import java.security.cert.Certificate;
 
 public abstract class ClusterResourceType extends SSHResourceType {
 
