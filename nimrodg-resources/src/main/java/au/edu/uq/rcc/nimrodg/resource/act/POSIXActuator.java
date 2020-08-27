@@ -19,12 +19,10 @@
  */
 package au.edu.uq.rcc.nimrodg.resource.act;
 
-import au.edu.uq.rcc.nimrodg.agent.AgentState;
 import au.edu.uq.rcc.nimrodg.api.Actuator;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.api.Resource;
 import au.edu.uq.rcc.nimrodg.resource.SSHResourceType.SSHConfig;
-import au.edu.uq.rcc.nimrodg.resource.cluster.ClusterActuator;
 import au.edu.uq.rcc.nimrodg.shell.RemoteShell;
 import au.edu.uq.rcc.nimrodg.shell.SshdClient;
 import org.slf4j.Logger;

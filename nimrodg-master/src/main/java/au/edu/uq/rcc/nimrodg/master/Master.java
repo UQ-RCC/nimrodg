@@ -26,7 +26,6 @@ import au.edu.uq.rcc.nimrodg.agent.ReferenceAgent;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentMessage;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentPong;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
-import au.edu.uq.rcc.nimrodg.agent.messages.AgentSubmit;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentUpdate;
 import au.edu.uq.rcc.nimrodg.api.Actuator;
 import au.edu.uq.rcc.nimrodg.api.Actuator.LaunchResult;

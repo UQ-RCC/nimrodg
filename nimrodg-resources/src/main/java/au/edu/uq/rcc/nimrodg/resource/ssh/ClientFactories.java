@@ -83,11 +83,11 @@ public class ClientFactories {
 
 	public static final String OPENSSH_TRANSPORT_NAME = "openssh";
 	public static final JsonObject OPENSSH_TRANSPORT_SCHEMA = ActuatorUtils.loadInternalSchema(ClientFactories.class, "transport.openssh.schema.json");
-	public static TransportFactory OPENSSH_FACTORY = new TransportFactory() {
+	public static final TransportFactory OPENSSH_FACTORY = new TransportFactory() {
 
 		@Override
-		public RemoteShell create(TransportFactory.Config cfg, Path workDir) throws IOException {
-			if(!cfg.uri.isPresent()) {
+		public RemoteShell create(Config cfg, Path workDir) throws IOException {
+			if(cfg.uri.isEmpty()) {
 				throw new IOException("No URI provided.");
 			}
 
@@ -95,15 +95,15 @@ public class ClientFactories {
 		}
 
 		@Override
-		public TransportFactory.Config resolveConfiguration(TransportFactory.Config cfg) throws IOException {
-			if(!cfg.uri.isPresent()) {
+		public Config resolveConfiguration(Config cfg) throws IOException {
+			if(cfg.uri.isEmpty()) {
 				throw new IOException("No URI provided.");
 			}
 			return cfg;
 		}
 
 		@Override
-		public JsonObject buildJsonConfiguration(TransportFactory.Config cfg) {
+		public JsonObject buildJsonConfiguration(Config cfg) {
 			return Json.createObjectBuilder()
 					.add("name", OPENSSH_TRANSPORT_NAME)
 					.add("uri", cfg.uri.map(URI::toString).orElse(""))
@@ -113,7 +113,7 @@ public class ClientFactories {
 		}
 
 		@Override
-		public Optional<TransportFactory.Config> validateConfiguration(JsonObject cfg, List<String> errors) {
+		public Optional<Config> validateConfiguration(JsonObject cfg, List<String> errors) {
 			Objects.requireNonNull(cfg, "cfg");
 			Objects.requireNonNull(errors, "errors");
 
@@ -132,7 +132,7 @@ public class ClientFactories {
 				return Optional.empty();
 			}
 
-			return Optional.of(new TransportFactory.Config(
+			return Optional.of(new Config(
 					Optional.of(uri),
 					new PublicKey[0],
 					TransportFactory.getOrNullIfEmpty(cfg, "keyfile").map(s -> Paths.get(URI.create(s))),
@@ -146,7 +146,7 @@ public class ClientFactories {
 	public static TransportFactory SSHD_FACTORY = new TransportFactory() {
 		@Override
 		public RemoteShell create(TransportFactory.Config cfg, Path workDir) throws IOException {
-			if(!cfg.uri.isPresent()) {
+			if(cfg.uri.isEmpty()) {
 				throw new IOException("No URI provided.");
 			}
 
@@ -154,7 +154,7 @@ public class ClientFactories {
 				throw new IOException("No host keys provided");
 			}
 
-			if(!cfg.privateKey.isPresent()) {
+			if(cfg.privateKey.isEmpty()) {
 				throw new IOException("No private key provided");
 			}
 
@@ -163,7 +163,7 @@ public class ClientFactories {
 
 		@Override
 		public TransportFactory.Config resolveConfiguration(TransportFactory.Config cfg) throws IOException {
-			if(!cfg.uri.isPresent()) {
+			if(cfg.uri.isEmpty()) {
 				throw new IOException("No URI provided.");
 			}
 
@@ -223,7 +223,7 @@ public class ClientFactories {
 			}
 
 			Optional<String> user = ShellUtils.getUriUser(uri);
-			if(!user.isPresent()) {
+			if(user.isEmpty()) {
 				errors.add("No user specified.");
 				valid = false;
 			}
@@ -246,7 +246,7 @@ public class ClientFactories {
 			}
 
 			Optional<Path> privateKey = TransportFactory.getOrNullIfEmpty(cfg, "keyfile").map(s -> Paths.get(URI.create(s)));
-			if(!privateKey.isPresent()) {
+			if(privateKey.isEmpty()) {
 				errors.add("No private key specified.");
 				valid = false;
 			}

@@ -48,7 +48,7 @@ public interface TransportFactory {
 			this.executablePath = executablePath;
 		}
 
-	};
+	}
 
 	RemoteShell create(Config cfg, Path workDir) throws IOException;
 
@@ -65,10 +65,6 @@ public interface TransportFactory {
 
 	/**
 	 * Given a configuration, "resolve" it. That is, fill in any blanks.
-	 *
-	 * @param cfg
-	 * @return
-	 * @throws IOException
 	 */
 	Config resolveConfiguration(Config cfg) throws IOException;
 
@@ -81,7 +77,7 @@ public interface TransportFactory {
 	JsonObject buildJsonConfiguration(Config cfg);
 
 	// FIXME: This should really go in a helper class
-	public static Optional<String> getOrNullIfEmpty(JsonObject j, String name) {
+	static Optional<String> getOrNullIfEmpty(JsonObject j, String name) {
 		return Optional.ofNullable(j.get(name))
 				.filter(jj -> jj.getValueType() == JsonValue.ValueType.STRING)
 				.map(jj -> ((JsonString)jj).getString())
