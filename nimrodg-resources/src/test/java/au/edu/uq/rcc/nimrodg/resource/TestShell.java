@@ -28,7 +28,7 @@ public class TestShell implements RemoteShell {
 	private final FileSystem fs;
 	private final Map<String, BiFunction<String[], byte[], CommandResult>> commands;
 
-	private TestShell(Path home) {
+	public TestShell(Path home) {
 		this.home = home;
 		this.fs = home.getFileSystem();
 		this.commands = new HashMap<>();
@@ -98,7 +98,7 @@ public class TestShell implements RemoteShell {
 		return new TestShellFactory(home);
 	}
 
-	static TransportFactory.Config createConfig() {
+	public static TransportFactory.Config createConfig() {
 		return new TransportFactory.Config(
 				Optional.empty(),
 				new PublicKey[0],
