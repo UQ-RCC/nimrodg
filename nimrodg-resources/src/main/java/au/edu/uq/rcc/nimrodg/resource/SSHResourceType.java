@@ -269,7 +269,7 @@ public abstract class SSHResourceType extends BaseResourceType {
 			ClientFactories.SSHD_TRANSPORT_NAME, ClientFactories.SSHD_FACTORY
 	);
 
-	private static TransportFactory createTransportFactory(String name) {
+	protected TransportFactory createTransportFactory(String name) {
 		return FACTORIES.get(name);
 	}
 
