@@ -10,44 +10,11 @@
 			"properties": {
 				"agent_platform": { "type": "string" },
 				"transport": {
-					"oneOf": [
-						{
-							"type": "object",
-							"properties": {
-								"name": { "enum": ["sshd"] },
-								"uri": { "type": "string", "format": "uri" },
-								"keyfile": { "type": "string" },
-								"hostkeys": {
-                                    "type": "array",
-                                    "minItems": 1,
-                                    "items": { "type": "string" }
-                                }
-							},
-							"required": ["name", "uri", "keyfile", "hostkeys"]
-						},
-						{
-							"type": "object",
-							"properties": {
-								"name": { "enum": ["openssh"] },
-								"uri": { "type": "string" },
-								"keyfile": { "type": "string" },
-								"executable": { "type": "string" }
-							},
-							"required": [
-								"name",
-								"uri",
-								"keyfile",
-								"executable"
-							]
-						},
-						{
-							"type": "object",
-							"properties": {
-								"name": { "enum": ["local"] }
-							},
-							"required": [ "name" ]
-						}
-					]
+					"type": "object",
+					"properties": {
+						"name": {"type": "string"}
+					},
+					"required": ["name"]
 				},
 				"forwarded_environment": {
 					"type": "array",

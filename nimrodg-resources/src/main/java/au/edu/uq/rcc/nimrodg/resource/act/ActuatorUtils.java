@@ -32,6 +32,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
@@ -190,6 +191,17 @@ public class ActuatorUtils {
 			return false;
 		}
 		return true;
+	}
+
+	public static JsonObject loadInternalSchema(Class<?> clazz, String name) {
+		try(InputStream is = clazz.getResourceAsStream(name)) {
+			if(is == null) {
+				throw new RuntimeException("Internal schema '" + name + "' doesn't exist. This is a bug.");
+			}
+			return Json.createReader(is).readObject();
+		} catch(IOException e) {
+			throw new UncheckedIOException(e);
+		}
 	}
 
 	public static String posixJoinPaths(String... args) {

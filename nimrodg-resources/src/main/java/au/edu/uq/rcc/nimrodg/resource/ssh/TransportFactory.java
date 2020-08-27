@@ -55,7 +55,7 @@ public interface TransportFactory {
 	/**
 	 * Validate the transport's JSON configuration.
 	 *
-	 * This should only validate semantics. Structure validation should be put in the schema file.
+	 * This should validate both structure and semantics.
 	 *
 	 * @param cfg The transport's JSON config.
 	 * @param errors A list where error messages should be written.

@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "name": { "enum": ["openssh"] },
+    "uri": { "type": "string" },
+    "keyfile": { "type": "string" },
+    "executable": { "type": "string" }
+  },
+  "required": [
+    "name",
+    "uri",
+    "keyfile",
+    "executable"
+  ],
+  "additionalProperties": false
+}

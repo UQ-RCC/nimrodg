@@ -33,6 +33,7 @@ import java.nio.file.Paths;
 import java.security.PublicKey;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import javax.json.Json;
 import javax.json.JsonArray;
@@ -44,6 +45,7 @@ import javax.json.JsonValue;
 public class ClientFactories {
 
 	public static final String LOCAL_TRANSPORT_NAME = "local";
+	public static final JsonObject LOCAL_TRANSPORT_SCHEMA = ActuatorUtils.loadInternalSchema(ClientFactories.class, "transport.local.schema.json");
 	public static TransportFactory LOCAL_FACTORY = new TransportFactory() {
 
 		@Override
@@ -53,8 +55,10 @@ public class ClientFactories {
 
 		@Override
 		public Optional<TransportFactory.Config> validateConfiguration(JsonObject cfg, List<String> errors) {
-			if(!LOCAL_TRANSPORT_NAME.equals(cfg.getString("name"))) {
-				errors.add("Invalid transport name, this is a bug.");
+			Objects.requireNonNull(cfg, "cfg");
+			Objects.requireNonNull(errors, "errors");
+
+			if(!ActuatorUtils.validateAgainstSchemaStandalone(LOCAL_TRANSPORT_SCHEMA, cfg, errors)) {
 				return Optional.empty();
 			}
 
@@ -78,6 +82,7 @@ public class ClientFactories {
 	};
 
 	public static final String OPENSSH_TRANSPORT_NAME = "openssh";
+	public static final JsonObject OPENSSH_TRANSPORT_SCHEMA = ActuatorUtils.loadInternalSchema(ClientFactories.class, "transport.openssh.schema.json");
 	public static TransportFactory OPENSSH_FACTORY = new TransportFactory() {
 
 		@Override
@@ -109,8 +114,10 @@ public class ClientFactories {
 
 		@Override
 		public Optional<TransportFactory.Config> validateConfiguration(JsonObject cfg, List<String> errors) {
-			if(!OPENSSH_TRANSPORT_NAME.equals(cfg.getString("name"))) {
-				errors.add("Invalid transport name, this is a bug.");
+			Objects.requireNonNull(cfg, "cfg");
+			Objects.requireNonNull(errors, "errors");
+
+			if(!ActuatorUtils.validateAgainstSchemaStandalone(OPENSSH_TRANSPORT_SCHEMA, cfg, errors)) {
 				return Optional.empty();
 			}
 
@@ -135,6 +142,7 @@ public class ClientFactories {
 	};
 
 	public static final String SSHD_TRANSPORT_NAME = "sshd";
+	public static final JsonObject SSHD_TRANSPORT_SCHEMA = ActuatorUtils.loadInternalSchema(ClientFactories.class, "transport.sshd.schema.json");
 	public static TransportFactory SSHD_FACTORY = new TransportFactory() {
 		@Override
 		public RemoteShell create(TransportFactory.Config cfg, Path workDir) throws IOException {
@@ -200,8 +208,10 @@ public class ClientFactories {
 
 		@Override
 		public Optional<TransportFactory.Config> validateConfiguration(JsonObject cfg, List<String> errors) {
-			if(!SSHD_TRANSPORT_NAME.equals(cfg.getString("name"))) {
-				errors.add("Invalid transport name, this is a bug.");
+			Objects.requireNonNull(cfg, "cfg");
+			Objects.requireNonNull(errors, "errors");
+
+			if(!ActuatorUtils.validateAgainstSchemaStandalone(SSHD_TRANSPORT_SCHEMA, cfg, errors)) {
 				return Optional.empty();
 			}
 
