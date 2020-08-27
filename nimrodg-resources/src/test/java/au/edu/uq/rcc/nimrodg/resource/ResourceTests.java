@@ -218,7 +218,6 @@ public class ResourceTests {
 				),
 				10,
 				"TMPDIR",
-				new String[0],
 				3
 		);
 		testClusterResource = new TestResource(

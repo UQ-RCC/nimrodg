@@ -25,7 +25,6 @@ import au.edu.uq.rcc.nimrodg.api.AgentProvider;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.security.cert.Certificate;
-import java.util.Arrays;
 import java.util.List;
 import javax.json.Json;
 import javax.json.JsonObject;
@@ -43,16 +42,6 @@ public abstract class ClusterResourceType extends SSHResourceType {
 
 	public ClusterResourceType(String name, String displayName) {
 		super(name, displayName);
-	}
-
-	protected boolean validateSubmissionArgs(JsonArray ja, List<String> errors) {
-		return true;
-	}
-
-	@Override
-	public boolean validateConfiguration(AgentProvider ap, JsonStructure _cfg, List<String> errors) {
-		boolean valid = super.validateConfiguration(ap, _cfg, errors);
-		return validateSubmissionArgs(_cfg.asJsonObject().getJsonArray("submission_args"), errors) && valid;
 	}
 
 	protected void buildParserBeforeSubmissionArgs(ArgumentParser argparser) {
@@ -80,10 +69,6 @@ public abstract class ClusterResourceType extends SSHResourceType {
 				.setDefault(10);
 
 		this.buildParserBeforeSubmissionArgs(argparser);
-
-		argparser.addArgument("submission_args")
-				.help(String.format("%s submission arguments.", this.getDisplayName()))
-				.nargs("*");
 	}
 
 	@Override
@@ -91,7 +76,6 @@ public abstract class ClusterResourceType extends SSHResourceType {
 		boolean valid = super.parseArguments(ap, ns, out, err, configDirs, jb);
 
 		jb.add("tmpvar", ns.getString("tmpvar"));
-		jb.add("submission_args", Json.createArrayBuilder(ns.getList("submission_args")).build());
 
 		Integer limit = ns.getInt("limit");
 		if(limit != null) {
@@ -117,7 +101,6 @@ public abstract class ClusterResourceType extends SSHResourceType {
 				sshCfg,
 				cfg.getInt("limit"),
 				tmpVar,
-				cfg.getJsonArray("submission_args").stream().map(a -> ((JsonString)a).getString()).toArray(String[]::new),
 				cfg.getInt("max_batch_size")
 		));
 	}
@@ -128,19 +111,17 @@ public abstract class ClusterResourceType extends SSHResourceType {
 
 		public final int limit;
 		public final String tmpVar;
-		public final String[] submissionArgs;
 		public final int maxBatchSize;
 
-		public ClusterConfig(SSHConfig ssh, int limit, String tmpVar, String[] submissionArgs, int maxBatchSize) {
+		public ClusterConfig(SSHConfig ssh, int limit, String tmpVar, int maxBatchSize) {
 			super(ssh);
 			this.limit = limit;
 			this.tmpVar = tmpVar;
-			this.submissionArgs = Arrays.copyOf(submissionArgs, submissionArgs.length);
 			this.maxBatchSize = maxBatchSize;
 		}
 
 		public ClusterConfig(ClusterConfig cfg) {
-			this(cfg, cfg.limit, cfg.tmpVar, cfg.submissionArgs, cfg.maxBatchSize);
+			this(cfg, cfg.limit, cfg.tmpVar, cfg.maxBatchSize);
 		}
 
 		@Override
@@ -148,7 +129,6 @@ public abstract class ClusterResourceType extends SSHResourceType {
 			return super.toJsonBuilder()
 					.add("limit", limit)
 					.add("tmpvar", tmpVar)
-					.add("submission_args", Json.createArrayBuilder(Arrays.asList(submissionArgs)))
 					.add("max_batch_size", maxBatchSize);
 		}
 	}
