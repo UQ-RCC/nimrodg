@@ -48,6 +48,7 @@ import au.edu.uq.rcc.nimrodg.api.utils.NimrodUtils;
 import au.edu.uq.rcc.nimrodg.master.AAAAA.LaunchRequest;
 import au.edu.uq.rcc.nimrodg.api.ActuatorOpsAdapter;
 import au.edu.uq.rcc.nimrodg.resource.act.ActuatorUtils;
+import au.edu.uq.rcc.nimrodg.resource.hpc.HPCActuator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -684,7 +685,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 	 * <ul>
 	 *     <li>{@link au.edu.uq.rcc.nimrodg.resource.act.LocalActuator} has spawned several subprocesses, and
 	 *     them connecting before it's finished, and</li>
-	 *     <li>{@link au.edu.uq.rcc.nimrodg.resource.cluster.HPCActuator} has submitted a job, but the job's
+	 *     <li>{@link HPCActuator} has submitted a job, but the job's
 	 *     started before the submission command has returned.</li>
 	 * </ul>
 	 *
