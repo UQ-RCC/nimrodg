@@ -51,7 +51,7 @@
         "type": "line_regex",
         "regex": "^.*?(?<jobid>\\d+).*$"
       },
-      "template_classpath": "/etc/xdg/nimrod/hpc.slurm.j2"
+      "template_file": "/etc/xdg/nimrod/hpc.slurm.j2"
     },
     "delete": {
       "argv": ["scancel", "-b"],
@@ -105,7 +105,7 @@
         "type": "line_regex",
         "regex": "^Job\\s+<(?<jobid>[^>]+)>.*$"
       },
-      "template_classpath": "/etc/xdg/nimrod/hpc.lsf.j2"
+      "template_file": "/etc/xdg/nimrod/hpc.lsf.j2"
     },
     "delete": {
       "argv": ["bkill"],
