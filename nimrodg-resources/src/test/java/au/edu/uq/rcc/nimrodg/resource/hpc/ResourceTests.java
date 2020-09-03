@@ -211,6 +211,7 @@ public class ResourceTests {
 				1,
 				StringUtils.parseMemory("1GiB"),
 				StringUtils.parseWalltime("24:00:00"),
+				StringUtils.parseWalltime("2m"),
 				"UQ-X",
 				"workq",
 				"tinmgr2",

@@ -21,6 +21,7 @@ package au.edu.uq.rcc.nimrodg.resource.hpc;
 
 import au.edu.uq.rcc.nimrodg.agent.Agent;
 import au.edu.uq.rcc.nimrodg.agent.AgentState;
+import au.edu.uq.rcc.nimrodg.api.Actuator;
 import au.edu.uq.rcc.nimrodg.api.NimrodException;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.resource.act.ActuatorUtils;
@@ -33,6 +34,7 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -51,6 +53,11 @@ import org.slf4j.LoggerFactory;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.json.Json;
@@ -58,7 +65,7 @@ import javax.json.JsonNumber;
 import javax.json.JsonObject;
 import javax.json.JsonString;
 
-public class HPCActuator extends POSIXActuator<HPCConfig> {
+public final class HPCActuator extends POSIXActuator<HPCConfig> {
 
 	private static final Jinjava TEMPLATE_ENGINE = new Jinjava() {{
 		this.getGlobalContext().registerFilter(new Filter() {
@@ -148,13 +155,18 @@ public class HPCActuator extends POSIXActuator<HPCConfig> {
 		}
 	}
 
+	private static final int CSTATE_NONE = 0;
+	private static final int CSTATE_CONNECTED = 1;
+	private static final int CSTATE_DISCONNECTED = 2;
+
 	protected static final class Batch {
 		final String jobId;
 		final UUID uuid;
 		final String batchDir;
 		final LaunchResult[] results;
 		final UUID[] uuids;
-		final AgentStatus[] statuses;
+		final AtomicInteger[] connectState;
+		final AtomicReferenceArray<AgentStatus> statuses;
 		final String script;
 		final String scriptPath;
 		final String[] configPath;
@@ -165,7 +177,9 @@ public class HPCActuator extends POSIXActuator<HPCConfig> {
 			this.batchDir = batchDir;
 			this.results = new LaunchResult[size];
 			this.uuids = new UUID[size];
-			this.statuses = new AgentStatus[size];
+			this.connectState = new AtomicInteger[size];
+			Arrays.fill(connectState, new AtomicInteger(CSTATE_NONE));
+			this.statuses = new AtomicReferenceArray<>(size);
 			this.script = script;
 			this.scriptPath = scriptPath;
 			this.configPath = new String[size];
@@ -176,6 +190,7 @@ public class HPCActuator extends POSIXActuator<HPCConfig> {
 
 	private final ConcurrentHashMap<UUID, Batch> jobNames;
 	protected final JsonObject baseConfig;
+	private final ScheduledExecutorService /* suddenly */ ses;
 
 	/** Set of files to be deleted upon {@link HPCActuator#close()}. */
 	private final HashSet<String> remoteFiles;
@@ -195,6 +210,15 @@ public class HPCActuator extends POSIXActuator<HPCConfig> {
 		).build();
 
 		this.remoteFiles = new HashSet<>();
+
+		this.ses = Executors.newSingleThreadScheduledExecutor();
+		this.ses.scheduleAtFixedRate(() -> {
+			try {
+				this.pollThread();
+			} catch(RuntimeException e) {
+				LOGGER.error("Unable to query job status.", e);
+			}
+		}, 0, cfg.queryInterval, TimeUnit.SECONDS);
 	}
 
 	private String submitBatch(RemoteShell shell, TempBatch batch) throws IOException {
@@ -350,7 +374,9 @@ public class HPCActuator extends POSIXActuator<HPCConfig> {
 			}
 			Arrays.setAll(b.uuids, i -> tb.uuids[i]);
 			Arrays.setAll(b.configPath, i -> tb.configPath[i]);
-			Arrays.fill(b.statuses, AgentStatus.Launching);
+			for(int i = 0; i < b.statuses.length(); ++i) {
+				b.statuses.setOpaque(i, AgentStatus.Launching);
+			}
 			Arrays.stream(tb.uuids).forEach(u -> jobNames.put(u, b));
 		}
 
@@ -393,6 +419,9 @@ public class HPCActuator extends POSIXActuator<HPCConfig> {
 
 	@Override
 	protected final void close(RemoteShell shell) {
+		/* Doesn't really matter if this fails. */
+		ses.shutdownNow();
+
 		/*
 		 * Attempt to cleanup the config files as they may contain secrets.
 		 * Leave the rest for easier debugging.
@@ -436,7 +465,8 @@ public class HPCActuator extends POSIXActuator<HPCConfig> {
 		}
 
 		int i = findBatchIndex(b, state.getUUID());
-		b.statuses[i] = AgentStatus.Connected;
+		b.connectState[i].setOpaque(CSTATE_CONNECTED);
+		b.statuses.setOpaque(i, AgentStatus.Connected);
 
 		/* Set the walltime. */
 		state.setExpiryTime(state.getConnectionTime().plusSeconds(config.walltime));
@@ -448,8 +478,18 @@ public class HPCActuator extends POSIXActuator<HPCConfig> {
 			return;
 		}
 
-		/* Agent gone, remove its name */
-		jobNames.remove(uuid);
+		/*
+		 * Agent gone, remove its name. Update the state too as the batch
+		 * may still be referenced in the query thread.
+		 */
+		Batch b = jobNames.remove(uuid);
+		if(b == null) {
+			return;
+		}
+
+		int i = findBatchIndex(b, uuid);
+		b.connectState[i].setOpaque(CSTATE_DISCONNECTED);
+		b.statuses.setOpaque(i, AgentStatus.Disconnected);
 	}
 
 	@Override
@@ -570,15 +610,85 @@ public class HPCActuator extends POSIXActuator<HPCConfig> {
 		return jobNames.size() + num <= config.limit;
 	}
 
-	private AgentStatus queryStatus(RemoteShell shell, UUID uuid, String jobId) throws IOException {
-		QueryCommand.Response r = config.hpc.query.execute(shell, new String[]{jobId});
-
-		QueryCommand.JobQueryInfo jqi = r.jobInfo.get(jobId);
-		if(jqi == null) {
-			return AgentStatus.Unknown;
+	private static Actuator.AgentStatus mapAgentStatus(int cstate, Actuator.AgentStatus new_) {
+		if(new_ == AgentStatus.Unknown) {
+			return new_;
 		}
 
-		return jqi.status;
+		if(cstate == CSTATE_NONE) {
+			/* Agent hasn't connected yet. */
+			if(new_ == AgentStatus.Connected || new_ == AgentStatus.Disconnected) {
+				/* invalid */
+				return AgentStatus.Unknown;
+			}
+			return new_;
+		} else if(cstate == CSTATE_CONNECTED) {
+			/* Agent has connected. */
+			if(new_ == AgentStatus.Launching) {
+				/* invalid */
+				return AgentStatus.Unknown;
+			}
+
+			if(new_ == AgentStatus.Launched) {
+				return AgentStatus.Connected;
+			}
+
+			if(new_ == AgentStatus.Disconnected) {
+				return AgentStatus.Dead;
+			}
+
+			return new_;
+		} else if(cstate == CSTATE_DISCONNECTED) {
+			/* Agent has disconnected. */
+			if(new_ == AgentStatus.Launching || new_ == AgentStatus.Launched || new_ == AgentStatus.Connected) {
+				/* invalid. */
+				return AgentStatus.Unknown;
+			}
+
+			if(new_ == AgentStatus.Dead) {
+				return AgentStatus.Disconnected;
+			}
+
+			return new_;
+		}
+		return AgentStatus.Unknown;
+	}
+
+	private void pollThread() {
+		if(isClosed) {
+			return;
+		}
+
+		/*
+		 * Keep a snapshot of the batches. It doesn't really matter if
+		 * a batch is deleted from underneath us.
+		 */
+		LinkedHashMap<String, Batch> batches = new LinkedHashMap<>(jobNames.size());
+
+		if(jobNames.isEmpty()) {
+			return;
+		}
+
+		jobNames.forEachValue(Integer.MAX_VALUE, v -> batches.put(v.jobId, v));
+
+		QueryCommand.Response r;
+		try(RemoteShell shell = makeClient()) {
+			r = config.hpc.query.execute(shell, batches.keySet().toArray(String[]::new));
+		} catch(IOException e) {
+			LOGGER.error("Unable to query job status", e);
+			return;
+		}
+
+		batches.forEach((job, batch) -> {
+			QueryCommand.JobQueryInfo qi = r.jobInfo.get(job);
+			assert qi != null;
+
+			for(int i = 0; i < batch.statuses.length(); ++i) {
+				Actuator.AgentStatus newStatus = mapAgentStatus(batch.connectState[i].getOpaque(), qi.status);
+				Actuator.AgentStatus oldStatus = batch.statuses.getAndSet(i, newStatus);
+				LOGGER.trace("Updating job {}, agent {} status from {} to {}", qi.jobId, batch.uuids[i], oldStatus, newStatus);
+			}
+		});
 	}
 
 	@Override
@@ -588,12 +698,6 @@ public class HPCActuator extends POSIXActuator<HPCConfig> {
 			return AgentStatus.Unknown;
 		}
 
-		return b.statuses[findBatchIndex(b, uuid)];
-//		try {
-//			return queryStatus(shell, uuid, b.jobId);
-//		} catch(IOException e) {
-//			LOGGER.error("Unable to query status of job {}", b.jobId, e);
-//			return AgentStatus.Unknown;
-//		}
+		return b.statuses.getOpaque(findBatchIndex(b, uuid));
 	}
 }

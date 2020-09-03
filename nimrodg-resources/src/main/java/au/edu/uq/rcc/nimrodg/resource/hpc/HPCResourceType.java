@@ -108,6 +108,13 @@ public class HPCResourceType extends SSHResourceType {
 				.type(String.class)
 				.required(false)
 				.help("Submission Queue");
+
+		argparser.addArgument("--query-interval")
+				.dest("query_interval")
+				.type(String.class)
+				.required(false)
+				.setDefault("2m")
+				.help("Status query interval (supports HH[:MM[:SS]] and [Hh][Mm][Ss])");
 	}
 
 	@Override
@@ -156,6 +163,14 @@ public class HPCResourceType extends SSHResourceType {
 			jb.add("walltime", walltime);
 		}
 
+		long queryInterval = StringUtils.parseWalltime(ns.getString("query_interval"));
+		if(queryInterval < 1) {
+			err.print("query-interval cannot be < 1\n");
+			valid = false;
+		} else {
+			jb.add("query_interval", queryInterval);
+		}
+
 		String account = ns.getString("account");
 		if(account != null) {
 			jb.add("account", account);
@@ -184,6 +199,7 @@ public class HPCResourceType extends SSHResourceType {
 				cfg.getJsonNumber("ncpus").longValue(),
 				cfg.getJsonNumber("mem").longValue(),
 				cfg.getJsonNumber("walltime").longValue(),
+				cfg.getJsonNumber("query_interval").longValue(),
 				cfg.getString("account", null),
 				cfg.getString("queue", null),
 				cfg.getString("server", null),

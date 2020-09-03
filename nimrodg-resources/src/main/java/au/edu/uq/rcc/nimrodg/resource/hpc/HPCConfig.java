@@ -15,12 +15,13 @@ public class HPCConfig extends SSHResourceType.SSHConfig {
 	public final long ncpus;
 	public final long mem;
 	public final long walltime;
+	public final long queryInterval;
 	public final Optional<String> account;
 	public final Optional<String> queue;
 	public final Optional<String> server;
 	public final HPCDefinition hpc;
 
-	public HPCConfig(SSHResourceType.SSHConfig ssh, int limit, String tmpVar, int maxBatchSize, long ncpus, long mem, long walltime, String account, String queue, String server, HPCDefinition hpc) {
+	public HPCConfig(SSHResourceType.SSHConfig ssh, int limit, String tmpVar, int maxBatchSize, long ncpus, long mem, long walltime, long queryInterval, String account, String queue, String server, HPCDefinition hpc) {
 		super(ssh);
 
 		if((this.limit = limit) < 1) {
@@ -45,6 +46,10 @@ public class HPCConfig extends SSHResourceType.SSHConfig {
 			throw new IllegalArgumentException("walltime < 1");
 		}
 
+		if((this.queryInterval = queryInterval) < 1) {
+			throw new IllegalArgumentException("queryInterval < 1");
+		}
+
 		this.account = Optional.ofNullable(account);
 		this.queue = Optional.ofNullable(queue);
 		this.server = Optional.ofNullable(server);
@@ -60,7 +65,8 @@ public class HPCConfig extends SSHResourceType.SSHConfig {
 				.add("definition", hpc.toJson())
 				.add("ncpus", ncpus)
 				.add("mem", mem)
-				.add("walltime", walltime);
+				.add("walltime", walltime)
+				.add("query_interval", queryInterval);
 
 		account.ifPresent(a -> job.add("account", a));
 		queue.ifPresent(q -> job.add("queue", q));

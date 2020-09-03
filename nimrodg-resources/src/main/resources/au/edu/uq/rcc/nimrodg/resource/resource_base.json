@@ -49,9 +49,10 @@
 						"walltime": { "type": "integer", "minimum": 1},
 						"account": { "type": "string" },
 						"queue": { "type": "string" },
-						"server": { "type": "string" }
+						"server": { "type": "string" },
+						"query_interval": { "type": "integer", "minimum": 1 }
 					},
-					"required": ["definition", "ncpus", "mem", "walltime"]
+					"required": ["definition", "ncpus", "mem", "walltime", "query_interval"]
 				}
 			]
 		}
