@@ -136,12 +136,6 @@ public abstract class POSIXActuator<C extends SSHConfig> implements Actuator {
 		this.isClosed = false;
 	}
 
-	public void nop() throws IOException {
-		try(RemoteShell client = makeClient()) {
-			client.runCommand(":");
-		}
-	}
-
 	private enum CleanupStage {
 		Client,
 		TmpDir,
