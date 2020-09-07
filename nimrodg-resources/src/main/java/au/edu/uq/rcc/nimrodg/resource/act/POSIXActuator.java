@@ -249,7 +249,7 @@ public abstract class POSIXActuator<C extends SSHConfig> implements Actuator {
 		Objects.requireNonNull(uuid, "uuid");
 
 		if(isClosed) {
-			throw new IllegalStateException();
+			return AgentStatus.Unknown;
 		}
 
 		try(RemoteShell client = makeClient()) {
