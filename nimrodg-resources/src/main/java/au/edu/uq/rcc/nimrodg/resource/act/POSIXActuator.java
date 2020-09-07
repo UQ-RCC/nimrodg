@@ -238,9 +238,7 @@ public abstract class POSIXActuator<C extends SSHConfig> implements Actuator {
 		}
 	}
 
-	protected void close(RemoteShell shell) throws IOException {
-
-	}
+	protected abstract void close(RemoteShell shell) throws IOException;
 
 	protected abstract AgentStatus queryStatus(RemoteShell shell, UUID uuid) throws IOException;
 
