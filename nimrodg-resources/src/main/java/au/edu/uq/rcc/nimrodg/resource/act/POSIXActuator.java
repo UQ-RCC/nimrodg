@@ -45,8 +45,6 @@ public abstract class POSIXActuator<C extends SSHConfig> implements Actuator {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(POSIXActuator.class);
 
-
-
 	protected final Operations ops;
 	protected final Resource node;
 	protected final NimrodURI uri;
