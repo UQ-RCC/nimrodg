@@ -167,12 +167,19 @@ public interface Actuator extends AutoCloseable {
 		Launched,
 		/**
 		 * Agent has connected.
+		 * Implies {@link Actuator#notifyAgentConnection(AgentState)} has been called.
 		 */
 		Connected,
 		/**
 		 * Agent has disconnected.
+		 * Implies {@link Actuator#notifyAgentDisconnection(UUID)} has been called.
 		 */
 		Disconnected,
+		/**
+		 * Agent is dead.
+		 * It is not known if {@link Actuator#notifyAgentDisconnection(UUID)} has been called.
+		 */
+		Dead,
 		/**
 		 * Unknown. The agent may not be ours, or we have stopped tracking it.
 		 */
