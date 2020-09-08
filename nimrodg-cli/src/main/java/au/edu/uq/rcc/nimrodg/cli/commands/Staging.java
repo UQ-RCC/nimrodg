@@ -36,12 +36,14 @@ import au.edu.uq.rcc.nimrodg.cli.CommandEntry;
 import au.edu.uq.rcc.nimrodg.cli.DefaultCLICommand;
 import au.edu.uq.rcc.nimrodg.cli.NimrodCLI;
 import au.edu.uq.rcc.nimrodg.cli.NimrodCLICommand;
+import au.edu.uq.rcc.nimrodg.cli.XDGDirs;
 import au.edu.uq.rcc.nimrodg.parsing.ANTLR4ParseAPIImpl;
 import au.edu.uq.rcc.nimrodg.setup.UserConfig;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
 
 import javax.json.Json;
+import javax.json.JsonArrayBuilder;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.reflect.InvocationTargetException;
@@ -50,6 +52,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 
@@ -258,6 +261,29 @@ public class Staging extends DefaultCLICommand {
 		}
 
 		System.err.printf("Took %f seconds\n", secs / numTimes);
+	}
+
+	public int xdgDump(UserConfig config, PrintStream out, PrintStream err, Path[] configDirs, String[] args) {
+		XDGDirs xdg = XDGDirs.resolve();
+
+		JsonArrayBuilder jcfg = Json.createArrayBuilder();
+		for(Path p : xdg.configDirs) {
+			jcfg.add(p.toString());
+		}
+
+		JsonArrayBuilder jdata = Json.createArrayBuilder();
+		for(Path p : xdg.dataDirs) {
+			jdata.add(p.toString());
+		}
+
+		prettyPrint(Json.createObjectBuilder()
+				.add("XDG_CONFIG_HOME", xdg.configHome.toString())
+				.add("XDG_CONFIG_DIRS", jcfg)
+				.add("XDG_CACHE_HOME", xdg.cacheHome.toString())
+				.add("XDG_DATA_HOME", xdg.dataHome.toString())
+				.add("XDG_DATA_DIRS", jdata)
+				.build(), out);
+		return 0;
 	}
 
 	private static class NullOps extends ActuatorOpsAdapter {
