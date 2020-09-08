@@ -169,14 +169,7 @@ public class ResourceCmd extends NimrodCLICommand {
 
 		out.print("Config:");
 		prettyPrint(n.getConfig(), out);
-		out.println();
 		return 0;
-	}
-
-	public static void prettyPrint(JsonStructure json, PrintStream ps) {
-		Map<String, Boolean> ops = new HashMap<>();
-		ops.put(JsonGenerator.PRETTY_PRINTING, true);
-		Json.createWriterFactory(ops).createWriter(ps).write(json);
 	}
 
 	private int executeAssign(NimrodAPI api, Namespace args, PrintStream out, PrintStream err) throws NimrodException {

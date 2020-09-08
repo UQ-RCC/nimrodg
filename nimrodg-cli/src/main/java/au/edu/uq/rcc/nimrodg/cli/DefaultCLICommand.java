@@ -26,8 +26,15 @@ import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Map;
+
 import net.sourceforge.argparse4j.inf.Namespace;
 import org.ini4j.Ini;
+
+import javax.json.Json;
+import javax.json.JsonStructure;
+import javax.json.JsonWriterFactory;
+import javax.json.stream.JsonGenerator;
 
 public abstract class DefaultCLICommand implements CLICommand {
 
@@ -50,5 +57,14 @@ public abstract class DefaultCLICommand implements CLICommand {
 		}
 
 		return new IniUserConfig(ini, configFile);
+	}
+
+	private static JsonWriterFactory JSON_WRITER_FACTORY = Json.createWriterFactory(
+			Map.of(JsonGenerator.PRETTY_PRINTING, true)
+	);
+
+	public static void prettyPrint(JsonStructure json, PrintStream ps) {
+		JSON_WRITER_FACTORY.createWriter(ps).write(json);
+		ps.println();
 	}
 }
