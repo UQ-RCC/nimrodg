@@ -151,6 +151,33 @@ public abstract class APITests {
 
 	}
 
+	/**
+	 * https://github.com/UQ-RCC/nimrodg/issues/38
+	 */
+	@Test
+	public void githubIssue38Test() throws RunfileBuildException {
+		NimrodMasterAPI api = (NimrodMasterAPI)getNimrod();
+
+		Experiment exp = api.addExperiment("test1", TestUtils.getSampleExperiment());
+
+		Job j = api.filterJobs(exp, EnumSet.allOf(JobAttempt.Status.class), 0, 1).stream()
+				.findFirst().orElseThrow(IllegalStateException::new);
+
+		{
+			JobAttempt att = api.createJobAttempts(List.of(j)).get(0);
+
+			CommandResult cr1 = api.addCommandResult(att, CommandResult.CommandResultStatus.SUCCESS,
+					1, 10.0f, 0, "Success", 0, true);
+
+			Assert.assertEquals(1, cr1.getIndex());
+
+			CommandResult cr2 = api.addCommandResult(att, CommandResult.CommandResultStatus.ABORTED,
+					-1, 0.0f, 0, "", 0, true);
+
+			Assert.assertEquals(2, cr2.getIndex());
+		}
+	}
+
 	@Test
 	public void jobAttemptTests() throws RunfileBuildException, PlanfileParseException {
 		NimrodMasterAPI api = getNimrodMasterAPI();
