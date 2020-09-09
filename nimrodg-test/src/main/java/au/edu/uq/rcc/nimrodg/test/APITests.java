@@ -82,6 +82,12 @@ public abstract class APITests {
 
 	protected abstract NimrodAPI getNimrod();
 
+	protected NimrodMasterAPI getNimrodMasterAPI() {
+		NimrodAPI nimrod = getNimrod();
+		Assert.assertTrue(nimrod.getAPICaps().master);
+		return (NimrodMasterAPI)nimrod;
+	}
+
 	@Test
 	public void getNonExistentExperimentTestw() {
 		Assert.assertNull(getNimrod().getExperiment("asdfasdf"));
@@ -147,11 +153,8 @@ public abstract class APITests {
 
 	@Test
 	public void jobAttemptTests() throws RunfileBuildException, PlanfileParseException {
-		NimrodAPI api = getNimrod();
+		NimrodMasterAPI api = getNimrodMasterAPI();
 		Experiment exp = api.addExperiment("test1", TestUtils.getSampleExperiment());
-
-		Assert.assertTrue(api.getAPICaps().master);
-		NimrodMasterAPI mapi = (NimrodMasterAPI)api;
 
 		Job j = api.filterJobs(exp, EnumSet.allOf(JobAttempt.Status.class), 0, 1).stream()
 				.findFirst().orElseThrow(IllegalStateException::new);
@@ -160,7 +163,7 @@ public abstract class APITests {
 		List<JobAttempt> attempts = new ArrayList<>();
 		/* Create one job a attempt and make it run successfully. */
 		{
-			JobAttempt att = mapi.createJobAttempts(List.of(j)).get(0);
+			JobAttempt att = api.createJobAttempts(List.of(j)).get(0);
 
 			Assert.assertNull(att.getAgentUUID());
 			Assert.assertNull(att.getStartTime());
@@ -168,7 +171,7 @@ public abstract class APITests {
 			Assert.assertEquals(JobAttempt.Status.NOT_RUN, att.getStatus());
 			Assert.assertEquals(JobAttempt.Status.NOT_RUN, api.getJobStatus(j));
 
-			mapi.startJobAttempt(att, agentUuid);
+			api.startJobAttempt(att, agentUuid);
 
 			Assert.assertEquals(agentUuid, att.getAgentUUID());
 			Assert.assertNotNull(att.getStartTime());
@@ -177,9 +180,9 @@ public abstract class APITests {
 			Assert.assertEquals(JobAttempt.Status.RUNNING, api.getJobStatus(j));
 
 			/* Add a command result for goot measure. Note this has no affect on the attempt status. */
-			mapi.addCommandResult(att, CommandResult.CommandResultStatus.SUCCESS, 1, 10.0f, 0, "Success", 0, true);
+			api.addCommandResult(att, CommandResult.CommandResultStatus.SUCCESS, 1, 10.0f, 0, "Success", 0, true);
 
-			mapi.finishJobAttempt(att, false);
+			api.finishJobAttempt(att, false);
 			Assert.assertEquals(agentUuid, att.getAgentUUID());
 			Assert.assertNotNull(att.getStartTime());
 			Assert.assertNotNull(att.getFinishTime());
@@ -191,7 +194,7 @@ public abstract class APITests {
 
 		/* Create another attempt and fail it immediately */
 		{
-			JobAttempt att = mapi.createJobAttempts(List.of(j)).get(0);
+			JobAttempt att = api.createJobAttempts(List.of(j)).get(0);
 
 			Assert.assertNull(att.getAgentUUID());
 			Assert.assertNull(att.getStartTime());
@@ -199,7 +202,7 @@ public abstract class APITests {
 			Assert.assertEquals(JobAttempt.Status.NOT_RUN, att.getStatus());
 			Assert.assertEquals(JobAttempt.Status.COMPLETED, api.getJobStatus(j));
 
-			mapi.finishJobAttempt(att, true);
+			api.finishJobAttempt(att, true);
 
 			Assert.assertNull(att.getAgentUUID());
 			Assert.assertNotNull(att.getStartTime());
@@ -212,12 +215,12 @@ public abstract class APITests {
 
 		{
 			/* Create an attempt and leave it NOT_RUN. */
-			JobAttempt notRunAtt = mapi.createJobAttempts(List.of(j)).get(0);
+			JobAttempt notRunAtt = api.createJobAttempts(List.of(j)).get(0);
 			attempts.add(notRunAtt);
 
 			/* Create an attempt and leave it RUNNING. */
-			JobAttempt runningAtt = mapi.createJobAttempts(List.of(j)).get(0);
-			mapi.startJobAttempt(runningAtt, agentUuid);
+			JobAttempt runningAtt = api.createJobAttempts(List.of(j)).get(0);
+			api.startJobAttempt(runningAtt, agentUuid);
 			attempts.add(runningAtt);
 
 			/* Check filtering everything. */
@@ -240,7 +243,7 @@ public abstract class APITests {
 		{
 			/* Check filtering by experiment. Used by the master. */
 			Map<Job, Set<JobAttempt>> j0 = Map.of(j, new HashSet<>(attempts));
-			Map<Job, Set<JobAttempt>> j1 = mapi.filterJobAttempts(exp, EnumSet.allOf(JobAttempt.Status.class)).entrySet().stream()
+			Map<Job, Set<JobAttempt>> j1 = api.filterJobAttempts(exp, EnumSet.allOf(JobAttempt.Status.class)).entrySet().stream()
 					.collect(Collectors.toMap(
 							Map.Entry::getKey,
 							e -> new HashSet<>(e.getValue())
@@ -251,52 +254,43 @@ public abstract class APITests {
 
 	@Test(expected = NimrodException.DbError.class)
 	public void commandResultTest1() throws RunfileBuildException {
-		NimrodAPI api = getNimrod();
+		NimrodMasterAPI api = getNimrodMasterAPI();
 		Experiment exp = api.addExperiment("test1", TestUtils.getSimpleSampleExperiment());
-
-		Assert.assertTrue(api.getAPICaps().master);
-		NimrodMasterAPI mapi = (NimrodMasterAPI)api;
 
 		Job j = api.filterJobs(exp, EnumSet.allOf(JobAttempt.Status.class), 0, 1).stream()
 				.findFirst().orElseThrow(IllegalStateException::new);
 
 		UUID agentUuid = UUID.randomUUID();
-		JobAttempt att = mapi.createJobAttempts(List.of(j)).get(0);
+		JobAttempt att = api.createJobAttempts(List.of(j)).get(0);
 
-		mapi.startJobAttempt(att, agentUuid);
+		api.startJobAttempt(att, agentUuid);
 
 		/* Try adding a command result for a non-existent command. */
-		mapi.addCommandResult(att, CommandResult.CommandResultStatus.SUCCESS, 100, 10.0f, 0, "Success", 0, true);
+		api.addCommandResult(att, CommandResult.CommandResultStatus.SUCCESS, 100, 10.0f, 0, "Success", 0, true);
 	}
 
 	@Test(expected = NimrodException.DbError.class)
 	public void commandResultTest2() throws RunfileBuildException {
-		NimrodAPI api = getNimrod();
+		NimrodMasterAPI api = getNimrodMasterAPI();
 		Experiment exp = api.addExperiment("test1", TestUtils.getSimpleSampleExperiment());
-
-		Assert.assertTrue(api.getAPICaps().master);
-		NimrodMasterAPI mapi = (NimrodMasterAPI)api;
 
 		Job j = api.filterJobs(exp, EnumSet.allOf(JobAttempt.Status.class), 0, 1).stream()
 				.findFirst().orElseThrow(IllegalStateException::new);
 
 		UUID agentUuid = UUID.randomUUID();
-		JobAttempt att = mapi.createJobAttempts(List.of(j)).get(0);
+		JobAttempt att = api.createJobAttempts(List.of(j)).get(0);
 
-		mapi.startJobAttempt(att, agentUuid);
+		api.startJobAttempt(att, agentUuid);
 
 		/* Try adding the command result twice. */
-		mapi.addCommandResult(att, CommandResult.CommandResultStatus.SUCCESS, 0, 10.0f, 0, "Success", 0, true);
-		mapi.addCommandResult(att, CommandResult.CommandResultStatus.SUCCESS, 0, 10.0f, 0, "Success", 0, true);
+		api.addCommandResult(att, CommandResult.CommandResultStatus.SUCCESS, 0, 10.0f, 0, "Success", 0, true);
+		api.addCommandResult(att, CommandResult.CommandResultStatus.SUCCESS, 0, 10.0f, 0, "Success", 0, true);
 	}
 
 	@Test
 	public void commandResultTest3() throws RunfileBuildException {
-		NimrodAPI api = getNimrod();
+		NimrodMasterAPI api = getNimrodMasterAPI();
 		Experiment exp = api.addExperiment("test1", TestUtils.getSimpleSampleExperiment());
-
-		Assert.assertTrue(api.getAPICaps().master);
-		NimrodMasterAPI mapi = (NimrodMasterAPI)api;
 
 		Job j = api.filterJobs(exp, EnumSet.allOf(JobAttempt.Status.class), 0, 1).stream()
 				.findFirst().orElseThrow(IllegalStateException::new);
@@ -306,16 +300,16 @@ public abstract class APITests {
 			agentUuids[i] = UUID.randomUUID();
 		}
 
-		JobAttempt att1 = mapi.createJobAttempts(List.of(j)).get(0);
-		JobAttempt att2 = mapi.createJobAttempts(List.of(j)).get(0);
+		JobAttempt att1 = api.createJobAttempts(List.of(j)).get(0);
+		JobAttempt att2 = api.createJobAttempts(List.of(j)).get(0);
 
-		mapi.startJobAttempt(att1, agentUuids[0]);
-		mapi.addCommandResult(att1, CommandResult.CommandResultStatus.SUCCESS, 0, 10.0f, 0, "Success", 0, true);
+		api.startJobAttempt(att1, agentUuids[0]);
+		api.addCommandResult(att1, CommandResult.CommandResultStatus.SUCCESS, 0, 10.0f, 0, "Success", 0, true);
 
-		mapi.startJobAttempt(att2, agentUuids[1]);
+		api.startJobAttempt(att2, agentUuids[1]);
 
 		/* This used to throw "java.sql.SQLException: No such command". */
-		mapi.addCommandResult(att2, CommandResult.CommandResultStatus.SUCCESS, 0, 10.0f, 0, "Success", 0, true);
+		api.addCommandResult(att2, CommandResult.CommandResultStatus.SUCCESS, 0, 10.0f, 0, "Success", 0, true);
 	}
 
 	@Test
@@ -373,7 +367,7 @@ public abstract class APITests {
 
 	@Test
 	public void setActuatorDataAfterAddTest() {
-		NimrodMasterAPI mapi = (NimrodMasterAPI)getNimrod();
+		NimrodMasterAPI mapi = getNimrodMasterAPI();
 
 		Resource rootResource = mapi.addResource("root", "dummy", JsonValue.EMPTY_JSON_OBJECT, null, null);
 
@@ -398,10 +392,8 @@ public abstract class APITests {
 
 	@Test
 	public void fakeAgentTests() throws IllegalArgumentException, IOException {
-		NimrodAPI api = getNimrod();
+		NimrodMasterAPI api = getNimrodMasterAPI();
 		//onPaperAssignmentTest();
-		Assert.assertTrue(api.getAPICaps().master);
-		NimrodMasterAPI napi = (NimrodMasterAPI)api;
 
 		Resource rootResource = api.addResource("root", "dummy", JsonValue.EMPTY_JSON_OBJECT, null, null);
 
@@ -410,7 +402,7 @@ public abstract class APITests {
 		 * It really just creates a bunch of agent.hello messages, which is the same thing, really.
 		 */
 		List<AgentHello> hellos;
-		try(DummyActuator act = createDummyActuator(rootResource, napi)) {
+		try(DummyActuator act = createDummyActuator(rootResource, api)) {
 			Actuator.Request[] requests = new Actuator.Request[10];
 			for(int i = 0; i < requests.length; ++i) {
 				requests[i] = Actuator.Request.forAgent(UUID.randomUUID());
@@ -422,7 +414,7 @@ public abstract class APITests {
 
 			ReferenceAgent[] agents = new ReferenceAgent[hellos.size()];
 
-			FakeAgentListener l = new FakeAgentListener(napi, act);
+			FakeAgentListener l = new FakeAgentListener(api, act);
 
 			for(int i = 0; i < agents.length; ++i) {
 				DefaultAgentState as = new DefaultAgentState();
@@ -459,16 +451,14 @@ public abstract class APITests {
 	 */
 	@Test
 	public void agentWaitingForHelloToShutdownTest() throws IOException {
-		NimrodAPI api = getNimrod();
-		Assert.assertTrue(api.getAPICaps().master);
-		NimrodMasterAPI napi = (NimrodMasterAPI)api;
+		NimrodMasterAPI api = getNimrodMasterAPI();
 
 		Resource rootResource = api.addResource("root", "dummy", JsonValue.EMPTY_JSON_OBJECT, null, null);
 
 		UUID uuid = UUID.randomUUID();
 
-		try(DummyActuator act = createDummyActuator(rootResource, napi)) {
-			FakeAgentListener l = new FakeAgentListener(napi, act);
+		try(DummyActuator act = createDummyActuator(rootResource, api)) {
+			FakeAgentListener l = new FakeAgentListener(api, act);
 
 			Actuator.LaunchResult lr = act.launchAgents(Actuator.Request.forAgent(uuid))[0];
 			Assert.assertNull(lr.t);
@@ -482,7 +472,7 @@ public abstract class APITests {
 		}
 
 		/* This is a new instance. */
-		AgentState as = napi.getAgentByUUID(uuid);
+		AgentState as = api.getAgentByUUID(uuid);
 
 		Assert.assertEquals(Agent.State.SHUTDOWN, as.getState());
 		Assert.assertNull(as.getQueue());
@@ -553,11 +543,8 @@ public abstract class APITests {
 
 	@Test
 	public void testCapabilityTest() throws NimrodException, RunfileBuildException, PlanfileParseException {
-		NimrodAPI api = getNimrod();
+		NimrodMasterAPI api = getNimrodMasterAPI();
 		TestUtils.createSampleResources(api);
-
-		Assert.assertTrue(api.getAPICaps().master);
-		NimrodMasterAPI napi = (NimrodMasterAPI)api;
 
 		Experiment exp1 = api.addExperiment("exp1", TestUtils.getSampleExperiment());
 
@@ -565,47 +552,46 @@ public abstract class APITests {
 
 		/* Assign tinaroo to exp1 */
 		Resource tinaroo = api.getResource("tinaroo");
-		napi.assignResource(tinaroo, exp1);
+		api.assignResource(tinaroo, exp1);
 
 		/* Everything should be incapable initially. */
-		Assert.assertFalse(napi.isResourceCapable(tinaroo, exp1));
-		Assert.assertFalse(napi.isResourceCapable(tinaroo, exp2));
+		Assert.assertFalse(api.isResourceCapable(tinaroo, exp1));
+		Assert.assertFalse(api.isResourceCapable(tinaroo, exp2));
 
 		/* Make tinaroo capable of exp1. */
-		napi.addResourceCaps(tinaroo, exp1);
-		Assert.assertTrue(napi.isResourceCapable(tinaroo, exp1));
+		api.addResourceCaps(tinaroo, exp1);
+		Assert.assertTrue(api.isResourceCapable(tinaroo, exp1));
 
 		/* tinaroo isn't assigned to exp2, so this shouldn't do anything */
-		napi.addResourceCaps(tinaroo, exp2);
-		Assert.assertTrue(napi.isResourceCapable(tinaroo, exp2));
+		api.addResourceCaps(tinaroo, exp2);
+		Assert.assertTrue(api.isResourceCapable(tinaroo, exp2));
 
 		/* Unassign tinaroo from exp1 and check its capability was removed */
-		napi.unassignResource(tinaroo, exp1);
-		Assert.assertFalse(napi.isResourceCapable(tinaroo, exp1));
+		api.unassignResource(tinaroo, exp1);
+		Assert.assertFalse(api.isResourceCapable(tinaroo, exp1));
 	}
 
 	@Test
 	public void masterJobMessageTests() throws RunfileBuildException, PlanfileParseException {
-		NimrodAPI api = getNimrod();
-		Assert.assertTrue(api.getAPICaps().master);
-		NimrodMasterAPI mapi = (NimrodMasterAPI)api;
-		Experiment exp = mapi.addExperiment("test1", TestUtils.getSampleExperiment());
+		NimrodMasterAPI api = getNimrodMasterAPI();
+
+		Experiment exp = api.addExperiment("test1", TestUtils.getSampleExperiment());
 
 		/* Drain any initial config change events. */
-		mapi.pollMasterEvents();
+		api.pollMasterEvents();
 
 		/* A job added to a stopped run shouldn't generate an event. */
 		Assert.assertEquals(Experiment.State.STOPPED, exp.getState());
-		mapi.addSingleJob(exp, Map.of("x", "xx", "y", "yy"));
+		api.addSingleJob(exp, Map.of("x", "xx", "y", "yy"));
 
-		Collection<NimrodMasterEvent> _evts = mapi.pollMasterEvents();
+		Collection<NimrodMasterEvent> _evts = api.pollMasterEvents();
 		Assert.assertEquals(0, _evts.size());
 
 		/* Start the experiment, this should cause an event to be created. */
-		mapi.updateExperimentState(exp, Experiment.State.STARTED);
-		mapi.addSingleJob(exp, Map.of("x", "xx", "y", "yy"));
+		api.updateExperimentState(exp, Experiment.State.STARTED);
+		api.addSingleJob(exp, Map.of("x", "xx", "y", "yy"));
 
-		List<NimrodMasterEvent> evts = new ArrayList<>(mapi.pollMasterEvents());
+		List<NimrodMasterEvent> evts = new ArrayList<>(api.pollMasterEvents());
 		Assert.assertEquals(1, evts.size());
 
 		{
@@ -645,7 +631,7 @@ public abstract class APITests {
 
 	@Test
 	public void tokenTest() throws RunfileBuildException, PlanfileParseException {
-		NimrodAPI api = getNimrod();
+		NimrodMasterAPI api = getNimrodMasterAPI();
 		Experiment exp1 = api.addExperiment("exp1", TestUtils.getSimpleSampleExperiment());
 		String token = exp1.getToken();
 
@@ -654,13 +640,11 @@ public abstract class APITests {
 		Assert.assertEquals(exp1, expEnt);
 		Assert.assertNull(sapi.isTokenValidForStorage(exp1, "asdf"));
 
-		NimrodMasterAPI mapi = (NimrodMasterAPI)api;
-
 		Job j = api.filterJobs(exp1, EnumSet.of(JobAttempt.Status.NOT_RUN), 0, 1).stream()
 				.findFirst().orElseThrow(IllegalStateException::new);
 
-		JobAttempt att = mapi.createJobAttempts(List.of(j)).get(0);
-		String attToken = mapi.getJobAttemptToken(att);
+		JobAttempt att = api.createJobAttempts(List.of(j)).get(0);
+		String attToken = api.getJobAttemptToken(att);
 
 		NimrodEntity attEnt = sapi.isTokenValidForStorage(exp1, attToken);
 		Assert.assertEquals(att, attEnt);
