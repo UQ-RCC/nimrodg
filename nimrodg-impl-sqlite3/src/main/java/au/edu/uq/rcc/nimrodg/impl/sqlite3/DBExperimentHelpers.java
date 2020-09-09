@@ -104,6 +104,7 @@ public class DBExperimentHelpers extends DBBaseHelper {
 	private final PreparedStatement qGetCommandResult;
 
 	private final PreparedStatement qGetCommandIdForResult;
+	private final PreparedStatement qGetNextCommandIndex;
 
 	private final PreparedStatement qIsTokenValidForExperimentStorage;
 
@@ -161,6 +162,7 @@ public class DBExperimentHelpers extends DBBaseHelper {
 
 		this.qAddCommandResult = prepareStatement("INSERT INTO nimrod_command_results(attempt_id, status, command_index, time, retval, message, error_code, stop, command_id) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)", true);
 		this.qGetCommandResult = prepareStatement("SELECT * FROM nimrod_command_results WHERE id = ?");
+		this.qGetNextCommandIndex = prepareStatement("SELECT COALESCE(MAX(command_index) + 1, 0) FROM nimrod_command_results WHERE attempt_id = ?");
 
 		this.qIsTokenValidForExperimentStorage = prepareStatement("	SELECT r.* FROM (\n"
 				+ "		SELECT\n"
@@ -858,7 +860,21 @@ public class DBExperimentHelpers extends DBBaseHelper {
 		}
 	}
 
+	private long getNextCommandIndex(long attemptId) throws SQLException {
+		qGetNextCommandIndex.setLong(1, attemptId);
+		try(ResultSet rs = qGetNextCommandIndex.executeQuery()) {
+			if(!rs.next()) {
+				throw new SQLException("No such attempt");
+			}
+			return rs.getLong(1);
+		}
+	}
+
 	public TempCommandResult addCommandResult(long attId, CommandResult.CommandResultStatus status, long index, float time, int retval, String message, int errCode, boolean stop) throws SQLException {
+		if(index < 0) {
+			index = getNextCommandIndex(attId);
+		}
+
 		long cmdId = getCommandIdForResult(attId, index);
 
 		qAddCommandResult.setLong(1, attId);
