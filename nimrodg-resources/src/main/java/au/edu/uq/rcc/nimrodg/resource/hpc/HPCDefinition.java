@@ -43,7 +43,7 @@ public class HPCDefinition {
 					.mapState("E", "Disconnected")
 					.mapState("F", "Disconnected")
 					.mapState("H", "Launching")
-					.mapState("M", "Launching")
+					.mapState("M", "Unknown")
 					.mapState("Q", "Launching")
 					.mapState("R", "Launched")
 					.mapState("S", "Launched")
