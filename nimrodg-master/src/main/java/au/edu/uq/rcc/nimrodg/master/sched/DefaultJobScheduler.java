@@ -59,7 +59,7 @@ public class DefaultJobScheduler implements JobScheduler {
 	private int bufferSize;
 	private int bufferThreshold;
 
-	private class JobInfo {
+	private static class JobInfo {
 
 		public final Job job;
 		public int retryCount;
@@ -280,5 +280,5 @@ public class DefaultJobScheduler implements JobScheduler {
 		return !jobInfo.isEmpty();
 	}
 
-	public static final JobSchedulerFactory FACTORY = () -> new DefaultJobScheduler();
+	public static final JobSchedulerFactory FACTORY = DefaultJobScheduler::new;
 }
