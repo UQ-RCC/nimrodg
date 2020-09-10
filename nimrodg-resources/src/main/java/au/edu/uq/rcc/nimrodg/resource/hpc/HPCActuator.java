@@ -173,6 +173,9 @@ public class HPCActuator extends POSIXActuator<HPCConfig> {
 	private final ConcurrentHashMap<UUID, Batch> jobNames;
 	protected final JsonObject baseConfig;
 
+	/** Set of files to be deleted upon {@link HPCActuator#close()}. */
+	private final HashSet<String> remoteFiles;
+
 	public HPCActuator(Operations ops, Resource node, NimrodURI amqpUri, Certificate[] certs, HPCConfig cfg) throws IOException {
 		super(ops, node, amqpUri, certs, cfg);
 		this.jobNames = new ConcurrentHashMap<>();
@@ -186,6 +189,8 @@ public class HPCActuator extends POSIXActuator<HPCConfig> {
 				false,
 				ActuatorUtils.resolveEnvironment(cfg.forwardedEnvironment)
 		).build();
+
+		this.remoteFiles = new HashSet<>();
 	}
 
 	private String submitBatch(RemoteShell shell, TempBatch batch) throws IOException {
@@ -317,6 +322,7 @@ public class HPCActuator extends POSIXActuator<HPCConfig> {
 
 			for(int i = 0; i < tb.uuids.length; ++i) {
 				shell.upload(tb.configPath[i], tb.config[i].toString().getBytes(StandardCharsets.UTF_8), EnumSet.of(PosixFilePermission.OWNER_READ), utcNow);
+				remoteFiles.add(tb.configPath[i]);
 			}
 
 			String jobId;
@@ -391,17 +397,15 @@ public class HPCActuator extends POSIXActuator<HPCConfig> {
 		 * Attempt to cleanup the config files as they may contain secrets.
 		 * Leave the rest for easier debugging.
 		 */
-		String[] args = Stream.concat(Stream.of("rm", "-f"), this.jobNames.values().stream()
-				.flatMap(b -> Arrays.stream(b.uuids)
-						.filter(Objects::nonNull) /* NB: Will happen if only a partial batch has been adopted. */
-						.map(u -> buildConfigPath(b.batchDir, u)))
-		).toArray(String[]::new);
+		String[] args = Stream.concat(Stream.of("rm", "-f"), remoteFiles.stream()).toArray(String[]::new);
 
 		try {
 			shell.runCommand(args);
 		} catch(IOException e) {
 			LOGGER.warn("Unable to remove configuration files", e);
 		}
+
+		remoteFiles.clear();
 
 		String[] jobs = jobNames.values().stream().map(b -> b.jobId).distinct().toArray(String[]::new);
 		if(jobs.length > 0)
