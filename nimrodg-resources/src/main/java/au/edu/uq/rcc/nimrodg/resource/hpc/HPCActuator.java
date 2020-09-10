@@ -228,51 +228,46 @@ public class HPCActuator extends POSIXActuator<HPCConfig> {
 		return uuids;
 	}
 
-	private static String buildConfigPath(String batchDir, UUID uuid) {
-		return ActuatorUtils.posixJoinPaths(batchDir, "config-" + uuid.toString() + ".json");
+	private TempBatch buildBatch(UUID batchUuid, List<UUID> uuids, int startIndex) {
+		String batchDir = ActuatorUtils.posixJoinPaths(nimrodHomeDir, "batch-" + batchUuid.toString());
+
+		String[] configPath = uuids.stream()
+				.map(u -> ActuatorUtils.posixJoinPaths(batchDir, "config-" + u.toString() + ".json"))
+				.toArray(String[]::new);
+
+		JsonObject[] config = uuids.stream()
+				.map(u -> Json.createObjectBuilder(baseConfig).add("uuid", u.toString()).build())
+				.toArray(JsonObject[]::new);
+
+		String stdout = ActuatorUtils.posixJoinPaths(batchDir, "stdout.txt");
+		String stderr = ActuatorUtils.posixJoinPaths(batchDir, "stderr.txt");
+		String pbsPath = ActuatorUtils.posixJoinPaths(batchDir, "job.sh");
+		String pbsScript = buildSubmissionScript(batchUuid, uuids, configPath, stdout, stderr);
+
+		/* TODO/PERF: Remove the extra array allocation here. */
+		return new TempBatch(batchUuid, batchDir, pbsPath, pbsScript, stdout, stderr,
+				startIndex, startIndex + uuids.size(), uuids.stream().toArray(UUID[]::new), configPath, config);
 	}
 
 	/**
 	 * Given a list of agent UUIDs, generate a list of batches to submit.
 	 *
-	 * @param requests The list of agent requests.
-	 * @param uuids The list of agent UUIDs, for convenience.
+	 * @param uuids The list of agent UUIDs.
 	 * @return A list of batches to submit.
 	 */
-	protected TempBatch[] calculateBatches(Request[] requests, UUID[] uuids) {
-		assert requests.length == uuids.length;
-
-		int nBatches = (uuids.length / config.maxBatchSize) + ((uuids.length % config.maxBatchSize) >= 1 ? 1 : 0);
+	protected TempBatch[] calculateBatches(List<UUID> uuids) {
+		int nBatches = (uuids.size() / config.maxBatchSize) + ((uuids.size() % config.maxBatchSize) >= 1 ? 1 : 0);
 		TempBatch[] batches = new TempBatch[nBatches];
 
-		for(int i = 0, launchIndex = 0; i < nBatches && launchIndex < uuids.length; ++i) {
-			int batchSize = Math.min(config.maxBatchSize, uuids.length - launchIndex);
-			UUID[] agentUuids = Arrays.copyOfRange(uuids, launchIndex, launchIndex + batchSize);
-			Request[] agentRequests = Arrays.copyOfRange(requests, launchIndex, launchIndex + batchSize);
-
-			UUID batchUuid = UUID.randomUUID();
-			String batchDir = ActuatorUtils.posixJoinPaths(this.nimrodHomeDir, "batch-" + batchUuid.toString());
-
-			String[] configPath = Arrays.stream(agentUuids)
-					.map(u -> buildConfigPath(batchDir, u))
-					.toArray(String[]::new);
-
-			JsonObject[] config = Arrays.stream(agentRequests)
-					.map(r -> Json.createObjectBuilder(baseConfig).add("uuid", r.uuid.toString()).build())
-					.toArray(JsonObject[]::new);
-
-			String stdout = ActuatorUtils.posixJoinPaths(batchDir, "stdout.txt");
-			String stderr = ActuatorUtils.posixJoinPaths(batchDir, "stderr.txt");
-			String pbsPath = ActuatorUtils.posixJoinPaths(batchDir, "job.sh");
-			String pbsScript = buildSubmissionScript(batchUuid, agentUuids, configPath, stdout, stderr);
-
-			batches[i] = new TempBatch(batchUuid, batchDir, pbsPath, pbsScript, stdout, stderr, launchIndex, launchIndex + batchSize, agentUuids, configPath, config);
-			launchIndex = batches[i].to;
+		for(int i = 0, launchIndex = 0; i < nBatches && launchIndex < uuids.size(); ++i) {
+			int batchSize = Math.min(config.maxBatchSize, uuids.size() - launchIndex);
+			batches[i] = buildBatch(UUID.randomUUID(), uuids.subList(launchIndex, launchIndex + batchSize), launchIndex);
+			launchIndex += batchSize;
 		}
 		return batches;
 	}
 
-	private String buildSubmissionScript(UUID batchUuid, UUID[] agentUuids, String[] configPath, String out, String err) {
+	private String buildSubmissionScript(UUID batchUuid, List<UUID> agentUuids, String[] configPath, String out, String err) {
 		Map<String, Object> agentVars = new HashMap<>();
 		agentVars.put("amqp_uri", uri.uri);
 		agentVars.put("amqp_routing_key", routingKey);
@@ -288,7 +283,7 @@ public class HPCActuator extends POSIXActuator<HPCConfig> {
 
 		Map<String, Object> vars = new HashMap<>();
 		vars.put("batch_uuid", batchUuid);
-		vars.put("batch_size", agentUuids.length);
+		vars.put("batch_size", agentUuids.size());
 		vars.put("batch_walltime", config.walltime);
 		vars.put("output_path", out);
 		vars.put("error_path", err);
@@ -312,7 +307,7 @@ public class HPCActuator extends POSIXActuator<HPCConfig> {
 				.toArray(UUID[]::new);
 		uuids = applyFullCap(uuids, lr);
 		/* Calculate each batch. */
-		TempBatch[] batches = calculateBatches(requests, uuids);
+		TempBatch[] batches = calculateBatches(Arrays.asList(uuids));
 
 		/* Now do things that can actually fail. */
 		Instant utcNow = Instant.now(Clock.systemUTC());
