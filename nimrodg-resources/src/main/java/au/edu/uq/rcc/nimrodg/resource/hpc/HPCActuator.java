@@ -248,6 +248,7 @@ public class HPCActuator extends POSIXActuator<HPCConfig> {
 		for(int i = 0, launchIndex = 0; i < nBatches && launchIndex < uuids.length; ++i) {
 			int batchSize = Math.min(config.maxBatchSize, uuids.length - launchIndex);
 			UUID[] agentUuids = Arrays.copyOfRange(uuids, launchIndex, launchIndex + batchSize);
+			Request[] agentRequests = Arrays.copyOfRange(requests, launchIndex, launchIndex + batchSize);
 
 			UUID batchUuid = UUID.randomUUID();
 			String batchDir = ActuatorUtils.posixJoinPaths(this.nimrodHomeDir, "batch-" + batchUuid.toString());
@@ -256,7 +257,7 @@ public class HPCActuator extends POSIXActuator<HPCConfig> {
 					.map(u -> buildConfigPath(batchDir, u))
 					.toArray(String[]::new);
 
-			JsonObject[] config = Arrays.stream(requests)
+			JsonObject[] config = Arrays.stream(agentRequests)
 					.map(r -> Json.createObjectBuilder(baseConfig).add("uuid", r.uuid.toString()).build())
 					.toArray(JsonObject[]::new);
 
