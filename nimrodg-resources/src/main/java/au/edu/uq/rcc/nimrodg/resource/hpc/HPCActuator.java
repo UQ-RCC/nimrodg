@@ -170,6 +170,7 @@ public final class HPCActuator extends POSIXActuator<HPCConfig> {
 		final String script;
 		final String scriptPath;
 		final String[] configPath;
+		final Map<UUID, Integer> indexMap;
 
 		Batch(String jobId, UUID uuid, String batchDir, int size, String script, String scriptPath) {
 			this.jobId = jobId;
@@ -183,12 +184,14 @@ public final class HPCActuator extends POSIXActuator<HPCConfig> {
 			this.script = script;
 			this.scriptPath = scriptPath;
 			this.configPath = new String[size];
+			this.indexMap = new HashMap<>(size);
 		}
 	}
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(POSIXActuator.class);
 
 	private final ConcurrentHashMap<UUID, Batch> jobNames;
+
 	protected final JsonObject baseConfig;
 	private final ScheduledExecutorService /* suddenly */ ses;
 
@@ -358,6 +361,7 @@ public final class HPCActuator extends POSIXActuator<HPCConfig> {
 			}
 
 			Batch b = new Batch(jobId, tb.batchUuid, tb.batchDir, tb.to - tb.from, tb.script, tb.scriptPath);
+			Arrays.setAll(b.uuids, i -> tb.uuids[i]);
 			for(int i = 0; i < b.results.length; ++i) {
 				b.results[i] = new LaunchResult(node, null, null, Json.createObjectBuilder()
 						.add("batch_id", b.jobId)
@@ -371,8 +375,9 @@ public final class HPCActuator extends POSIXActuator<HPCConfig> {
 						.build());
 
 				lr[tb.from + i] = b.results[i];
+				b.indexMap.put(b.uuids[i], i);
 			}
-			Arrays.setAll(b.uuids, i -> tb.uuids[i]);
+
 			Arrays.setAll(b.configPath, i -> tb.configPath[i]);
 			for(int i = 0; i < b.statuses.length(); ++i) {
 				b.statuses.setOpaque(i, AgentStatus.Launching);
@@ -443,14 +448,7 @@ public final class HPCActuator extends POSIXActuator<HPCConfig> {
 
 
 	private static int findBatchIndex(Batch b, UUID uuid) {
-		int i;
-		for(i = 0; i < b.uuids.length; ++i) {
-			if(b.uuids[i] == uuid) {
-				return i;
-			}
-		}
-
-		return -1;
+		return b.indexMap.getOrDefault(uuid, -1);
 	}
 
 	@Override
@@ -465,6 +463,9 @@ public final class HPCActuator extends POSIXActuator<HPCConfig> {
 		}
 
 		int i = findBatchIndex(b, state.getUUID());
+		if(i < 0 || i >= b.uuids.length) {
+			return;
+		}
 		b.connectState[i].setOpaque(CSTATE_CONNECTED);
 		b.statuses.setOpaque(i, AgentStatus.Connected);
 
@@ -488,6 +489,9 @@ public final class HPCActuator extends POSIXActuator<HPCConfig> {
 		}
 
 		int i = findBatchIndex(b, uuid);
+		if(i < 0 || i >= b.uuids.length) {
+			return;
+		}
 		b.connectState[i].setOpaque(CSTATE_DISCONNECTED);
 		b.statuses.setOpaque(i, AgentStatus.Disconnected);
 	}
@@ -698,6 +702,11 @@ public final class HPCActuator extends POSIXActuator<HPCConfig> {
 			return AgentStatus.Unknown;
 		}
 
-		return b.statuses.getOpaque(findBatchIndex(b, uuid));
+		int i = findBatchIndex(b, uuid);
+		if(i < 0 || i >= b.uuids.length) {
+			return AgentStatus.Unknown;
+		}
+
+		return b.statuses.getOpaque(i);
 	}
 }
