@@ -309,7 +309,7 @@ public class HPCActuator extends POSIXActuator<HPCConfig> {
 		TempBatch[] batches = calculateBatches(Arrays.asList(uuids));
 
 		/* Now do things that can actually fail. */
-		Instant utcNow = Instant.now(Clock.systemUTC());
+		Instant utcNow = Instant.now();
 
 		for(TempBatch tb : batches) {
 			RemoteShell.CommandResult cr;
