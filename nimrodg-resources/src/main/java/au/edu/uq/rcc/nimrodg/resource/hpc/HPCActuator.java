@@ -330,11 +330,7 @@ public class HPCActuator extends POSIXActuator<HPCConfig> {
 			try {
 				jobId = submitBatch(shell, tb);
 			} catch(IOException e) {
-				LaunchResult res = new LaunchResult(null, e);
-				for(int i = tb.from; i < uuids.length; ++i) {
-					lr[i] = res;
-				}
-
+				Arrays.fill(lr, tb.from, tb.to, new LaunchResult(null, e));
 				return lr;
 			}
 
