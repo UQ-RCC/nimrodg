@@ -157,14 +157,20 @@ public class HPCActuator extends POSIXActuator<HPCConfig> {
 		final LaunchResult[] results;
 		final UUID[] uuids;
 		final AgentStatus[] statuses;
+		final String script;
+		final String scriptPath;
+		final String[] configPath;
 
-		Batch(String jobId, UUID uuid, String batchDir, int size) {
+		Batch(String jobId, UUID uuid, String batchDir, int size, String script, String scriptPath) {
 			this.jobId = jobId;
 			this.uuid = uuid;
 			this.batchDir = batchDir;
 			this.results = new LaunchResult[size];
 			this.uuids = new UUID[size];
 			this.statuses = new AgentStatus[size];
+			this.script = script;
+			this.scriptPath = scriptPath;
+			this.configPath = new String[size];
 		}
 	}
 
@@ -337,7 +343,7 @@ public class HPCActuator extends POSIXActuator<HPCConfig> {
 				return lr;
 			}
 
-			Batch b = new Batch(jobId, tb.batchUuid, tb.batchDir, tb.to - tb.from);
+			Batch b = new Batch(jobId, tb.batchUuid, tb.batchDir, tb.to - tb.from, tb.script, tb.scriptPath);
 			for(int i = 0; i < b.results.length; ++i) {
 				b.results[i] = new LaunchResult(node, null, null, Json.createObjectBuilder()
 						.add("batch_id", b.jobId)
@@ -345,11 +351,15 @@ public class HPCActuator extends POSIXActuator<HPCConfig> {
 						.add("batch_dir", b.batchDir)
 						.add("batch_size", b.results.length)
 						.add("batch_index", i)
+						.add("script", tb.script)
+						.add("script_path", tb.scriptPath)
+						.add("config_path", tb.configPath[i])
 						.build());
 
 				lr[tb.from + i] = b.results[i];
 			}
 			Arrays.setAll(b.uuids, i -> tb.uuids[i]);
+			Arrays.setAll(b.configPath, i -> tb.configPath[i]);
 			Arrays.fill(b.statuses, AgentStatus.Launching);
 			Arrays.stream(tb.uuids).forEach(u -> jobNames.put(u, b));
 		}
@@ -500,14 +510,32 @@ public class HPCActuator extends POSIXActuator<HPCConfig> {
 			return AdoptStatus.Rejected;
 		}
 
+		JsonString jscript = data.getJsonString("script");
+		if(jscript == null) {
+			return AdoptStatus.Rejected;
+		}
+
+		JsonString jscriptpath = data.getJsonString("script_path");
+		if(jscriptpath == null) {
+			return AdoptStatus.Rejected;
+		}
+
+		JsonString jconfigpath = data.getJsonString("config_path");
+		if(jconfigpath == null) {
+			return AdoptStatus.Rejected;
+		}
+
 		String batchId = jbatchid.getString();
 		String batchDir = jbatchdir.getString();
 		int batchSize = jbatchsize.intValue();
 		int batchIndex = jbatchindex.intValue();
+		String script = jscript.getString();
+		String scriptPath = jscriptpath.getString();
+		String configPath = jconfigpath.getString();
 
 		Batch batch = jobNames.get(state.getUUID());
 		if(batch == null) {
-			batch = new Batch(batchId, batchUuid, batchDir, batchSize);
+			batch = new Batch(batchId, batchUuid, batchDir, batchSize, script, scriptPath);
 		}
 
 		if(!batch.jobId.equals(batchId)) {
@@ -536,7 +564,9 @@ public class HPCActuator extends POSIXActuator<HPCConfig> {
 
 		batch.uuids[batchIndex] = state.getUUID();
 		batch.results[batchIndex] = new LaunchResult(node, null, state.getExpiryTime(), data);
+		batch.configPath[batchIndex] = configPath;
 		jobNames.putIfAbsent(state.getUUID(), batch);
+		remoteFiles.add(configPath);
 
 		return AdoptStatus.Adopted;
 	}
