@@ -32,7 +32,6 @@ import net.sourceforge.argparse4j.inf.Namespace;
 import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
-import javax.json.JsonStructure;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
@@ -47,7 +46,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 public class HPCResourceType extends SSHResourceType {
 
@@ -139,7 +137,7 @@ public class HPCResourceType extends SSHResourceType {
 			return false;
 		}
 
-		valid = validateTemplate(hpc.submitTemplate, out, err) && valid;
+		valid = validateTemplate(hpc.submitTemplate, err) && valid;
 
 		if(valid) {
 			jb.add("definition", hpc.toJson());
@@ -193,7 +191,7 @@ public class HPCResourceType extends SSHResourceType {
 		));
 	}
 
-	private static boolean validateTemplate(String template, PrintStream out, PrintStream err) {
+	private static boolean validateTemplate(String template, PrintStream err) {
 		/* Do a dummy render to see if the user's messed up. */
 		try {
 			HPCActuator.renderTemplate(template, HPCActuator.TEMPLATE_SAMPLE_VARS);
