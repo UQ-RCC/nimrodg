@@ -133,7 +133,7 @@ public class HPCResourceType extends SSHResourceType {
 
 		HPCDefinition hpc = hpcDefs.get(ns.getString("type"));
 		if(hpc == null) {
-			err.printf("Unknown type, valid options are: [%s]", String.join(", ", hpcDefs.keySet()));
+			err.printf("Unknown type, valid options are: [%s]\n", String.join(", ", hpcDefs.keySet()));
 			return false;
 		}
 
@@ -148,7 +148,7 @@ public class HPCResourceType extends SSHResourceType {
 		long walltime = StringUtils.parseWalltime(ns.getString("walltime"));
 
 		if(ncpus < 1 || mem < 1 || walltime < 1) {
-			err.print("ncpus, mem, and walltime cannot be < 0.\n");
+			err.print("ncpus, mem, and walltime cannot be < 1\n");
 			valid = false;
 		} else {
 			jb.add("ncpus", ncpus);
