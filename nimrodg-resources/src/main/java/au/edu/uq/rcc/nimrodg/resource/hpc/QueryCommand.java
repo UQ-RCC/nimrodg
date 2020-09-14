@@ -3,7 +3,9 @@ package au.edu.uq.rcc.nimrodg.resource.hpc;
 import au.edu.uq.rcc.nimrodg.api.Actuator;
 import au.edu.uq.rcc.nimrodg.shell.RemoteShell;
 
+import javax.json.Json;
 import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
 import javax.json.JsonString;
 import javax.json.JsonValue;
 import java.util.Collections;
@@ -61,6 +63,13 @@ public class QueryCommand extends JobCommand<QueryCommand.Response> {
 
 	private Actuator.AgentStatus mapState(String s) {
 		return stateMap.getOrDefault(s, Actuator.AgentStatus.Unknown);
+	}
+
+	@Override
+	public JsonObjectBuilder toJson() {
+		JsonObjectBuilder job = Json.createObjectBuilder();
+		stateMap.forEach((k, v) -> job.add(k, v.toString()));
+		return super.toJson().add("state_map", job);
 	}
 
 	public static Builder fromJson(JsonObject jo) {
