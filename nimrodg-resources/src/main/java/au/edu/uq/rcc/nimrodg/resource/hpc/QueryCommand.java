@@ -95,9 +95,7 @@ public class QueryCommand extends JobCommand<QueryCommand.Response> {
 
 		JsonObject stateMap = jo.getJsonObject("state_map");
 		if(stateMap != null) {
-			stateMap.forEach((k, v) -> {
-				b.mapState(k, ((JsonString)v).getString());
-			});
+			stateMap.forEach((k, v) -> b.mapState(k, ((JsonString)v).getString()));
 		}
 		return b;
 	}
