@@ -711,6 +711,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 		for(int i = 0; i < lrs.length; ++i) {
 			Actuator.LaunchResult lr = lrs[i];
 			AgentInfo ai = agentInfo[i];
+			ai.actuator.complete(act);
 
 			if(lr.t != null) {
 				/* We'll be run during shutdown, so ensure this isn't. */
