@@ -396,12 +396,14 @@ public final class HPCActuator extends POSIXActuator<HPCConfig> {
 				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
 		String[] jobs = batches.keySet().stream().map(b -> b.jobId).distinct().toArray(String[]::new);
-		if(jobs.length > 0 && !killJobs(shell, jobs)) {
+		if(jobs.length == 0) {
 			return;
 		}
 
+		killJobs(shell, jobs);
+
 		for(UUID u : uuids) {
-			jobNames.remove(u);
+			notifyAgentDisconnection(u);
 		}
 	}
 
