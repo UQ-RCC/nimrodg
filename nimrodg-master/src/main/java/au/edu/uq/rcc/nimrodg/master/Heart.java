@@ -208,6 +208,18 @@ class Heart implements ConfigListener {
 	}
 
 	/**
+	 * Reset the heartbeat count.
+	 *
+	 * @param u The UUID of the agent.
+	 */
+	public void resetBeats(UUID u) {
+		ExpiryInfo ei = expiryInfo.get(u);
+		if(ei != null) {
+			ei.missedBeats = 0;
+		}
+	}
+
+	/**
 	 * Called when an agent disconnects.
 	 *
 	 * This may not use any operations.
