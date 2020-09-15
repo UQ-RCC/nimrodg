@@ -1,0 +1,125 @@
+{
+  "pbspro": {
+    "submit": {
+      "argv": ["qsub", "{{ script_path }}"],
+      "response": {
+        "type": "line_regex",
+        "regex": "^(?<jobid>.+)$"
+      },
+      "template": "#!/bin/sh\n#PBS -N nimrod-hpc-{{ batch_uuid }}\n#PBS -l walltime={{ batch_walltime }}\n#PBS -l select=1:ncpus={{ job_ncpus * batch_size }}:mem={{ job_mem * batch_size }}b\n#PBS -o {{ output_path|quote }}\n#PBS -e {{ error_path|quote }}\n{% if job_account is defined %}#PBS -A {{ job_account|quote }}{% endif %}\n{% if job_queue is defined or job_server is defined %}#PBS -q {{ job_queue|quote }}{% if job_server is defined %}@{{ job_server|quote }}{% endif %}{% endif %}\n\n##\n# Nimrod/G Batch Submission Script\n# UUID: {{ batch_uuid }}, {{ batch_size }} agents\n##\n\nPIDS=\"\"\n\n{%- for i in range(batch_size) %}\n##\n# Agent {{ i }}, UUID: {{ agent_uuids[i] }}\n##\n{{ agent_binary|quote }} \\\n\t--config {{ config_path[i]|quote }} \\\n\t--work-root ${TMPDIR} &\nPIDS=\"$PIDS $!\"\n{% endfor %}\n\ntrap 'kill -15 $PIDS; wait' INT HUP QUIT TERM\n\nwait\n"
+    },
+    "delete": {
+      "argv": ["qdel"],
+      "response": { "type": "none" },
+      "append_jobids": true
+    },
+    "delete_force": {
+      "argv": ["qdel", "-W", "force"],
+      "response": { "type": "none" },
+      "append_jobids": true
+    },
+    "query": {
+      "argv": ["qstat", "-F", "json", "-f", "-x"],
+      "append_jobids": true,
+      "response": {
+        "type": "json",
+        "attributes": {
+          "state": "/Jobs/{{ jobid }}/job_state",
+          "pbsinfo": "/Jobs/{{ jobid }}"
+        }
+      },
+      "state_map": {
+        "B": "Launching",
+        "E": "Disconnected",
+        "F": "Disconnected",
+        "H": "Launching",
+        "M": "Unknown",
+        "Q": "Launching",
+        "R": "Launched",
+        "S": "Launched",
+        "T": "Launching",
+        "U": "Unknown",
+        "W": "Launching",
+        "X": "Disconnected"
+      }
+    }
+  },
+  "slurm": {
+    "submit": {
+      "argv": ["sbatch", "{{ script_path }}"],
+      "response": {
+        "type": "line_regex",
+        "regex": "^.*?(?<jobid>\\d+).*$"
+      },
+      "template": "#!/bin/sh\n#SBATCH --job-name nimrod-hpc-{{ batch_uuid }}\n#SBATCH --time={{ (batch_walltime / 60)|round(0, 'ceil') }}\n#SBATCH --ntasks={{ batch_size }}\n#SBATCH --cpus-per-task={{ job_ncpus }}\n#SBATCH --mem-per-cpu={{ (job_mem / job_ncpus / 1024)|round(0, 'ceil') }}K\n#SBATCH --output {{ output_path|quote }}\n#SBATCH --error {{ error_path|quote }}\n{% if job_account is defined %}#SBATCH --account {{ job_account|quote }}{% endif %}\n\n##\n# Nimrod/G Batch Submission Script\n# UUID: {{ batch_uuid }}, {{ batch_size }} agents\n##\n\nPIDS=\"\"\n\n{%- for i in range(batch_size) %}\n##\n# Agent {{ i }}, UUID: {{ agent_uuids[i] }}\n##\n{{ agent_binary|quote }} \\\n\t--config {{ config_path[i]|quote }} \\\n\t--work-root ${TMPDIR} &\nPIDS=\"$PIDS $!\"\n{% endfor %}\n\ntrap 'kill -15 $PIDS; wait' INT HUP QUIT TERM\n\nwait\n"
+    },
+    "delete": {
+      "argv": ["scancel", "-b"],
+      "response": { "type": "none" },
+      "append_jobids": true
+    },
+    "delete_force": {
+      "argv": ["scancel", "-f", "-s", "KILL"],
+      "response": { "type": "none" },
+      "append_jobids": true
+    },
+    "query": {
+      "argv": ["squeue", "--noheader", "--Format=jobid,state", "--job", "{{ jobids|join(',') }}"],
+      "append_jobids": false,
+      "response": {
+        "type": "line_regex",
+        "regex": "^(?<jobid>\\d+)\\s+(?<state>\\w+)\\s*$"
+      },
+      "state_map": {
+        "BOOT_FAIL": "Disconnected",
+        "CANCELLED": "Disconnected",
+        "COMPLETED": "Disconnected",
+        "CONFIGURING": "Launching",
+        "COMPLETING": "Connected",
+        "DEADLINE": "Disconnected",
+        "FAILED": "Disconnected",
+        "NODE_FAIL": "Disconnected",
+        "OUT_OF_MEMORY": "Disconnected",
+        "PENDING": "Launching",
+        "PREEMPTED": "Disconnected",
+        "RUNNING": "Connected",
+        "RESV_DEL_HOLD": "Launching",
+        "REQUEUE_FED": "Launching",
+        "REQUEUE_HOLD": "Launching",
+        "REQUEUED": "Launching",
+        "RESIZING": "Unknown",
+        "REVOKED": "Unknown",
+        "SIGNALING": "Unknown",
+        "SPECIAL_EXIT": "Unknown",
+        "STAGE_QUIT": "Connected",
+        "STOPPED": "Launched",
+        "SUSPENDED": "Launched",
+        "TIMEOUT": "Disconnected"
+      }
+    }
+  },
+  "lsf": {
+    "submit": {
+      "argv": ["bsub", "-f", "{{ script_path }}"],
+      "response": {
+        "type": "line_regex",
+        "regex": "^Job\\s+<(?<jobid>[^>]+)>.*$"
+      },
+      "template": "#!/bin/sh\n#BSUB -J nimrod-hpc-{{ batch_uuid }}\n#BSUB -W {{ (batch_walltime / 60)|round(0, 'ceil') }}\n#BSUB -n {{ job_ncpus * batch_size }}\n#BSUB -M {{ (job_mem * batch_size / 1024)|round(0, 'ceil') }}KB\n#BSUB -o {{ output_path|quote }}\n#BSUB -e {{ error_path|quote }}\n\n##\n# Nimrod/G Batch Submission Script\n# UUID: {{ batch_uuid }}, {{ batch_size }} agents\n##\n\nPIDS=\"\"\n\n{%- for i in range(batch_size) %}\n##\n# Agent {{ i }}, UUID: {{ agent_uuids[i] }}\n##\n{{ agent_binary|quote }} \\\n\t--config {{ config_path[i]|quote }} \\\n\t--work-root ${TMPDIR} &\nPIDS=\"$PIDS $!\"\n{% endfor %}\n\ntrap 'kill -15 $PIDS; wait' INT HUP QUIT TERM USR USR2\n\nwait\n"
+    },
+    "delete": {
+      "argv": ["bkill"],
+      "response": { "type": "none" },
+      "append_jobids": true
+    },
+    "delete_force": {
+      "argv": ["bkill", "-s", "KILL"],
+      "response": { "type": "none" },
+      "append_jobids": true
+    },
+    "query": {
+      "argv": ["true"],
+      "response": { "type": "none" }
+    }
+  }
+}
