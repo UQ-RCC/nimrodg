@@ -229,39 +229,41 @@ public final class HPCActuator extends POSIXActuator<HPCConfig> {
 	}
 
 	/**
-	 * Given a list of agent UUIDs, fail any that would kick us above our limit and return a new array of agents that
-	 * are allowed to be spawned.
+	 * Given a list of agent launch requests, fail any that would kick us above our limit and return a new
+	 * array of requests that are allowed to be spawned.
 	 *
-	 * @param uuids   An array of agent UUIDs.
-	 * @param results An array of launch results. Must be the same length as uuids.
+	 * @param requests An array of agent launch requests.
+	 * @param results 	An array of launch results. Must be the same length as requests.
 	 * @return The new list of UUIDs.
 	 */
-	protected UUID[] applyFullCap(UUID[] uuids, LaunchResult[] results) {
+	protected List<Request> applyFullCap(List<Request> requests, LaunchResult[] results) {
 		LaunchResult fullLaunch = new LaunchResult(null, new NimrodException.ResourceFull(node));
 
 		int currentAgents = jobNames.size();
 
 		/* If this will send us over our limit, cap it and mark the excess as failed. */
-		if(currentAgents + uuids.length >= config.limit) {
-			UUID[] _uuids = Arrays.copyOf(uuids, config.limit - currentAgents);
-			for(int i = _uuids.length; i < uuids.length; ++i) {
+		if(currentAgents + requests.size() >= config.limit) {
+			List<Request> _requests = requests.subList(0, config.limit - currentAgents);
+			for(int i = _requests.size(); i < requests.size(); ++i) {
 				results[i] = fullLaunch;
 			}
-			uuids = _uuids;
+			requests = _requests;
 		}
 
-		return uuids;
+		return requests;
 	}
 
-	private TempBatch buildBatch(UUID batchUuid, List<UUID> uuids, int startIndex) {
+	private TempBatch buildBatch(UUID batchUuid, List<Request> requests, int startIndex) {
+		UUID[] uuids = requests.stream().map(r -> r.uuid).toArray(UUID[]::new);
+
 		String batchDir = ActuatorUtils.posixJoinPaths(nimrodHomeDir, "batch-" + batchUuid.toString());
 
-		String[] configPath = uuids.stream()
-				.map(u -> ActuatorUtils.posixJoinPaths(batchDir, "config-" + u.toString() + ".json"))
+		String[] configPath = requests.stream()
+				.map(r -> ActuatorUtils.posixJoinPaths(batchDir, "config-" + r.uuid.toString() + ".json"))
 				.toArray(String[]::new);
 
-		JsonObject[] config = uuids.stream()
-				.map(u -> Json.createObjectBuilder(baseConfig).add("uuid", u.toString()).build())
+		JsonObject[] config = requests.stream()
+				.map(r -> Json.createObjectBuilder(baseConfig).add("uuid", r.uuid.toString()).build())
 				.toArray(JsonObject[]::new);
 
 		String stdout = ActuatorUtils.posixJoinPaths(batchDir, "stdout.txt");
@@ -269,30 +271,29 @@ public final class HPCActuator extends POSIXActuator<HPCConfig> {
 		String pbsPath = ActuatorUtils.posixJoinPaths(batchDir, "job.sh");
 		String pbsScript = buildSubmissionScript(batchUuid, uuids, configPath, stdout, stderr);
 
-		/* TODO/PERF: Remove the extra array allocation here. */
 		return new TempBatch(batchUuid, batchDir, pbsPath, pbsScript, stdout, stderr,
-				startIndex, startIndex + uuids.size(), uuids.stream().toArray(UUID[]::new), configPath, config);
+				startIndex, startIndex + requests.size(), uuids, configPath, config);
 	}
 
 	/**
-	 * Given a list of agent UUIDs, generate a list of batches to submit.
+	 * Generate a list of batches to submit.
 	 *
-	 * @param uuids The list of agent UUIDs.
+	 * @param requests The list of agent launch requests.
 	 * @return A list of batches to submit.
 	 */
-	protected TempBatch[] calculateBatches(List<UUID> uuids) {
-		int nBatches = (uuids.size() / config.maxBatchSize) + ((uuids.size() % config.maxBatchSize) >= 1 ? 1 : 0);
+	protected TempBatch[] calculateBatches(List<Request> requests) {
+		int nBatches = (requests.size() / config.maxBatchSize) + ((requests.size() % config.maxBatchSize) >= 1 ? 1 : 0);
 		TempBatch[] batches = new TempBatch[nBatches];
 
-		for(int i = 0, launchIndex = 0; i < nBatches && launchIndex < uuids.size(); ++i) {
-			int batchSize = Math.min(config.maxBatchSize, uuids.size() - launchIndex);
-			batches[i] = buildBatch(UUID.randomUUID(), uuids.subList(launchIndex, launchIndex + batchSize), launchIndex);
+		for(int i = 0, launchIndex = 0; i < nBatches && launchIndex < requests.size(); ++i) {
+			int batchSize = Math.min(config.maxBatchSize, requests.size() - launchIndex);
+			batches[i] = buildBatch(UUID.randomUUID(), requests.subList(launchIndex, launchIndex + batchSize), launchIndex);
 			launchIndex += batchSize;
 		}
 		return batches;
 	}
 
-	private String buildSubmissionScript(UUID batchUuid, List<UUID> agentUuids, String[] configPath, String out, String err) {
+	private String buildSubmissionScript(UUID batchUuid, UUID[] agentUuids, String[] configPath, String out, String err) {
 		Map<String, Object> agentVars = new HashMap<>();
 		agentVars.put("amqp_uri", uri.uri);
 		agentVars.put("amqp_routing_key", routingKey);
@@ -308,7 +309,7 @@ public final class HPCActuator extends POSIXActuator<HPCConfig> {
 
 		Map<String, Object> vars = new HashMap<>();
 		vars.put("batch_uuid", batchUuid);
-		vars.put("batch_size", agentUuids.size());
+		vars.put("batch_size", agentUuids.length);
 		vars.put("batch_walltime", config.walltime);
 		vars.put("output_path", out);
 		vars.put("error_path", err);
@@ -327,12 +328,10 @@ public final class HPCActuator extends POSIXActuator<HPCConfig> {
 	@Override
 	public LaunchResult[] launchAgents(RemoteShell shell, Request[] requests) throws IOException {
 		LaunchResult[] lr = new LaunchResult[requests.length];
-		UUID[] uuids = Arrays.stream(requests)
-				.map(r -> r.uuid)
-				.toArray(UUID[]::new);
-		uuids = applyFullCap(uuids, lr);
+		List<Request> _requests = applyFullCap(Arrays.asList(requests), lr);
+
 		/* Calculate each batch. */
-		TempBatch[] batches = calculateBatches(Arrays.asList(uuids));
+		TempBatch[] batches = calculateBatches(_requests);
 
 		/* Now do things that can actually fail. */
 		Instant utcNow = Instant.now();
