@@ -142,9 +142,9 @@ public interface AgentScheduler extends ConfigListener {
 	 */
 	void onAgentStateUpdate(Agent agent, Resource node, Agent.State oldState, Agent.State newState);
 
-	void onAgentLaunchFailure(UUID uuid, Resource node, Throwable t);
+	void onAgentLaunchFailure(Agent agent, Resource node, Throwable t);
 
-	void onAgentExpiry(UUID uuid);
+	void onAgentExpiry(Agent agent, Resource node);
 
 	void onJobLaunchFailure(JobAttempt att, NetworkJob job, Agent agent, boolean hardFailure, Throwable t);
 

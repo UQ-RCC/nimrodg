@@ -557,7 +557,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 		}
 
 		ai.state.setExpired(true);
-		runLater("heartExpireAgent", () -> agentScheduler.onAgentExpiry(ai.state.getUUID()));
+		runLater("heartExpireAgent", () -> agentScheduler.onAgentExpiry(ai.instance, ai.resource));
 		nimrod.updateAgent(ai.state);
 	}
 
@@ -739,7 +739,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 
 			if(lr.t != null) {
 				/* We'll be run during shutdown, so ensure this isn't. */
-				runLater("launchAgents->onAgentLaunchFailure", () -> agentScheduler.onAgentLaunchFailure(ai.uuid, launchRequest.resource, lr.t), false);
+				runLater("launchAgents->onAgentLaunchFailure", () -> agentScheduler.onAgentLaunchFailure(ai.instance, launchRequest.resource, lr.t), false);
 
 				try {
 					ai.instance.terminate();
@@ -919,31 +919,27 @@ public class Master implements MessageQueueListener, AutoCloseable {
 
 		@Override
 		public void onStateChange(Agent agent, Agent.State oldState, Agent.State newState) {
-
 			AgentInfo ai = getAgentInfo(agent);
 			assert agent == ai.instance;
 
+			LOGGER.debug("Agent {}: State change from {} -> {}", agent.getUUID(), oldState, newState);
+
 			if(oldState == null) {
+				assert newState == Agent.State.WAITING_FOR_HELLO;
 				AgentState nas = nimrod.addAgent(ai.resource, ai.state);
 				ai.state.update(nas);
 				heart.onAgentCreate(ai.uuid, Instant.now());
-				return;
-			}
-
-			LOGGER.debug("Agent {}: State change from {} -> {}", agent.getUUID(), oldState, newState);
-
-			if(oldState == Agent.State.WAITING_FOR_HELLO && newState == Agent.State.READY) {
+			} else if(oldState == Agent.State.WAITING_FOR_HELLO && newState == Agent.State.READY) {
 				ai.state.setConnectionTime(Instant.now());
 				aaaaa.runWithActuator(ai.resource, a -> a.notifyAgentConnection(ai.state));
-
+				nimrod.updateAgent(ai.state);
 			} else if(newState == Agent.State.SHUTDOWN) {
 				ai.state.setExpired(true);
 				aaaaa.runWithActuator(ai.resource, a -> a.notifyAgentDisconnection(ai.uuid));
 				heart.onAgentDisconnect(ai.uuid);
 				allAgents.remove(ai.uuid);
+				nimrod.updateAgent(ai.state);
 			}
-
-			nimrod.updateAgent(ai.state);
 
 			/* Execute this with priority so it's processed before the next scheduler tick. */
 			runLater("agOnStateChange", () -> agentScheduler.onAgentStateUpdate(agent, ai.resource, oldState, newState), true);

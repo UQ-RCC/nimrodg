@@ -125,10 +125,12 @@ public class DefaultAgentScheduler implements AgentScheduler {
 		LOGGER.trace("onAgentStateUpdate({}, {}, {}, {})", agent.getUUID(), node.getPath(), oldState, newState);
 
 		boolean scheduleNext = false;
-		if(oldState == Agent.State.WAITING_FOR_HELLO && newState == Agent.State.READY) {
+		if(oldState == null) {
+			assert newState == Agent.State.WAITING_FOR_HELLO;
+			m_AllAgents.add(agent);
+		} else if(oldState == Agent.State.WAITING_FOR_HELLO && newState == Agent.State.READY) {
 			/* WAITING_FOR_HELLO -> READY, we can start doing things. */
 			scheduleNext = true;
-			m_AllAgents.add(agent);
 			m_AgentHeuristic.onAgentLaunchSuccess(node);
 			m_LaunchingAgents.remove(agent.getUUID());
 		} else if(oldState == Agent.State.READY) {
@@ -160,26 +162,35 @@ public class DefaultAgentScheduler implements AgentScheduler {
 		m_AssJob.registerJobRun(ops.runJob(att, agent), att, agent);
 	}
 
+	/*
+	 * TODO: onAgentLaunchFailure() and onAgentExpiry() could possibly be merged.
+	 *  Since agents are now tracked even when in WAITING_FOR_HELLO, perhaps this logic \
+	 *  could even be moved into onAgentStateUpdate()
+	 */
+
 	@Override
-	public void onAgentLaunchFailure(UUID uuid, Resource node, Throwable t) {
-		LOGGER.trace("Agent launch failure for '{}' on '{}'.", uuid, node.getPath());
+	public void onAgentLaunchFailure(Agent agent, Resource node, Throwable t) {
+		LOGGER.trace("Agent launch failure for '{}' on '{}'.", agent.getUUID(), node.getPath());
 		if(t instanceof NimrodException.ResourceFull) {
 			LOGGER.trace("  Resource full...");
 		} else {
-			m_FailureTracker.reportLaunchFailure(uuid, node, t);
+			m_FailureTracker.reportLaunchFailure(agent.getUUID(), node, t);
 		}
 
 		m_AgentHeuristic.onAgentLaunchFailure(node);
-		m_LaunchingAgents.remove(uuid);
+		m_LaunchingAgents.remove(agent.getUUID());
+		m_AllAgents.remove(agent);
 	}
 
 	@Override
-	public void onAgentExpiry(UUID uuid) {
-		LOGGER.trace("Agent {} expired.", uuid);
+	public void onAgentExpiry(Agent ag, Resource node) {
+		LOGGER.trace("Agent {} expired.", ag.getUUID());
 
-		Agent ag = m_AssJob.getAgent(uuid);
 		m_ReadyAgents.remove(ag);
 		m_AllAgents.remove(ag);
+		if(m_LaunchingAgents.remove(ag.getUUID())) {
+			m_AgentHeuristic.onAgentLaunchFailure(node);
+		}
 
 		JobAttempt att = m_AssJob.reportAgentFinish(ag);
 		if(att != null) {
