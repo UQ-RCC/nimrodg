@@ -24,7 +24,6 @@ import au.edu.uq.rcc.nimrodg.api.CommandResult;
 import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.JobAttempt;
 import au.edu.uq.rcc.nimrodg.api.NimrodConfig;
-import au.edu.uq.rcc.nimrodg.api.NimrodEntity;
 import au.edu.uq.rcc.nimrodg.api.NimrodException;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.api.ResourceTypeInfo;
@@ -160,8 +159,8 @@ public class RunDMC extends SQLUUUUU<NimrodException.DbError> implements NimrodD
 	}
 
 	@Override
-	public synchronized TempExperiment.Impl addExperiment(String name, String workDir, String fileToken, CompiledRun r) throws SQLException {
-		return experimentHelpers.addCompiledExperiment(name, workDir, fileToken, r).create(this);
+	public synchronized TempExperiment.Impl addExperiment(String name, String workDir, CompiledRun r) throws SQLException {
+		return experimentHelpers.addCompiledExperiment(name, workDir, r).create(this);
 	}
 
 	@Override
@@ -326,24 +325,6 @@ public class RunDMC extends SQLUUUUU<NimrodException.DbError> implements NimrodD
 		}
 
 		return null;
-	}
-
-	@Override
-	public synchronized NimrodEntity isTokenValidForStorageT(TempExperiment.Impl exp, String token) throws SQLException {
-		long id = experimentHelpers.isTokenValidForStorage(exp.base.id, token);
-		if(id < 0) {
-			return null;
-		} else if(id == 0) {
-			return exp;
-		} else {
-			TempJobAttempt tatt = experimentHelpers.getJobAttempt(id);
-			Optional<TempJob> j = experimentHelpers.getSingleJob(tatt.jobId);
-			if(!j.isPresent()) {
-				throw new IllegalStateException();
-			}
-
-			return tatt.create(this, j.get().create(this, exp));
-		}
 	}
 
 	//------------START OF RESOURCE TREE-------------

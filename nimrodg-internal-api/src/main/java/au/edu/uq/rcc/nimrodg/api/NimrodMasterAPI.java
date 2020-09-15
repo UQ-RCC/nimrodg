@@ -78,8 +78,6 @@ public interface NimrodMasterAPI extends NimrodAPI {
 
 	void finishJobAttempt(JobAttempt att, boolean failed);
 
-	String getJobAttemptToken(JobAttempt att);
-
 	Map<Job, Collection<JobAttempt>> filterJobAttempts(Experiment exp, EnumSet<JobAttempt.Status> status);
 
 	/**

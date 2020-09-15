@@ -37,10 +37,8 @@ import au.edu.uq.rcc.nimrodg.api.MachinePair;
 import au.edu.uq.rcc.nimrodg.api.NetworkJob;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodConfig;
-import au.edu.uq.rcc.nimrodg.api.NimrodEntity;
 import au.edu.uq.rcc.nimrodg.api.NimrodException;
 import au.edu.uq.rcc.nimrodg.api.NimrodMasterAPI;
-import au.edu.uq.rcc.nimrodg.api.NimrodServeAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.api.PlanfileParseException;
 import au.edu.uq.rcc.nimrodg.api.Resource;
@@ -654,28 +652,6 @@ public abstract class APITests {
 
 		Assert.assertEquals(Set.of("x", "y"), exp1.getVariables());
 		Assert.assertTrue(api.filterJobs(exp1, EnumSet.allOf(JobAttempt.Status.class), 0, 0).isEmpty());
-	}
-
-	@Test
-	public void tokenTest() throws RunfileBuildException, PlanfileParseException {
-		NimrodMasterAPI api = getNimrodMasterAPI();
-		Experiment exp1 = api.addExperiment("exp1", TestUtils.getSimpleSampleExperiment());
-		String token = exp1.getToken();
-
-		NimrodServeAPI sapi = (NimrodServeAPI)api;
-		NimrodEntity expEnt = sapi.isTokenValidForStorage(exp1, token);
-		Assert.assertEquals(exp1, expEnt);
-		Assert.assertNull(sapi.isTokenValidForStorage(exp1, "asdf"));
-
-		Job j = api.filterJobs(exp1, EnumSet.of(JobAttempt.Status.NOT_RUN), 0, 1).stream()
-				.findFirst().orElseThrow(IllegalStateException::new);
-
-		JobAttempt att = api.createJobAttempts(List.of(j)).get(0);
-		String attToken = api.getJobAttemptToken(att);
-
-		NimrodEntity attEnt = sapi.isTokenValidForStorage(exp1, attToken);
-		Assert.assertEquals(att, attEnt);
-		Assert.assertNull(sapi.isTokenValidForStorage(exp1, "asdf"));
 	}
 
 	@Test

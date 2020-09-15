@@ -39,7 +39,6 @@ public final class TempExperiment {
 	public final String workDir;
 	public final Experiment.State state;
 	public final Instant created;
-	public final String fileToken;
 	public final String path;
 	public final Set<String> variables;
 
@@ -48,13 +47,12 @@ public final class TempExperiment {
 	 */
 	public final Map<Task.Name, CompiledTask> tasks;
 
-	public TempExperiment(long id, String name, String workDir, Experiment.State state, Instant created, String fileToken, String path, Collection<String> variables, Collection<CompiledTask> tasks) {
+	public TempExperiment(long id, String name, String workDir, Experiment.State state, Instant created, String path, Collection<String> variables, Collection<CompiledTask> tasks) {
 		this.id = id;
 		this.name = name;
 		this.workDir = workDir;
 		this.state = state;
 		this.created = created;
-		this.fileToken = fileToken;
 		this.path = path;
 		this.variables = Set.copyOf(variables);
 		this.tasks = Map.copyOf(tasks.stream().collect(Collectors.toMap(ct -> ct.name, ct -> ct)));
@@ -107,11 +105,6 @@ public final class TempExperiment {
 		@Override
 		public Task getTask(Task.Name name) {
 			return base.tasks.get(name);
-		}
-
-		@Override
-		public String getToken() {
-			return fileToken;
 		}
 
 		@Override

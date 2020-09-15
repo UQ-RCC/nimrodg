@@ -106,8 +106,6 @@ public class DBExperimentHelpers extends DBBaseHelper {
 	private final PreparedStatement qGetCommandIdForResult;
 	private final PreparedStatement qGetNextCommandIndex;
 
-	private final PreparedStatement qIsTokenValidForExperimentStorage;
-
 	public DBExperimentHelpers(Connection conn, List<PreparedStatement> statements) throws SQLException {
 		super(conn, statements);
 
@@ -163,31 +161,6 @@ public class DBExperimentHelpers extends DBBaseHelper {
 		this.qAddCommandResult = prepareStatement("INSERT INTO nimrod_command_results(attempt_id, status, command_index, time, retval, message, error_code, stop, command_id) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)", true);
 		this.qGetCommandResult = prepareStatement("SELECT * FROM nimrod_command_results WHERE id = ?");
 		this.qGetNextCommandIndex = prepareStatement("SELECT COALESCE(MAX(command_index) + 1, 0) FROM nimrod_command_results WHERE attempt_id = ?");
-
-		this.qIsTokenValidForExperimentStorage = prepareStatement("	SELECT r.* FROM (\n"
-				+ "		SELECT\n"
-				+ "			0 AS id\n"
-				+ "		FROM\n"
-				+ "			nimrod_experiments\n"
-				+ "		WHERE\n"
-				+ "			id = ?1 AND\n"
-				+ "			file_token = ?2\n"
-				+ "		UNION ALL\n"
-				+ "		SELECT\n"
-				+ "			att.id AS id\n"
-				+ "		FROM\n"
-				+ "			nimrod_job_attempts AS att,\n"
-				+ "			nimrod_jobs AS j\n"
-				+ "		WHERE\n"
-				+ "			att.job_id = j.id AND\n"
-				+ "			j.exp_id = ?1 AND\n"
-				+ "			att.token = ?2\n"
-				+ "		UNION ALL\n"
-				+ "		SELECT -1 AS id\n"
-				+ "	) AS r\n"
-				+ "	ORDER BY id DESC\n"
-				+ "	LIMIT 1\n"
-				+ ";");
 
 		this.qGetCommandIdForResult = prepareStatement("SELECT\n" +
 				"    c.id AS id\n" +
@@ -333,15 +306,7 @@ public class DBExperimentHelpers extends DBBaseHelper {
 		return qDeleteExperimentByName.executeUpdate() > 0;
 	}
 
-	private static String makeToken() {
-		return UUID.randomUUID().toString().replace("-", "");
-	}
-
-	public TempExperiment addCompiledExperiment(String name, String workDir, String fileToken, CompiledRun exp) throws SQLException {
-		if(fileToken == null) {
-			fileToken = makeToken();
-		}
-
+	public TempExperiment addCompiledExperiment(String name, String workDir, CompiledRun exp) throws SQLException {
 		/* Check there's no reserved vars. */
 		Set<String> reservedVars = getReservedVariables();
 		Set<String> varNames = exp.variables.stream().map(v -> v.name).collect(Collectors.toSet());
@@ -359,7 +324,7 @@ public class DBExperimentHelpers extends DBBaseHelper {
 			workDir = workDir + "/";
 		}
 
-		long expId = addExperiment(name, workDir, fileToken);
+		long expId = addExperiment(name, workDir, name);
 
 		/* Add the variables and build a lookup table. */
 		long[] varIds = addVariables(expId, names);
@@ -766,7 +731,7 @@ public class DBExperimentHelpers extends DBBaseHelper {
 	public TempJobAttempt createJobAttempt(long jobId, String jobPath, UUID uuid) throws SQLException {
 		qCreateJobAttempt.setLong(1, jobId);
 		qCreateJobAttempt.setString(2, uuid.toString());
-		qCreateJobAttempt.setString(3, makeToken());
+		qCreateJobAttempt.setString(3, String.format("%s/%s", jobPath, uuid));
 		qCreateJobAttempt.setString(4, String.format("%s/%s", jobPath, uuid));
 
 		if(qCreateJobAttempt.executeUpdate() == 0) {
@@ -909,19 +874,6 @@ public class DBExperimentHelpers extends DBBaseHelper {
 		}
 	}
 
-	public long isTokenValidForStorage(long expId, String token) throws SQLException {
-		qIsTokenValidForExperimentStorage.setLong(1, expId);
-		qIsTokenValidForExperimentStorage.setString(2, token);
-
-		try(ResultSet rs = qIsTokenValidForExperimentStorage.executeQuery()) {
-			if(!rs.next()) {
-				throw new BrokenDBInvariantException("is_token_valid_for_experiment_storage() returned no rows.");
-			}
-
-			return rs.getLong("id");
-		}
-	}
-
 	private TempExperiment experimentFromRow(ResultSet rs) throws SQLException {
 		long expId = rs.getLong("id");
 		return new TempExperiment(
@@ -930,7 +882,6 @@ public class DBExperimentHelpers extends DBBaseHelper {
 				rs.getString("work_dir"),
 				Experiment.stringToState(rs.getString("state")),
 				DBUtils.getLongInstant(rs, "created"),
-				rs.getString("file_token"),
 				rs.getString("path"),
 				getExperimentUserVars(expId),
 				getExperimentTasks(expId)
@@ -947,7 +898,6 @@ public class DBExperimentHelpers extends DBBaseHelper {
 				DBUtils.getLongInstant(rs, "creation_time"),
 				DBUtils.getLongInstant(rs, "start_time"),
 				DBUtils.getLongInstant(rs, "finish_time"),
-				rs.getString("token"),
 				_uuid == null ? null : UUID.fromString(_uuid),
 				rs.getString("path")
 		);

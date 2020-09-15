@@ -23,7 +23,6 @@ import au.edu.uq.rcc.nimrodg.api.CommandResult;
 import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.JobAttempt;
 import au.edu.uq.rcc.nimrodg.api.NimrodConfig;
-import au.edu.uq.rcc.nimrodg.api.NimrodEntity;
 import au.edu.uq.rcc.nimrodg.api.NimrodException;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.api.events.NimrodMasterEvent;
@@ -55,7 +54,7 @@ public interface NimrodDBAPI extends ResourceFunctions<TempResource.Impl, TempEx
 
 	Optional<TempAgentInfo.Impl> lookupAgentByPOSIX(String system, String machine) throws SQLException;
 
-	TempExperiment.Impl addExperiment(String name, String workDir, String fileToken, CompiledRun r) throws SQLException;
+	TempExperiment.Impl addExperiment(String name, String workDir, CompiledRun r) throws SQLException;
 
 	List<TempExperiment.Impl> listExperiments() throws SQLException;
 
@@ -104,8 +103,6 @@ public interface NimrodDBAPI extends ResourceFunctions<TempResource.Impl, TempEx
 	TempCommandResult.Impl addCommandResult(TempJobAttempt.Impl att, CommandResult.CommandResultStatus status, long index, float time, int retval, String message, int errcode, boolean stop) throws SQLException;
 
 	List<NimrodMasterEvent> pollMasterEventsT() throws SQLException;
-
-	NimrodEntity isTokenValidForStorageT(TempExperiment.Impl exp, String token) throws SQLException;
 
 	@Override
 	void close() throws SQLException;

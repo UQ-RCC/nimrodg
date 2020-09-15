@@ -32,11 +32,10 @@ public class TempJobAttempt {
 	public final Instant creationTime;
 	public final Instant startTime;
 	public final Instant finishTime;
-	public final String token;
 	public final UUID agentUuid;
 	public final String path;
 
-	public TempJobAttempt(long id, long jobId, UUID uuid, JobAttempt.Status status, Instant creationTime, Instant startTime, Instant finishTime, String token, UUID agentUuid, String path) {
+	public TempJobAttempt(long id, long jobId, UUID uuid, JobAttempt.Status status, Instant creationTime, Instant startTime, Instant finishTime, UUID agentUuid, String path) {
 		this.id = id;
 		this.jobId = jobId;
 		this.uuid = uuid;
@@ -44,7 +43,6 @@ public class TempJobAttempt {
 		this.creationTime = creationTime;
 		this.startTime = startTime;
 		this.finishTime = finishTime;
-		this.token = token;
 		this.agentUuid = agentUuid;
 		this.path = path;
 	}
@@ -104,10 +102,6 @@ public class TempJobAttempt {
 		@Override
 		public String getPath() {
 			return path;
-		}
-
-		public String getToken() {
-			return token;
 		}
 
 		@Override

@@ -88,8 +88,6 @@ public class DBExperimentHelpers extends DBBaseHelper {
 	private final PreparedStatement qAddMultipleJobs;
 	private final PreparedStatement qAddMultipleJobsInternal;
 
-	private final PreparedStatement qIsTokenValidForStorage;
-
 	public DBExperimentHelpers(Connection conn, List<PreparedStatement> statments) throws SQLException {
 		super(conn, statments);
 
@@ -118,8 +116,6 @@ public class DBExperimentHelpers extends DBBaseHelper {
 		this.qAddCompiledExperiment = prepareStatement("SELECT * FROM add_compiled_experiment(?::TEXT, ?::TEXT, ?::TEXT, ?::jsonb)");
 		this.qAddMultipleJobs = prepareStatement("SELECT * FROM add_multiple_jobs(?::BIGINT, ?::JSONB)");
 		this.qAddMultipleJobsInternal = prepareStatement("SELECT job_id FROM add_multiple_jobs_internal(?::BIGINT, ?::JSONB) AS job_id");
-
-		this.qIsTokenValidForStorage = prepareStatement("SELECT is_token_valid_for_experiment_storage(?::BIGINT, ?::TEXT) AS id");
 	}
 
 	public List<TempExperiment> listExperiments() throws SQLException {
@@ -183,13 +179,13 @@ public class DBExperimentHelpers extends DBBaseHelper {
 		//System.err.printf("  DB took %f sec\n", dbsec);
 	}
 
-	public TempExperiment addCompiledExperiment(String name, String workDir, String fileToken, CompiledRun exp) throws SQLException {
+	public TempExperiment addCompiledExperiment(String name, String workDir, CompiledRun exp) throws SQLException {
 		boolean batched = exp.numJobs > 100000;
 		int batchSize = 100000;
 
 		qAddCompiledExperiment.setString(1, name);
 		qAddCompiledExperiment.setString(2, workDir);
-		qAddCompiledExperiment.setString(3, fileToken);
+		qAddCompiledExperiment.setString(3, name); /* FIXME: remove old token field */
 		qAddCompiledExperiment.setString(4, JsonUtils.toJson(exp, !batched).toString());
 
 		TempExperiment te;
@@ -386,19 +382,6 @@ public class DBExperimentHelpers extends DBBaseHelper {
 		}
 	}
 
-	public long isTokenValidForStorage(long expId, String token) throws SQLException {
-		qIsTokenValidForStorage.setLong(1, expId);
-		qIsTokenValidForStorage.setString(2, token);
-
-		try(ResultSet rs = qIsTokenValidForStorage.executeQuery()) {
-			if(!rs.next()) {
-				throw new BrokenDBInvariantException("is_token_valid_for_experiment_storage() returned no rows.");
-			}
-
-			return rs.getLong("id");
-		}
-	}
-
 	public List<TempJobAttempt> filterJobAttemptsByExperiment(long expId, EnumSet<JobAttempt.Status> status) throws SQLException {
 		qFilterJobAttemptsByExperiment.setLong(1, expId);
 		qFilterJobAttemptsByExperiment.setArray(2, conn.createArrayOf("TEXT", status.stream()
@@ -442,7 +425,6 @@ public class DBExperimentHelpers extends DBBaseHelper {
 				rs.getString("work_dir"),
 				Experiment.stringToState(rs.getString("state")),
 				DBUtils.getInstant(rs, "created"),
-				rs.getString("file_token"),
 				rs.getString("path"),
 				JsonUtils.stringListFromJson(DBUtils.getJSONArray(rs, "vars_json")),
 				JsonUtils.taskListFromJson(DBUtils.getJSONObject(rs, "tasks_json"))
@@ -472,7 +454,6 @@ public class DBExperimentHelpers extends DBBaseHelper {
 				DBUtils.getInstant(rs, "creation_time"),
 				DBUtils.getInstant(rs, "start_time"),
 				DBUtils.getInstant(rs, "finish_time"),
-				rs.getString("token"),
 				_uuid == null ? null : UUID.fromString(_uuid),
 				rs.getString("path")
 		);

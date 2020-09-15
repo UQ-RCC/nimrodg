@@ -28,10 +28,8 @@ import au.edu.uq.rcc.nimrodg.api.Job;
 import au.edu.uq.rcc.nimrodg.api.JobAttempt;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodConfig;
-import au.edu.uq.rcc.nimrodg.api.NimrodEntity;
 import au.edu.uq.rcc.nimrodg.api.NimrodException;
 import au.edu.uq.rcc.nimrodg.api.NimrodMasterAPI;
-import au.edu.uq.rcc.nimrodg.api.NimrodServeAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.api.Resource;
 import au.edu.uq.rcc.nimrodg.api.ResourceType;
@@ -54,7 +52,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-public abstract class TempNimrodAPIImpl implements NimrodAPI, NimrodMasterAPI, NimrodServeAPI {
+public abstract class TempNimrodAPIImpl implements NimrodAPI, NimrodMasterAPI {
 
 	protected final NimrodDBAPI db;
 
@@ -87,7 +85,7 @@ public abstract class TempNimrodAPIImpl implements NimrodAPI, NimrodMasterAPI, N
 				throw new NimrodException.ExperimentExists(exp.get());
 			}
 
-			return db.addExperiment(name, name, null, ce);
+			return db.addExperiment(name, name, ce);
 		});
 	}
 
@@ -355,12 +353,6 @@ public abstract class TempNimrodAPIImpl implements NimrodAPI, NimrodMasterAPI, N
 	}
 
 	@Override
-	public String getJobAttemptToken(JobAttempt _att) {
-		TempJobAttempt.Impl att = validateJobAttempt(_att);
-		return att.getToken();
-	}
-
-	@Override
 	public Map<Job, Collection<JobAttempt>> filterJobAttempts(Experiment _exp, EnumSet<JobAttempt.Status> status) {
 		return db.runSQLTransaction(() -> db.filterJobAttempts(validateExperiment(_exp), status))
 				.entrySet().stream()
@@ -385,16 +377,6 @@ public abstract class TempNimrodAPIImpl implements NimrodAPI, NimrodMasterAPI, N
 		} catch(SQLException e) {
 			throw new NimrodException.DbError(e);
 		}
-	}
-
-	@Override
-	public NimrodEntity isTokenValidForStorage(Experiment _exp, String token) {
-		TempExperiment.Impl run = validateExperiment(_exp);
-		if(token == null) {
-			return null;
-		}
-
-		return db.runSQLTransaction(() -> db.isTokenValidForStorageT(run, token));
 	}
 
 	public abstract Connection getConnection();

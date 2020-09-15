@@ -381,7 +381,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 	private NetworkJob buildNetworkJob(JobAttempt att, Job job, AgentInfo ai) {
 		/* FIXME: handle cert path, etc. */
 		return nimrod.getAssignmentStatus(ai.resource, experiment)
-				.map(u -> MsgUtils.resolveJob(att.getUUID(), job, Task.Name.Main, u.uri, nimrod.getJobAttemptToken(att)))
+				.map(u -> MsgUtils.resolveJob(att.getUUID(), job, Task.Name.Main, u.uri, att.getPath()))
 				.orElseThrow(() -> new IllegalStateException("Resource not assigned"));
 	}
 
