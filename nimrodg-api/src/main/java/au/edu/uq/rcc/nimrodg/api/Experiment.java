@@ -45,7 +45,10 @@ public interface Experiment extends NimrodEntity {
 
 	Task getTask(Task.Name name);
 
-	String getToken();
+	@Deprecated
+	default String getToken() {
+		return getName();
+	}
 
 	boolean isPersistent();
 
