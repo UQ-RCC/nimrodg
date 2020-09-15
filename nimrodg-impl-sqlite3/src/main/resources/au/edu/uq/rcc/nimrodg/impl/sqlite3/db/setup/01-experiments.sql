@@ -24,7 +24,6 @@ CREATE TABLE nimrod_experiments(
 	state TEXT NOT NULL CHECK(state IN ('STOPPED', 'STARTED', 'PERSISTENT')) DEFAULT 'STOPPED',
 	work_dir TEXT NOT NULL UNIQUE,
 	created INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
-	file_token TEXT NOT NULL,
 	path TEXT NOT NULL UNIQUE
 );
 
@@ -120,12 +119,10 @@ CREATE TABLE nimrod_job_attempts(
 	creation_time INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
 	start_time INTEGER DEFAULT NULL,
 	finish_time INTEGER DEFAULT NULL,
-	token TEXT NOT NULL,
 	path TEXT NOT NULL UNIQUE,
 	/* Weak reference to the agent UUID. The agent may or may not exist */
 	agent_uuid UUID/* REFERENCES nimrod_master_agents(id) */,
-	CHECK(finish_time >= start_time),
-	UNIQUE(job_id, token)
+	CHECK(finish_time >= start_time)
 );
 
 DROP TRIGGER IF EXISTS t_set_attempt_start_time;
