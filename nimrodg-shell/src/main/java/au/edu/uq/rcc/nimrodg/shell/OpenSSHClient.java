@@ -42,6 +42,7 @@ import java.util.Base64;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -58,6 +59,7 @@ public class OpenSSHClient implements RemoteShell {
     private final Optional<Path> privateKey;
     private final Path executable;
     private final Path workDir;
+    private final String uniqueStub;
 
     private final String[] sshArgs;
     private final String[] closeArgs;
@@ -69,7 +71,9 @@ public class OpenSSHClient implements RemoteShell {
         this.executable = executable.orElse(Paths.get("ssh"));
         this.workDir = workDir;
 
-        Path socketPath = workDir.resolve(String.format("openssh-%d-control", (long)uri.hashCode() & 0xFFFFFFFFL));
+        long uniqueHash = Objects.hash(uri, Thread.currentThread().getId());
+        this.uniqueStub = String.format("openssh-%d-", uniqueHash & 0xFFFFFFFFL);
+        Path socketPath = workDir.resolve(uniqueStub + "control");
 
         if(opts.keySet().stream().anyMatch(k -> !k.matches("^[a-zA-Z0-9]+$"))) {
             throw new IllegalArgumentException("invalid custom option key");
@@ -101,7 +105,7 @@ public class OpenSSHClient implements RemoteShell {
 
         if(privateKey.isPresent()) {
             /* The key may be on another filesystem, so make a "local" copy of it. */
-            this.privateKey = Optional.of(workDir.resolve(String.format("openssh-%d-key", (long)uri.hashCode() & 0xFFFFFFFFL)));
+            this.privateKey = Optional.of(workDir.resolve(uniqueStub + "key"));
 
             try(ByteChannel c = ShellUtils.newByteChannelSafe(this.privateKey.get(), EnumSet.of(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE))) {
                 c.write(ByteBuffer.wrap(Files.readAllBytes(privateKey.get())));
@@ -210,7 +214,7 @@ public class OpenSSHClient implements RemoteShell {
     }
 
     private CommandResult runSsh(String[] args, ProcProc proc) throws IOException {
-        Path logPath = workDir.resolve(String.format("openssh-%d-log%02d.txt", (long)uri.hashCode() & 0xFFFFFFFFL, commandCount++));
+        Path logPath = workDir.resolve(String.format("%slog%02d.txt", uniqueStub, commandCount++));
 
         ArrayList<String> aa = new ArrayList<>(sshArgs.length + 3 + args.length);
         aa.addAll(Arrays.asList(sshArgs));
