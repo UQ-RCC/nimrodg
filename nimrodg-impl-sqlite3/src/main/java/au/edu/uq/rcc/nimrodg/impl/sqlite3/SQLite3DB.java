@@ -340,14 +340,14 @@ public class SQLite3DB extends SQLUUUUU<NimrodException.DbError> implements Nimr
 	@Override
 	public synchronized Optional<TempJob.Impl> getSingleJobT(long jobId) throws SQLException {
 		Optional<TempJob> _job = experimentHelpers.getSingleJob(jobId);
-		if(!_job.isPresent()) {
+		if(_job.isEmpty()) {
 			return Optional.empty();
 		}
 
 		TempJob job = _job.get();
 
 		Optional<Experiment> exp = this.getTempExp(job.expId).map(e -> e.create(this));
-		if(!exp.isPresent()) {
+		if(exp.isEmpty()) {
 			/* Shouldn't be possible, is this running in a transaction? */
 			throw new IllegalStateException();
 		}
@@ -476,7 +476,7 @@ public class SQLite3DB extends SQLUUUUU<NimrodException.DbError> implements Nimr
 	}
 
 	@Override
-	public synchronized ResourceTypeInfo getResourceImplementation(TempResource.Impl node) throws SQLException {
+	public synchronized ResourceTypeInfo getResourceImplementation(TempResource.Impl node) {
 		Class<?> clazz;
 		try {
 			clazz = Class.forName(node.base.typeClass);
@@ -527,7 +527,7 @@ public class SQLite3DB extends SQLUUUUU<NimrodException.DbError> implements Nimr
 
 	@Override
 	public synchronized Optional<TempAgent.Impl> getAgentInformationByUUID(UUID uuid) throws SQLException {
-		return resourceHelpers.getAgentInformationByUUID(uuid).map(ta -> ta.create());
+		return resourceHelpers.getAgentInformationByUUID(uuid).map(TempAgent::create);
 	}
 
 	@Override
@@ -537,7 +537,7 @@ public class SQLite3DB extends SQLUUUUU<NimrodException.DbError> implements Nimr
 
 	@Override
 	public synchronized Collection<TempAgent.Impl> getResourceAgentInformation(TempResource.Impl node) throws SQLException {
-		return resourceHelpers.getResourceAgentInformation(node.base.id).stream().map(ta -> ta.create()).collect(Collectors.toList());
+		return resourceHelpers.getResourceAgentInformation(node.base.id).stream().map(TempAgent::create).collect(Collectors.toList());
 	}
 
 	@Override
@@ -606,19 +606,12 @@ public class SQLite3DB extends SQLUUUUU<NimrodException.DbError> implements Nimr
 			case "job": {
 				/* Sometimes we get stale messages */
 				Optional<TempExperiment.Impl> exp = getExperiment(payload.getInt("exp_id"));
-				if(!exp.isPresent()) {
+				if(exp.isEmpty()) {
 					return null;
 				}
 
 				Optional<TempJob.Impl> job = getSingleJobT(payload.getInt("id"));
-				if(!job.isPresent()) {
-					return null;
-				}
-
-				return new JobAddMasterEvent(
-						exp.get(),
-						job.get()
-				);
+				return job.map(impl -> new JobAddMasterEvent(exp.get(), impl)).orElse(null);
 			}
 		}
 

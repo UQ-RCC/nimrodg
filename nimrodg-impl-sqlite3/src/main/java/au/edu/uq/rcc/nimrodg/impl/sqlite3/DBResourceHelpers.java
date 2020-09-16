@@ -154,7 +154,7 @@ public class DBResourceHelpers extends DBBaseHelper {
 	public TempResource addResource(String name, String type, JsonStructure config, NimrodURI amqpUri, NimrodURI txUri) throws SQLException {
 
 		Optional<TempResourceType> _type = getResourceTypeInfo(type);
-		if(!_type.isPresent()) {
+		if(_type.isEmpty()) {
 			throw new NimrodException("No such type '%s'", type);
 		}
 

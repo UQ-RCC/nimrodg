@@ -68,15 +68,6 @@ public class SQLite3SetupAPI extends SQLUUUUU<SetupException> implements NimrodS
 		this.managed = managed;
 	}
 
-	private static DelayedPreparedStatement prepareStatementFromFile(Connection conn, String file) throws SQLException, IOException {
-		byte[] raw;
-		try(InputStream is = SQLite3APIFactory.class.getResourceAsStream(file)) {
-			raw = is.readAllBytes();
-		}
-
-		return new DelayedPreparedStatement(conn, new String(raw, StandardCharsets.UTF_8));
-	}
-
 	@Override
 	public synchronized boolean isCompatibleSchema() throws SetupException {
 		try {
