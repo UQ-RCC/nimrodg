@@ -22,7 +22,6 @@ package au.edu.uq.rcc.nimrodg.api;
 import au.edu.uq.rcc.nimrodg.agent.AgentState;
 import java.io.IOException;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import au.edu.uq.rcc.nimrodg.api.events.NimrodMasterEvent;
