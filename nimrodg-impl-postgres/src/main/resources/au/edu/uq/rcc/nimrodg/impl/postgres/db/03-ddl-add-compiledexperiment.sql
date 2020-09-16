@@ -103,7 +103,7 @@ BEGIN
 	END LOOP;
 END $$ LANGUAGE 'plpgsql';
 
-CREATE OR REPLACE FUNCTION add_compiled_experiment(_name TEXT, _work_dir TEXT, _file_token TEXT, _exp JSONB) RETURNS nimrod_full_experiments AS $$
+CREATE OR REPLACE FUNCTION add_compiled_experiment(_name TEXT, _work_dir TEXT, _exp JSONB) RETURNS nimrod_full_experiments AS $$
 DECLARE
 	count_ BIGINT;
 
@@ -142,19 +142,14 @@ BEGIN
 		RAISE EXCEPTION 'Experiment cannot have variables with reserved names.';
 	END IF;
 
-	-- Ensure we have a file token
-	IF _file_token IS NULL THEN
-		_file_token := _generate_random_token(32);
-	END IF;
-
 	-- Ensure work_dir is a directory.
 	IF _work_dir NOT LIKE '%/' THEN
 		_work_dir := _work_dir || '/';
 	END IF;
 
 	-- Add the experiment
-	INSERT INTO nimrod_full_experiments(name, work_dir, file_token, variables, path)
-	VALUES(_name, _work_dir, _file_token, vars, _name)
+	INSERT INTO nimrod_full_experiments(name, work_dir, variables, path)
+	VALUES(_name, _work_dir, vars, _name)
 	RETURNING id INTO eexp_id;
 
 	-- Add the variables

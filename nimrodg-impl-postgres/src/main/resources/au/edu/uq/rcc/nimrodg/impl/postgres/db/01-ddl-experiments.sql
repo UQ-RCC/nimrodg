@@ -30,7 +30,6 @@ CREATE TABLE nimrod_experiments(
 	state nimrod_experiment_state NOT NULL DEFAULT 'STOPPED'::nimrod_experiment_state,
 	work_dir TEXT NOT NULL UNIQUE,
 	created TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-	file_token TEXT NOT NULL,
 	-- NB: The variables are stored twice:
 	-- - The first copy, here, is for quick lookups so we don't have to use nimrod_full_experiments.
 	-- - The second copy, in nimrod_variables, is used for substitution validation so it contains
@@ -64,8 +63,7 @@ CREATE TABLE nimrod_jobs(
 	-- NB: This isn't validated by a trigger because it's too damned slow to do so.
 	-- Use add_compiled_experiment() or add_multiple_jobs()
 	variables JSONB NOT NULL,
-	path nimrod_path NOT NULL UNIQUE,
-	UNIQUE(exp_id, job_index)
+	path nimrod_path NOT NULL UNIQUE
 );
 
 /*
@@ -155,13 +153,11 @@ CREATE TABLE nimrod_job_attempts(
 	creation_time TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
 	start_time TIMESTAMP WITH TIME ZONE DEFAULT NULL,
 	finish_time TIMESTAMP WITH TIME ZONE DEFAULT NULL,
-	token TEXT NOT NULL DEFAULT _generate_random_token(32),
 	path nimrod_path NOT NULL UNIQUE,
 	/* Weak reference to the agent UUID. The agent may or may not exist */
 	agent_uuid UUID/* REFERENCES nimrod_master_agents(id) */,
-	CHECK(finish_time >= start_time),
+	CHECK(finish_time >= start_time)
 	--CHECK(status != 'NOT_RUN'::nimrod_job_status)
-	UNIQUE(job_id, token)
 );
 
 CREATE OR REPLACE FUNCTION _exp_t_attempt_add() RETURNS TRIGGER AS $$
@@ -453,39 +449,6 @@ BEGIN
 	;
 END
 $$ LANGUAGE 'plpgsql' STABLE;
-
-/*
-** Is the provided token valid for modification of the given run's storage.
-** If the token is an attempt-token, return the id of the attempt.
-** If the token is an experiment token, return 0.
-** If the token is invalid, return -1.
-*/
-CREATE OR REPLACE FUNCTION is_token_valid_for_experiment_storage(_exp_id BIGINT, _token TEXT) RETURNS BIGINT AS $$
-	SELECT r.* FROM (
-		SELECT
-			0 AS id
-		FROM
-			nimrod_experiments
-		WHERE
-			id = _exp_id AND
-			file_token = _token
-		UNION ALL
-		SELECT
-			att.id AS id
-		FROM
-			nimrod_job_attempts AS att,
-			nimrod_jobs AS j
-		WHERE
-			att.job_id = j.id AND
-			j.exp_id = _exp_id AND
-			att.token = _token
-		UNION ALL
-		SELECT -1 AS id
-	) AS r
-	ORDER BY id DESC
-	LIMIT 1
-	;
-$$ LANGUAGE SQL STABLE;
 
 -- Validate job key names, will throw if invalid
 CREATE OR REPLACE FUNCTION validate_jobs_json(_exp_id BIGINT, _jobs JSONB) RETURNS VOID AS $$

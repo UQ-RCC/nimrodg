@@ -113,7 +113,7 @@ public class DBExperimentHelpers extends DBBaseHelper {
 
 		this.qAddCommandResult = prepareStatement("SELECT * FROM add_command_result(?::BIGINT, ?::nimrod_command_result_status, ?::BIGINT, ?::REAL, ?::INT, ?::TEXT, ?::INT, ?::BOOLEAN)");
 
-		this.qAddCompiledExperiment = prepareStatement("SELECT * FROM add_compiled_experiment(?::TEXT, ?::TEXT, ?::TEXT, ?::jsonb)");
+		this.qAddCompiledExperiment = prepareStatement("SELECT * FROM add_compiled_experiment(?::TEXT, ?::TEXT, ?::jsonb)");
 		this.qAddMultipleJobs = prepareStatement("SELECT * FROM add_multiple_jobs(?::BIGINT, ?::JSONB)");
 		this.qAddMultipleJobsInternal = prepareStatement("SELECT job_id FROM add_multiple_jobs_internal(?::BIGINT, ?::JSONB) AS job_id");
 	}
@@ -185,8 +185,7 @@ public class DBExperimentHelpers extends DBBaseHelper {
 
 		qAddCompiledExperiment.setString(1, name);
 		qAddCompiledExperiment.setString(2, workDir);
-		qAddCompiledExperiment.setString(3, name); /* FIXME: remove old token field */
-		qAddCompiledExperiment.setString(4, JsonUtils.toJson(exp, !batched).toString());
+		qAddCompiledExperiment.setString(3, JsonUtils.toJson(exp, !batched).toString());
 
 		TempExperiment te;
 		try(ResultSet rs = qAddCompiledExperiment.executeQuery()) {
