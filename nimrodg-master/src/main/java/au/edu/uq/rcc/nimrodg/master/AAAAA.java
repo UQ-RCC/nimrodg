@@ -276,7 +276,7 @@ public abstract class AAAAA implements AutoCloseable {
 	public CompletableFuture<Void> runWithActuator(Resource res, Consumer<Actuator> proc) {
 		ActuatorState as = this.actuators.get(res);
 		if(as == null) {
-			throw new IllegalStateException();
+			return CompletableFuture.failedFuture(new IllegalStateException("no such actuator"));
 		}
 
 		return as.launchFuture.thenAcceptAsync(act -> {
