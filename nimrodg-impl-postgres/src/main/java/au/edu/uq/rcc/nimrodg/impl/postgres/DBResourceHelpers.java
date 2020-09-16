@@ -29,8 +29,6 @@ import au.edu.uq.rcc.nimrodg.impl.base.db.DBUtils;
 import au.edu.uq.rcc.nimrodg.impl.base.db.TempAgent;
 import au.edu.uq.rcc.nimrodg.impl.base.db.TempResource;
 import au.edu.uq.rcc.nimrodg.impl.base.db.TempResourceType;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -40,7 +38,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import javax.json.JsonObject;
-import javax.json.JsonObjectBuilder;
 import javax.json.JsonStructure;
 
 public class DBResourceHelpers extends DBBaseHelper {

@@ -32,12 +32,8 @@ import au.edu.uq.rcc.nimrodg.impl.base.db.TempExperiment;
 import au.edu.uq.rcc.nimrodg.impl.base.db.TempJob;
 import au.edu.uq.rcc.nimrodg.impl.base.db.TempJobAttempt;
 
-import javax.json.Json;
-import javax.json.JsonArrayBuilder;
-import javax.json.JsonObjectBuilder;
 import javax.json.JsonString;
 import javax.json.JsonValue;
-import java.sql.Array;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -229,7 +225,7 @@ public class DBExperimentHelpers extends DBBaseHelper {
 		qUpdateExperimentState.setString(2, Experiment.stateToString(state));
 
 		try(ResultSet rs = qUpdateExperimentState.executeQuery()) {
-			// nop
+			/* nop */
 		}
 	}
 
