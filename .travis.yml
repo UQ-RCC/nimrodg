@@ -46,6 +46,8 @@ deploy:
     - nimrod/build/distributions/nimrod-*.rpm
   on:
     tags: true
+  cleanup: false
+
 notifications:
   slack:
     rooms:
