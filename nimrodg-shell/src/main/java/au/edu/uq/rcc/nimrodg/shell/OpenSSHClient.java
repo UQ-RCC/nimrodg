@@ -27,7 +27,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
 import java.nio.charset.StandardCharsets;
@@ -51,6 +50,7 @@ import java.util.stream.Stream;
 /**
  * A wrapper around OpenSSH. This entire class is a glorious hack.
  */
+@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public class OpenSSHClient implements RemoteShell {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(OpenSSHClient.class);
@@ -124,7 +124,7 @@ public class OpenSSHClient implements RemoteShell {
         }
 
         ssh.addAll(commonArgs);
-        sshArgs = ssh.stream().toArray(String[]::new);
+        sshArgs = ssh.toArray(new String[0]);
 
         {
             ssh.clear();
@@ -133,73 +133,10 @@ public class OpenSSHClient implements RemoteShell {
             ssh.add("-O");
             ssh.add("exit");
             ssh.add(uri.getHost());
-            closeArgs = ssh.stream().toArray(String[]::new);
+            closeArgs = ssh.toArray(new String[0]);
         }
 
         commandCount = 0;
-    }
-
-//        -L port:host:hostport
-//        -L port:remote_socket
-//        -L [bind_address:]port:host:hostport
-//        -L [bind_address:]port:remote_socket
-//        -L local_socket:host:hostport
-//        -L local_socket:remote_socket
-//    -R [bind_address:]port:host:hostport
-//    -R [bind_address:]port:local_socket
-//    -R remote_socket:host:hostport
-//    -R remote_socket:local_socket
-//    -R [bind_address:]port
-//  -D [bind_address:]port
-
-    private static void validateHostAndPort(String host, Optional<Integer> port) {
-        port.ifPresent(p -> {
-            if(p < 1 || p > 65535) {
-                throw new IllegalArgumentException("invalid port number");
-            }
-        });
-
-        /* Abuse URI to validate things. */
-        URI uri;
-        try {
-            uri = new URI(null, null, host, port.orElse(-1), null, null, null);
-        } catch(URISyntaxException e) {
-            throw new IllegalArgumentException(e);
-        }
-    }
-
-    public void forwardLocal(int port, String host, int hostPort) {
-        /* Abuse URI to validate things. */
-        URI uri;
-        try {
-            uri = new URI(null, null, host, hostPort, null, null, null);
-        } catch(URISyntaxException e) {
-            throw new IllegalArgumentException(e);
-        }
-
-        String s = String.format("-L%d:%s:%d", port, uri.getHost(), uri.getPort());
-
-        System.err.println(s);
-    }
-
-    public void forwardLocal(String bindAddress, int port, String host, int hostPort) {
-        String.format("-L%s:%d:%s:%d", bindAddress, port, host, hostPort);
-    }
-
-    public void forwardLocal(int port, String remoteSocket) {
-        String.format("-L%d:%s", port, remoteSocket);
-    }
-
-    public void forwardLocal(String bindAddress, int port, String remoteSocket) {
-        String.format("-L%s:%d:%s", bindAddress, port, remoteSocket);
-    }
-
-    public void forwardLocal(String localSocket, String host, int hostPort) {
-        String.format("-L%s:%s:%d", localSocket, host, hostPort);
-    }
-
-    public void forwardLocal(String localSocket, String remoteSocket) {
-        String.format("-L%s:%s", localSocket, remoteSocket);
     }
 
     @Override
@@ -209,7 +146,6 @@ public class OpenSSHClient implements RemoteShell {
 
     @FunctionalInterface
     private interface ProcProc {
-
         CommandResult run(Process p) throws IOException;
     }
 
@@ -380,31 +316,4 @@ public class OpenSSHClient implements RemoteShell {
         }
         ShellUtils.doProcessOneshot(closeArgs, LOGGER);
     }
-
-    public static void main(String[] args) throws IOException {
-        try(OpenSSHClient c = new OpenSSHClient(URI.create("ssh://0.0.0.0"), Paths.get("/tmp"), Optional.empty(), Optional.empty(), Map.of())) {
-
-            c.forwardLocal(8080, "192.168.0.1", 443);
-            c.forwardLocal(0, "192.168.0.1", 443);
-            c.forwardLocal(8080, "192.168.0.1", 0);
-            //c.forwardLocal(8080, "host:name", 443);
-            //c.forwardLocal(8080, "[]", 443);
-            c.forwardLocal(8080, "[::]", 443);
-            //c.forwardLocal(8080, "host name", 443);
-
-            c.forwardLocal(8080, "[::]", -1);
-            //CommandResult cr = c.runCommand("echo", "asdf");
-
-//            c.upload(
-//                    "/home/uqzvanim/testfile",
-//                    "12345678\n".getBytes(StandardCharsets.UTF_8),
-//                    EnumSet.of(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE, PosixFilePermission.OWNER_EXECUTE),
-//                    Instant.now()
-//            );
-
-//            CommandResult cr = c.runCommand("uname", "-a");
-//            int x = 0;
-        }
-    }
-
 }
