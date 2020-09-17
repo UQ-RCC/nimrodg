@@ -21,12 +21,12 @@ valid commands:
     addexp               Add a new, empty experiment from a planfile.
     delexp               Delete an experiment and all associated data from the database.
     addjobs              Add a list of jobs to the given run.
+    experiment           Experiment Operations.
     master               Start the experiment master.
-    resource             Compute resource operations.
+    resource             Resource operations.
     setup                Nimrod/G setup functionality.
-    portalapi            Portal API
-    rest                 Start the REST service and DAV server.
     compile              Compile a planfile.
+    genconfig            Generate a default configuration file.
     staging              Execute staging commands.
 ```
 
@@ -37,8 +37,8 @@ Use the `nimw.sh` wrapper script to invoke the CLI via Gradle.
 To generate a tarball, use `gradle nimrod:assembleDist`.
 
 ### Requirements
-* Java 10+
-* Gradle 4.7+
+* Java 11+
+* Gradle 5.3.1+
 
 ## Installation
 
