@@ -47,6 +47,8 @@ deploy:
   on:
     tags: true
   cleanup: false
+  # Until dplv2
+  skip_cleanup: true
 
 notifications:
   slack:
