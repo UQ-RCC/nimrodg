@@ -108,16 +108,14 @@ public class NetworkJob {
 	public final UUID uuid;
 	public final long index;
 	public final String txUri;
-	public final String token;
 	public final List<ResolvedCommand> commands;
 	public final Map<String, String> environment;
 	public final int numCommands;
 
-	public NetworkJob(UUID uuid, long index, String txuri, String token, List<ResolvedCommand> commands, Map<String, String> env) {
+	public NetworkJob(UUID uuid, long index, String txuri, List<ResolvedCommand> commands, Map<String, String> env) {
 		this.uuid = uuid;
 		this.index = index;
 		this.txUri = txuri;
-		this.token = token;
 		this.commands = List.copyOf(commands);
 		this.environment = Map.copyOf(env);
 		this.numCommands = commands.size();

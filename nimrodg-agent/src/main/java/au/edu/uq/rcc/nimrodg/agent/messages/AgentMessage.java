@@ -25,7 +25,7 @@ import java.util.UUID;
 
 public abstract class AgentMessage {
 
-	public static final int PROTOCOL_VERSION = 4;
+	public static final int PROTOCOL_VERSION = 5;
 
 	private final UUID agentUuid;
 	private final Instant timestamp;

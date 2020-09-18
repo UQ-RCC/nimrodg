@@ -49,18 +49,17 @@ import java.util.UUID;
 
 public class MsgUtils {
 
-	public static NetworkJob resolveNonSubstitutionTask(UUID uuid, Task task, String token, URI txuri) throws NimrodException {
-		return new NetworkJob(uuid, -1, txuri.toString(), token, buildCommandList(task, new HashMap<>()), new HashMap<>());
+	public static NetworkJob resolveNonSubstitutionTask(UUID uuid, Task task, URI txuri) throws NimrodException {
+		return new NetworkJob(uuid, -1, txuri.toString(), buildCommandList(task, new HashMap<>()), new HashMap<>());
 	}
 
-	private static Map<String, String> buildEnvironment(String expName, String jobPath, UUID jobUuid, long jobIndex, String txuri, String authToken, Map<String, String> vars) {
+	private static Map<String, String> buildEnvironment(String expName, String jobPath, UUID jobUuid, long jobIndex, String txuri, Map<String, String> vars) {
 		Map<String, String> env = new HashMap<>();
 		env.put("NIMROD_EXPNAME", expName);
 		env.put("NIMROD_JOBPATH", jobPath);
 		env.put("NIMROD_JOBUUID", jobUuid.toString());
 		env.put("NIMROD_JOBINDEX", Long.toString(jobIndex));
 		env.put("NIMROD_TXURI", txuri);
-		env.put("NIMROD_AUTHTOKEN", authToken);
 		vars.forEach((k, v) -> env.put(String.format("NIMROD_VAR_%s", k), v));
 		return env;
 	}
@@ -97,11 +96,10 @@ public class MsgUtils {
 				uuid,
 				job.getIndex(),
 				txuri.toString(),
-				token == null ? exp.getToken() : token,
 				varMap
 		);
 
-		return new NetworkJob(uuid, job.getIndex(), txuri.toString(), exp.getToken(), buildCommandList(ct, varMap), env);
+		return new NetworkJob(uuid, job.getIndex(), txuri.toString(), buildCommandList(ct, varMap), env);
 	}
 
 	private static List<NetworkJob.ResolvedCommand> buildCommandList(Task ct, Map<String, String> subs) {
@@ -153,11 +151,10 @@ public class MsgUtils {
 	 * @param index The index of the job. Must be &gt;= 1.
 	 * @param task The name of the task.
 	 * @param txuri The transfer URI.
-	 * @param token
 	 * @param expName
 	 * @return A resolved job, ready for sending.
 	 */
-	public static NetworkJob resolveJob(UUID uuid, CompiledRun r, int index, Task.Name task, String txuri, String token, String expName) throws IllegalArgumentException {
+	public static NetworkJob resolveJob(UUID uuid, CompiledRun r, int index, Task.Name task, String txuri, String expName) throws IllegalArgumentException {
 		CompiledJob cj = null;
 		for(CompiledJob j : r.jobs) {
 			if(j.index == index) {
@@ -195,11 +192,10 @@ public class MsgUtils {
 				uuid,
 				index,
 				txuri,
-				token,
 				varMap
 		);
 
-		return new NetworkJob(uuid, cj.index, txuri, token, buildCommandList(ct, varMap), env);
+		return new NetworkJob(uuid, cj.index, txuri, buildCommandList(ct, varMap), env);
 	}
 
 	private static List<NetworkJob.ResolvedCommand> buildCommandList(CompiledTask ct, Map<String, String> subs) {

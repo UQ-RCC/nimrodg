@@ -312,7 +312,6 @@ public class Controller {
 				1,
 				Task.Name.Main,
 				m_View.getTransferURI(),
-				m_View.getAuthToken(),
 				"expname"
 		);
 		try {

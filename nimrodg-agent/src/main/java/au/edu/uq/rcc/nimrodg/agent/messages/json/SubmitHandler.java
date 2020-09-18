@@ -52,7 +52,6 @@ public class SubmitHandler implements JsonHandler {
 		long index = joo.getJsonNumber("index").longValue();
 
 		String txuri = joo.getJsonString("txuri").getString();
-		String token = joo.getJsonString("token").getString();
 
 		Map<String, String> env = new HashMap<>();
 		JsonObject je = joo.getJsonObject("environment");
@@ -70,7 +69,7 @@ public class SubmitHandler implements JsonHandler {
 		return new AgentSubmit.Builder()
 				.agentUuid(uuid)
 				.timestamp(timestamp)
-				.job(new NetworkJob(jobUuid, index, txuri, token, commands, env))
+				.job(new NetworkJob(jobUuid, index, txuri, commands, env))
 				.build();
 	}
 
@@ -122,7 +121,6 @@ public class SubmitHandler implements JsonHandler {
 		joo.add("uuid", j.uuid.toString());
 		joo.add("index", j.index);
 		joo.add("txuri", j.txUri);
-		joo.add("token", j.token);
 
 		JsonObjectBuilder je = Json.createObjectBuilder();
 		Map<String, String> env = j.environment;

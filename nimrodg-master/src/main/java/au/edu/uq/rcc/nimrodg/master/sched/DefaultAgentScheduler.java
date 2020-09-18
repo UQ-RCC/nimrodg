@@ -331,7 +331,7 @@ public class DefaultAgentScheduler implements AgentScheduler {
 						UUID nsUuid = UUID.randomUUID();
 						/* FIXME: Handle cert path, and other stuff. */
 						Optional<NimrodURI> txUri = ops.resolveTransferUri(n, exp);
-						NetworkJob nj = MsgUtils.resolveNonSubstitutionTask(nsUuid, nodestart, exp.getToken(), txUri.map(u -> u.uri).get());
+						NetworkJob nj = MsgUtils.resolveNonSubstitutionTask(nsUuid, nodestart, txUri.map(u -> u.uri).get());
 						ops.runUnmanagedJob(nj, ag.get());
 						m_Setups.markRunning(nsUuid, n, exp);
 					}
