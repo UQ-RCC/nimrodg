@@ -29,7 +29,7 @@ import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown.Reason;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentSubmit;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentUpdate;
-import au.edu.uq.rcc.nimrodg.api.NetworkJob;
+import au.edu.uq.rcc.nimrodg.agent.messages.NetworkJob;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.UUID;

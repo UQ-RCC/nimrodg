@@ -19,8 +19,6 @@
  */
 package au.edu.uq.rcc.nimrodg.agent.messages;
 
-import au.edu.uq.rcc.nimrodg.api.NetworkJob;
-
 import java.util.Objects;
 import java.util.UUID;
 

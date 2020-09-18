@@ -34,7 +34,7 @@ import au.edu.uq.rcc.nimrodg.api.CommandArgument;
 import au.edu.uq.rcc.nimrodg.api.CopyCommand;
 import au.edu.uq.rcc.nimrodg.api.ExecCommand;
 import au.edu.uq.rcc.nimrodg.api.Job;
-import au.edu.uq.rcc.nimrodg.api.NetworkJob;
+import au.edu.uq.rcc.nimrodg.agent.messages.NetworkJob;
 import au.edu.uq.rcc.nimrodg.api.NimrodException;
 import au.edu.uq.rcc.nimrodg.api.OnErrorCommand;
 import au.edu.uq.rcc.nimrodg.api.RedirectCommand;

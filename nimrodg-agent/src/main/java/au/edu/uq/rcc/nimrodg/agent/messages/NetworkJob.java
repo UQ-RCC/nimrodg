@@ -17,7 +17,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package au.edu.uq.rcc.nimrodg.api;
+package au.edu.uq.rcc.nimrodg.agent.messages;
+
+import au.edu.uq.rcc.nimrodg.api.Command;
 
 import java.util.List;
 import java.util.Map;

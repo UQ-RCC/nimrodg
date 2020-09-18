@@ -23,7 +23,7 @@ import au.edu.uq.rcc.nimrodg.agent.messages.AgentMessage;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentSubmit;
 import au.edu.uq.rcc.nimrodg.api.Command;
 import au.edu.uq.rcc.nimrodg.api.CopyCommand;
-import au.edu.uq.rcc.nimrodg.api.NetworkJob;
+import au.edu.uq.rcc.nimrodg.agent.messages.NetworkJob;
 import au.edu.uq.rcc.nimrodg.api.OnErrorCommand;
 import au.edu.uq.rcc.nimrodg.api.RedirectCommand;
 

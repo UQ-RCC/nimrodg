@@ -22,7 +22,7 @@ package au.edu.uq.rcc.nimrodg.debug.agent;
 import au.edu.uq.rcc.nimrodg.agent.Agent;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentUpdate;
 import au.edu.uq.rcc.nimrodg.api.CommandResult;
-import au.edu.uq.rcc.nimrodg.api.NetworkJob;
+import au.edu.uq.rcc.nimrodg.agent.messages.NetworkJob;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.UUID;
