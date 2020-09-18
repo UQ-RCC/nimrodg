@@ -35,6 +35,7 @@ class AgentInfo {
 	public final CompletableFuture<Actuator> actuator;
 	public final ReferenceAgent instance;
 	public final DefaultAgentState state;
+	public final Noncer noncer;
 
 	public AgentInfo(UUID uuid, Resource resource, Optional<Actuator> actuator, ReferenceAgent instance, DefaultAgentState state) {
 		this.uuid = uuid;
@@ -43,6 +44,7 @@ class AgentInfo {
 		actuator.ifPresent(this.actuator::complete);
 		this.instance = instance;
 		this.state = state;
+		this.noncer = new Noncer();
 	}
 
 	@Override

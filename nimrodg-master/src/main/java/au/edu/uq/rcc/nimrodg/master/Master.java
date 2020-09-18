@@ -250,9 +250,13 @@ public class Master implements MessageQueueListener, AutoCloseable {
 			return Optional.of(MessageOperation.Reject);
 		}
 
-		/* TODO: Check nonce. */
-
 		if(!SigUtils.validateMessage(amsg.basicProperties, amsg.authHeader, amsg.message)) {
+			return Optional.of(MessageOperation.Reject);
+		}
+
+		/* TODO: Check nonce. */
+		Instant now = Instant.now();
+		if(!ai.noncer.acceptMessage(now, amsg.authHeader.nonce, amsg.authHeader.timestamp)) {
 			return Optional.of(MessageOperation.Reject);
 		}
 
@@ -264,7 +268,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 			return Optional.of(MessageOperation.Reject);
 		}
 
-		if(!agentMessages.offer(new _AgentMessage(tag, amsg.messageId, amsg.message, amsg.sentAt.get(), Instant.now()))) {
+		if(!agentMessages.offer(new _AgentMessage(tag, amsg.messageId, amsg.message, amsg.sentAt.get(), now))) {
 			return Optional.of(MessageOperation.RejectAndRequeue);
 		}
 
