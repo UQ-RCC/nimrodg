@@ -27,6 +27,7 @@ import java.nio.charset.Charset;
 import java.util.Map;
 import java.util.UUID;
 import javax.json.Json;
+import javax.json.JsonNumber;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonReader;
@@ -65,6 +66,7 @@ public class JsonBackend implements MessageBackend {
 	public JsonObject toJson(AgentMessage msg) {
 		JsonObjectBuilder jo = Json.createObjectBuilder();
 		jo.add("uuid", msg.getAgentUUID().toString());
+		jo.add("version", msg.getVersion());
 		jo.add("type", toJson(msg.getType()));
 		getHandlerForType(msg.getType()).write(jo, msg);
 		return jo.build();
@@ -75,6 +77,17 @@ public class JsonBackend implements MessageBackend {
 		JsonObject jo;
 		try(JsonReader p = READER_FACTORY.createReader(new ByteArrayInputStream(bytes), charset)) {
 			jo = p.readObject();
+		}
+
+		/* Do a simple version check. */
+		int version = 1;
+		JsonNumber jver = jo.getJsonNumber("version");
+		if(jver != null) {
+			version = jver.intValue();
+		}
+
+		if(version != AgentMessage.PROTOCOL_VERSION) {
+			return null;
 		}
 
 		return getHandlerForType(readMessageType(jo.getString("type"))).read(

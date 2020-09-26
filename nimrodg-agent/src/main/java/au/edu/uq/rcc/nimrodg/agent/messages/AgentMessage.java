@@ -24,6 +24,8 @@ import java.util.UUID;
 
 public abstract class AgentMessage {
 
+	public static final int PROTOCOL_VERSION = 2;
+
 	private final UUID agentUuid;
 
 	public enum Type {
@@ -55,6 +57,10 @@ public abstract class AgentMessage {
 	}
 
 	public abstract Type getType();
+
+	public final int getVersion() {
+		return PROTOCOL_VERSION;
+	}
 
 	@SuppressWarnings("unchecked")
 	public static abstract class Builder<T extends Builder> {
