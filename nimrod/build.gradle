@@ -121,10 +121,9 @@ jobs — millions if need be.
 	packageInstallDir = '/usr/share/nimrod'
 	packageConfigDir = '/etc/xdg/nimrod'
 
-	agentVersion = '1.4.0'
+	agentVersion = '1.4.1'
 	agentList = [
-		[platform:'x86_64-pc-linux-musl',		sha256:'1eeddbdcea171ecebd54f8f2c5f1a7ccb2bb23a1ea05b7877218fe769417a4b0'],
-		[platform:'i686-pc-linux-musl',			sha256:'692ecd3fc468116fb78e182e2602dd1c76a5b2cbcf20a4241e20838ac10e75d3']
+		[platform:'x86_64-pc-linux-musl',		sha256:'96a1c996fe8455425610b153763e821aa67306b39690d71928c319d542848166'],
 	]
 }
 
