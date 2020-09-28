@@ -13,4 +13,5 @@ dependencies {
 	implementation project(':nimrodg-master')
 
 	runtimeOnly group: 'org.glassfish', name: 'javax.json', version: JAVAX_JSON_VERSION
+	runtimeOnly group: 'com.sun.mail', name: 'jakarta.mail', version: JAKARTA_MAIL_VERSION
 }
