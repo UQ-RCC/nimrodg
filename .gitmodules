@@ -1,0 +1,3 @@
+[submodule "current-agent"]
+	path = current-agent
+	url = https://github.com/UQ-RCC/nimrodg-agent.git
