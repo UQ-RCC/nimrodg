@@ -145,7 +145,8 @@ public class MasterCmd extends NimrodCLICommand {
 					amqpUri.noVerifyPeer,
 					amqpUri.noVerifyHost,
 					new _MessageQueueListener(m, monitor),
-					ForkJoinPool.commonPool()
+					ForkJoinPool.commonPool(),
+					signingAlgorithm
 			)) {
 				m.setAMQP(amqp);
 

@@ -75,6 +75,7 @@ public class AMQProcessorImpl implements AMQProcessor {
 	private static final Logger LOGGER = LoggerFactory.getLogger(Master.class);
 
 	private final String m_User;
+	private final String m_SigningAlgorithm;
 	private final MessageQueueListener m_Listener;
 	private final Connection m_Connection;
 	private final Channel m_Channel;
@@ -89,7 +90,12 @@ public class AMQProcessorImpl implements AMQProcessor {
 			DEFAULT_MESSAGE_BACKEND.getContentType().getBaseType(), DEFAULT_MESSAGE_BACKEND
 	);
 
+	@Deprecated
 	public AMQProcessorImpl(URI uri, Certificate[] certs, String tlsProtocol, String routingKey, boolean noVerifyPeer, boolean noVerifyHost, MessageQueueListener listener, ExecutorService execs) throws IOException, TimeoutException, URISyntaxException, GeneralSecurityException {
+		this(uri, certs, tlsProtocol, routingKey, noVerifyPeer, noVerifyHost, listener, execs, SigUtils.DEFAULT_ALGORITHM);
+	}
+
+	public AMQProcessorImpl(URI uri, Certificate[] certs, String tlsProtocol, String routingKey, boolean noVerifyPeer, boolean noVerifyHost, MessageQueueListener listener, ExecutorService execs, String signingAlgorithm) throws IOException, TimeoutException, URISyntaxException, GeneralSecurityException {
 		m_Listener = listener;
 		ConnectionFactory cf = new ConnectionFactory();
 
@@ -104,6 +110,12 @@ public class AMQProcessorImpl implements AMQProcessor {
 		}
 
 		m_User = user.get();
+
+		m_SigningAlgorithm = signingAlgorithm;
+
+		if(!SigUtils.ALGORITHMS.containsKey(m_SigningAlgorithm)) {
+			throw new IllegalArgumentException("Invalid signing algorithm");
+		}
 
 		/* Do this before setUri() */
 		if(scheme.equalsIgnoreCase("amqps")) {
@@ -207,7 +219,7 @@ public class AMQProcessorImpl implements AMQProcessor {
 		AMQP.BasicProperties props = buildBasicProperties(msg, messageId, ct, msgtime, SigUtils.DEFAULT_APPID, headers);
 		AuthHeader hdr;
 		try {
-			hdr = SigUtils.buildAuthHeader(SigUtils.DEFAULT_ALGORITHM, accessKey, secretKey, msgtime, 0, bytes, props);
+			hdr = SigUtils.buildAuthHeader(m_SigningAlgorithm, accessKey, secretKey, msgtime, 0, bytes, props);
 			headers.put("Authorization", hdr.toString());
 			props = buildBasicProperties(msg, messageId, ct, msgtime, SigUtils.DEFAULT_APPID, headers);
 		} catch(NoSuchAlgorithmException e) {
