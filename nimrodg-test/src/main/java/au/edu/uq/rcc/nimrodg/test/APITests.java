@@ -379,6 +379,10 @@ public abstract class APITests {
 
 		}
 
+		@Override
+		public String getSigningAlgorithm() {
+			return "NIM1-HMAC-NULL";
+		}
 	}
 
 	private DummyActuator createDummyActuator(Resource res, NimrodMasterAPI mapi) {

@@ -51,6 +51,8 @@ public interface Actuator extends AutoCloseable {
 
 		NimrodConfig getConfig();
 
+		String getSigningAlgorithm();
+
 		int getAgentCount(Resource res);
 	}
 

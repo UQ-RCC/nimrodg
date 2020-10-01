@@ -147,6 +147,7 @@ public class LocalActuator implements Actuator {
 				false,
 				true,
 				false,
+				ops.getSigningAlgorithm(),
 				Map.of()
 		).build();
 

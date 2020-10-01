@@ -193,6 +193,11 @@ public class AMQProcessorImpl implements AMQProcessor {
 	}
 
 	@Override
+	public String getSigningAlgorithm() {
+		return m_SigningAlgorithm;
+	}
+
+	@Override
 	public AMQPMessage sendMessage(String key, String accessKey, String secretKey, AgentMessage msg) throws IOException {
 		Charset cs = StandardCharsets.UTF_8;
 		byte[] bytes = DEFAULT_MESSAGE_BACKEND.toBytes(msg, cs);

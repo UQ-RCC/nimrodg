@@ -123,6 +123,7 @@ public class RemoteActuator extends POSIXActuator<SSHResourceType.SSHConfig> {
 					false,
 					false,
 					true,
+					ops.getSigningAlgorithm(),
 					ActuatorUtils.resolveEnvironment(this.config.forwardedEnvironment)
 			).add("uuid", requests[i].uuid.toString())
 					.add("secret_key", requests[i].secretKey)

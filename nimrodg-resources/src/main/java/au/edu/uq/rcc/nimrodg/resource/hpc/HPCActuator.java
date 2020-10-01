@@ -209,6 +209,7 @@ public final class HPCActuator extends POSIXActuator<HPCConfig> {
 				false,
 				true,
 				false,
+				ops.getSigningAlgorithm(),
 				ActuatorUtils.resolveEnvironment(cfg.forwardedEnvironment)
 		).build();
 

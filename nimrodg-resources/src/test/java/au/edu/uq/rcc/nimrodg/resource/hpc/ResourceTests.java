@@ -374,6 +374,11 @@ public class ResourceTests {
 		}
 
 		@Override
+		public String getSigningAlgorithm() {
+			return "NIM1-HMAC-NULL";
+		}
+
+		@Override
 		public int getAgentCount(Resource res) {
 			return agentCount;
 		}

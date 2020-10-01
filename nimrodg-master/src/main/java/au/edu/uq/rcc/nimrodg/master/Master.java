@@ -1049,6 +1049,10 @@ public class Master implements MessageQueueListener, AutoCloseable {
 					now));
 		}
 
+		@Override
+		public String getSigningAlgorithm() {
+			return amqp.getSigningAlgorithm();
+		}
 	}
 
 	private class _HeartOperations implements Heart.Operations {

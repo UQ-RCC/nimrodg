@@ -276,7 +276,7 @@ public class ActuatorUtils {
 		return args;
 	}
 
-	public static JsonObjectBuilder buildBaseAgentConfig(NimrodURI uri, String routingKey, Optional<String> certPath, boolean b64cert, boolean keepCerts, boolean batch, Map<String, String> environment) {
+	public static JsonObjectBuilder buildBaseAgentConfig(NimrodURI uri, String routingKey, Optional<String> certPath, boolean b64cert, boolean keepCerts, boolean batch, String signingAlgorithm, Map<String, String> environment) {
 		JsonObjectBuilder cfg = Json.createObjectBuilder()
 				.add("amqp", Json.createObjectBuilder()
 						.add("uri", uri.uri.toString())
@@ -299,6 +299,8 @@ public class ActuatorUtils {
 		if(batch) {
 			cfg.add("output", "workroot");
 		}
+
+		cfg.add("signing_algorithm", signingAlgorithm);
 
 		JsonObjectBuilder envs = Json.createObjectBuilder();
 		environment.forEach(envs::add);

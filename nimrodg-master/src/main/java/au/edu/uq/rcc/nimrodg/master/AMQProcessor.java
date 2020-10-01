@@ -10,6 +10,8 @@ public interface AMQProcessor extends AutoCloseable {
 
 	String getExchange();
 
+	String getSigningAlgorithm();
+
 	AMQPMessage sendMessage(String key, String accessKey, String secretKey, AgentMessage msg) throws IOException;
 
 	void opMessage(MessageQueueListener.MessageOperation op, long tag);
