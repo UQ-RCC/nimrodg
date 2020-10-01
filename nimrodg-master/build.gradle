@@ -7,6 +7,8 @@ dependencies {
 
 	implementation group: 'org.apache.commons', name: 'commons-collections4', version: '4.1'
 
+	implementation group: 'org.bouncycastle', name: 'bcprov-jdk15on', version: '1.+'
+
 	implementation project(':nimrodg-internal-api')
 	implementation project(':nimrodg-utils')
 	implementation project(':nimrodg-shell')
