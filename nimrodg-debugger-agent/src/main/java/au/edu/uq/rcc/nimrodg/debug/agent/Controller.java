@@ -134,7 +134,7 @@ public class Controller {
 
 		SwingUtilities.invokeLater(() -> {
 			try {
-				m_AMQP = new AMQProcessorImpl(new URI(uri), new Certificate[0], "TLSv1.2", m_View.getRoutingKey(), true, true, new _MessageQueueListener(), ForkJoinPool.commonPool());
+				m_AMQP = new AMQProcessorImpl(new URI(uri), new Certificate[0], "TLSv1.2", m_View.getRoutingKey(), true, true, new _MessageQueueListener(), ForkJoinPool.commonPool(), m_View.getSigningAlgorithm());
 				m_Logger.log(ILogger.Level.INFO, "Connected to %s", uri);
 
 				m_View.setConnectProgress(1.0f);
