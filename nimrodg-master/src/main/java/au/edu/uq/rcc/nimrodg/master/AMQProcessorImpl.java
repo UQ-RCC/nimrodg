@@ -350,6 +350,12 @@ public class AMQProcessorImpl implements AMQProcessor {
 			return;
 		}
 
+		/* Make sure the agents are using the same algo as us. */
+		if(!Objects.equals(m_SigningAlgorithm, hdr.algorithm)) {
+			opMessage(MessageQueueListener.MessageOperation.Reject, tag);
+			return;
+		}
+
 		AgentMessage am = mb.fromBytes(body, charset);
 		if(am == null) {
 			throw new IOException("Message deserialisation failed");
