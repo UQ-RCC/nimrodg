@@ -102,6 +102,10 @@ public class AgentGUI extends javax.swing.JFrame {
 		return m_AuthToken.getText();
 	}
 
+	public String getSecretKey() {
+		return m_SecretKey.getText();
+	}
+
 	public boolean getShowMessageWindow() {
 		return m_ShowMessageWindow.isSelected();
 	}
@@ -121,6 +125,8 @@ public class AgentGUI extends javax.swing.JFrame {
         m_AuthToken = new javax.swing.JTextField();
         javax.swing.JLabel jLabel5 = new javax.swing.JLabel();
         m_RoutingKey = new javax.swing.JTextField();
+        javax.swing.JLabel jLabel6 = new javax.swing.JLabel();
+        m_SecretKey = new javax.swing.JTextField();
         javax.swing.JSplitPane jSplitPane1 = new javax.swing.JSplitPane();
         jPanel4 = new javax.swing.JPanel();
         m_AgentPanel = new au.edu.uq.rcc.nimrodg.debug.agent.AgentControlPanel();
@@ -171,6 +177,12 @@ public class AgentGUI extends javax.swing.JFrame {
 
         m_RoutingKey.setText("iamthemaster");
 
+        jLabel6.setHorizontalAlignment(javax.swing.SwingConstants.TRAILING);
+        jLabel6.setText("Secret Key");
+        jLabel6.setHorizontalTextPosition(javax.swing.SwingConstants.LEADING);
+
+        m_SecretKey.setText("abc123");
+
         javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
         jPanel3.setLayout(jPanel3Layout);
         jPanel3Layout.setHorizontalGroup(
@@ -183,19 +195,23 @@ public class AgentGUI extends javax.swing.JFrame {
                 .addGap(4, 4, 4)
                 .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel3Layout.createSequentialGroup()
-                        .addComponent(m_AMQPUrl)
+                        .addComponent(m_AMQPUrl, javax.swing.GroupLayout.PREFERRED_SIZE, 445, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(jLabel5)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(m_RoutingKey, javax.swing.GroupLayout.PREFERRED_SIZE, 325, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(m_RoutingKey))
+                    .addComponent(m_TransferUri, javax.swing.GroupLayout.DEFAULT_SIZE, 693, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(jLabel6, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(jLabel7, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addGroup(jPanel3Layout.createSequentialGroup()
+                        .addComponent(m_SecretKey, javax.swing.GroupLayout.DEFAULT_SIZE, 141, Short.MAX_VALUE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(m_ConnectBtn))
-                    .addGroup(jPanel3Layout.createSequentialGroup()
-                        .addComponent(m_TransferUri)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jLabel7)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(m_AuthToken, javax.swing.GroupLayout.PREFERRED_SIZE, 267, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                    .addComponent(m_AuthToken)))
         );
         jPanel3Layout.setVerticalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -205,7 +221,9 @@ public class AgentGUI extends javax.swing.JFrame {
                     .addComponent(jLabel3)
                     .addComponent(m_ConnectBtn)
                     .addComponent(jLabel5)
-                    .addComponent(m_RoutingKey, javax.swing.GroupLayout.PREFERRED_SIZE, 32, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(m_RoutingKey, javax.swing.GroupLayout.PREFERRED_SIZE, 32, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel6)
+                    .addComponent(m_SecretKey, javax.swing.GroupLayout.PREFERRED_SIZE, 32, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(m_TransferUri, javax.swing.GroupLayout.PREFERRED_SIZE, 32, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -215,7 +233,6 @@ public class AgentGUI extends javax.swing.JFrame {
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
-        jSplitPane1.setBorder(null);
         jSplitPane1.setDividerLocation(300);
         jSplitPane1.setOrientation(javax.swing.JSplitPane.VERTICAL_SPLIT);
         jSplitPane1.setResizeWeight(1.0);
@@ -277,7 +294,7 @@ public class AgentGUI extends javax.swing.JFrame {
         jMenu1.setText("File");
         jMenu1.setActionCommand("");
 
-        jMenuItem2.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_L, java.awt.event.InputEvent.CTRL_MASK));
+        jMenuItem2.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_L, java.awt.event.InputEvent.CTRL_DOWN_MASK));
         jMenuItem2.setMnemonic('C');
         jMenuItem2.setText("Clear Log");
         jMenuItem2.setToolTipText("");
@@ -290,7 +307,7 @@ public class AgentGUI extends javax.swing.JFrame {
         jMenu1.add(jMenuItem2);
         jMenu1.add(jSeparator2);
 
-        jMenuItem3.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_W, java.awt.event.InputEvent.CTRL_MASK));
+        jMenuItem3.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_W, java.awt.event.InputEvent.CTRL_DOWN_MASK));
         jMenuItem3.setMnemonic('x');
         jMenuItem3.setText("Exit");
         jMenuItem3.setActionCommand("file->exit");
@@ -305,7 +322,7 @@ public class AgentGUI extends javax.swing.JFrame {
 
         jMenu2.setText("View");
 
-        m_ShowMessageWindow.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_M, java.awt.event.InputEvent.CTRL_MASK));
+        m_ShowMessageWindow.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_M, java.awt.event.InputEvent.CTRL_DOWN_MASK));
         m_ShowMessageWindow.setText("Show Message Window");
         m_ShowMessageWindow.setActionCommand("view->show_message_window");
         m_ShowMessageWindow.addActionListener(new java.awt.event.ActionListener() {
@@ -368,6 +385,7 @@ public class AgentGUI extends javax.swing.JFrame {
     private javax.swing.JProgressBar m_ConnectProgressBar;
     private au.edu.uq.rcc.nimrodg.debug.agent.LogPanel m_LogPanel;
     private javax.swing.JTextField m_RoutingKey;
+    private javax.swing.JTextField m_SecretKey;
     private javax.swing.JCheckBoxMenuItem m_ShowMessageWindow;
     private au.edu.uq.rcc.nimrodg.debug.agent.AgentStatusPanel m_StatusPanel;
     private javax.swing.JTextField m_TransferUri;

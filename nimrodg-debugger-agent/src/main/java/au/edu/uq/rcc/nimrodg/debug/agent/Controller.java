@@ -38,6 +38,7 @@ import au.edu.uq.rcc.nimrodg.api.utils.run.RunfileBuildException;
 import au.edu.uq.rcc.nimrodg.master.AMQPMessage;
 import au.edu.uq.rcc.nimrodg.master.AMQProcessorImpl;
 import au.edu.uq.rcc.nimrodg.master.MessageQueueListener;
+import au.edu.uq.rcc.nimrodg.master.sig.SigUtils;
 import au.edu.uq.rcc.nimrodg.parsing.ANTLR4ParseAPIImpl;
 
 import java.awt.Color;
@@ -50,6 +51,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
+import java.security.NoSuchAlgorithmException;
 import java.security.cert.Certificate;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -220,6 +222,24 @@ public class Controller {
 			return MessageQueueListener.MessageOperation.Reject;
 		}
 
+		boolean validSig;
+
+		try {
+			validSig = SigUtils.verifySignature(amsg.authHeader, m_View.getSecretKey(), amsg.basicProperties, amsg.body);
+		} catch(NoSuchAlgorithmException e) {
+			m_Logger.log(ILogger.Level.ERR, "Error signing header using %s", amsg.authHeader.algorithm);
+			m_Logger.log(ILogger.Level.ERR, e);
+			return MessageQueueListener.MessageOperation.Reject;
+		}
+
+		if(!validSig) {
+			return MessageQueueListener.MessageOperation.Reject;
+		}
+
+		if(!SigUtils.validateMessage(amsg.basicProperties, amsg.authHeader, amsg.message, SigUtils.DEFAULT_APPID)) {
+			return MessageQueueListener.MessageOperation.Reject;
+		}
+
 		UUID uuid = msg.getAgentUUID();
 
 		boolean terminate =
@@ -253,7 +273,12 @@ public class Controller {
 	}
 
 	private void sendMessage(String key, AgentMessage.Builder<?> msg) throws IOException {
-		AMQPMessage amsg = m_AMQP.sendMessage(key, msg.timestamp(Instant.now()).build());
+		AMQPMessage amsg = m_AMQP.sendMessage(
+				key,
+				SigUtils.buildAccessKey(m_Agent.getUUID()),
+				m_View.getSecretKey(),
+				msg.timestamp(Instant.now()).build()
+		);
 		m_Messages.add(Message.create(amsg, false));
 		m_MessageWindow.getMessagePanel().refreshMessages();
 	}

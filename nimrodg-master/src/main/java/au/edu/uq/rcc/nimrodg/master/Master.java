@@ -29,6 +29,7 @@ import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentUpdate;
 import au.edu.uq.rcc.nimrodg.api.Actuator;
 import au.edu.uq.rcc.nimrodg.api.Actuator.LaunchResult;
+import au.edu.uq.rcc.nimrodg.api.ActuatorOpsAdapter;
 import au.edu.uq.rcc.nimrodg.api.CommandResult;
 import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.Job;
@@ -41,18 +42,20 @@ import au.edu.uq.rcc.nimrodg.api.Task;
 import au.edu.uq.rcc.nimrodg.api.events.ConfigChangeMasterEvent;
 import au.edu.uq.rcc.nimrodg.api.events.JobAddMasterEvent;
 import au.edu.uq.rcc.nimrodg.api.events.NimrodMasterEvent;
-import au.edu.uq.rcc.nimrodg.master.sched.AgentScheduler;
-import au.edu.uq.rcc.nimrodg.master.sched.JobScheduler;
 import au.edu.uq.rcc.nimrodg.api.utils.MsgUtils;
 import au.edu.uq.rcc.nimrodg.api.utils.NimrodUtils;
 import au.edu.uq.rcc.nimrodg.master.AAAAA.LaunchRequest;
-import au.edu.uq.rcc.nimrodg.api.ActuatorOpsAdapter;
+import au.edu.uq.rcc.nimrodg.master.sched.AgentScheduler;
+import au.edu.uq.rcc.nimrodg.master.sched.JobScheduler;
+import au.edu.uq.rcc.nimrodg.master.sig.SigUtils;
 import au.edu.uq.rcc.nimrodg.resource.act.ActuatorUtils;
 import au.edu.uq.rcc.nimrodg.resource.hpc.HPCActuator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.json.Json;
 import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.time.Instant;
@@ -238,6 +241,26 @@ public class Master implements MessageQueueListener, AutoCloseable {
 	@Override
 	public Optional<MessageOperation> processAgentMessage(long tag, AMQPMessage amsg) throws IllegalStateException {
 		if(amsg.message == null || amsg.messageId == null || !amsg.sentAt.isPresent()) {
+			return Optional.of(MessageOperation.Reject);
+		}
+
+		AgentInfo ai = allAgents.get(amsg.message.getAgentUUID());
+		if(ai == null) {
+			/* Not anyone we know. */
+			return Optional.of(MessageOperation.Reject);
+		}
+
+		/* TODO: Check nonce. */
+
+		if(!SigUtils.validateMessage(amsg.basicProperties, amsg.authHeader, amsg.message)) {
+			return Optional.of(MessageOperation.Reject);
+		}
+
+		try {
+			if(!SigUtils.verifySignature(amsg.authHeader, ai.state.getSecretKey(), amsg.basicProperties, amsg.body)) {
+				return Optional.of(MessageOperation.Reject);
+			}
+		} catch(NoSuchAlgorithmException e) {
 			return Optional.of(MessageOperation.Reject);
 		}
 
@@ -927,9 +950,13 @@ public class Master implements MessageQueueListener, AutoCloseable {
 
 		@Override
 		public void send(Agent agent, AgentMessage.Builder<?> msg) throws IOException {
-			amqp.sendMessage(agent.getQueue(), msg
-					.timestamp(Instant.now())
-					.build());
+			AgentState as = ((ReferenceAgent)agent).getDataStore();
+			amqp.sendMessage(
+					agent.getQueue(),
+					SigUtils.buildAccessKey(agent.getUUID()),
+					as.getSecretKey(),
+					msg.timestamp(Instant.now()).build()
+			);
 		}
 
 		@Override

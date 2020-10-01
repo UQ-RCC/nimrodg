@@ -1,6 +1,7 @@
 package au.edu.uq.rcc.nimrodg.master;
 
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentMessage;
+import au.edu.uq.rcc.nimrodg.master.sig.AuthHeader;
 import com.rabbitmq.client.AMQP;
 
 import javax.mail.internet.ContentType;
@@ -16,15 +17,17 @@ public class AMQPMessage {
     public final ContentType contentType;
     public final Charset charset;
     public final Optional<Instant> sentAt;
+    public final AuthHeader authHeader;
     public final AgentMessage message;
 
-    public AMQPMessage(byte[] body, AMQP.BasicProperties basicProperties, UUID messageId, ContentType contentType, Charset charset, Optional<Instant> sentAt, AgentMessage message) {
+    public AMQPMessage(byte[] body, AMQP.BasicProperties basicProperties, UUID messageId, ContentType contentType, Charset charset, Optional<Instant> sentAt, AuthHeader authHeader, AgentMessage message) {
         this.body = body;
         this.basicProperties = basicProperties;
         this.messageId = messageId;
         this.contentType = contentType;
         this.charset = charset;
         this.sentAt = sentAt;
+        this.authHeader = authHeader;
         this.message = message;
     }
 }

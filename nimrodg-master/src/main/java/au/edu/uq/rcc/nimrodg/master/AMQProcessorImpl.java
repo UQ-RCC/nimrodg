@@ -19,12 +19,12 @@
  */
 package au.edu.uq.rcc.nimrodg.master;
 
-import au.edu.uq.rcc.nimrodg.agent.messages.AgentHello;
-import au.edu.uq.rcc.nimrodg.agent.messages.AgentLifeControl;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentMessage;
 import au.edu.uq.rcc.nimrodg.agent.MessageBackend;
 import au.edu.uq.rcc.nimrodg.shell.ShellUtils;
 import au.edu.uq.rcc.nimrodg.agent.messages.json.JsonBackend;
+import au.edu.uq.rcc.nimrodg.master.sig.AuthHeader;
+import au.edu.uq.rcc.nimrodg.master.sig.SigUtils;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.AlreadyClosedException;
 import com.rabbitmq.client.BuiltinExchangeType;
@@ -47,6 +47,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
+import java.security.NoSuchAlgorithmException;
 import java.security.cert.Certificate;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
@@ -54,8 +55,11 @@ import java.util.HashMap;
 import java.util.Optional;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeoutException;
@@ -78,8 +82,6 @@ public class AMQProcessorImpl implements AMQProcessor {
 	private final AMQP.Exchange.DeclareOk m_DirectExchangeOk;
 	private final AMQP.Queue.DeclareOk m_QueueOk;
 	private final _Consumer m_Consumer;
-
-	public static final String APPID = "nimrod";
 
 	private static final MessageBackend DEFAULT_MESSAGE_BACKEND = JsonBackend.INSTANCE;
 
@@ -184,7 +186,7 @@ public class AMQProcessorImpl implements AMQProcessor {
 	}
 
 	@Override
-	public AMQPMessage sendMessage(String key, AgentMessage msg) throws IOException {
+	public AMQPMessage sendMessage(String key, String accessKey, String secretKey, AgentMessage msg) throws IOException {
 		Charset cs = StandardCharsets.UTF_8;
 		byte[] bytes = DEFAULT_MESSAGE_BACKEND.toBytes(msg, cs);
 		if(bytes == null) {
@@ -202,7 +204,15 @@ public class AMQProcessorImpl implements AMQProcessor {
 		headers.put("User-Agent", "NimrodGMaster/X.X.X"); /* FIXME: */
 		headers.put("X-NimrodG-Sent-At", DateTimeFormatter.ISO_INSTANT.format(sendtime));
 
-		AMQP.BasicProperties props = buildBasicProperties(msg, messageId, ct, msgtime, APPID, headers);
+		AMQP.BasicProperties props = buildBasicProperties(msg, messageId, ct, msgtime, SigUtils.DEFAULT_APPID, headers);
+		AuthHeader hdr;
+		try {
+			hdr = SigUtils.buildAuthHeader(SigUtils.DEFAULT_ALGORITHM, accessKey, secretKey, msgtime, 0, bytes, props);
+			headers.put("Authorization", hdr.toString());
+			props = buildBasicProperties(msg, messageId, ct, msgtime, SigUtils.DEFAULT_APPID, headers);
+		} catch(NoSuchAlgorithmException e) {
+			throw new IOException(e);
+		}
 
 		m_Channel.basicPublish(m_DirectName, key, true, props, bytes);
 
@@ -213,6 +223,7 @@ public class AMQProcessorImpl implements AMQProcessor {
 				ct,
 				cs,
 				Optional.of(sendtime),
+				hdr,
 				msg
 		);
 	}
@@ -244,6 +255,22 @@ public class AMQProcessorImpl implements AMQProcessor {
 		}
 	}
 
+	private AuthHeader getAuthHeader(AMQP.BasicProperties props) {
+		Map<String, Object> headers = props.getHeaders();
+		if(headers == null) {
+			/* No headers. */
+			return null;
+		}
+
+		Object _authHdr = headers.get("Authorization");
+		if(_authHdr == null) {
+			/* No auth header. */
+			return null;
+		}
+
+		return AuthHeader.parse(_authHdr.toString());
+	}
+
 	public static String getHeader(AMQP.BasicProperties props, String name) {
 		if(props.getHeaders() == null) {
 			return null;
@@ -260,7 +287,7 @@ public class AMQProcessorImpl implements AMQProcessor {
 	private void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
 		long tag = envelope.getDeliveryTag();
 
-		if(!Optional.ofNullable(properties.getAppId()).map("nimrod"::equals).orElse(false)) {
+		if(!Objects.equals(SigUtils.DEFAULT_APPID, properties.getAppId())) {
 			opMessage(MessageQueueListener.MessageOperation.Reject, tag);
 			return;
 		}
@@ -305,7 +332,8 @@ public class AMQProcessorImpl implements AMQProcessor {
 			return;
 		}
 
-		if(properties.getTimestamp() == null) {
+		AuthHeader hdr = getAuthHeader(properties);
+		if(hdr == null) {
 			opMessage(MessageQueueListener.MessageOperation.Reject, tag);
 			return;
 		}
@@ -325,15 +353,8 @@ public class AMQProcessorImpl implements AMQProcessor {
 			}
 		}
 
-		AMQPMessage amsg = new AMQPMessage(
-				body,
-				properties,
-				uuid,
-				contentType,
-				charset,
-				sentAt,
-				am
-		);
+		AMQPMessage amsg = new AMQPMessage(body, properties, uuid, contentType, charset, sentAt, hdr, am);
+
 		Optional<MessageQueueListener.MessageOperation> op;
 		try {
 			op = m_Listener.processAgentMessage(tag, amsg);
