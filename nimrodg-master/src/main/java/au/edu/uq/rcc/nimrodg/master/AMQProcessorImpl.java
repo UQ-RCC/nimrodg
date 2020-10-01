@@ -90,11 +90,6 @@ public class AMQProcessorImpl implements AMQProcessor {
 			DEFAULT_MESSAGE_BACKEND.getContentType().getBaseType(), DEFAULT_MESSAGE_BACKEND
 	);
 
-	@Deprecated
-	public AMQProcessorImpl(URI uri, Certificate[] certs, String tlsProtocol, String routingKey, boolean noVerifyPeer, boolean noVerifyHost, MessageQueueListener listener, ExecutorService execs) throws IOException, TimeoutException, URISyntaxException, GeneralSecurityException {
-		this(uri, certs, tlsProtocol, routingKey, noVerifyPeer, noVerifyHost, listener, execs, SigUtils.DEFAULT_ALGORITHM);
-	}
-
 	public AMQProcessorImpl(URI uri, Certificate[] certs, String tlsProtocol, String routingKey, boolean noVerifyPeer, boolean noVerifyHost, MessageQueueListener listener, ExecutorService execs, String signingAlgorithm) throws IOException, TimeoutException, URISyntaxException, GeneralSecurityException {
 		m_Listener = listener;
 		ConnectionFactory cf = new ConnectionFactory();
