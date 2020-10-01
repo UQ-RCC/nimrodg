@@ -19,9 +19,6 @@
  */
 package au.edu.uq.rcc.nimrodg.cli.commands;
 
-import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
-import au.edu.uq.rcc.nimrodg.api.Actuator;
-import au.edu.uq.rcc.nimrodg.api.ActuatorOpsAdapter;
 import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.Job;
 import au.edu.uq.rcc.nimrodg.api.JobAttempt;
@@ -284,17 +281,6 @@ public class Staging extends DefaultCLICommand {
 				.add("XDG_DATA_DIRS", jdata)
 				.build(), out);
 		return 0;
-	}
-
-	private static class NullOps extends ActuatorOpsAdapter {
-		public NullOps(NimrodMasterAPI nimrod) {
-			super(nimrod);
-		}
-
-		@Override
-		public void reportAgentFailure(Actuator act, UUID uuid, AgentShutdown.Reason reason, int signal) throws IllegalArgumentException {
-
-		}
 	}
 
 	public static void main(String[] args) throws Exception {
