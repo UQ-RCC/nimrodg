@@ -34,6 +34,7 @@ import au.edu.uq.rcc.nimrodg.master.Master;
 import au.edu.uq.rcc.nimrodg.master.MessageQueueListener;
 import au.edu.uq.rcc.nimrodg.master.sched.DefaultAgentScheduler;
 import au.edu.uq.rcc.nimrodg.master.sched.DefaultJobScheduler;
+import au.edu.uq.rcc.nimrodg.master.sig.SigUtils;
 import au.edu.uq.rcc.nimrodg.resource.act.ActuatorUtils;
 import au.edu.uq.rcc.nimrodg.setup.UserConfig;
 import net.sourceforge.argparse4j.inf.Namespace;
@@ -124,6 +125,16 @@ public class MasterCmd extends NimrodCLICommand {
 			nimrod.setProperty("nimrod.master.amqp.tls_protocol", "TLSv1.2");
 			return "TLSv1.2";
 		});
+
+		String signingAlgorithm = nimrod.getProperty("nimrod.master.amqp.signing_algorithm").orElseGet(() -> {
+			nimrod.setProperty("nimrod.master.amqp.signing_algorithm", SigUtils.DEFAULT_ALGORITHM);
+			return SigUtils.DEFAULT_ALGORITHM;
+		});
+
+		if(!SigUtils.ALGORITHMS.containsKey(signingAlgorithm)) {
+			err.printf("Signing algorithm %s not supported\n", signingAlgorithm);
+			return 1;
+		}
 
 		try(Master m = new Master((NimrodMasterAPI)nimrod, exp, DefaultJobScheduler.FACTORY, DefaultAgentScheduler.FACTORY)) {
 			try(AMQProcessorImpl amqp = new AMQProcessorImpl(
