@@ -22,6 +22,7 @@ package au.edu.uq.rcc.nimrodg.impl.base.db;
 import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.Job;
 import au.edu.uq.rcc.nimrodg.api.JobAttempt;
+import au.edu.uq.rcc.nimrodg.api.JobSpecifications;
 import au.edu.uq.rcc.nimrodg.api.Task;
 import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledTask;
 import java.time.Instant;
@@ -95,6 +96,11 @@ public final class TempExperiment {
 		@Override
 		public Set<String> getVariables() {
 			return variables;
+		}
+
+		@Override
+		public JobSpecifications getJobSpecifications() {
+			return JobSpecifications.empty();
 		}
 
 		@Override
