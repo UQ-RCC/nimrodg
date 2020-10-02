@@ -94,7 +94,7 @@ public class DBExperimentHelpers extends DBBaseHelper {
 		this.qGetExperimentByName = prepareStatement("SELECT * FROM nimrod_full_experiments WHERE name = ?");
 		this.qDelExperimentById = prepareStatement("DELETE FROM nimrod_experiments WHERE id = ?");
 		this.qDelExperimentByName = prepareStatement("DELETE FROM nimrod_experiments WHERE name = ?");
-		this.qUpdateExperimentState = prepareStatement("SELECT update_experiment_state(?::BIGINT, ?::nimrod_experiment_state)");
+		this.qUpdateExperimentState = prepareStatement("UPDATE nimrod_experiments SET state = ?::nimrod_experiment_state WHERE id = ?");
 
 		this.qGetSingleJob = prepareStatement("SELECT * FROM nimrod_full_jobs WHERE id = ?::BIGINT");
 
@@ -225,12 +225,9 @@ public class DBExperimentHelpers extends DBBaseHelper {
 
 
 	public void updateExperimentState(long expId, Experiment.State state) throws SQLException {
-		qUpdateExperimentState.setLong(1, expId);
-		qUpdateExperimentState.setString(2, Experiment.stateToString(state));
-
-		try(ResultSet rs = qUpdateExperimentState.executeQuery()) {
-			/* nop */
-		}
+		qUpdateExperimentState.setString(1, Experiment.stateToString(state));
+		qUpdateExperimentState.setLong(2, expId);
+		qUpdateExperimentState.execute();
 	}
 
 	public Optional<TempJob> getSingleJob(long id) throws SQLException {

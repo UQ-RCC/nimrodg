@@ -39,13 +39,6 @@ CREATE TABLE nimrod_experiments(
 );
 -- Use add_compiled_experiment() for adding. There is no facility for adding them manually.
 
-CREATE OR REPLACE FUNCTION update_experiment_state(_exp_id BIGINT, _state nimrod_experiment_state) RETURNS VOID AS $$
-	UPDATE nimrod_experiments
-	SET state = _state
-	WHERE id = _exp_id;
-$$ LANGUAGE SQL;
-
-
 DROP TABLE IF EXISTS nimrod_jobs CASCADE;
 CREATE TABLE nimrod_jobs(
 	id BIGSERIAL NOT NULL PRIMARY KEY,
