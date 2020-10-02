@@ -20,15 +20,12 @@
 package au.edu.uq.rcc.nimrodg.impl.base.db;
 
 import au.edu.uq.rcc.nimrodg.api.Experiment;
-import au.edu.uq.rcc.nimrodg.api.Job;
-import au.edu.uq.rcc.nimrodg.api.JobAttempt;
-import au.edu.uq.rcc.nimrodg.api.JobSpecifications;
+import au.edu.uq.rcc.nimrodg.api.JobSpecification;
 import au.edu.uq.rcc.nimrodg.api.Task;
 import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledTask;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -99,8 +96,8 @@ public final class TempExperiment {
 		}
 
 		@Override
-		public JobSpecifications getJobSpecifications() {
-			return JobSpecifications.empty();
+		public JobSpecification getJobSpecification() {
+			return JobSpecification.empty();
 		}
 
 		@Override

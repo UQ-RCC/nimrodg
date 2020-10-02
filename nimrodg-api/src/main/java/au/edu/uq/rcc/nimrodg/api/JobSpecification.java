@@ -1,6 +1,6 @@
 package au.edu.uq.rcc.nimrodg.api;
 
-public class JobSpecifications {
+public class JobSpecification {
 	/**
 	 * The number of CPUs required for a task. 0 if unknown.
 	 */
@@ -22,7 +22,7 @@ public class JobSpecifications {
 	 */
 	public final long scratch;
 
-	public JobSpecifications(long ncpus, long memory, long walltime, long scratch) {
+	public JobSpecification(long ncpus, long memory, long walltime, long scratch) {
 		if((this.ncpus = ncpus) < 0) {
 			throw new IllegalArgumentException("ncpus cannot be < 0");
 		}
@@ -40,7 +40,7 @@ public class JobSpecifications {
 		}
 	}
 
-	public static JobSpecifications empty() {
-		return new JobSpecifications(0L, 0L, 0L, 0L);
+	public static JobSpecification empty() {
+		return new JobSpecification(0L, 0L, 0L, 0L);
 	}
 }

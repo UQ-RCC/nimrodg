@@ -41,7 +41,7 @@ public interface Experiment extends NimrodEntity {
 
 	Set<String> getVariables();
 
-	JobSpecifications getJobSpecifications();
+	JobSpecification getJobSpecification();
 
 	Map<Task.Name, Task> getTasks();
 
