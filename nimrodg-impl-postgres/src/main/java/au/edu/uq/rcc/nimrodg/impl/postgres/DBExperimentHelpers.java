@@ -60,7 +60,8 @@ public class DBExperimentHelpers extends DBBaseHelper {
 	/* Experiments */
 	private final PreparedStatement qGetExperiments;
 	private final PreparedStatement qGetExperiment;
-	private final PreparedStatement qDelExperiment;
+	private final PreparedStatement qDelExperimentById;
+	private final PreparedStatement qDelExperimentByName;
 	private final PreparedStatement qUpdateExperimentState;
 
 	/* Jobs */
@@ -89,7 +90,8 @@ public class DBExperimentHelpers extends DBBaseHelper {
 
 		this.qGetExperiments = prepareStatement("SELECT * FROM get_experiments()");
 		this.qGetExperiment = prepareStatement("SELECT * FROM get_experiment(?)");
-		this.qDelExperiment = prepareStatement("SELECT delete_experiment(?::BIGINT)");
+		this.qDelExperimentById = prepareStatement("DELETE FROM nimrod_experiments WHERE id = ?");
+		this.qDelExperimentByName = prepareStatement("DELETE FROM nimrod_experiments WHERE name = ?");
 		this.qUpdateExperimentState = prepareStatement("SELECT update_experiment_state(?::BIGINT, ?::nimrod_experiment_state)");
 
 		this.qGetSingleJob = prepareStatement("SELECT * FROM nimrod_full_jobs WHERE id = ?::BIGINT");
@@ -148,13 +150,13 @@ public class DBExperimentHelpers extends DBBaseHelper {
 	}
 
 	public boolean deleteExperiment(long id) throws SQLException {
-		qDelExperiment.setLong(1, id);
-		return qDelExperiment.execute();
+		qDelExperimentById.setLong(1, id);
+		return qDelExperimentById.execute();
 	}
 
 	public boolean deleteExperiment(String name) throws SQLException {
-		qDelExperiment.setString(1, name);
-		return qDelExperiment.execute();
+		qDelExperimentByName.setString(1, name);
+		return qDelExperimentByName.execute();
 	}
 
 	/*

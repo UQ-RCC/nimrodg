@@ -39,14 +39,6 @@ CREATE TABLE nimrod_experiments(
 );
 -- Use add_compiled_experiment() for adding. There is no facility for adding them manually.
 
-CREATE OR REPLACE FUNCTION delete_experiment(_exp_id BIGINT) RETURNS SETOF VOID AS $$
-	DELETE FROM nimrod_experiments WHERE id = _exp_id;
-$$ LANGUAGE SQL;
-
-CREATE OR REPLACE FUNCTION delete_experiment(_name TEXT) RETURNS SETOF VOID AS $$
-	DELETE FROM nimrod_experiments WHERE name = _name;
-$$ LANGUAGE SQL;
-
 CREATE OR REPLACE FUNCTION update_experiment_state(_exp_id BIGINT, _state nimrod_experiment_state) RETURNS VOID AS $$
 	UPDATE nimrod_experiments
 	SET state = _state
