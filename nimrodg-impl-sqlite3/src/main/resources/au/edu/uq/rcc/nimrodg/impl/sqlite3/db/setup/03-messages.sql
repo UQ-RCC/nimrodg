@@ -19,9 +19,9 @@
 --
 DROP TABLE IF EXISTS nimrod_master_message_storage;
 CREATE TABLE nimrod_master_message_storage(
-	id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-	operation TEXT NOT NULL CHECK(operation IN ('DELETE', 'INSERT', 'UPDATE')),
-	class TEXT NOT NULL CHECK(class IN ('config', 'job')),
-	ts INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
-	payload TEXT NOT NULL
+    id          INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    operation   TEXT    NOT NULL CHECK(operation IN ('DELETE', 'INSERT', 'UPDATE')),
+    class       TEXT    NOT NULL CHECK(class IN ('config', 'job')),
+    ts          INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+    payload     TEXT    NOT NULL
 );
