@@ -182,14 +182,6 @@ CREATE TRIGGER t_res_assignment_remove_checks AFTER DELETE ON nimrod_resource_as
 ** ACTUAL FUNCTIONS
 */
 
-CREATE OR REPLACE FUNCTION get_resource_type_info(_type TEXT) RETURNS SETOF nimrod_resource_types AS $$
-	SELECT * FROM nimrod_resource_types WHERE name = _type;
-$$ LANGUAGE SQL;
-
-CREATE OR REPLACE FUNCTION get_resource_type_info() RETURNS SETOF nimrod_resource_types AS $$
-	SELECT * FROM nimrod_resource_types;
-$$ LANGUAGE SQL;
-
 CREATE OR REPLACE FUNCTION get_resource(_name nimrod_identifier) RETURNS SETOF nimrod_full_resources AS $$
 	SELECT * FROM nimrod_full_resources WHERE name = _name;
 $$ LANGUAGE SQL;

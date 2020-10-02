@@ -67,8 +67,8 @@ public class DBResourceHelpers extends DBBaseHelper {
 
 	public DBResourceHelpers(Connection conn, List<PreparedStatement> statements) throws SQLException {
 		super(conn, statements);
-		this.qGetResourceTypeInfo = prepareStatement("SELECT * FROM get_resource_type_info(?::TEXT)");
-		this.qGetResourceTypeInfo2 = prepareStatement("SELECT * FROM get_resource_type_info()");
+		this.qGetResourceTypeInfo = prepareStatement("SELECT * FROM nimrod_resource_types WHERE name = ?");
+		this.qGetResourceTypeInfo2 = prepareStatement("ELECT * FROM nimrod_resource_type");
 
 		this.qGetResource = prepareStatement("SELECT * FROM get_resource(?::TEXT)");
 		this.qAddResource = prepareStatement("SELECT * FROM add_resource(?, ?, ?::JSONB, make_uri(?, ?, ?, ?), make_uri(?, ?, ?, ?))");
