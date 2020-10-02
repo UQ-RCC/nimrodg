@@ -72,7 +72,7 @@ public class DBResourceHelpers extends DBBaseHelper {
 
 		this.qGetResource = prepareStatement("SELECT * FROM nimrod_full_resources WHERE name = ?");
 		this.qAddResource = prepareStatement("SELECT * FROM add_resource(?, ?, ?::JSONB, make_uri(?, ?, ?, ?), make_uri(?, ?, ?, ?))");
-		this.qDeleteResource = prepareStatement("SELECT delete_resource(?)");
+		this.qDeleteResource = prepareStatement("DELETE FROM nimrod_resources WHERE id = ?");
 		this.qGetResources = prepareStatement("SELECT * FROM nimrod_full_resources");
 
 		this.qGetAssignedResources = prepareStatement("SELECT * FROM get_assigned_resources(?)");
