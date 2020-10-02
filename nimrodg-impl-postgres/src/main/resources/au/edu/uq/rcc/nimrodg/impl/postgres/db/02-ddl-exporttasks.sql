@@ -144,15 +144,3 @@ CREATE VIEW nimrod_full_experiments AS(
 	FROM
 		nimrod_experiments AS e
 );
-
-CREATE OR REPLACE FUNCTION get_experiment(_exp_id BIGINT) RETURNS SETOF nimrod_full_experiments AS $$
-	SELECT * FROM nimrod_full_experiments WHERE id = _exp_id;
-$$ LANGUAGE SQL STABLE;
-
-CREATE OR REPLACE FUNCTION get_experiment(_name TEXT) RETURNS SETOF nimrod_full_experiments AS $$
-	SELECT * FROM nimrod_full_experiments WHERE name = _name;
-$$ LANGUAGE SQL STABLE;
-
-CREATE OR REPLACE FUNCTION get_experiments() RETURNS SETOF nimrod_full_experiments AS $$
-	SELECT * FROM nimrod_full_experiments;
-$$ LANGUAGE SQL STABLE;

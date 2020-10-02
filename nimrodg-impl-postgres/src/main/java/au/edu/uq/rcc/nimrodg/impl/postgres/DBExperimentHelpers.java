@@ -59,7 +59,8 @@ public class DBExperimentHelpers extends DBBaseHelper {
 
 	/* Experiments */
 	private final PreparedStatement qGetExperiments;
-	private final PreparedStatement qGetExperiment;
+	private final PreparedStatement qGetExperimentById;
+	private final PreparedStatement qGetExperimentByName;
 	private final PreparedStatement qDelExperimentById;
 	private final PreparedStatement qDelExperimentByName;
 	private final PreparedStatement qUpdateExperimentState;
@@ -88,8 +89,9 @@ public class DBExperimentHelpers extends DBBaseHelper {
 	public DBExperimentHelpers(Connection conn, List<PreparedStatement> statments) throws SQLException {
 		super(conn, statments);
 
-		this.qGetExperiments = prepareStatement("SELECT * FROM get_experiments()");
-		this.qGetExperiment = prepareStatement("SELECT * FROM get_experiment(?)");
+		this.qGetExperiments = prepareStatement("SELECT * FROM nimrod_full_experiments");
+		this.qGetExperimentById = prepareStatement("SELECT * FROM nimrod_full_experiments WHERE id = ?");
+		this.qGetExperimentByName = prepareStatement("SELECT * FROM nimrod_full_experiments WHERE name = ?");
 		this.qDelExperimentById = prepareStatement("DELETE FROM nimrod_experiments WHERE id = ?");
 		this.qDelExperimentByName = prepareStatement("DELETE FROM nimrod_experiments WHERE name = ?");
 		this.qUpdateExperimentState = prepareStatement("SELECT update_experiment_state(?::BIGINT, ?::nimrod_experiment_state)");
@@ -128,8 +130,8 @@ public class DBExperimentHelpers extends DBBaseHelper {
 	}
 
 	public Optional<TempExperiment> getExperiment(long id) throws SQLException {
-		qGetExperiment.setLong(1, id);
-		try(ResultSet rs = qGetExperiment.executeQuery()) {
+		qGetExperimentById.setLong(1, id);
+		try(ResultSet rs = qGetExperimentById.executeQuery()) {
 			if(!rs.next()) {
 				return Optional.empty();
 			}
@@ -139,8 +141,8 @@ public class DBExperimentHelpers extends DBBaseHelper {
 	}
 
 	public Optional<TempExperiment> getExperiment(String name) throws SQLException {
-		qGetExperiment.setString(1, name);
-		try(ResultSet rs = qGetExperiment.executeQuery()) {
+		qGetExperimentByName.setString(1, name);
+		try(ResultSet rs = qGetExperimentByName.executeQuery()) {
 			if(!rs.next()) {
 				return Optional.empty();
 			}
