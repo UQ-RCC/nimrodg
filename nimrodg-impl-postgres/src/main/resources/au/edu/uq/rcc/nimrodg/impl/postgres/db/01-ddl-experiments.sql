@@ -377,10 +377,6 @@ CREATE OR REPLACE FUNCTION filter_jobs(_exp_id BIGINT, _status nimrod_job_status
 	LIMIT _limit;
 $$ LANGUAGE SQL STABLE;
 
-CREATE OR REPLACE FUNCTION get_jobs_by_id(_ids BIGINT[]) RETURNS SETOF nimrod_full_jobs AS $$
-	SELECT * FROM nimrod_full_jobs WHERE id = ANY(_ids);
-$$ LANGUAGE SQL STABLE;
-
 /*
 ** This isn't actually used, it's too slow.
 */

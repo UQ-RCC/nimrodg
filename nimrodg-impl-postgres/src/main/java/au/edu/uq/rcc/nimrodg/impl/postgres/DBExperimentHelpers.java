@@ -101,7 +101,7 @@ public class DBExperimentHelpers extends DBBaseHelper {
 		this.qGetJobStatus = prepareStatement("SELECT * FROM get_job_status(?::BIGINT)");
 
 		this.qFilterJobs = prepareStatement("SELECT * FROM filter_jobs(?::BIGINT, ?::nimrod_job_status[], ?::BIGINT, ?::BIGINT)");
-		this.qGetJobsById = prepareStatement("SELECT * FROM get_jobs_by_id(?::BIGINT[])");
+		this.qGetJobsById = prepareStatement("SELECT * FROM nimrod_full_jobs WHERE id = ANY(?::BIGINT[])");
 
 		this.qCreateJobAttempt = prepareStatement("SELECT * FROM create_job_attempt(?::BIGINT, ?::UUID)");
 		this.qStartJobAttempt = prepareStatement("SELECT * FROM start_job_attempt(?::BIGINT, ?::UUID)");
