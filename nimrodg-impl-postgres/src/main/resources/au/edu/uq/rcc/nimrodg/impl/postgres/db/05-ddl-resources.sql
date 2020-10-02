@@ -255,10 +255,6 @@ CREATE OR REPLACE FUNCTION assign_resource(_res_id BIGINT, _exp_id BIGINT, _tx_u
 	RETURNING *;
 $$ LANGUAGE SQL;
 
-CREATE OR REPLACE FUNCTION unassign_resource(_res_id BIGINT, _exp_id BIGINT) RETURNS VOID AS $$
-	DELETE FROM nimrod_resource_assignments WHERE resource_id = _res_id AND exp_id = _exp_id;
-$$ LANGUAGE SQL;
-
 CREATE OR REPLACE FUNCTION get_assignment_status(_res_id BIGINT, _exp_id BIGINT) RETURNS nimrod_full_resource_assignments AS $$
 	SELECT * FROM nimrod_full_resource_assignments WHERE resource_id = _res_id AND exp_id = _exp_id;
 $$ LANGUAGE SQL;

@@ -77,7 +77,7 @@ public class DBResourceHelpers extends DBBaseHelper {
 
 		this.qGetAssignedResources = prepareStatement("SELECT * FROM get_assigned_resources(?)");
 		this.qAssignResource = prepareStatement("SELECT * FROM assign_resource(?, ?, make_uri(?, ?, ?, ?))");
-		this.qUnassignResource = prepareStatement("SELECT unassign_resource(?, ?)");
+		this.qUnassignResource = prepareStatement("DELETE FROM nimrod_resource_assignments WHERE resource_id = ? AND exp_id = ?");
 		this.qGetAssignmentStatus = prepareStatement("SELECT * FROM get_assignment_status(?, ?)");
 
 		this.qIsResourceCapable = prepareStatement("SELECT is_resource_capable(?, ?) AS value");
@@ -175,10 +175,7 @@ public class DBResourceHelpers extends DBBaseHelper {
 	public boolean unassignResource(long resId, long expId) throws SQLException {
 		qUnassignResource.setLong(1, resId);
 		qUnassignResource.setLong(2, expId);
-
-		try(ResultSet rs = qUnassignResource.executeQuery()) {
-			return rs.next();
-		}
+		return qUnassignResource.execute();
 	}
 
 	public Optional<NimrodURI> getAssignmentStatus(long resId, long expId) throws SQLException {
