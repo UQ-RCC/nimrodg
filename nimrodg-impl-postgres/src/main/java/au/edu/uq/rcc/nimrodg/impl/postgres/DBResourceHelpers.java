@@ -86,7 +86,7 @@ public class DBResourceHelpers extends DBBaseHelper {
 
 		this.qGetAgentInformation = prepareStatement("SELECT * FROM nimrod_resource_agents WHERE agent_uuid = ?::UUID");
 		this.qGetAgentResource = prepareStatement("SELECT * FROM get_agent_resource(?::UUID)");
-		this.qGetAgentsOnResource = prepareStatement("SELECT * FROM get_agents_on_resource(?)");
+		this.qGetAgentsOnResource = prepareStatement("SELECT * FROM nimrod_resource_agents WHERE expired = FALSE AND location = ?");
 		this.qAddAgent = prepareStatement("SELECT * FROM add_agent(?::nimrod_agent_state, ?, ?::UUID, ?, ?::nimrod_agent_shutdown_reason, ?, ?, ?, ?::JSONB)");
 		this.qUpdateAgent = prepareStatement("SELECT * FROM update_agent(?::UUID, ?::nimrod_agent_state, ?, ?, ?::nimrod_agent_shutdown_reason, ?, ?, ?, ?, ?::JSONB)");
 	}

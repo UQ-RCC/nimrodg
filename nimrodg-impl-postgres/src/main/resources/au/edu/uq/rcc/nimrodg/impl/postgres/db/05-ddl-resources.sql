@@ -283,10 +283,6 @@ CREATE OR REPLACE FUNCTION get_agent_resource(_uuid UUID) RETURNS SETOF nimrod_f
 	);
 $$ LANGUAGE SQL;
 
-CREATE OR REPLACE FUNCTION get_agents_on_resource(_res_id BIGINT) RETURNS SETOF nimrod_resource_agents AS $$
-	SELECT * FROM nimrod_resource_agents WHERE location = _res_id AND expired = FALSE;
-$$ LANGUAGE SQL;
-
 CREATE OR REPLACE FUNCTION add_agent(
     _state              nimrod_agent_state,
     _queue              TEXT,
