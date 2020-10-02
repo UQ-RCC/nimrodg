@@ -227,10 +227,6 @@ CREATE OR REPLACE FUNCTION delete_resource(_id BIGINT) RETURNS VOID AS $$
 	DELETE FROM nimrod_resources WHERE id = _id;
 $$ LANGUAGE SQL;
 
-CREATE OR REPLACE FUNCTION get_resources() RETURNS SETOF nimrod_full_resources AS $$
-	SELECT * FROM nimrod_full_resources;
-$$ LANGUAGE SQL;
-
 CREATE OR REPLACE FUNCTION get_assigned_resources(_exp_id BIGINT) RETURNS SETOF nimrod_full_resources AS $$
 	SELECT s.*
 	FROM
