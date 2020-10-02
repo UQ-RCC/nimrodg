@@ -297,34 +297,6 @@ CREATE OR REPLACE FUNCTION add_agent(
     RETURNING *;
 $$ LANGUAGE SQL;
 
---
--- Legacy version of add_agent(), generates a random secret key.
--- DEPRECATED, will remove next major version bump.
---
-CREATE OR REPLACE FUNCTION add_agent(
-    _state              nimrod_agent_state,
-    _queue              TEXT,
-    _uuid               UUID,
-    _shutdown_signal    INTEGER,
-    _shutdown_reason    nimrod_agent_shutdown_reason,
-    _expiry_time        TIMESTAMP WITH TIME ZONE,
-    _location           BIGINT,
-    _actuator_data      JSONB
-) RETURNS nimrod_resource_agents AS $$
-    SELECT * FROM add_agent(
-        _state,
-        _queue,
-        _uuid,
-        _shutdown_signal,
-        _shutdown_reason,
-        _expiry_time,
-        NULL,
-        _location,
-        _actuator_data
-    );
-$$ LANGUAGE SQL;
-
-
 CREATE OR REPLACE FUNCTION update_agent(_uuid UUID, _state nimrod_agent_state, _queue TEXT, _signal INTEGER, _reason nimrod_agent_shutdown_reason, _connected_at TIMESTAMP WITH TIME ZONE, _last_heard_from TIMESTAMP WITH TIME ZONE, _expiry_time TIMESTAMP WITH TIME ZONE, _expired BOOLEAN, _actuator_data JSONB) RETURNS SETOF nimrod_resource_agents AS $$
 	UPDATE nimrod_resource_agents
 	SET
