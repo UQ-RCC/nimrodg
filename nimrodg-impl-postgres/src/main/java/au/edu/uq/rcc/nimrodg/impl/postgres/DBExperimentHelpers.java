@@ -107,7 +107,7 @@ public class DBExperimentHelpers extends DBBaseHelper {
 		this.qStartJobAttempt = prepareStatement("SELECT * FROM start_job_attempt(?::BIGINT, ?::UUID)");
 		this.qFinishJobAttempt = prepareStatement("SELECT * FROM finish_job_attempt(?::BIGINT, ?::BOOLEAN)");
 		this.qFilterJobAttempts = prepareStatement("SELECT * FROM filter_job_attempts(?::BIGINT, ?::nimrod_job_status[])");
-		this.qGetJobAttempt = prepareStatement("SELECT * FROM get_job_attempt(?::BIGINT)");
+		this.qGetJobAttempt = prepareStatement("SELECT * FROM nimrod_job_attempts WHERE id = ?");
 
 		this.qFilterJobAttemptsByExperiment = prepareStatement("SELECT * FROM filter_job_attempts_by_experiment(?::BIGINT, ?::nimrod_job_status[])");
 
@@ -371,7 +371,7 @@ public class DBExperimentHelpers extends DBBaseHelper {
 
 		try(ResultSet rs = qGetJobAttempt.executeQuery()) {
 			if(!rs.next()) {
-				throw new BrokenDBInvariantException("get_job_attempt() returned no rows.");
+				throw new BrokenDBInvariantException("no such job attempt");
 			}
 
 			return attemptFromRow(rs);

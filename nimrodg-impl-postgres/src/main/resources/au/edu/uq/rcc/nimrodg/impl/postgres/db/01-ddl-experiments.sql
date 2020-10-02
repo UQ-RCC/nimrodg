@@ -344,10 +344,6 @@ CREATE OR REPLACE FUNCTION filter_job_attempts_by_experiment(_exp_id BIGINT, _st
 	;
 $$ LANGUAGE SQL STABLE;
 
-CREATE OR REPLACE FUNCTION get_job_attempt(_att_id BIGINT) RETURNS SETOF nimrod_job_attempts AS $$
-	SELECT * FROM nimrod_job_attempts WHERE id = _att_id;
-$$ LANGUAGE SQL STABLE;
-
 /*
 ** The nimrod_jobs table, except with three extra fields containg:
 ** - The derived state of the job.
