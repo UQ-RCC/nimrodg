@@ -1,15 +1,6 @@
-buildscript {
-    repositories {
-        mavenCentral()
-    }
-
-    dependencies {
-        classpath 'org.ajoberstar:grgit:1.1.0'
-    }
-}
-
 plugins {
-	id 'fr.brouillard.oss.gradle.jgitver' version '0.8.0'
+	id 'org.ajoberstar.grgit' version '4.1.0'
+	id 'fr.brouillard.oss.gradle.jgitver' version '0.9.1'
 }
 
 jgitver {
