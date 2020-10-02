@@ -341,11 +341,3 @@ CREATE OR REPLACE FUNCTION update_agent(_uuid UUID, _state nimrod_agent_state, _
 		agent_uuid = _uuid
 	RETURNING *;
 $$ LANGUAGE SQL;
-
---
--- DEPRECATED, will remove next major version bump.
--- Last supported in Nimrod version 1.7.2
---
-CREATE OR REPLACE FUNCTION update_agent(_uuid UUID, _state nimrod_agent_state, _queue TEXT, _signal INTEGER, _reason nimrod_agent_shutdown_reason, _connected_at TIMESTAMP WITH TIME ZONE, _last_heard_from TIMESTAMP WITH TIME ZONE, _expiry_time TIMESTAMP WITH TIME ZONE, _expired BOOLEAN) RETURNS SETOF nimrod_resource_agents AS $$
-    SELECT * FROM update_agent(_uuid, _state, _queue, _signal, _reason, _connected_at, _last_heard_from, _expiry_time, _expired, NULL);
-$$ LANGUAGE SQL;
