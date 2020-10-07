@@ -259,12 +259,6 @@ CREATE OR REPLACE FUNCTION is_resource_capable(_res_id BIGINT, _exp_id BIGINT) R
 	SELECT COUNT(id) > 0 FROM nimrod_resource_capabilities WHERE resource_id = _res_id AND exp_id = _exp_id;
 $$ LANGUAGE SQL;
 
-CREATE OR REPLACE FUNCTION add_resource_caps(_res_id BIGINT, _exp_id BIGINT) RETURNS VOID AS $$
-	INSERT INTO nimrod_resource_capabilities(exp_id, resource_id)
-	VALUES (_exp_id, _res_id)
-	ON CONFLICT DO NOTHING;
-$$ LANGUAGE SQL;
-
 CREATE OR REPLACE FUNCTION get_agent_resource(_uuid UUID) RETURNS SETOF nimrod_full_resources AS $$
 	SELECT * FROM nimrod_full_resources WHERE id = (
 		SELECT location FROM nimrod_resource_agents WHERE agent_uuid = _uuid

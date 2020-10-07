@@ -81,7 +81,7 @@ public class DBResourceHelpers extends DBBaseHelper {
 		this.qGetAssignmentStatus = prepareStatement("SELECT * FROM nimrod_full_resource_assignments WHERE resource_id = ? AND exp_id = ?");
 
 		this.qIsResourceCapable = prepareStatement("SELECT is_resource_capable(?, ?) AS value");
-		this.qAddResourceCaps = prepareStatement("SELECT add_resource_caps(?, ?)");
+		this.qAddResourceCaps = prepareStatement("INSERT INTO nimrod_resource_capabilities(resource_id, exp_id) VALUES (?, ?) ON CONFLICT DO NOTHING");
 		this.qRemoveResourceCaps = prepareStatement("DELETE FROM nimrod_resource_capabilities WHERE resource_id = ? AND exp_id = ?");
 
 		this.qGetAgentInformation = prepareStatement("SELECT * FROM nimrod_resource_agents WHERE agent_uuid = ?::UUID");
@@ -209,10 +209,7 @@ public class DBResourceHelpers extends DBBaseHelper {
 	public boolean addResourceCaps(long resId, long expId) throws SQLException {
 		qAddResourceCaps.setLong(1, resId);
 		qAddResourceCaps.setLong(2, expId);
-
-		try(ResultSet rs = qAddResourceCaps.executeQuery()) {
-			return rs.next();
-		}
+		return qAddResourceCaps.executeUpdate() > 0;
 	}
 
 	public boolean removeResourceCaps(long resId, long expId) throws SQLException {
