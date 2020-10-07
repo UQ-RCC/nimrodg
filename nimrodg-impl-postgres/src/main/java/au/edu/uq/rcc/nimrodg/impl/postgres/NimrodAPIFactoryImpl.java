@@ -36,7 +36,7 @@ public class NimrodAPIFactoryImpl implements NimrodAPIDatabaseFactory {
 
 	/* Follow Semver 2.0 for these. */
 	public static final int SCHEMA_MAJOR = 2;
-	public static final int SCHEMA_MINOR = 0;
+	public static final int SCHEMA_MINOR = 1;
 	public static final int SCHEMA_PATCH = 0;
 
 	@Override
