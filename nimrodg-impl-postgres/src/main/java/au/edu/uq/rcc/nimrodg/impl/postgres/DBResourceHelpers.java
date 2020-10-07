@@ -82,7 +82,7 @@ public class DBResourceHelpers extends DBBaseHelper {
 
 		this.qIsResourceCapable = prepareStatement("SELECT is_resource_capable(?, ?) AS value");
 		this.qAddResourceCaps = prepareStatement("SELECT add_resource_caps(?, ?)");
-		this.qRemoveResourceCaps = prepareStatement("SELECT remove_resource_caps(?, ?)");
+		this.qRemoveResourceCaps = prepareStatement("DELETE FROM nimrod_resource_capabilities WHERE resource_id = ? AND exp_id = ?");
 
 		this.qGetAgentInformation = prepareStatement("SELECT * FROM nimrod_resource_agents WHERE agent_uuid = ?::UUID");
 		this.qGetAgentResource = prepareStatement("SELECT * FROM get_agent_resource(?::UUID)");
@@ -218,10 +218,7 @@ public class DBResourceHelpers extends DBBaseHelper {
 	public boolean removeResourceCaps(long resId, long expId) throws SQLException {
 		qRemoveResourceCaps.setLong(1, resId);
 		qRemoveResourceCaps.setLong(2, expId);
-
-		try(ResultSet rs = qRemoveResourceCaps.executeQuery()) {
-			return rs.next();
-		}
+		return qRemoveResourceCaps.execute();
 	}
 
 	// </editor-fold>
