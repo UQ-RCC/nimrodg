@@ -28,30 +28,30 @@
 --
 CREATE OR REPLACE FUNCTION __create_child_resources_from_definition(_parent BIGINT, _children JSONB) RETURNS VOID AS $$
 DECLARE
-	dummy BIGINT;
+    dummy BIGINT;
     parent_path nimrod_path;
 BEGIN
-	IF _children IS NULL THEN
-		RETURN;
-	END IF;
+    IF _children IS NULL THEN
+        RETURN;
+    END IF;
 
     SELECT path INTO parent_path FROM nimrod_resources WHERE id = _parent;
 
-	--
-	-- Can't use PERFORM with WITH when something's being modified.
-	-- HACK: Use COUNT() to get it to an integer and store it in a dummy variable.
-	--
-	WITH nodes AS(
-		SELECT n->>'name' AS name, n->'config' AS config, n->'nodes' AS nodes FROM jsonb_array_elements(_children) AS n
-	), ids AS(
-		INSERT INTO nimrod_resources(name, path, parent, config)
-		SELECT name, concat_ws('/', parent_path, name), _parent, config FROM nodes AS n
-		RETURNING id, name
-	)
-	SELECT COUNT(__create_child_resources_from_definition(e.id, e.children)) INTO dummy
-	FROM (
-		SELECT ids.id AS id, nodes.nodes AS children FROM ids, nodes WHERE ids.name = nodes.name
-	) AS e;
+    --
+    -- Can't use PERFORM with WITH when something's being modified.
+    -- HACK: Use COUNT() to get it to an integer and store it in a dummy variable.
+    --
+    WITH nodes AS(
+        SELECT n->>'name' AS name, n->'config' AS config, n->'nodes' AS nodes FROM jsonb_array_elements(_children) AS n
+    ), ids AS(
+        INSERT INTO nimrod_resources(name, path, parent, config)
+        SELECT name, concat_ws('/', parent_path, name), _parent, config FROM nodes AS n
+        RETURNING id, name
+    )
+    SELECT COUNT(__create_child_resources_from_definition(e.id, e.children)) INTO dummy
+    FROM (
+        SELECT ids.id AS id, nodes.nodes AS children FROM ids, nodes WHERE ids.name = nodes.name
+    ) AS e;
 
 END $$ LANGUAGE 'plpgsql';
 
@@ -66,13 +66,13 @@ END $$ LANGUAGE 'plpgsql';
 --
 CREATE OR REPLACE FUNCTION create_resource_from_definition(_config JSONB) RETURNS BIGINT AS $$
 DECLARE
-	storage_id BIGINT;
+    storage_id BIGINT;
 BEGIN
-	-- Create the root resource.
-	SELECT create_resource(_config->'root'->>'name', _config->>'type', _config->'root'->'config') INTO storage_id;
+    -- Create the root resource.
+    SELECT create_resource(_config->'root'->>'name', _config->>'type', _config->'root'->'config') INTO storage_id;
 
-	-- Now create the child resources
-	PERFORM __create_child_resources_from_definition(storage_id, _config->'root'->'nodes');
+    -- Now create the child resources
+    PERFORM __create_child_resources_from_definition(storage_id, _config->'root'->'nodes');
 
-	RETURN storage_id;
+    RETURN storage_id;
 END $$ LANGUAGE 'plpgsql';
