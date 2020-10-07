@@ -18,14 +18,14 @@
 -- limitations under the License.
 --
 
-/*
-** VOID __create_child_resources_from_definition(BIGINT _parent, JSONB _children)
-**
-** This is a recursion helper, don't use manually.
-**
-** @param[in] _parent The parent storage id.
-** @param[in] _children A JSONB list of children.
-*/
+--
+-- VOID __create_child_resources_from_definition(BIGINT _parent, JSONB _children)
+--
+-- This is a recursion helper, don't use manually.
+--
+-- @param[in] _parent The parent storage id.
+-- @param[in] _children A JSONB list of children.
+--
 CREATE OR REPLACE FUNCTION __create_child_resources_from_definition(_parent BIGINT, _children JSONB) RETURNS VOID AS $$
 DECLARE
 	dummy BIGINT;
@@ -37,10 +37,10 @@ BEGIN
 
     SELECT path INTO parent_path FROM nimrod_resources WHERE id = _parent;
 
-	/*
-	** Can't use PERFORM with WITH when something's being modified.
-	** HACK: Use COUNT() to get it to an integer and store it in a dummy variable.
-	*/
+	--
+	-- Can't use PERFORM with WITH when something's being modified.
+	-- HACK: Use COUNT() to get it to an integer and store it in a dummy variable.
+	--
 	WITH nodes AS(
 		SELECT n->>'name' AS name, n->'config' AS config, n->'nodes' AS nodes FROM jsonb_array_elements(_children) AS n
 	), ids AS(
@@ -55,23 +55,23 @@ BEGIN
 
 END $$ LANGUAGE 'plpgsql';
 
-/*
-** BIGINT create_resource_from_definition(JSONB _config)
-**
-** Given a resource definition, create the appropriate tables.
-**
-** @param[in] _config A JSONB resource definition of the format
-** at https://uq-rcc.github.io/nimrod/schema/resource.definition.json
-** @returns The storage id.
-*/
+--
+-- BIGINT create_resource_from_definition(JSONB _config)
+--
+-- Given a resource definition, create the appropriate tables.
+--
+-- @param[in] _config A JSONB resource definition of the format
+-- at https://uq-rcc.github.io/nimrod/schema/resource.definition.json
+-- @returns The storage id.
+--
 CREATE OR REPLACE FUNCTION create_resource_from_definition(_config JSONB) RETURNS BIGINT AS $$
 DECLARE
 	storage_id BIGINT;
 BEGIN
-	/* Create the root resource. */
+	-- Create the root resource.
 	SELECT create_resource(_config->'root'->>'name', _config->>'type', _config->'root'->'config') INTO storage_id;
 
-	/* Now create the child resources */
+	-- Now create the child resources
 	PERFORM __create_child_resources_from_definition(storage_id, _config->'root'->'nodes');
 
 	RETURN storage_id;

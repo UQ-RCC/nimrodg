@@ -54,7 +54,7 @@ BEGIN
 		RAISE EXCEPTION 'Mismatched variable/value count (% != %)', var_count, value_count;
 	END IF;
 
-	/* Check for reserved names */
+	-- Check for reserved names
 	WITH names AS(
 		SELECT unnest(_vars) AS vars
 		INTERSECT ALL
@@ -66,7 +66,7 @@ BEGIN
 		RAISE EXCEPTION 'Job cannot have variables with reserved names';
 	END IF;
 
-	/* Get the next available job index */
+	-- Get the next available job index
 	SELECT
 		COALESCE(MAX(j.job_index) + 1, 1) INTO next_jobindex
 	FROM
@@ -83,10 +83,10 @@ BEGIN
 	) ON COMMIT DROP;
 	DELETE FROM variables;
 
-	/*
-	** Map our variables to the experiments's variables.
-	** The sizes will be different if they don't match.
-	*/
+	--
+	-- Map our variables to the experiments's variables.
+	-- The sizes will be different if they don't match.
+	--
 	INSERT INTO variables(var_id, var_index, var_name)
 	SELECT
 		v.id,
@@ -132,10 +132,10 @@ BEGIN
 		ON j.job_index + next_jobindex - 1 = ji
 	;
 
-	/* Update var count */
+	-- Update var count
 	SELECT array_length(_vars, 1) INTO var_count;
 
-	/* Add the jobs and get their ids. */
+	-- Add the jobs and get their ids.
 	WITH j AS(
 		INSERT INTO nimrod_jobs(exp_id, job_index)
 		SELECT

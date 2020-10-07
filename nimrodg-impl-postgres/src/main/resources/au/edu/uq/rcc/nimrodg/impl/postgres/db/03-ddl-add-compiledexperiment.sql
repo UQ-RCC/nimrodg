@@ -59,13 +59,13 @@ BEGIN
 	i := 0;
 	FOR cmd IN SELECT * FROM jsonb_array_elements(_commands)
 	LOOP
-		/* Add the command entry */
+		-- Add the command entry
 		INSERT INTO nimrod_commands(command_index, task_id, type)
 		VALUES(i, _task_id, (cmd->>'type')::nimrod_command_type)
 		RETURNING id, type INTO command_id, command_type;
 		i := i + 1;
 
-		/* Now add the arguments */
+		-- Now add the arguments
 		IF command_type = 'onerror'::nimrod_command_type THEN
 			INSERT INTO nimrod_command_arguments(command_id, arg_index, arg_text)
 			VALUES(command_id, 0, cmd->>'action');

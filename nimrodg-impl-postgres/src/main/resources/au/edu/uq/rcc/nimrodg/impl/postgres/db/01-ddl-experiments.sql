@@ -17,9 +17,10 @@
 -- See the License for the specific language governing permissions and
 -- limitations under the License.
 --
-/*
-** Experiments/Jobs/Tasks/Variables
-*/
+
+--
+-- Experiments/Jobs/Tasks/Variables
+--
 DROP TYPE IF EXISTS nimrod_experiment_state CASCADE;
 CREATE TYPE nimrod_experiment_state AS ENUM('STOPPED', 'STARTED', 'PERSISTENT');
 
@@ -51,9 +52,9 @@ CREATE TABLE nimrod_jobs(
 	path nimrod_path NOT NULL UNIQUE
 );
 
-/*
-** Set the creation date, workdir and path for a job when inserted.
-*/
+--
+-- Set the creation date, workdir and path for a job when inserted.
+--
 CREATE OR REPLACE FUNCTION _exp_t_job_add() RETURNS TRIGGER AS $$
 DECLARE
 	_path nimrod_path;
@@ -124,14 +125,14 @@ CREATE TABLE nimrod_substitutions(
 DROP TYPE IF EXISTS nimrod_job_status CASCADE;
 CREATE TYPE nimrod_job_status AS ENUM('NOT_RUN', 'RUNNING', 'COMPLETED', 'FAILED');
 
-/*
-** All the possible attempts at running a job.
-** TODO: Add invariant conditions to this
-*/
+--
+-- All the possible attempts at running a job.
+-- TODO: Add invariant conditions to this
+--
 DROP TABLE IF EXISTS nimrod_job_attempts CASCADE;
 CREATE TABLE nimrod_job_attempts(
 	id BIGSERIAL NOT NULL PRIMARY KEY,
-	/* Job id */
+	-- Job id
 	job_id BIGINT NOT NULL REFERENCES nimrod_jobs(id) ON DELETE CASCADE,
 	uuid UUID NOT NULL UNIQUE,
 	status nimrod_job_status NOT NULL DEFAULT 'NOT_RUN'::nimrod_job_status,
@@ -139,8 +140,8 @@ CREATE TABLE nimrod_job_attempts(
 	start_time TIMESTAMP WITH TIME ZONE DEFAULT NULL,
 	finish_time TIMESTAMP WITH TIME ZONE DEFAULT NULL,
 	path nimrod_path NOT NULL UNIQUE,
-	/* Weak reference to the agent UUID. The agent may or may not exist */
-	agent_uuid UUID/* REFERENCES nimrod_master_agents(id) */,
+	-- Weak reference to the agent UUID. The agent may or may not exist
+	agent_uuid UUID, -- REFERENCES nimrod_master_agents(id),
 	CHECK(finish_time >= start_time)
 	--CHECK(status != 'NOT_RUN'::nimrod_job_status)
 );
@@ -188,9 +189,9 @@ CREATE TYPE nimrod_command_result_status AS ENUM(
 	'SUCCESS'
 );
 
-/*
-** Command results, used for detailed tracking.
-*/
+--
+-- Command results, used for detailed tracking.
+--
 DROP TABLE IF EXISTS nimrod_command_results CASCADE;
 CREATE TABLE nimrod_command_results(
 	id BIGSERIAL NOT NULL PRIMARY KEY,
@@ -216,12 +217,12 @@ BEGIN
 	SELECT exp_id INTO _exp_id FROM nimrod_jobs WHERE id = _job_id;
 	SELECT id INTO _task_id FROM nimrod_tasks WHERE exp_id = _exp_id AND name = 'main'::nimrod_task_name;
 
-	/* If NULL or negative command index, assume the next one. */
+	-- If NULL or negative command index, assume the next one.
 	IF NEW.command_index IS NULL OR NEW.command_index < 0 THEN
 		SELECT COALESCE(MAX(command_index) + 1, 0) INTO NEW.command_index FROM nimrod_command_results WHERE attempt_id = NEW.attempt_id;
 	END IF;
 
-	/* Query the command id */
+	-- Query the command id
 	SELECT id INTO NEW.command_id FROM nimrod_commands WHERE task_id = _task_id AND command_index = NEW.command_index;
 	-- IF NEW.command_id IS NULL THEN
 	-- 	RAISE EXCEPTION 'job_id = %, exp_id = %, task_id = %, command_index = %', _job_id, _exp_id, _task_id, NEW.command_index;
@@ -279,12 +280,12 @@ CREATE OR REPLACE FUNCTION finish_job_attempt(_att_id BIGINT, _failed BOOLEAN) R
 	RETURNING *;
 $$ LANGUAGE SQL VOLATILE;
 
-/*
-** nimrod=# SELECT * FROM _exp_get_attempt_info(1);
-**  status  | total_count | not_run | running | completed | failed
-** ---------+-------------+---------+---------+-----------+--------
-**  RUNNING |           3 |       0 |       2 |         0 |      1
-*/
+--
+-- nimrod=# SELECT * FROM _exp_get_attempt_info(1);
+--  status  | total_count | not_run | running | completed | failed
+-- ---------+-------------+---------+---------+-----------+--------
+--  RUNNING |           3 |       0 |       2 |         0 |      1
+--
 CREATE OR REPLACE FUNCTION _exp_get_attempt_info(_job_id BIGINT) RETURNS TABLE(status nimrod_job_status, total_count BIGINT, not_run BIGINT, running BIGINT, completed BIGINT, failed BIGINT) AS $$
 	WITH counts AS (
 		SELECT
@@ -344,12 +345,12 @@ CREATE OR REPLACE FUNCTION filter_job_attempts_by_experiment(_exp_id BIGINT, _st
 	;
 $$ LANGUAGE SQL STABLE;
 
-/*
-** The nimrod_jobs table, except with three extra fields containg:
-** - The derived state of the job.
-** - An array of the variable names.
-** - An array of the variable values.
-*/
+--
+-- The nimrod_jobs table, except with three extra fields containg:
+-- - The derived state of the job.
+-- - An array of the variable names.
+-- - An array of the variable values.
+--
 DROP VIEW IF EXISTS nimrod_full_jobs CASCADE;
 CREATE VIEW nimrod_full_jobs AS
 	SELECT
@@ -373,23 +374,22 @@ CREATE OR REPLACE FUNCTION filter_jobs(_exp_id BIGINT, _status nimrod_job_status
 	LIMIT _limit;
 $$ LANGUAGE SQL STABLE;
 
-/*
-** This isn't actually used, it's too slow.
-*/
+--
+-- This isn't actually used, it's too slow.
+--
 CREATE OR REPLACE FUNCTION get_run_counts(_exp_id BIGINT) RETURNS TABLE(total_count BIGINT, not_run BIGINT, running BIGINT, completed BIGINT, failed BIGINT) AS $$
-/* You can do this in a single query, but it's ungodly slow:
-	SELECT
-		COUNT(1) AS total_count,
-		COUNT(1) FILTER (WHERE status = 'NOT_RUN'::nimrod_job_status) AS not_run,
-		COUNT(1) FILTER (WHERE status = 'RUNNING'::nimrod_job_status) AS running,
-		COUNT(1) FILTER (WHERE status = 'COMPLETED'::nimrod_job_status) AS completed,
-		COUNT(1) FILTER (WHERE status = 'FAILED'::nimrod_job_status) AS failed
-	FROM
-		nimrod_full_jobs AS j
-	WHERE
-		j.exp_id = _exp_id
-	;
-*/
+-- You can do this in a single query, but it's ungodly slow:
+--	SELECT
+--		COUNT(1) AS total_count,
+--		COUNT(1) FILTER (WHERE status = 'NOT_RUN'::nimrod_job_status) AS not_run,
+--		COUNT(1) FILTER (WHERE status = 'RUNNING'::nimrod_job_status) AS running,
+--		COUNT(1) FILTER (WHERE status = 'COMPLETED'::nimrod_job_status) AS completed,
+--		COUNT(1) FILTER (WHERE status = 'FAILED'::nimrod_job_status) AS failed
+--	FROM
+--		nimrod_full_jobs AS j
+--	WHERE
+--		j.exp_id = _exp_id
+--	;
 DECLARE
 	_not_run BIGINT;
 	_running BIGINT;
@@ -484,10 +484,10 @@ BEGIN
 	DROP TABLE tmp;
 END $$ LANGUAGE plpgsql;
 
-/*
-** Add a list of jobs to an experiment.
-** _jobs is expected to be like '[{"x": "1", "y": "2"}, {"x": "2", "y": "3"}]'
-*/
+--
+-- Add a list of jobs to an experiment.
+-- _jobs is expected to be like '[{"x": "1", "y": "2"}, {"x": "2", "y": "3"}]'
+--
 CREATE OR REPLACE FUNCTION add_multiple_jobs_internal(_exp_id BIGINT, _jobs JSONB) RETURNS SETOF BIGINT AS $$
 	SELECT validate_jobs_json(_exp_id, _jobs);
 

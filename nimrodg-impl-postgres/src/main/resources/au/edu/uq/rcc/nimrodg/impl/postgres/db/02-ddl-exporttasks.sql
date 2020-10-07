@@ -17,7 +17,8 @@
 -- See the License for the specific language governing permissions and
 -- limitations under the License.
 --
-/* Dump a substitution to JSON. */
+
+-- Dump a substitution to JSON.
 CREATE OR REPLACE FUNCTION _gt_getsub(_sub_id BIGINT) RETURNS JSONB AS $$
 	SELECT jsonb_build_object(
 		'name', v.name,
@@ -34,7 +35,7 @@ CREATE OR REPLACE FUNCTION _gt_getsub(_sub_id BIGINT) RETURNS JSONB AS $$
 	;
 $$ LANGUAGE SQL STABLE;
 
-/* Dump an argument to JSON */
+-- Dump an argument to JSON
 CREATE OR REPLACE FUNCTION _gt_getarg(_arg_id BIGINT) RETURNS JSONB AS $$
 	SELECT jsonb_build_object(
 		'text', ca.arg_text,
@@ -47,7 +48,7 @@ CREATE OR REPLACE FUNCTION _gt_getarg(_arg_id BIGINT) RETURNS JSONB AS $$
 		ca.id = _arg_id;
 $$ LANGUAGE SQL STABLE;
 
-/* Dump an onerror command to denormalised JSON */
+-- Dump an onerror command to denormalised JSON
 CREATE OR REPLACE FUNCTION _gt_getcmd_onerror(_data JSONB[]) RETURNS JSONB AS $$
 	SELECT jsonb_build_object(
 		'type', 'onerror',
@@ -55,7 +56,7 @@ CREATE OR REPLACE FUNCTION _gt_getcmd_onerror(_data JSONB[]) RETURNS JSONB AS $$
 	);
 $$ LANGUAGE SQL IMMUTABLE;
 
-/* Dump a redirect command to denormalized JSON */
+-- Dump a redirect command to denormalized JSON
 CREATE OR REPLACE FUNCTION _gt_getcmd_redirect(_data JSONB[]) RETURNS JSONB AS $$
 	SELECT jsonb_build_object(
 		'type', 'redirect',
@@ -65,7 +66,7 @@ CREATE OR REPLACE FUNCTION _gt_getcmd_redirect(_data JSONB[]) RETURNS JSONB AS $
 	);
 $$ LANGUAGE SQL STABLE;
 
-/* Dump a copy command to denormalised JSON */
+-- Dump a copy command to denormalised JSON
 CREATE OR REPLACE FUNCTION _gt_getcmd_copy(_data JSONB[]) RETURNS JSONB AS $$
 	SELECT jsonb_build_object(
 		'type', 'copy',
@@ -76,7 +77,7 @@ CREATE OR REPLACE FUNCTION _gt_getcmd_copy(_data JSONB[]) RETURNS JSONB AS $$
 	);
 $$ LANGUAGE SQL STABLE;
 
-/* Dump an exec command to denormalised JSON */
+-- Dump an exec command to denormalised JSON
 CREATE OR REPLACE FUNCTION _gt_getcmd_exec(_data JSONB[]) RETURNS JSONB AS $$
 	WITH args AS(
 		SELECT (unnest(_data[3:array_upper(_data, 1)])->>'id')::BIGINT AS id
@@ -90,7 +91,7 @@ CREATE OR REPLACE FUNCTION _gt_getcmd_exec(_data JSONB[]) RETURNS JSONB AS $$
 	FROM args;
 $$ LANGUAGE SQL STABLE;
 
-/* Dump a command to denormalised JSON */
+-- Dump a command to denormalised JSON
 CREATE OR REPLACE FUNCTION _gt_getcmd(_cmd_id BIGINT) RETURNS JSONB AS $$
 	WITH args AS(
 		SELECT
@@ -116,12 +117,12 @@ CREATE OR REPLACE FUNCTION _gt_getcmd(_cmd_id BIGINT) RETURNS JSONB AS $$
 	;
 $$ LANGUAGE SQL STABLE;
 
-/* Dump the commands of a task to a JSON array */
+-- Dump the commands of a task to a JSON array
 CREATE OR REPLACE FUNCTION _gt_export_task(_task_id BIGINT) RETURNS JSONB AS $$
 	 SELECT jsonb_agg(_gt_getcmd(id)) FROM nimrod_commands WHERE task_id = _task_id;
 $$ LANGUAGE SQL STABLE;
 
-/* Dump the tasks of an experiment to JSON */
+-- Dump the tasks of an experiment to JSON
 CREATE OR REPLACE FUNCTION export_tasks(_exp_id BIGINT) RETURNS JSONB AS $$
 	SELECT
 		CASE

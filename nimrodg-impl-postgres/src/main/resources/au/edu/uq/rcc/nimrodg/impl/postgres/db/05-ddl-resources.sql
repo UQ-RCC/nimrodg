@@ -17,7 +17,6 @@
 -- See the License for the specific language governing permissions and
 -- limitations under the License.
 --
-/* This is a port of the SQLite logic */
 
 DROP TYPE IF EXISTS nimrod_agent_state CASCADE;
 CREATE TYPE nimrod_agent_state AS ENUM('WAITING_FOR_HELLO', 'READY', 'BUSY', 'SHUTDOWN');
@@ -38,7 +37,7 @@ CREATE TABLE nimrod_resources (
 	name					nimrod_identifier NOT NULL UNIQUE,
 	type_id					BIGINT NOT NULL REFERENCES nimrod_resource_types(id) ON DELETE RESTRICT,
 	config					JSONB NOT NULL,
-	/* I'm not using nimrod_uri to keep SELECTion and INSERTion code simple. */
+	-- I'm not using nimrod_uri to keep SELECTion and INSERTion code simple.
 	amqp_uri				TEXT,
 	amqp_cert_path			TEXT,
 	amqp_no_verify_peer		BOOLEAN,
@@ -118,7 +117,7 @@ CREATE TABLE nimrod_resource_agents(
 	agent_uuid				UUID NOT NULL UNIQUE,
 	shutdown_signal			INTEGER NOT NULL,
 	shutdown_reason			nimrod_agent_shutdown_reason NOT NULL,
-	/* From here, none of this is actually state. */
+	-- From here, none of this is actually state.
 	created					TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
 	connected_at				TIMESTAMP WITH TIME ZONE CHECK(connected_at >= created),
 	last_heard_from			TIMESTAMP WITH TIME ZONE CHECK(last_heard_from >= created),
@@ -131,10 +130,10 @@ CREATE TABLE nimrod_resource_agents(
 );
 CREATE INDEX ON nimrod_resource_agents(location) WHERE location IS NOT NULL;
 
-/*
-** If the agent's expired, disallow changes.
-** If the agent's state is setting to SHUTDOWN, mark it as expired.
-*/
+--
+-- If the agent's expired, disallow changes.
+-- If the agent's state is setting to SHUTDOWN, mark it as expired.
+--
 CREATE OR REPLACE FUNCTION _res_t_agent_expire_on_shutdown() RETURNS TRIGGER AS $$
 BEGIN
 	IF OLD.expired = TRUE THEN
@@ -149,7 +148,7 @@ BEGIN
 		NEW.expired_at = NOW();
 	END IF;
 
-	/* Sometimes there's a few ms drift between the sever and db. */
+	-- Sometimes there's a few ms drift between the sever and db.
 	IF NEW.last_heard_from < NEW.created THEN
 		NEW.last_heard_from = NEW.created;
 	END IF;
@@ -161,9 +160,9 @@ DROP TRIGGER IF EXISTS t_res_agent_expire_on_shutdown ON nimrod_resource_agents;
 CREATE TRIGGER t_res_agent_expire_on_shutdown BEFORE UPDATE ON nimrod_resource_agents
 	FOR EACH ROW EXECUTE PROCEDURE _res_t_agent_expire_on_shutdown();
 
-/*
-** Delete any capabilities if their experiment has been unassigned.
-*/
+--
+-- Delete any capabilities if their experiment has been unassigned.
+--
 CREATE OR REPLACE FUNCTION _res_t_assignment_remove_checks() RETURNS TRIGGER AS $$
 BEGIN
 	DELETE FROM nimrod_resource_capabilities
@@ -178,9 +177,9 @@ DROP TRIGGER IF EXISTS t_res_assignment_remove_checks ON nimrod_resource_assignm
 CREATE TRIGGER t_res_assignment_remove_checks AFTER DELETE ON nimrod_resource_assignments
 	FOR EACH ROW EXECUTE PROCEDURE _res_t_assignment_remove_checks();
 
-/*
-** ACTUAL FUNCTIONS
-*/
+--
+-- ACTUAL FUNCTIONS
+--
 
 CREATE OR REPLACE FUNCTION add_resource(_name TEXT, _typename TEXT, _config JSONB, _amqp_uri nimrod_uri, _tx_uri nimrod_uri) RETURNS SETOF nimrod_full_resources AS $$
 DECLARE

@@ -23,9 +23,9 @@ CREATE TYPE nimrod_master_message_class AS ENUM('config', 'job');
 DROP TYPE IF EXISTS nimrod_message_operation CASCADE;
 CREATE TYPE nimrod_message_operation AS ENUM('DELETE', 'INSERT', 'UPDATE');
 
-/*
-** Payload Helpers
-*/
+--
+-- Payload Helpers
+--
 CREATE OR REPLACE FUNCTION _msg_build_payload_config_init(_cfg nimrod_kv_config) RETURNS JSONB AS $$
 	SELECT jsonb_build_object(
 		'key', _cfg.key,
@@ -77,9 +77,9 @@ CREATE OR REPLACE FUNCTION add_master_message(op nimrod_message_operation, class
 	VALUES(op, class, NOW(), payload);
 $$ LANGUAGE SQL;
 
-/*
-** Trigger to catch config INSERT/DELETE/UPDATE on nimrod_kv_config
-*/
+--
+-- Trigger to catch config INSERT/DELETE/UPDATE on nimrod_kv_config
+--
 CREATE OR REPLACE FUNCTION _msg_t_config() RETURNS TRIGGER AS $$
 DECLARE
 	payload JSONB;
@@ -101,9 +101,9 @@ END $$ LANGUAGE 'plpgsql';
 DROP TRIGGER IF EXISTS t_msg_config ON nimrod_kv_config;
 CREATE TRIGGER t_msg_config AFTER INSERT OR UPDATE OR DELETE ON nimrod_kv_config FOR EACH ROW EXECUTE PROCEDURE _msg_t_config();
 
-/*
-** Trigger to catch job INSERT on nimrod_jobs
-*/
+--
+-- Trigger to catch job INSERT on nimrod_jobs
+--
 CREATE OR REPLACE FUNCTION _msg_t_job() RETURNS TRIGGER AS $$
 DECLARE
 	payload JSONB;

@@ -37,15 +37,13 @@ DROP TYPE IF EXISTS nimrod_uri CASCADE;
 CREATE TYPE nimrod_uri AS
 (
 	uri					TEXT,
-	/* Certificate path. If URI is ssh, this would double as a private key path. */
+	-- Certificate path. If URI is ssh, this would double as a private key path.
 	cert_path			TEXT,
 	no_verify_peer		BOOLEAN,
 	no_verify_host		BOOLEAN
 );
 
-/*
-** Make a nimrod_uri structure.
-*/
+-- Make a nimrod_uri structure.
 CREATE OR REPLACE FUNCTION make_uri(_uri TEXT, _cert_path TEXT, _no_verify_peer BOOLEAN, _no_verify_host BOOLEAN) RETURNS nimrod_uri AS $$
 	SELECT (NULLIF(_uri, ''), NULLIF(_cert_path, ''), _no_verify_peer, _no_verify_host)::nimrod_uri;
 $$ LANGUAGE SQL IMMUTABLE;
@@ -53,26 +51,26 @@ $$ LANGUAGE SQL IMMUTABLE;
 DROP TABLE IF EXISTS nimrod_config CASCADE;
 CREATE TABLE nimrod_config(
 	id					BIGSERIAL NOT NULL PRIMARY KEY,
-	/* Absolute path for Nimrod's working directory. */
+	-- Absolute path for Nimrod's working directory.
 	work_dir			TEXT NOT NULL,
 	store_dir			TEXT NOT NULL,
-	/* URI configuration for the message queue. */
+	-- URI configuration for the message queue.
 	amqp_uri			TEXT NOT NULL,
 	amqp_cert_path		TEXT NOT NULL DEFAULT '',
 	amqp_no_verify_peer	BOOLEAN NOT NULL DEFAULT FALSE,
 	amqp_no_verify_host	BOOLEAN NOT NULL DEFAULT FALSE,
 	amqp_routing_key	TEXT NOT NULL,
-	/* URI configuration for the file server. */
+	-- URI configuration for the file server.
 	tx_uri				TEXT NOT NULL,
 	tx_cert_path		TEXT NOT NULL DEFAULT '',
 	tx_no_verify_peer	BOOLEAN NOT NULL DEFAULT FALSE,
 	tx_no_verify_host	BOOLEAN NOT NULL DEFAULT FALSE
 );
 
-/*
-** Insert/Update configuration. Any field set to NULL will use the old value.
-** Only the row with id = 1 is updated. It is created if it doesn't exist.
-*/
+--
+-- Insert/Update configuration. Any field set to NULL will use the old value.
+-- Only the row with id = 1 is updated. It is created if it doesn't exist.
+--
 CREATE OR REPLACE FUNCTION update_config(_work_dir TEXT, _store_dir TEXT, _amqp_uri nimrod_uri, _amqp_routing_key TEXT, _tx_uri nimrod_uri) RETURNS nimrod_config AS $$
 	INSERT INTO nimrod_config(
 		id, work_dir, store_dir,
@@ -110,10 +108,10 @@ CREATE OR REPLACE FUNCTION update_config(_work_dir TEXT, _store_dir TEXT, _amqp_
 	RETURNING *;
 $$ LANGUAGE SQL;
 
-/*
-** Get the global configuration.
-** This will throw if setup hasn't been run.
-*/
+--
+-- Get the global configuration.
+-- This will throw if setup hasn't been run.
+--
 CREATE OR REPLACE FUNCTION get_config() RETURNS nimrod_config AS $$
 DECLARE
 	cfg nimrod_config;
@@ -127,9 +125,9 @@ BEGIN
 	RETURN cfg;
 END $$ LANGUAGE 'plpgsql';
 
-/*
-** Key/Value Configuration properties
-*/
+--
+-- Key/Value Configuration properties
+--
 DROP TABLE IF EXISTS nimrod_kv_config CASCADE;
 CREATE TABLE nimrod_kv_config(
 	id BIGSERIAL NOT NULL PRIMARY KEY,
@@ -137,16 +135,16 @@ CREATE TABLE nimrod_kv_config(
 	value TEXT NOT NULL
 );
 
-/*
-** TEXT get_property(TEXT key);
-*/
+--
+-- TEXT get_property(TEXT key);
+--
 CREATE OR REPLACE FUNCTION get_property(_key nimrod_kv_config_key) RETURNS TEXT AS $$
 	SELECT value FROM nimrod_kv_config WHERE key = _key;
 $$ LANGUAGE SQL;
 
-/*
-** TEXT set_property(TEXT key, TEXT value);
-*/
+--
+-- TEXT set_property(TEXT key, TEXT value);
+--
 CREATE OR REPLACE FUNCTION set_property(_key nimrod_kv_config_key, _value TEXT) RETURNS TEXT AS $$
 DECLARE
 	old_value TEXT;
@@ -170,9 +168,9 @@ CREATE OR REPLACE FUNCTION get_properties() RETURNS SETOF nimrod_kv_config AS $$
 	SELECT * FROM nimrod_kv_config;
 $$ LANGUAGE SQL;
 
-/*
-** Agent definitions.
-*/
+--
+-- Agent definitions.
+--
 DROP TABLE IF EXISTS nimrod_agents CASCADE;
 CREATE TABLE nimrod_agents(
 	id BIGSERIAL NOT NULL PRIMARY KEY,
@@ -180,9 +178,9 @@ CREATE TABLE nimrod_agents(
 	path TEXT NOT NULL
 );
 
-/*
-** POSIX uname (system,machine) -> agent mappings
-*/
+--
+-- POSIX uname (system,machine) -> agent mappings
+--
 DROP TABLE IF EXISTS nimrod_agent_mappings CASCADE;
 CREATE TABLE nimrod_agent_mappings(
 	id BIGSERIAL NOT NULL PRIMARY KEY,
