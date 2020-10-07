@@ -78,7 +78,7 @@ public class DBResourceHelpers extends DBBaseHelper {
 		this.qGetAssignedResources = prepareStatement("SELECT * FROM get_assigned_resources(?)");
 		this.qAssignResource = prepareStatement("SELECT * FROM assign_resource(?, ?, make_uri(?, ?, ?, ?))");
 		this.qUnassignResource = prepareStatement("DELETE FROM nimrod_resource_assignments WHERE resource_id = ? AND exp_id = ?");
-		this.qGetAssignmentStatus = prepareStatement("SELECT * FROM get_assignment_status(?, ?)");
+		this.qGetAssignmentStatus = prepareStatement("SELECT * FROM nimrod_full_resource_assignments WHERE resource_id = ? AND exp_id = ?");
 
 		this.qIsResourceCapable = prepareStatement("SELECT is_resource_capable(?, ?) AS value");
 		this.qAddResourceCaps = prepareStatement("SELECT add_resource_caps(?, ?)");
