@@ -80,7 +80,7 @@ public class DBResourceHelpers extends DBBaseHelper {
 		this.qUnassignResource = prepareStatement("DELETE FROM nimrod_resource_assignments WHERE resource_id = ? AND exp_id = ?");
 		this.qGetAssignmentStatus = prepareStatement("SELECT * FROM nimrod_full_resource_assignments WHERE resource_id = ? AND exp_id = ?");
 
-		this.qIsResourceCapable = prepareStatement("SELECT is_resource_capable(?, ?) AS value");
+		this.qIsResourceCapable = prepareStatement("SELECT COUNT(id) > 0 FROM nimrod_resource_capabilities WHERE resource_id = ? AND exp_id = ?");
 		this.qAddResourceCaps = prepareStatement("INSERT INTO nimrod_resource_capabilities(resource_id, exp_id) VALUES (?, ?) ON CONFLICT DO NOTHING");
 		this.qRemoveResourceCaps = prepareStatement("DELETE FROM nimrod_resource_capabilities WHERE resource_id = ? AND exp_id = ?");
 
@@ -202,7 +202,7 @@ public class DBResourceHelpers extends DBBaseHelper {
 				return false;
 			}
 
-			return rs.getBoolean("value");
+			return rs.getBoolean(1);
 		}
 	}
 
