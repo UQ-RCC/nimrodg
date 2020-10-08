@@ -451,9 +451,25 @@ public class ParseTests {
 	}
 
 	@Test
-	public void commentsAboveParametersTest() throws RunfileBuildException {
-		CompiledRun rr = getRunBuilder(getString("// I AM A COMMENT\n"
+	public void commentsTest() throws RunfileBuildException {
+		getRunBuilder(getString(
+				"// I AM A COMMENT\n"
 				+ "parameter x integer range from 0 to 100 step 1\n"
+				+ "task main\n"
+				+ "    onerror fail\n"
+				+ "endtask")).build();
+
+		getRunBuilder(getString(
+				"# I AM ALSO A COMMENT\n"
+					+ "parameter x integer range from 0 to 100 step 1\n"
+					+ "task main\n"
+					+ "    onerror fail\n"
+					+ "endtask")).build();
+
+		getRunBuilder(getString(
+				"parameter x integer range from 0 to 100 step 1\n"
+				+ "# Comment 1\n"
+				+ "// Comment 2\n"
 				+ "task main\n"
 				+ "    onerror fail\n"
 				+ "endtask")).build();

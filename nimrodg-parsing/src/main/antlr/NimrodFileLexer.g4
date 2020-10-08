@@ -51,7 +51,7 @@ MINUS               : '-' ;
 NEWLINE             : ('\r' '\n'? | '\n' | '\r') ;
 WHITESPACE          : [ \r\t\u000C]+ -> skip ;
 BLOCK_COMMENT       : '/*' .*? '*/'  -> skip ;
-LINE_COMMENT        : '//' ~[\r\n]*  -> skip ;
+LINE_COMMENT        : ('//' | '#') ~[\r\n]*  -> skip ;
 
 ERROR_CHAR          : . ;
 
