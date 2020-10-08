@@ -20,4 +20,4 @@
 /debian/usr/share/nimrod*
 /debian/DEBIAN/control
 /.citemp/
-
+/nimrodg-parsing/src/main/gen/
