@@ -39,31 +39,11 @@ STRING_LITERAL			: '"' SCharSequence? '"' ;
 */
 
 /* Variable and parameter definitions */
-VARIABLE					: 'variable' ;
-PARAMETER				: 'parameter' ;
-
-INDEX					: 'index' ;
-LIST						: 'list' ;
-
-FLOAT					: 'float' ;
-INTEGER					: 'integer' ;
-TEXT						: 'text' ;
-FILES					: 'files' ;
-LABEL					: 'label' ;
-SELECT					: 'select' ;
-ANYOF					: 'anyof' ;
-ONEOF					: 'oneof' ;
-RANGE					: 'range' ;
-FROM						: 'from' ;
-TO						: 'to' ;
-RANDOM					: 'random';
-STEP						: 'step' ;
-POINTS					: 'points' ;
-DEFAULT					: 'default' ;
+VARIABLE    : 'variable'  -> pushMode(VARIABLE_MODE);
+PARAMETER   : 'parameter' -> pushMode(PARAMETER_MODE);
 
 /* Job definitions */
-JOBS						: 'jobs' ;
-ENDJOBS					: 'endjobs' ;
+JOBS        : 'jobs'      -> pushMode(JOBS_MODE);
 
 TASK						: 'task' -> pushMode(TASK_MODE) ;
 
@@ -89,6 +69,63 @@ BLOCK_COMMENT			: '/*' .*? '*/' -> skip ;
 LINE_COMMENT				: '//' ~[\r\n]* -> skip ;
 
 ERROR_CHAR				: . ;
+
+mode PARAMETER_MODE ;
+PARAMETER_FLOAT            : 'float'   ;
+PARAMETER_INTEGER          : 'integer' ;
+PARAMETER_TEXT             : 'text'    ;
+PARAMETER_FILES            : 'files'   ;
+PARAMETER_LABEL            : 'label'   ;
+PARAMETER_SELECT           : 'select'  ;
+PARAMETER_ANYOF            : 'anyof'   ;
+PARAMETER_ONEOF            : 'oneof'   ;
+PARAMETER_RANGE            : 'range'   ;
+PARAMETER_FROM             : 'from'    ;
+PARAMETER_TO               : 'to'      ;
+PAREMETER_RANDOM           : 'random'  ;
+PARAMETER_STEP             : 'step'    ;
+PARAMETER_POINTS           : 'points'  ;
+PAREMETER_DEFAULT          : 'default' ;
+
+PARAMETER_IDENTIFIER       : IDENTIFIER       -> type(IDENTIFIER) ;
+PARAMETER_STRING_LITERAL   : STRING_LITERAL   -> type(STRING_LITERAL) ;
+PARAMETER_INTEGER_CONSTANT : INTEGER_CONSTANT -> type(INTEGER_CONSTANT);
+PARAMETER_DECIMAL_CONSTANT : DECIMAL_CONSTANT -> type(DECIMAL_CONSTANT);
+PARAMETER_PLUS             : PLUS             -> type(PLUS);
+PARAMETER_MINUS            : MINUS            -> type(MINUS);
+
+PARAMETER_WHITESPACE       : WHITESPACE       -> skip ;
+PARAMETER_NEWLINE          : NEWLINE          -> type(NEWLINE), popMode ;
+PARAMETER_BLOCK_COMMENT    : BLOCK_COMMENT    -> skip ;
+PARAMETER_LINE_COMMENT     : LINE_COMMENT     -> skip ;
+PARAMETER_ERROR_CHAR       : ERROR_CHAR       -> type(ERROR_CHAR) ;
+
+mode VARIABLE_MODE ;
+PARAMETER_INDEX            : 'index'   ;
+PARAMETER_LIST             : 'list'    ;
+
+VARIABLE_IDENTIFIER        : IDENTIFIER       -> type(IDENTIFIER) ;
+VARIABLE_STRING_LITERAL    : STRING_LITERAL   -> type(STRING_LITERAL) ;
+VARIABLE_INTEGER_CONSTANT  : INTEGER_CONSTANT -> type(INTEGER_CONSTANT);
+VARIABLE_DECIMAL_CONSTANT  : DECIMAL_CONSTANT -> type(DECIMAL_CONSTANT);
+VARIABLE_PLUS              : PLUS             -> type(PLUS);
+VARIABLE_MINUS             : MINUS            -> type(MINUS);
+
+VARIABLE_WHITESPACE        : WHITESPACE       -> skip ;
+VARIABLE_NEWLINE           : NEWLINE          -> type(NEWLINE), popMode ;
+VARIABLE_BLOCK_COMMENT     : BLOCK_COMMENT    -> skip ;
+VARIABLE_LINE_COMMENT      : LINE_COMMENT     -> skip ;
+VARIABLE_ERROR_CHAR        : ERROR_CHAR       -> type(ERROR_CHAR) ;
+
+mode JOBS_MODE ;
+JOBS_ENDJOBS          : 'endjobs'        -> popMode ;
+JOBS_INTEGER_CONSTANT : INTEGER_CONSTANT -> type(INTEGER_CONSTANT);
+
+JOBS_WHITESPACE       : WHITESPACE       -> skip ;
+JOBS_NEWLINE          : NEWLINE          -> type(NEWLINE) ;
+JOBS_BLOCK_COMMENT    : BLOCK_COMMENT    -> skip ;
+JOBS_LINE_COMMENT     : LINE_COMMENT     -> skip ;
+JOBS_ERROR_CHAR       : ERROR_CHAR       -> type(ERROR_CHAR) ;
 
 /*
 ** Task mode, this uses almost completely different rules.

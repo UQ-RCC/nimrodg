@@ -40,23 +40,23 @@ negativeNumber		: negativeInteger | negativeDecimal ;
 variableName			: IDENTIFIER ;
 variableIndex		: INTEGER_CONSTANT ;
 variableValue		: STRING_LITERAL | number ;
-variableStatement	: VARIABLE variableName INDEX variableIndex LIST variableValue+ NEWLINE+ ;
+variableStatement	: VARIABLE variableName PARAMETER_INDEX variableIndex PARAMETER_LIST variableValue+ NEWLINE+ ;
 
 jobIndex			: INTEGER_CONSTANT ;
 jobVarIndex			: INTEGER_CONSTANT ;
 jobEntry			: jobIndex jobVarIndex+ NEWLINE+ ;
-jobsBlock			: JOBS NEWLINE+ jobEntry* ENDJOBS NEWLINE+ ;
+jobsBlock			: JOBS NEWLINE+ jobEntry* JOBS_ENDJOBS NEWLINE+ ;
 
 parameterName		: IDENTIFIER ;
 parameterLabel		: STRING_LITERAL ;
-parameterType		: FLOAT | INTEGER | TEXT | FILES ;
+parameterType		: PARAMETER_FLOAT | PARAMETER_INTEGER | PARAMETER_TEXT | PARAMETER_FILES ;
 
 
 
 domainDefault		: variableValue ;
-domainRange			: RANGE FROM number TO number (STEP positiveNumber | POINTS positiveInteger)? ;
-domainRandom		: RANDOM FROM number TO number (POINTS positiveInteger)? ;
-domainAnyof			: SELECT ANYOF variableValue+ ;
+domainRange			: PARAMETER_RANGE PARAMETER_FROM number PARAMETER_TO number (PARAMETER_STEP positiveNumber | PARAMETER_POINTS positiveInteger)? ;
+domainRandom		: PAREMETER_RANDOM PARAMETER_FROM number PARAMETER_TO number (PARAMETER_POINTS positiveInteger)? ;
+domainAnyof			: PARAMETER_SELECT PARAMETER_ANYOF variableValue+ ;
 
 parameterDomain		: domainDefault
 					| domainRange
@@ -64,7 +64,7 @@ parameterDomain		: domainDefault
 					| domainAnyof
 					;
 
-parameterStatement	: PARAMETER parameterName (LABEL parameterLabel)? (parameterType parameterDomain)? NEWLINE+ ;
+parameterStatement	: PARAMETER parameterName (PARAMETER_LABEL parameterLabel)? (parameterType parameterDomain)? NEWLINE+ ;
 
 /*
 ** Task Mode
@@ -91,7 +91,7 @@ sliteral			: STRING_LITERAL
 					| TM_ACTION
 					;
 
-literal				: STRING_LITERAL | TM_LITERAL_ARG ;
+literal				: STRING_LITERAL | TM_LITERAL_ARG | INTEGER_CONSTANT;
 
 onerrorCommand		: TM_ONERROR TM_ACTION ;
 

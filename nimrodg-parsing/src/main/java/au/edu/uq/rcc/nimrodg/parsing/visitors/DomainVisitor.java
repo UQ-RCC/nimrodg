@@ -85,11 +85,11 @@ public class DomainVisitor extends NimrodFileParserBaseVisitor<ValueSupplier> {
 		long end = Long.parseLong(_stop.getText(), 10);
 
 		int step;
-		if(ctx.POINTS() != null) {
+		if(ctx.PARAMETER_POINTS() != null) {
 			/* Generate uniformly-spaced points */
 			int npoints = Integer.parseInt(ctx.positiveInteger().getText(), 10);
 			step = (int)Math.max(0.0, (end - start) / (double)npoints);
-		} else if(ctx.STEP() != null) {
+		} else if(ctx.PARAMETER_STEP() != null) {
 			/* Use the step value to generate points */
 			NimrodFileParser.PositiveIntegerContext ictx = ctx.positiveNumber().positiveInteger();
 			if(ictx == null) {
@@ -112,10 +112,10 @@ public class DomainVisitor extends NimrodFileParserBaseVisitor<ValueSupplier> {
 		double end = Double.parseDouble(nos.get(1).getText());
 
 		double step;
-		if(ctx.POINTS() != null) {
+		if(ctx.PARAMETER_POINTS() != null) {
 			int npoints = Integer.parseInt(ctx.positiveInteger().getText(), 10);
 			step = Math.max(0.0, (end - start) / (double)npoints);
-		} else if(ctx.STEP() != null) {
+		} else if(ctx.PARAMETER_STEP() != null) {
 			step = Double.parseDouble(ctx.positiveNumber().getText());
 		} else {
 			step = 1.0;
