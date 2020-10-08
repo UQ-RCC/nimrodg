@@ -31,11 +31,16 @@ CREATE TABLE nimrod_experiments(
     state       nimrod_experiment_state NOT NULL DEFAULT 'STOPPED'::nimrod_experiment_state,
     work_dir    TEXT NOT NULL UNIQUE,
     created     TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    ncpus       BIGINT NOT NULL DEFAULT 0 CHECK(ncpus >= 0),
+    memory      BIGINT NOT NULL DEFAULT 0 CHECK(memory >= 0),
+    walltime    BIGINT NOT NULL DEFAULT 0 CHECK(walltime >= 0),
+    scratch     BIGINT NOT NULL DEFAULT 0 CHECK(scratch >= 0),
     -- NB: The variables are stored twice:
     -- - The first copy, here, is for quick lookups so we don't have to use nimrod_full_experiments.
     -- - The second copy, in nimrod_variables, is used for substitution validation so it contains
     --   the implicit ones too.
     variables   TEXT[] NOT NULL,
+    properties  HSTORE NOT NULL DEFAULT ''::HSTORE,
     path        nimrod_path NOT NULL UNIQUE
 );
 -- Use add_compiled_experiment() for adding. There is no facility for adding them manually.

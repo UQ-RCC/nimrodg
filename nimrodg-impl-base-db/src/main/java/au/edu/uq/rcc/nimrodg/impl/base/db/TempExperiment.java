@@ -96,11 +96,6 @@ public final class TempExperiment {
 		}
 
 		@Override
-		public JobSpecification getJobSpecification() {
-			return JobSpecification.empty();
-		}
-
-		@Override
 		public Map<Task.Name, Task> getTasks() {
 			return Collections.unmodifiableMap(tasks);
 		}

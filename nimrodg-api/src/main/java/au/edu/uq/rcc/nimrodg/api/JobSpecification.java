@@ -22,6 +22,11 @@ public class JobSpecification {
 	 */
 	public final long scratch;
 
+	public static final String PROPERTY_NCPUS = "ncpus";
+	public static final String PROPERTY_MEMORY = "memory";
+	public static final String PROPERTY_WALLTIME = "walltime";
+	public static final String PROPERTY_SCRATCH = "scratch";
+
 	public JobSpecification(long ncpus, long memory, long walltime, long scratch) {
 		if((this.ncpus = ncpus) < 0) {
 			throw new IllegalArgumentException("ncpus cannot be < 0");

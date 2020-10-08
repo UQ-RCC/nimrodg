@@ -21,9 +21,15 @@ package au.edu.uq.rcc.nimrodg.api;
 
 import java.time.Instant;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 public interface Experiment extends NimrodEntity {
+
+	String PROPERTY_NCPUS = "ncpus";
+	String PROPERTY_MEMORY = "memory";
+	String PROPERTY_WALLTIME = "walltime";
+	String PROPERTY_SCRATCH = "scratch";
 
 	enum State {
 		STOPPED,
@@ -41,7 +47,10 @@ public interface Experiment extends NimrodEntity {
 
 	Set<String> getVariables();
 
-	JobSpecification getJobSpecification();
+	@Deprecated
+	default JobSpecification getJobSpecification() {
+		return JobSpecification.empty();
+	}
 
 	Map<Task.Name, Task> getTasks();
 
@@ -55,6 +64,30 @@ public interface Experiment extends NimrodEntity {
 	boolean isPersistent();
 
 	boolean isActive();
+
+	default Optional<String> getProperty(String key) {
+		return Optional.empty();
+	}
+
+	default Map<String, String> getProperties() {
+		return Map.of();
+	}
+
+//	default long getRequiredCpus() {
+//		return getProperty(PROPERTY_NCPUS).map(Long::parseLong).orElse(0L);
+//	}
+//
+//	default long getRequiredMemory() {
+//		return getProperty(PROPERTY_MEMORY).map(Long::parseLong).orElse(0L);
+//	}
+//
+//	default long getRequiredWalltime() {
+//		return getProperty(PROPERTY_WALLTIME).map(Long::parseLong).orElse(0L);
+//	}
+//
+//	default long getRequiredScratch() {
+//		return getProperty(PROPERTY_SCRATCH).map(Long::parseLong).orElse(0L);
+//	}
 
 	static String stateToString(State s) {
 		switch(s) {
