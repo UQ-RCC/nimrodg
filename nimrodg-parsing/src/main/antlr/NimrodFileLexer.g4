@@ -36,6 +36,7 @@ STRING_LITERAL      : '"' SCharSequence? '"' ;
 VARIABLE            : 'variable'  -> pushMode(VARIABLE_MODE);
 PARAMETER           : 'parameter' -> pushMode(PARAMETER_MODE);
 JOBS                : 'jobs'      -> pushMode(JOBS_MODE);
+PROPS               : 'props' -> pushMode(PROPS_MODE);
 TASK                : 'task'      -> pushMode(TASK_MODE) ;
 
 IDENTIFIER          : NONDIGIT (NONDIGIT|DIGIT)* ;
@@ -112,6 +113,49 @@ JOBS_BLOCK_COMMENT    : BLOCK_COMMENT    -> skip ;
 JOBS_LINE_COMMENT     : LINE_COMMENT     -> skip ;
 JOBS_ERROR_CHAR       : ERROR_CHAR       -> type(ERROR_CHAR) ;
 
+mode TIMESPEC_MODE ;
+TIMESPEC_DAY               : 'd';
+TIMESPEC_HOUR              : 'h';
+TIMESPEC_MINUTE            : 'm';
+TIMESPEC_SECOND            : 's';
+TIMESPEC_COLON             : ':' ;
+TIMESPEC_INTEGER_CONSTANT  : INTEGER_CONSTANT -> type(INTEGER_CONSTANT);
+TIMESPEC_WHITESPACE        : WHITESPACE       -> skip ;
+TIMESPEC_NEWLINE           : NEWLINE          -> type(NEWLINE), popMode ;
+TIMESPEC_BLOCK_COMMENT     : BLOCK_COMMENT    -> skip ;
+TIMESPEC_LINE_COMMENT      : LINE_COMMENT     -> skip ;
+TIMESPEC_ERROR_CHAR        : ERROR_CHAR       -> type(ERROR_CHAR) ;
+
+mode SIZESPEC_MODE ;
+SIZESPEC                   : [EPTGMK]? 'i'? [bB] ;
+SIZESPEC_INTEGER_CONSTANT  : INTEGER_CONSTANT -> type(INTEGER_CONSTANT);
+SIZESPEC_WHITESPACE        : WHITESPACE       -> skip ;
+SIZESPEC_NEWLINE           : NEWLINE          -> type(NEWLINE), popMode ;
+SIZESPEC_BLOCK_COMMENT     : BLOCK_COMMENT    -> skip ;
+SIZESPEC_LINE_COMMENT      : LINE_COMMENT     -> skip ;
+SIZESPEC_ERROR_CHAR        : ERROR_CHAR       -> type(ERROR_CHAR) ;
+
+mode PROPS_MODE ;
+
+PM_ENDPROPS         : 'endprops'    -> popMode ;
+PM_NCPUS            : 'ncpus' ;
+PM_MEMORY           : 'memory'      -> pushMode(SIZESPEC_MODE) ;
+PM_SCRATCH          : 'scratch'     -> pushMode(SIZESPEC_MODE) ;
+PM_WALLTIME         : 'walltime'    -> pushMode(TIMESPEC_MODE) ;
+
+PM_INTEGER_CONSTANT : INTEGER_CONSTANT -> type(INTEGER_CONSTANT) ;
+
+fragment
+PM_KEY_COMPONENT    : (PM_INTEGER_CONSTANT | DIGIT | NONDIGIT)+ ;
+PM_KEY              : PM_KEY_COMPONENT ('.' PM_KEY_COMPONENT)* ;
+PM_VALUE            : (PM_KEY | [:./<>&?\-])+;
+PM_STRING_LITERAL   : STRING_LITERAL -> type(STRING_LITERAL) ;
+
+PM_NEWLINE          : NEWLINE       -> type(NEWLINE) ;
+PM_WHITESPACE       : WHITESPACE    -> skip ;
+PM_BLOCK_COMMENT    : BLOCK_COMMENT -> skip ;
+PM_LINE_COMMENT     : LINE_COMMENT  -> skip ;
+PM_ERROR_CHAR       : ERROR_CHAR    -> type(ERROR_CHAR) ;
 
 mode TASK_MODE ;
 TM_TASKNAME             : 'nodestart' | 'main' ;

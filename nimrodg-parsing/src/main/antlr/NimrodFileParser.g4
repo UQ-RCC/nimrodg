@@ -91,7 +91,7 @@ sliteral            : STRING_LITERAL
                     | TM_ACTION
                     ;
 
-literal             : STRING_LITERAL | TM_LITERAL_ARG | INTEGER_CONSTANT;
+literal             : STRING_LITERAL | TM_LITERAL_ARG | INTEGER_CONSTANT | PM_KEY | PM_VALUE;
 
 onerrorCommand      : TM_ONERROR TM_ACTION ;
 
@@ -120,10 +120,31 @@ taskCommand         : onerrorCommand
 variableBlock       : (variableStatement | parameterStatement)+;
 taskBlock           : TASK TM_TASKNAME NEWLINE+ (taskCommand NEWLINE+)* TM_ENDTASK NEWLINE* ;
 
+sizeSpec            : positiveInteger SIZESPEC? ;
+timeSpecHMS         : positiveInteger (TIMESPEC_COLON positiveInteger (TIMESPEC_COLON positiveInteger)?)? ;
+timeSpecDMY         : (positiveInteger TIMESPEC_DAY)? (positiveInteger TIMESPEC_HOUR)? (positiveInteger TIMESPEC_MINUTE)? (positiveInteger TIMESPEC_SECOND)? ;
+timeSpec            : timeSpecHMS | timeSpecDMY;
+
+ncpusProperty       : PM_NCPUS positiveInteger ;
+memoryProperty      : PM_MEMORY sizeSpec ;
+walltimeProperty    : PM_WALLTIME timeSpec ;
+scratchProperty     : PM_SCRATCH sizeSpec ;
+genericProperty     : PM_KEY literal ;
+
+property            : ncpusProperty
+                    | memoryProperty
+                    | walltimeProperty
+                    | scratchProperty
+                    | genericProperty
+                    ;
+
+propsBlock          : PROPS NEWLINE+ (property NEWLINE+)* PM_ENDPROPS NEWLINE* ;
+
 nimrodFile          :
 	NEWLINE*
 	variableBlock
 	jobsBlock?
+	propsBlock?
 	taskBlock*
 	EOF
 	;
