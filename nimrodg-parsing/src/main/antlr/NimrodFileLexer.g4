@@ -25,50 +25,35 @@ package au.edu.uq.rcc.nimrodg.parsing.antlr;
 }
 
 fragment
-NONDIGIT					: [a-zA-Z_];
-
+NONDIGIT            : [a-zA-Z_];
 fragment
-DIGIT					: [0-9];
-
-
-STRING_LITERAL			: '"' SCharSequence? '"' ;
-
-
-/*
-** Reserved Words
-*/
-
-/* Variable and parameter definitions */
-VARIABLE    : 'variable'  -> pushMode(VARIABLE_MODE);
-PARAMETER   : 'parameter' -> pushMode(PARAMETER_MODE);
-
-/* Job definitions */
-JOBS        : 'jobs'      -> pushMode(JOBS_MODE);
-
-TASK						: 'task' -> pushMode(TASK_MODE) ;
-
-IDENTIFIER				: NONDIGIT (NONDIGIT|DIGIT)* ;
-
-INTEGER_CONSTANT			: DIGIT+ ;
-
+DIGIT               : [0-9];
 fragment
-EXPONENT					: ('e'|'E') ('+'|'-')? DIGIT+ ;
+EXPONENT            : ('e'|'E') ('+'|'-')? DIGIT+ ;
+STRING_LITERAL      : '"' SCharSequence? '"' ;
 
-DECIMAL_CONSTANT			: DIGIT+ '.' DIGIT* EXPONENT?
-						| '.' DIGIT+ EXPONENT?
-						| DIGIT+ EXPONENT
-						;
 
-SEMICOLON				: ';' ;
-PLUS						: '+' ;
-MINUS					: '-' ;
+VARIABLE            : 'variable'  -> pushMode(VARIABLE_MODE);
+PARAMETER           : 'parameter' -> pushMode(PARAMETER_MODE);
+JOBS                : 'jobs'      -> pushMode(JOBS_MODE);
+TASK                : 'task'      -> pushMode(TASK_MODE) ;
 
-NEWLINE					: ('\r' '\n'? | '\n' | '\r') ;
-WHITESPACE				: [ \r\t\u000C]+ -> skip ;
-BLOCK_COMMENT			: '/*' .*? '*/' -> skip ;
-LINE_COMMENT				: '//' ~[\r\n]* -> skip ;
+IDENTIFIER          : NONDIGIT (NONDIGIT|DIGIT)* ;
+INTEGER_CONSTANT    : DIGIT+ ;
+DECIMAL_CONSTANT    : DIGIT+ '.' DIGIT* EXPONENT?
+                    | '.' DIGIT+ EXPONENT?
+                    | DIGIT+ EXPONENT
+                    ;
 
-ERROR_CHAR				: . ;
+PLUS                : '+' ;
+MINUS               : '-' ;
+
+NEWLINE             : ('\r' '\n'? | '\n' | '\r') ;
+WHITESPACE          : [ \r\t\u000C]+ -> skip ;
+BLOCK_COMMENT       : '/*' .*? '*/'  -> skip ;
+LINE_COMMENT        : '//' ~[\r\n]*  -> skip ;
+
+ERROR_CHAR          : . ;
 
 mode PARAMETER_MODE ;
 PARAMETER_FLOAT            : 'float'   ;
@@ -127,52 +112,43 @@ JOBS_BLOCK_COMMENT    : BLOCK_COMMENT    -> skip ;
 JOBS_LINE_COMMENT     : LINE_COMMENT     -> skip ;
 JOBS_ERROR_CHAR       : ERROR_CHAR       -> type(ERROR_CHAR) ;
 
-/*
-** Task mode, this uses almost completely different rules.
-*/
+
 mode TASK_MODE ;
+TM_TASKNAME             : 'nodestart' | 'main' ;
+TM_ENDTASK              : 'endtask' -> popMode ;
 
-TM_TASKNAME				: 'nodestart' | 'main' ;
+TM_ONERROR              : 'onerror' ;
+TM_REDIRECT             : 'redirect' ;
+TM_COPY                 : 'copy' ;
+TM_SHEXEC               : 'shexec' ;
+TM_EXEC                 : 'exec' ;
+TM_LEXEC                : 'lexec' ;
+TM_LPEXEC               : 'lpexec' ;
 
-TM_ENDTASK				: 'endtask' -> popMode ;
-
-TM_ONERROR				: 'onerror' ;
-TM_REDIRECT				: 'redirect' ;
-TM_COPY					: 'copy' ;
-TM_SHEXEC				: 'shexec' ;
-TM_EXEC					: 'exec' ;
-TM_LEXEC					: 'lexec' ;
-TM_LPEXEC				: 'lpexec' ;
-
-TM_APPEND				: 'append' ;
-TM_STDOUT				: 'stdout' ;
-TM_STDERR				: 'stderr' ;
-TM_OFF					: 'off' ;
-TM_TO					: 'to' ;
-TM_CONTEXT				: 'node' | 'root' ;
-TM_ACTION				: 'fail' | 'ignore' ;
+TM_APPEND               : 'append' ;
+TM_STDOUT               : 'stdout' ;
+TM_STDERR               : 'stderr' ;
+TM_OFF                  : 'off' ;
+TM_TO                   : 'to' ;
+TM_CONTEXT              : 'node' | 'root' ;
+TM_ACTION               : 'fail' | 'ignore' ;
 
 fragment
-TM_SUBSTITUTION			: '$' (IDENTIFIER | '{' IDENTIFIER '}');
-
+TM_SUBSTITUTION         : '$' (IDENTIFIER | '{' IDENTIFIER '}');
 fragment
-TM_LITERAL_CHARS			: [./<>&?\-] ;
-
-TM_STRING_LITERAL			: STRING_LITERAL -> type(STRING_LITERAL) ;
-
+TM_LITERAL_CHARS        : [./<>&?\-] ;
 fragment
-TM_LITERAL_COMPONENT		: DIGIT | NONDIGIT | IDENTIFIER | TM_LITERAL_CHARS;
+TM_LITERAL_COMPONENT    : DIGIT | NONDIGIT | IDENTIFIER | TM_LITERAL_CHARS;
 
-TM_LITERAL_ARG			: TM_LITERAL_COMPONENT+ ;
-TM_SLITERAL_ARG			: (TM_LITERAL_COMPONENT | TM_SUBSTITUTION)+ ;
+TM_STRING_LITERAL       : STRING_LITERAL -> type(STRING_LITERAL) ;
+TM_LITERAL_ARG          : TM_LITERAL_COMPONENT+ ;
+TM_SLITERAL_ARG         : (TM_LITERAL_COMPONENT | TM_SUBSTITUTION)+ ;
+TM_COLON                : ':' ;
+TM_CONTINUATION         : '\\' ;
 
-TM_COLON					: ':' ;
+TM_NEWLINE              : NEWLINE -> type(NEWLINE) ;
+TM_WHITESPACE           : WHITESPACE -> skip ;
+TM_BLOCK_COMMENT        : BLOCK_COMMENT -> skip ;
+TM_LINE_COMMENT         : LINE_COMMENT -> skip ;
 
-TM_CONTINUATION			: '\\' ;
-
-TM_NEWLINE				: NEWLINE -> type(NEWLINE) ;
-TM_WHITESPACE			: WHITESPACE -> skip ;
-TM_BLOCK_COMMENT			: BLOCK_COMMENT -> skip ;
-TM_LINE_COMMENT			: LINE_COMMENT -> skip ;
-
-TM_ERROR_CHAR			: ERROR_CHAR -> type(ERROR_CHAR) ;
+TM_ERROR_CHAR           : ERROR_CHAR -> type(ERROR_CHAR) ;
