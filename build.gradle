@@ -60,6 +60,7 @@ dependencies {
 	implementation('au.edu.uq.rcc.nimrodg:nimrodg-api')
 	// FIXME: This capability should be moved into nimrodg-api
 	implementation('au.edu.uq.rcc.nimrodg:nimrodg-internal-api')
+	implementation('au.edu.uq.rcc.nimrodg:nimrodg-impl-base-db')
 	implementation('au.edu.uq.rcc.nimrodg:nimrodg-impl-postgres')
 	implementation('au.edu.uq.rcc.nimrodg:nimrodg-parsing')
 	implementation('au.edu.uq.rcc.nimrodg:nimrodg-resources')

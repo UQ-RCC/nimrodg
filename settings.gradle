@@ -38,6 +38,7 @@ includeBuild('nimrodg') {
     dependencySubstitution {
         substitute(module('au.edu.uq.rcc.nimrodg:nimrodg-api')).with(project(':nimrodg-api'))
         substitute(module('au.edu.uq.rcc.nimrodg:nimrodg-internal-api')).with(project(':nimrodg-internal-api'))
+        substitute(module('au.edu.uq.rcc.nimrodg:nimrodg-impl-base-db')).with(project(':nimrodg-impl-base-db'))
         substitute(module('au.edu.uq.rcc.nimrodg:nimrodg-impl-postgres')).with(project(':nimrodg-impl-postgres'))
         substitute(module('au.edu.uq.rcc.nimrodg:nimrodg-parsing')).with(project(':nimrodg-parsing'))
         substitute(module('au.edu.uq.rcc.nimrodg:nimrodg-resources')).with(project(':nimrodg-resources'))

@@ -8,6 +8,7 @@ import org.springframework.boot.context.properties.ConstructorBinding;
 import org.springframework.web.util.DefaultUriBuilderFactory;
 import org.springframework.web.util.UriBuilder;
 
+import java.nio.file.Paths;
 import java.util.Map;
 
 /* This whole class is boilerplate to get application.yml config into Nimrod's SetupConfig. */
@@ -93,11 +94,11 @@ public class DefaultSetupConfig {
 						.noVerifyPeer(transfer.noVerifyPeer)
 						.noVerifyHost(transfer.noVerifyHost)
 						.build())
-				.agents(agents)
 				.resourceTypes(resourceTypes)
 				.properties(properties);
 
 		agentMap.forEach((s, x) -> x.forEach((m, plat) -> b.agentMapping(s, m, plat)));
+		agents.forEach((plat, path) -> b.agent(plat, Paths.get(path)));
 		return b;
 	}
 }

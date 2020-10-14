@@ -32,9 +32,10 @@ import au.edu.uq.rcc.nimrodg.api.utils.run.RunBuilder;
 import au.edu.uq.rcc.nimrodg.api.utils.run.RunfileBuildException;
 import au.edu.uq.rcc.nimrodg.impl.postgres.NimrodAPIFactoryImpl;
 import au.edu.uq.rcc.nimrodg.parsing.ANTLR4ParseAPIImpl;
-import au.edu.uq.rcc.nimrodg.resource.HPCResourceType;
 import au.edu.uq.rcc.nimrodg.resource.SSHResourceType;
-import au.edu.uq.rcc.nimrodg.resource.cluster.ClusterResourceType;
+import au.edu.uq.rcc.nimrodg.resource.hpc.HPCConfig;
+import au.edu.uq.rcc.nimrodg.resource.hpc.HPCDefinition;
+import au.edu.uq.rcc.nimrodg.resource.hpc.HPCResourceType;
 import au.edu.uq.rcc.nimrodg.resource.ssh.ClientFactories;
 import au.edu.uq.rcc.nimrodg.resource.ssh.TransportFactory;
 import au.edu.uq.rcc.nimrodg.setup.NimrodSetupAPI;
@@ -125,7 +126,7 @@ public class NimrodPortalEndpoints {
 
 	private final Jinjava jinJava;
 	private final String nimrodIniTemplate;
-	private final Map<String, HPCResourceType.HPCDefinition> hpcDefs;
+	private final Map<String, HPCDefinition> hpcDefs;
 
 	@Autowired
 	private JdbcTemplate jdbc;
@@ -247,7 +248,7 @@ public class NimrodPortalEndpoints {
 
 		try(NimrodAPI nimrod = createNimrod(userState.username)) {
 			for(Experiment exp : nimrod.getExperiments()) {
-				exps.add(toJson(exp));
+				exps.add(toJson(nimrod, exp));
 			}
 		}
 
@@ -389,7 +390,7 @@ public class NimrodPortalEndpoints {
 				return ResponseEntity.notFound().build();
 			}
 
-			ObjectNode jExp = toJson(exp);
+			ObjectNode jExp = toJson(nimrod, exp);
 
 			SqlRowSet rs = jdbc.queryForRowSet("SELECT planfile FROM public.portal_planfiles WHERE user_id = ? AND exp_name = ?",
 					userState.id,
@@ -541,34 +542,30 @@ public class NimrodPortalEndpoints {
 		UserState userState = getUserState(jwt);
 
 		try(NimrodAPI nimrod = createNimrod(userState.username)) {
-			HPCResourceType.HPCConfig hpcc = new HPCResourceType.HPCConfig(
-					new ClusterResourceType.ClusterConfig(
-							new SSHResourceType.SSHConfig(
-									nimrod.lookupAgentByPlatform("x86_64-pc-linux-musl"),
-									ClientFactories.LOCAL_FACTORY,
-									new TransportFactory.Config(
-											Optional.empty(),
-											Optional.empty(),
-											new PublicKey[0],
-											Optional.empty(),
-											Optional.empty()
-									),
-									List.of()
+			HPCConfig hpcc = new HPCConfig(
+					new SSHResourceType.SSHConfig(
+							nimrod.lookupAgentByPlatform("x86_64-pc-linux-musl"),
+							ClientFactories.LOCAL_FACTORY,
+							new TransportFactory.Config(
+									Optional.empty(),
+									new PublicKey[0],
+									Optional.empty(),
+									Optional.empty()
 							),
-							addResource.limit,
-							"TMPDIR",
-							new String[0],
-							addResource.maxbatch
+							List.of()
 					),
+					addResource.limit,
+					"TMPDIR",
+					addResource.maxbatch,
 					addResource.ncpu,
 					addResource.mem * 1073741824L,
 					addResource.hour * 3600,
-					Optional.of(addResource.account),
-					Optional.empty(),
-					Optional.of(addResource.machine),
+					120,
+					addResource.account,
+					null,
+					addResource.machine,
 					hpcDefs.get("pbspro")
 			);
-
 
 			Resource res = nimrod.getResource(addResource.name);
 			if(res != null) {
@@ -605,7 +602,7 @@ public class NimrodPortalEndpoints {
 	}
 
 	/* FIXME: These should be in Nimrod proper */
-	private ObjectNode toJson(Experiment exp) {
+	private ObjectNode toJson(NimrodAPI nimrod, Experiment exp) {
 		ArrayNode vars = objectMapper.createArrayNode();
 		exp.getVariables().forEach(vars::add);
 
@@ -614,14 +611,13 @@ public class NimrodPortalEndpoints {
 				.put("state", exp.getState().toString())
 				.put("working_directory", exp.getWorkingDirectory())
 				.put("creation_time", exp.getCreationTime().toString())
-				.put("token", exp.getToken())
 				.put("is_persistent", exp.isPersistent())
 				.put("is_active", exp.isActive());
 
 		on.set("variables", vars);
 		on.set("tasks", javaxJsonToJackson(JsonUtils.toJson(exp.getTasks().values())));
 
-		Collection<Job> jobs = exp.filterJobs(EnumSet.allOf(JobAttempt.Status.class), 0, -1);
+		Collection<Job> jobs = nimrod.filterJobs(exp, EnumSet.allOf(JobAttempt.Status.class), 0, -1);
 		int nComplete = 0, nFailed = 0, nPending = 0, nRunning = 0;
 		for(Job j : jobs) {
 			switch(j.getCachedStatus()) {
