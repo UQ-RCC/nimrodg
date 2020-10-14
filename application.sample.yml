@@ -38,7 +38,9 @@ nimrod:
       no_verify_peer: false
       no_verify_host: false
     transfer:
-      uri: file:///30days/{username}/
+      #uri: file:///30days/{username}/
+      # Default for now, should eventually be sftp://data.qriscloud.org.au/data
+      uri: sftp://{username}@awoonga.rcc.uq.edu.au/QRISdata
       cert: /etc/ssl/certs/ca-bundle.crt
       no_verify_peer: false
       no_verify_host: false
@@ -56,7 +58,7 @@ nimrod:
       nimrod.sched.default.job_buf_refill_threshold: 100
       nimrod.master.heart.expiry_retry_interval: 5
       nimrod.master.heart.expiry_retry_count: 5
-      nimrod.master.heart.interval: 0
+      nimrod.master.heart.interval: 30
       nimrod.master.heart.missed_threshold: 3
       nimrod.master.amqp.tls_protocol: TLSv1.2
 spring:
