@@ -4,7 +4,10 @@ DECLARE
     _count INTEGER;
     _currver INTEGER[];
 BEGIN
-    SELECT oid INTO _oid FROM pg_proc WHERE proname = 'get_schema_version';
+    SELECT oid INTO _oid FROM pg_proc WHERE
+        proname = 'get_schema_version' AND
+        pronamespace = to_regnamespace((SELECT current_schema))::oid
+    ;
 
     IF _oid IS NULL THEN
         RAISE EXCEPTION 'No schema version, is this a Nimrod database?';

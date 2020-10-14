@@ -2,7 +2,10 @@ DO $upgrade$
 DECLARE
     _oid INTEGER;
 BEGIN
-    SELECT oid INTO _oid FROM pg_proc WHERE proname = 'get_schema_version';
+    SELECT oid INTO _oid FROM pg_proc WHERE
+        proname = 'get_schema_version' AND
+        pronamespace = to_regnamespace((SELECT current_schema))::oid
+    ;
 
     IF _oid IS NOT NULL THEN
         RAISE NOTICE 'Nothing to do.';
