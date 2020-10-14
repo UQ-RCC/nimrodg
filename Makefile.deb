@@ -23,11 +23,11 @@ debian/changelog: .git/HEAD
 
 
 ${PACKAGE_FILE}: ${DEBIAN_FILES} debian/changelog
-	debian/rules build
-	fakeroot debian/rules binary
+	$(MAKE) -f debian/rules build
+	fakeroot $(MAKE) -f debian/rules binary
 
 clean: debian/rules
-	debian/rules clean
+	$(MAKE) -f debian/rules clean
 	rm -f debian/changelog ${PACKAGE_FILE}
 
 # dpkg-buildpackage --no-sign -b
