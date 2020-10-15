@@ -222,7 +222,7 @@ public class DBResourceHelpers extends DBBaseHelper {
 				return Optional.empty();
 			}
 
-			return DBUtils.getAssignmentStateUri(rs);
+			return Optional.ofNullable(DBUtils.getPrefixedNimrodUri(rs, "tx_"));
 		}
 	}
 

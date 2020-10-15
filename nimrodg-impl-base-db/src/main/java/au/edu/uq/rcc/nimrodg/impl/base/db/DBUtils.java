@@ -32,7 +32,6 @@ import java.sql.SQLException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-import java.util.Optional;
 import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
@@ -196,10 +195,6 @@ public class DBUtils {
 		}
 
 		return ((JsonString)v).getString();
-	}
-
-	public static Optional<NimrodURI> getAssignmentStateUri(ResultSet rs) throws SQLException {
-		return Optional.ofNullable(DBUtils.getPrefixedNimrodUri(rs, "tx_"));
 	}
 
 	public static MasterResourceType createType(String className) throws ReflectiveOperationException {
