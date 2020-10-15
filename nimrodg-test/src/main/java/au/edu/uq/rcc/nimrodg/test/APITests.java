@@ -738,7 +738,7 @@ public abstract class APITests {
 			Optional<NimrodURI> nuri = api.getAssignmentStatus(res, exp1);
 			Assert.assertTrue(nuri.isPresent());
 
-			URI expUri = res.getTransferUri().uri.resolve(exp1.getWorkingDirectory());
+			URI expUri = res.getTransferUri().uri;
 			NimrodURI txUri = nuri.get();
 			Assert.assertEquals(expUri, txUri.uri.normalize());
 
@@ -759,7 +759,7 @@ public abstract class APITests {
 			Optional<NimrodURI> nuri = api.getAssignmentStatus(res2, exp1);
 			Assert.assertTrue(nuri.isPresent());
 
-			URI expUri = api.getConfig().getTransferUri().uri.resolve(exp1.getWorkingDirectory());
+			URI expUri = api.getConfig().getTransferUri().uri;
 			NimrodURI txUri = nuri.get();
 			Assert.assertEquals(expUri, txUri.uri.normalize());
 
@@ -776,7 +776,7 @@ public abstract class APITests {
 			Optional<NimrodURI> uri = api.getAssignmentStatus(res3, exp1);
 
 			Assert.assertTrue(uri.isPresent());
-			Assert.assertEquals(URI.create("file:/path/to/storage/root/exp1/?key1=val1&key2=val2"), uri.get().uri);
+			Assert.assertEquals(URI.create("file:/path/to/storage/root/?key1=val1&key2=val2"), uri.get().uri);
 		}
 
 		Resource res4 = api.addResource("test4", "dummy", JsonValue.EMPTY_JSON_OBJECT, null,
