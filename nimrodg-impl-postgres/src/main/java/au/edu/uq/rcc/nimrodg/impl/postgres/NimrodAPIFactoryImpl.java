@@ -35,7 +35,7 @@ import java.util.Properties;
 public class NimrodAPIFactoryImpl implements NimrodAPIDatabaseFactory {
 
 	/* Follow Semver 2.0 for these. */
-	public static final int SCHEMA_MAJOR = 3;
+	public static final int SCHEMA_MAJOR = 4;
 	public static final int SCHEMA_MINOR = 0;
 	public static final int SCHEMA_PATCH = 0;
 
