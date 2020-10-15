@@ -199,32 +199,7 @@ public class DBUtils {
 	}
 
 	public static Optional<NimrodURI> getAssignmentStateUri(ResultSet rs) throws SQLException {
-		NimrodURI nuri = DBUtils.getPrefixedNimrodUri(rs, "tx_");
-		if(nuri == null) {
-			return Optional.empty();
-		}
-
-		String workDir = rs.getString("work_dir");
-		if(workDir != null) {
-			URI uri;
-			try {
-				uri = new URI(
-						nuri.uri.getScheme(),
-						nuri.uri.getUserInfo(),
-						nuri.uri.getHost(),
-						nuri.uri.getPort(),
-						nuri.uri.getPath() + workDir,
-						nuri.uri.getQuery(),
-						null
-				);
-			} catch(URISyntaxException e) {
-				throw new RuntimeException(e);
-			}
-
-			return Optional.of(NimrodURI.create(uri, nuri.certPath, nuri.noVerifyPeer, nuri.noVerifyHost));
-		} else {
-			return Optional.of(nuri);
-		}
+		return Optional.ofNullable(DBUtils.getPrefixedNimrodUri(rs, "tx_"));
 	}
 
 	public static MasterResourceType createType(String className) throws ReflectiveOperationException {
