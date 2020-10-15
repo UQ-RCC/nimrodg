@@ -496,7 +496,7 @@ public class SQLite3DB extends SQLUUUUU<NimrodException.DbError> implements Nimr
 	}
 
 	@Override
-	public synchronized boolean assignResource(TempResource.Impl node, TempExperiment.Impl exp, Optional<NimrodURI> txUri) throws SQLException {
+	public synchronized boolean assignResource(TempResource.Impl node, TempExperiment.Impl exp, NimrodURI txUri) throws SQLException {
 		return resourceHelpers.assignResource(node.base.id, exp.base.id, txUri);
 	}
 

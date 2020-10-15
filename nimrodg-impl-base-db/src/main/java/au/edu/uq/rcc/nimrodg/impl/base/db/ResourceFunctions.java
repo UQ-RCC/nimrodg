@@ -58,7 +58,7 @@ public interface ResourceFunctions<T extends Resource, E extends Experiment, A e
 	//-----------------ASSIGNMENTS-----------------//
 	Collection<T> getAssignedResources(E exp) throws X;
 
-	boolean assignResource(T node, E exp, Optional<NimrodURI> txUri) throws X;
+	boolean assignResource(T node, E exp, NimrodURI txUri) throws X;
 
 	boolean unassignResource(T node, E exp) throws X;
 

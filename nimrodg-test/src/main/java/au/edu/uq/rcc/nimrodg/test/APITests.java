@@ -721,7 +721,7 @@ public abstract class APITests {
 
 		/* Test a with a custom experiment mapping. */
 		{
-			api.assignResource(res, exp1, Optional.ofNullable(NimrodURI.create(URI.create("file:///some/other/path/to/root/"), null, null, null)));
+			api.assignResource(res, exp1, NimrodURI.create(URI.create("file:///some/other/path/to/root/"), null, null, null));
 
 			Optional<NimrodURI> nuri = api.getAssignmentStatus(res, exp1);
 			Assert.assertTrue(nuri.isPresent());
@@ -785,7 +785,7 @@ public abstract class APITests {
 
 		{
 			URI assUri = URI.create("file:///some/other/path/to/root/?with_parameters=1&more_parameters=yes");
-			api.assignResource(res4, exp1, Optional.ofNullable(NimrodURI.create(assUri, null, null, null)));
+			api.assignResource(res4, exp1, NimrodURI.create(assUri, null, null, null));
 			Optional<NimrodURI> uri = api.getAssignmentStatus(res4, exp1);
 
 			Assert.assertTrue(uri.isPresent());

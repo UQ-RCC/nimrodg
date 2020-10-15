@@ -162,10 +162,10 @@ public class DBResourceHelpers extends DBBaseHelper {
 		}
 	}
 
-	public boolean assignResource(long resId, long expId, Optional<NimrodURI> txUri) throws SQLException {
+	public boolean assignResource(long resId, long expId, NimrodURI txUri) throws SQLException {
 		qAssignResource.setLong(1, resId);
 		qAssignResource.setLong(2, expId);
-		DBUtils.setNimrodUri(qAssignResource, 3, txUri.orElse(null));
+		DBUtils.setNimrodUri(qAssignResource, 3, txUri);
 
 		try(ResultSet rs = qAssignResource.executeQuery()) {
 			return rs.next();

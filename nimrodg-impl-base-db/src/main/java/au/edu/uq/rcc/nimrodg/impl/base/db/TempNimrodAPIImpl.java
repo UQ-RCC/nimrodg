@@ -178,7 +178,7 @@ public abstract class TempNimrodAPIImpl implements NimrodAPI, NimrodMasterAPI {
 	}
 
 	@Override
-	public void assignResource(Resource _res, Experiment _exp, Optional<NimrodURI> txUri) {
+	public void assignResource(Resource _res, Experiment _exp, NimrodURI txUri) {
 		db.runSQL(() -> db.assignResource(validateResource(_res), validateExperiment(_exp), txUri));
 	}
 
