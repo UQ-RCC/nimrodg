@@ -5,7 +5,7 @@ BEGIN TRANSACTION;
 --
 -- Check our schema is the correct version.
 --
-UPDATE nimrod_schema_version SET major = 1, minor = 0, patch = 0;
+UPDATE nimrod_schema_version SET major = 2, minor = 0, patch = 0;
 
 --
 -- SQLite's ADD COLUMN support is minimal.
@@ -55,6 +55,6 @@ END;
 -- All changes done, now actually update the version.
 --
 DELETE FROM nimrod_schema_version;
-INSERT INTO nimrod_schema_version(major, minor, patch) VALUES(1, 1, 0);
+INSERT INTO nimrod_schema_version(major, minor, patch) VALUES(2, 1, 0);
 
 COMMIT;
