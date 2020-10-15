@@ -108,7 +108,7 @@ CREATE TABLE nimrod_schema_version(
 );
 
 INSERT INTO nimrod_schema_version(major, minor, patch)
-VALUES (2, 1, 0);
+VALUES (3, 0, 0);
 
 --
 -- SQLite doesn't have stored procedures, so abuse a trigger to compare a schema version.
