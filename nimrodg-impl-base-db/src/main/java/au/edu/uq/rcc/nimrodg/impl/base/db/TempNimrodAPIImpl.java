@@ -198,19 +198,17 @@ public abstract class TempNimrodAPIImpl implements NimrodAPI, NimrodMasterAPI {
 
 		List<ResourceType> tl = new ArrayList<>();
 		for(Map.Entry<String, String> e : types) {
-			ResourceType t;
-			try {
-				tl.add(DBUtils.createType(e.getValue()));
-			} catch(ReflectiveOperationException ex) {
-				throw new NimrodException(ex);
-			}
+			tl.add(createResourceType(e));
 		}
 		return tl;
 	}
 
 	@Override
 	public ResourceType getResourceTypeInfo(String name) {
-		Map.Entry<String, String> t = db.runSQL(() -> db.getResourceTypeInfo(name).orElse(null));
+		return createResourceType(db.runSQL(() -> db.getResourceTypeInfo(name).orElse(null)));
+	}
+
+	private ResourceType createResourceType(Map.Entry<String, String> t) {
 		if(t == null) {
 			return null;
 		}
