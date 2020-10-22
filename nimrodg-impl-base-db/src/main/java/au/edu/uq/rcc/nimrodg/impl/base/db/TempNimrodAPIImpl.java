@@ -151,13 +151,22 @@ public abstract class TempNimrodAPIImpl implements NimrodAPI, NimrodMasterAPI {
 			throw new IllegalArgumentException();
 		}
 
+		List<String> errors = new ArrayList<>();
 		return db.runSQLTransaction(() -> {
+			/* Multiple DB hits, but this isn't really a problem right now. */
+			ResourceType rt = db.getResourceTypeInfo(type)
+					.map(this::createResourceType)
+					.orElseThrow(() -> new NimrodException.InvalidResourceType(type));
+
+			if(!rt.validateConfiguration(this, config, errors)) {
+				throw new NimrodException.InvalidResourceConfiguration(rt, errors);
+			}
+
 			Optional<TempResource.Impl> res = db.getResource(name);
 			if(res.isPresent()) {
 				throw new NimrodException.ResourceExists(res.get());
 			}
 
-			// TODO: Validate configuration.
 			return db.addResource(name, type, config, amqpUri, txUri);
 		});
 	}
