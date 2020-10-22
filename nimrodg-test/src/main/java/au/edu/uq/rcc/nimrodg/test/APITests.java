@@ -57,6 +57,7 @@ import org.junit.Test;
 
 import javax.json.Json;
 import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
 import javax.json.JsonValue;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -818,6 +819,21 @@ public abstract class APITests {
 
 		jobs = new ArrayList<>(api.filterJobs(exp, EnumSet.allOf(JobAttempt.Status.class), 0, 0));
 		Assert.assertEquals(1, jobs.size());
+	}
+
+	@Test(expected = NimrodException.InvalidResourceConfiguration.class)
+	public void invalidResourceConfigTest() {
+		NimrodAPI api = getNimrod();
+
+		/* The dummy resource expects an empty json object. */
+		api.addResource("test", "dummy", Json.createObjectBuilder()
+				.add("x", 1).build(), null, null);
+	}
+
+	@Test(expected = NimrodException.InvalidResourceType.class)
+	public void invalidResourceTypeTest() {
+		NimrodAPI api = getNimrod();
+		api.addResource("test", "dummy2", JsonValue.EMPTY_JSON_OBJECT, null, null);
 	}
 
 	@Test

@@ -22,6 +22,8 @@ package au.edu.uq.rcc.nimrodg.test;
 import au.edu.uq.rcc.nimrodg.api.Actuator;
 import java.io.PrintStream;
 import javax.json.JsonStructure;
+import javax.json.JsonValue;
+
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.api.AgentProvider;
 import au.edu.uq.rcc.nimrodg.api.MasterResourceType;
@@ -49,6 +51,17 @@ public class DummyResourceType implements MasterResourceType {
 
 	@Override
 	public boolean validateConfiguration(AgentProvider ap, JsonStructure cfg, List<String> errors) {
+		/* Expects an empty JSON object. */
+		if(cfg == null || cfg.getValueType() != JsonValue.ValueType.OBJECT) {
+			errors.add("Config is either null or not an object");
+			return false;
+		}
+
+		if(!cfg.asJsonObject().isEmpty()) {
+			errors.add("Config must be empty");
+			return false;
+		}
+
 		return true;
 	}
 
