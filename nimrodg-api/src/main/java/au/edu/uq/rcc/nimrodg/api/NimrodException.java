@@ -20,6 +20,8 @@
 package au.edu.uq.rcc.nimrodg.api;
 
 import java.sql.SQLException;
+import java.util.List;
+import java.util.Objects;
 
 public class NimrodException extends RuntimeException {
 
@@ -77,6 +79,24 @@ public class NimrodException extends RuntimeException {
 
 		public ResourceFull(Resource res) {
 			this.resource = res;
+		}
+	}
+
+	public static class InvalidResourceType extends NimrodException {
+		public final String name;
+
+		public InvalidResourceType(String name) {
+			this.name = Objects.requireNonNull(name, "name");
+		}
+	}
+
+	public static class InvalidResourceConfiguration extends NimrodException {
+		public final ResourceType type;
+		public final List<String> messages;
+
+		public InvalidResourceConfiguration(ResourceType type, List<String> messages) {
+			this.type = Objects.requireNonNull(type, "type");
+			this.messages = List.copyOf(Objects.requireNonNull(messages, "messages"));
 		}
 	}
 
