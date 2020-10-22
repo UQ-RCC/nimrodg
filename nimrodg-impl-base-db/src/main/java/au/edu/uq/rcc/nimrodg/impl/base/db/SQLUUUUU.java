@@ -19,6 +19,8 @@
  */
 package au.edu.uq.rcc.nimrodg.impl.base.db;
 
+import au.edu.uq.rcc.nimrodg.api.NimrodException;
+
 import java.sql.Connection;
 import java.sql.SQLException;
 
@@ -35,6 +37,8 @@ public abstract class SQLUUUUU<X extends RuntimeException> implements ISQLBase<X
 			return proc.doSQL();
 		} catch(SQLException e) {
 			throw makeException(e);
+		} catch(NimrodException e) {
+			throw e;
 		} catch(RuntimeException e) {
 			throw makeException(new SQLException(e));
 		}
@@ -48,12 +52,27 @@ public abstract class SQLUUUUU<X extends RuntimeException> implements ISQLBase<X
 			T t;
 			try {
 				t = proc.doSQL();
+			} catch(NimrodException e) {
+				throw e;
 			} catch(RuntimeException e) {
 				throw new SQLException(e);
 			}
 			conn.commit();
 			conn.setAutoCommit(true);
 			return t;
+		} catch(NimrodException e) {
+			try {
+				conn.rollback();
+				conn.setAutoCommit(true);
+			} catch(SQLException e2) {
+				if(e instanceof NimrodException.DbError) {
+					e2.setNextException(((NimrodException.DbError)e).sql);
+				}
+
+				/* DB error, just discard the NimrodException. */
+				throw makeException(e2);
+			}
+			throw e;
 		} catch(SQLException e) {
 			try {
 				conn.rollback();
