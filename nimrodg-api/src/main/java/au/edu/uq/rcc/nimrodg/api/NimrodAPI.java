@@ -202,7 +202,7 @@ public interface NimrodAPI extends AgentProvider, AutoCloseable {
 
 	@Deprecated
 	default void assignResource(Resource res, Experiment exp, Optional<NimrodURI> txUri) {
-		assignResource(res, exp, (NimrodURI)null);
+		assignResource(res, exp, txUri.orElse(null));
 	}
 
 	void unassignResource(Resource res, Experiment exp);
