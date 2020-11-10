@@ -150,7 +150,7 @@ public class AgentDemandHeuristic implements ConfigListener {
 	public void onAgentLaunchFailure(Resource node) {
 		HState s = m_Demand.get(node);
 
-		LOGGER.trace("Node '{}' failed to launch agent.", node.getPath());
+		LOGGER.trace("Resource '{}' failed to launch agent.", node.getName());
 		LOGGER.trace("    Demand: {} -> {}", s.demand, s.demand + m_LaunchPenalty);
 		LOGGER.trace("  Spawning: {} -> {}", s.spawning, s.spawning - 1);
 
@@ -176,7 +176,7 @@ public class AgentDemandHeuristic implements ConfigListener {
 		LOGGER.info("Agent Demands:");
 		for(Map.Entry<Resource, HState> e : m_Demand.entrySet()) {
 			HState s = e.getValue();
-			LOGGER.info(String.format("  %16s: Spawning: %d, Demand: %d", e.getKey().getPath(), s.spawning, s.demand));
+			LOGGER.info(String.format("  %16s: Spawning: %d, Demand: %d", e.getKey().getName(), s.spawning, s.demand));
 		}
 
 		m_DumpDirty = false;

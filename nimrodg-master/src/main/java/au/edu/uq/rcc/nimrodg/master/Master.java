@@ -391,15 +391,15 @@ public class Master implements MessageQueueListener, AutoCloseable {
 
 					Actuator.AdoptStatus adopt = a.adopt(as);
 					if(adopt == Actuator.AdoptStatus.Adopted) {
-						LOGGER.info("Resource {} adopted orphaned agent {}.", r.getPath(), as.getUUID());
+						LOGGER.info("Resource {} adopted orphaned agent {}.", r.getName(), as.getUUID());
 						ai.actuator.complete(a);
 					} else if(adopt == Actuator.AdoptStatus.Stale) {
-						LOGGER.info("Resource {} marked orphaned agent {} as stale, expiring...", r.getPath(), as.getUUID());
+						LOGGER.info("Resource {} marked orphaned agent {} as stale, expiring...", r.getName(), as.getUUID());
 						orphanage.adopt(as);
 						ai.actuator.complete(orphanage);
 						runLater("checkOrphanage", () -> Master.this.doExpire(ai), true);
 					} else {
-						LOGGER.info("Resource {} rejected orphaned agent {}.", r.getPath(), as.getUUID());
+						LOGGER.info("Resource {} rejected orphaned agent {}.", r.getName(), as.getUUID());
 						orphanage.adopt(as);
 						ai.actuator.complete(orphanage);
 					}

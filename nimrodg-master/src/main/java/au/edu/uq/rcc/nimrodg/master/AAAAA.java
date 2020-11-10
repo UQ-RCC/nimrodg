@@ -64,7 +64,6 @@ public abstract class AAAAA implements AutoCloseable {
 
 		public final Actuator.Request[] requests;
 		public final Resource resource;
-		public final String rootPath;
 
 		public final CompletableFuture<Actuator> actuatorFuture;
 
@@ -80,7 +79,6 @@ public abstract class AAAAA implements AutoCloseable {
 		private LaunchRequest(Actuator.Request[] requests, Resource resource, CompletableFuture<Actuator> actuatorFuture, CompletableFuture<LaunchResult[]> launchResults) {
 			this.requests = requests;
 			this.resource = resource;
-			this.rootPath = this.resource.getPath();
 			this.actuatorFuture = actuatorFuture;
 			this.launchResults = launchResults;
 		}
@@ -118,7 +116,7 @@ public abstract class AAAAA implements AutoCloseable {
 			}, executor).handleAsync((act, t) -> {
 				// TODO: This needs to be handled better. Any pending launches should be cancelled.
 				if(t != null) {
-					LOGGER.error("Error launching actuator on '{}'", key.getPath(), t);
+					LOGGER.error("Error launching actuator on '{}'", key.getName(), t);
 					actuators.remove(key);
 					if(t instanceof CompletionException) {
 						launchFuture.completeExceptionally(((CompletionException)t).getCause());

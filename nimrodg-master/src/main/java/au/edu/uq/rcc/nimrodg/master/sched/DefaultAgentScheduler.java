@@ -120,8 +120,8 @@ public class DefaultAgentScheduler implements AgentScheduler {
 	}
 
 	@Override
-	public void onAgentStateUpdate(Agent agent, Resource node, Agent.State oldState, Agent.State newState) {
-		LOGGER.trace("onAgentStateUpdate({}, {}, {}, {})", agent.getUUID(), node.getPath(), oldState, newState);
+	public void onAgentStateUpdate(Agent agent, Resource res, Agent.State oldState, Agent.State newState) {
+		LOGGER.trace("onAgentStateUpdate({}, {}, {}, {})", agent.getUUID(), res.getName(), oldState, newState);
 
 		boolean scheduleNext = false;
 		if(oldState == null) {
@@ -130,7 +130,7 @@ public class DefaultAgentScheduler implements AgentScheduler {
 		} else if(oldState == Agent.State.WAITING_FOR_HELLO && newState == Agent.State.READY) {
 			/* WAITING_FOR_HELLO -> READY, we can start doing things. */
 			scheduleNext = true;
-			m_AgentHeuristic.onAgentLaunchSuccess(node);
+			m_AgentHeuristic.onAgentLaunchSuccess(res);
 			m_LaunchingAgents.remove(agent.getUUID());
 		} else if(oldState == Agent.State.READY) {
 			m_ReadyAgents.remove(agent);
@@ -168,15 +168,15 @@ public class DefaultAgentScheduler implements AgentScheduler {
 	 */
 
 	@Override
-	public void onAgentLaunchFailure(Agent agent, Resource node, Throwable t) {
-		LOGGER.trace("Agent launch failure for '{}' on '{}'.", agent.getUUID(), node.getPath());
+	public void onAgentLaunchFailure(Agent agent, Resource res, Throwable t) {
+		LOGGER.trace("Agent launch failure for '{}' on '{}'.", agent.getUUID(), res.getName());
 		if(t instanceof NimrodException.ResourceFull) {
 			LOGGER.trace("  Resource full...");
 		} else {
-			m_FailureTracker.reportLaunchFailure(agent.getUUID(), node, t);
+			m_FailureTracker.reportLaunchFailure(agent.getUUID(), res, t);
 		}
 
-		m_AgentHeuristic.onAgentLaunchFailure(node);
+		m_AgentHeuristic.onAgentLaunchFailure(res);
 		m_LaunchingAgents.remove(agent.getUUID());
 		m_AllAgents.remove(agent);
 	}
