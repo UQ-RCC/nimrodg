@@ -892,8 +892,7 @@ public class DBExperimentHelpers extends DBBaseHelper {
 				DBUtils.getLongInstant(rs, "creation_time"),
 				DBUtils.getLongInstant(rs, "start_time"),
 				DBUtils.getLongInstant(rs, "finish_time"),
-				_uuid == null ? null : UUID.fromString(_uuid),
-				rs.getString("path")
+				_uuid == null ? null : UUID.fromString(_uuid)
 		);
 	}
 

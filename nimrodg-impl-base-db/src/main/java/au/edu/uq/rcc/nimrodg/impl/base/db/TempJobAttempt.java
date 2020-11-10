@@ -33,9 +33,8 @@ public class TempJobAttempt {
 	public final Instant startTime;
 	public final Instant finishTime;
 	public final UUID agentUuid;
-	public final String path;
 
-	public TempJobAttempt(long id, long jobId, UUID uuid, JobAttempt.Status status, Instant creationTime, Instant startTime, Instant finishTime, UUID agentUuid, String path) {
+	public TempJobAttempt(long id, long jobId, UUID uuid, JobAttempt.Status status, Instant creationTime, Instant startTime, Instant finishTime, UUID agentUuid) {
 		this.id = id;
 		this.jobId = jobId;
 		this.uuid = uuid;
@@ -44,7 +43,6 @@ public class TempJobAttempt {
 		this.startTime = startTime;
 		this.finishTime = finishTime;
 		this.agentUuid = agentUuid;
-		this.path = path;
 	}
 
 	public Impl create(NimrodDBAPI db, TempJob.Impl job) {
@@ -101,7 +99,7 @@ public class TempJobAttempt {
 
 		@Override
 		public String getPath() {
-			return path;
+			return String.format("%s/%s", job.getPath(), uuid.toString().replace("-", "_"));
 		}
 
 		@Override

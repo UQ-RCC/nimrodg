@@ -448,8 +448,7 @@ public class DBExperimentHelpers extends DBBaseHelper {
 				DBUtils.getInstant(rs, "creation_time"),
 				DBUtils.getInstant(rs, "start_time"),
 				DBUtils.getInstant(rs, "finish_time"),
-				_uuid == null ? null : UUID.fromString(_uuid),
-				rs.getString("path")
+				_uuid == null ? null : UUID.fromString(_uuid)
 		);
 	}
 
