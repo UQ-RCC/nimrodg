@@ -111,7 +111,7 @@ public class DBExperimentHelpers extends DBBaseHelper {
 
 		this.qGetReservedVariables = prepareStatement("SELECT name FROM nimrod_reserved_variables");
 
-		this.qInsertExperiment = prepareStatement("INSERT INTO nimrod_experiments(name, work_dir, path) VALUES(?, ?, ?)", true);
+		this.qInsertExperiment = prepareStatement("INSERT INTO nimrod_experiments(name, work_dir) VALUES(?, ?)", true);
 		this.qInsertVariable = prepareStatement("INSERT INTO nimrod_variables(exp_id, name) VALUES(?, ?)", true);
 		this.qInsertTask = prepareStatement("INSERT INTO nimrod_tasks(exp_Id, name) VALUES(?, ?)", true);
 		this.qInsertCommand = prepareStatement("INSERT INTO nimrod_commands(command_index, task_id, type) VALUES(?, ?, ?)", true);
@@ -120,7 +120,7 @@ public class DBExperimentHelpers extends DBBaseHelper {
 				"INSERT INTO nimrod_substitutions(arg_id, variable_id, start_index, end_index, relative_start) VALUES(?, ?, ?, ?, ?)",
 				true
 		);
-		this.qInsertJob = prepareStatement("INSERT INTO nimrod_jobs(exp_id, job_index, created, variables, path) VALUES(?, ?, ?, ?, ?)", true);
+		this.qInsertJob = prepareStatement("INSERT INTO nimrod_jobs(exp_id, job_index, created, variables) VALUES(?, ?, ?, ?)", true);
 
 		this.qGetExperiments = prepareStatement("SELECT * FROM nimrod_experiments");
 		this.qGetExperimentById = prepareStatement("SELECT * FROM nimrod_experiments WHERE id = ?");
@@ -143,7 +143,7 @@ public class DBExperimentHelpers extends DBBaseHelper {
 		/* The finer-grained filtering is done application-side, row by row. */
 		this.qGetNextJobId = prepareStatement("SELECT COALESCE(MAX(job_index) + 1, 1) FROM nimrod_jobs WHERE exp_id = ?");
 
-		this.qCreateJobAttempt = prepareStatement("INSERT INTO nimrod_job_attempts(job_id, uuid, path) VALUES(?, ?, ?)", true);
+		this.qCreateJobAttempt = prepareStatement("INSERT INTO nimrod_job_attempts(job_id, uuid) VALUES(?, ?)", true);
 		this.qStartJobAttempt = prepareStatement("UPDATE nimrod_job_attempts SET status = ?, agent_uuid = ? WHERE id = ?");
 		this.qFinishJobAttempt = prepareStatement("UPDATE nimrod_job_attempts SET status = ? WHERE id = ?");
 		this.qGetJobAttempt = prepareStatement("SELECT * FROM nimrod_job_attempts WHERE id = ?");
@@ -359,7 +359,7 @@ public class DBExperimentHelpers extends DBBaseHelper {
 			}
 		}
 
-		addJobs2(expId, name, exp.buildJobsList(), 1);
+		addJobs2(expId, exp.buildJobsList(), 1);
 		return getExperiment(expId).orElseThrow(IllegalStateException::new);
 	}
 
@@ -378,7 +378,6 @@ public class DBExperimentHelpers extends DBBaseHelper {
 		/* Add the experiment */
 		qInsertExperiment.setString(1, name);
 		qInsertExperiment.setString(2, workDir);
-		qInsertExperiment.setString(3, name); // path
 
 		int upd = qInsertExperiment.executeUpdate();
 		if(upd == 0) {
@@ -518,7 +517,7 @@ public class DBExperimentHelpers extends DBBaseHelper {
 		return subIds;
 	}
 
-	private long[] addJobs2(long expId, String expPath, Collection<Map<String, String>> jobs, long baseIndex) throws SQLException {
+	private long[] addJobs2(long expId, Collection<Map<String, String>> jobs, long baseIndex) throws SQLException {
 		long[] jobIds = new long[jobs.size()];
 		/* Don't let Sqlite add the instant here, the NOW value isn't consistent within a transaction. */
 		Instant now = Instant.now();
@@ -529,7 +528,6 @@ public class DBExperimentHelpers extends DBBaseHelper {
 			qInsertJob.setLong(2, baseIndex + i);
 			DBUtils.setLongInstant(qInsertJob, 3, now);
 			qInsertJob.setString(4, JsonUtils.buildJobsJson(job).toString());
-			qInsertJob.setString(5, String.format("%s/%d", expPath, baseIndex + i));
 			if(qInsertJob.executeUpdate() == 0) {
 				throw new SQLException("Creating job failed, no rows affected");
 			}
@@ -709,7 +707,7 @@ public class DBExperimentHelpers extends DBBaseHelper {
 		return jobs;
 	}
 
-	public List<TempJob> addJobs(long expId, String expPath, Collection<Map<String, String>> jobs) throws SQLException {
+	public List<TempJob> addJobs(long expId, Collection<Map<String, String>> jobs) throws SQLException {
 		long nextIndex;
 		qGetNextJobId.setLong(1, expId);
 		try(ResultSet rs = qGetNextJobId.executeQuery()) {
@@ -720,14 +718,13 @@ public class DBExperimentHelpers extends DBBaseHelper {
 			nextIndex = rs.getLong(1);
 		}
 
-		long[] ids = addJobs2(expId, expPath, jobs, nextIndex);
+		long[] ids = addJobs2(expId, jobs, nextIndex);
 		return getJobRange(expId, nextIndex, ids.length);
 	}
 
-	public TempJobAttempt createJobAttempt(long jobId, String jobPath, UUID uuid) throws SQLException {
+	public TempJobAttempt createJobAttempt(long jobId, UUID uuid) throws SQLException {
 		qCreateJobAttempt.setLong(1, jobId);
 		qCreateJobAttempt.setString(2, uuid.toString());
-		qCreateJobAttempt.setString(3, String.format("%s/%s", jobPath, uuid));
 
 		if(qCreateJobAttempt.executeUpdate() == 0) {
 			throw new SQLException("Creating job attempt failed, no rows affected");

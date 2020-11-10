@@ -367,7 +367,7 @@ public class SQLite3DB extends SQLUUUUU<NimrodException.DbError> implements Nimr
 
 	@Override
 	public synchronized List<TempJob.Impl> addJobs(TempExperiment.Impl exp, Collection<Map<String, String>> vars) throws SQLException {
-		List<TempJob.Impl> jobs = experimentHelpers.addJobs(exp.base.id, exp.getPath(), vars).stream().map(tj -> tj.create(this, exp)).collect(Collectors.toList());
+		List<TempJob.Impl> jobs = experimentHelpers.addJobs(exp.base.id, vars).stream().map(tj -> tj.create(this, exp)).collect(Collectors.toList());
 
 		if(exp.getState() != Experiment.State.STOPPED) {
 			for(TempJob.Impl j : jobs) {
@@ -379,7 +379,7 @@ public class SQLite3DB extends SQLUUUUU<NimrodException.DbError> implements Nimr
 
 	@Override
 	public synchronized TempJobAttempt.Impl createJobAttempt(TempJob.Impl job, UUID uuid) throws SQLException {
-		return experimentHelpers.createJobAttempt(job.base.id, job.getPath(), uuid).create(this, job);
+		return experimentHelpers.createJobAttempt(job.base.id, uuid).create(this, job);
 	}
 
 	@Override

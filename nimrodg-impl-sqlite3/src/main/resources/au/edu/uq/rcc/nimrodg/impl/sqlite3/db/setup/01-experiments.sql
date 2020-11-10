@@ -23,8 +23,7 @@ CREATE TABLE nimrod_experiments(
     name      TEXT    NOT NULL UNIQUE,
     state     TEXT    NOT NULL CHECK(state IN ('STOPPED', 'STARTED', 'PERSISTENT')) DEFAULT 'STOPPED',
     work_dir  TEXT    NOT NULL UNIQUE,
-    created   INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
-    path      TEXT    NOT NULL UNIQUE
+    created   INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
 );
 
 DROP TABLE IF EXISTS nimrod_jobs;
@@ -34,7 +33,6 @@ CREATE TABLE nimrod_jobs(
     job_index BIGINT  NOT NULL CHECK(job_index > 0),
     created   INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
     variables TEXT    NOT NULL,
-    path      TEXT    NOT NULL UNIQUE,
     UNIQUE(exp_id, job_index)
 );
 
@@ -118,7 +116,6 @@ CREATE TABLE nimrod_job_attempts(
     creation_time   INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
     start_time      INTEGER DEFAULT NULL,
     finish_time     INTEGER DEFAULT NULL,
-    path            TEXT    NOT NULL UNIQUE,
     -- Weak reference to the agent UUID. The agent may or may not exist
     agent_uuid      UUID/* REFERENCES nimrod_master_agents(id) */,
     CHECK(finish_time >= start_time)
