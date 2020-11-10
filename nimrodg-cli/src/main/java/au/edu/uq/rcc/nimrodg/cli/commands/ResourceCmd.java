@@ -149,9 +149,9 @@ public class ResourceCmd extends NimrodCLICommand {
 	}
 
 	private void dumpResource(Resource n, PrintStream out, Pattern pattern) {
-		String path = n.getPath();
-		if(pattern.matcher(path).matches()) {
-			out.printf("%s\n", n.getPath());
+		String name = n.getName();
+		if(pattern.matcher(name).matches()) {
+			out.println(name);
 		}
 	}
 
