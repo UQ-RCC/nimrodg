@@ -432,7 +432,6 @@ public class DBExperimentHelpers extends DBBaseHelper {
 				rs.getLong("exp_id"),
 				rs.getLong("job_index"),
 				DBUtils.getInstant(rs, "created"),
-				rs.getString("path"),
 				JobAttempt.stringToStatus(rs.getString("status")),
 				DBUtils.getJSONObject(rs, "full_variables").entrySet().stream()
 						.collect(Collectors.toMap(Map.Entry::getKey, e -> ((JsonString)e.getValue()).getString()))

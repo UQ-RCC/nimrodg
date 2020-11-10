@@ -22,6 +22,8 @@ package au.edu.uq.rcc.nimrodg.impl.base.db;
 import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.Job;
 import au.edu.uq.rcc.nimrodg.api.JobAttempt;
+import au.edu.uq.rcc.nimrodg.api.utils.NimrodUtils;
+
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
@@ -34,16 +36,14 @@ public class TempJob {
 	public final long expId;
 	public final long jobIndex;
 	public final Instant created;
-	public final String path;
 	public final JobAttempt.Status status;
 	public final Map<String, String> variables;
 
-	public TempJob(long id, long expId, long jobIndex, Instant created, String path, JobAttempt.Status status, Map<String, String> variables) {
+	public TempJob(long id, long expId, long jobIndex, Instant created, JobAttempt.Status status, Map<String, String> variables) {
 		this.id = id;
 		this.expId = expId;
 		this.jobIndex = jobIndex;
 		this.created = created;
-		this.path = path;
 		this.status = status;
 		this.variables = Map.copyOf(variables);
 	}
@@ -96,7 +96,8 @@ public class TempJob {
 
 		@Override
 		public String getPath() {
-			return path;
+			/* Just until this is removed. */
+			return NimrodUtils.buildUniqueJobId(this);
 		}
 
 		@Override

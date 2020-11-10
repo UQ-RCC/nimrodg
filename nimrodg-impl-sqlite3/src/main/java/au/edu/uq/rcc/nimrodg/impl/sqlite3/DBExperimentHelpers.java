@@ -577,7 +577,6 @@ public class DBExperimentHelpers extends DBBaseHelper {
 						rs.getLong("exp_id"),
 						jobIndex,
 						DBUtils.getLongInstant(rs, "created"),
-						rs.getString("path"),
 						null,
 						vars
 				));
@@ -593,7 +592,6 @@ public class DBExperimentHelpers extends DBBaseHelper {
 				tj.expId,
 				tj.jobIndex,
 				tj.created,
-				tj.path,
 				getJobCounts(tj.id).status,
 				tj.variables
 		);
@@ -625,7 +623,6 @@ public class DBExperimentHelpers extends DBBaseHelper {
 					rs.getLong("exp_id"),
 					jobIndex,
 					DBUtils.getLongInstant(rs, "created"),
-					rs.getString("path"),
 					null,
 					vars
 			)));
