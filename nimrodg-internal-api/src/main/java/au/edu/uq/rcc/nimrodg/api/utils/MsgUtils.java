@@ -63,10 +63,6 @@ public class MsgUtils {
 		return env;
 	}
 
-	public static NetworkJob resolveJob(UUID uuid, Job job, Task.Name task, URI txuri) throws IllegalArgumentException {
-		return resolveJob(uuid, job, task, txuri, null);
-	}
-
 	/**
 	 * Resolve a given job and {@link Task} from the Nimrod API into a structure that can be transmitted over the
 	 * network.
@@ -75,10 +71,9 @@ public class MsgUtils {
 	 * @param job The job instance.
 	 * @param task The name of the task.
 	 * @param txuri
-	 * @param token The attempt-specific token to use. If null, use the run's transfer token.
 	 * @return A resolved job, ready for sending.
 	 */
-	public static NetworkJob resolveJob(UUID uuid, Job job, Task.Name task, URI txuri, String token) throws IllegalArgumentException {
+	public static NetworkJob resolveJob(UUID uuid, Job job, Task.Name task, URI txuri) throws IllegalArgumentException {
 		Experiment exp = job.getExperiment();
 
 		Task ct = exp.getTask(task);
