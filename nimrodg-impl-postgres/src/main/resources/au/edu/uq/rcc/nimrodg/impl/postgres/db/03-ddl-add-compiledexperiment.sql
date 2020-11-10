@@ -148,8 +148,8 @@ BEGIN
     END IF;
 
     -- Add the experiment
-    INSERT INTO nimrod_full_experiments(name, work_dir, variables, path)
-    VALUES(_name, _work_dir, vars, _name)
+    INSERT INTO nimrod_full_experiments(name, work_dir, variables)
+    VALUES(_name, _work_dir, vars)
     RETURNING id INTO eexp_id;
 
     -- Add the variables

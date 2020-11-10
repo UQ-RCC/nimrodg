@@ -35,8 +35,7 @@ CREATE TABLE nimrod_experiments(
     -- - The first copy, here, is for quick lookups so we don't have to use nimrod_full_experiments.
     -- - The second copy, in nimrod_variables, is used for substitution validation so it contains
     --   the implicit ones too.
-    variables   TEXT[] NOT NULL,
-    path        nimrod_path NOT NULL UNIQUE
+    variables   TEXT[] NOT NULL
 );
 -- Use add_compiled_experiment() for adding. There is no facility for adding them manually.
 
@@ -48,27 +47,8 @@ CREATE TABLE nimrod_jobs(
     created     TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     -- NB: This isn't validated by a trigger because it's too damned slow to do so.
     -- Use add_compiled_experiment() or add_multiple_jobs()
-    variables   JSONB NOT NULL,
-    path        nimrod_path NOT NULL UNIQUE
+    variables   JSONB NOT NULL
 );
-
---
--- Set the creation date, workdir and path for a job when inserted.
---
-CREATE OR REPLACE FUNCTION _exp_t_job_add() RETURNS TRIGGER AS $$
-DECLARE
-    _path nimrod_path;
-BEGIN
-    SELECT path INTO _path FROM nimrod_experiments WHERE id = NEW.exp_id;
-    NEW.path = _path || '/' || NEW.job_index::TEXT;
-    RETURN NEW;
-END $$ LANGUAGE 'plpgsql';
-
-DROP TRIGGER IF EXISTS t_exp_job_add ON nimrod_jobs;
-CREATE TRIGGER t_exp_job_add BEFORE INSERT ON nimrod_jobs
-    FOR EACH ROW EXECUTE PROCEDURE _exp_t_job_add();
-
-
 
 
 DROP TABLE IF EXISTS nimrod_variables CASCADE;
@@ -138,7 +118,6 @@ CREATE TABLE nimrod_job_attempts(
     creation_time TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     start_time    TIMESTAMP WITH TIME ZONE DEFAULT NULL,
     finish_time   TIMESTAMP WITH TIME ZONE DEFAULT NULL,
-    path          nimrod_path NOT NULL UNIQUE,
     -- Weak reference to the agent UUID. The agent may or may not exist
     agent_uuid    UUID, -- REFERENCES nimrod_master_agents(id),
     CHECK(finish_time >= start_time)
@@ -147,33 +126,27 @@ CREATE TABLE nimrod_job_attempts(
 
 CREATE OR REPLACE FUNCTION _exp_t_attempt_add() RETURNS TRIGGER AS $$
 DECLARE
-    _path nimrod_path;
     _status nimrod_job_status;
 BEGIN
-    IF TG_OP = 'INSERT' THEN
-        SELECT path INTO _path FROM nimrod_jobs WHERE id = NEW.job_id;
-        NEW.path = _path || '/' || (SELECT replace(NEW.uuid::TEXT, '-', '_'));
-    ELSIF TG_OP = 'UPDATE' THEN
-        IF OLD.status = 'NOT_RUN'::nimrod_job_status AND NEW.status = 'RUNNING'::nimrod_job_status THEN
-            -- NOT_RUN -> RUNNING
-            NEW.start_time = NOW();
-        ELSIF OLD.status = 'NOT_RUN'::nimrod_job_status AND NEW.status = 'FAILED'::nimrod_job_status THEN
-            -- NOT_RUN -> FAILED
-            NEW.start_time = NOW();
-            NEW.finish_time = NOW();
-        ELSIF OLD.status = 'RUNNING'::nimrod_job_status AND (NEW.status = 'FAILED'::nimrod_job_status OR NEW.status = 'COMPLETED'::nimrod_job_status) THEN
-            -- RUNNING -> {FAILED, COMPLETED}
-            NEW.finish_time = NOW();
-        ELSE
-            RAISE EXCEPTION 'Invalid job attempt update (%), cannot transition from % -> %', OLD.path, OLD.status, NEW.status;
-        END IF;
+    IF OLD.status = 'NOT_RUN'::nimrod_job_status AND NEW.status = 'RUNNING'::nimrod_job_status THEN
+        -- NOT_RUN -> RUNNING
+        NEW.start_time = NOW();
+    ELSIF OLD.status = 'NOT_RUN'::nimrod_job_status AND NEW.status = 'FAILED'::nimrod_job_status THEN
+        -- NOT_RUN -> FAILED
+        NEW.start_time = NOW();
+        NEW.finish_time = NOW();
+    ELSIF OLD.status = 'RUNNING'::nimrod_job_status AND (NEW.status = 'FAILED'::nimrod_job_status OR NEW.status = 'COMPLETED'::nimrod_job_status) THEN
+        -- RUNNING -> {FAILED, COMPLETED}
+        NEW.finish_time = NOW();
+    ELSE
+        RAISE EXCEPTION 'Invalid job attempt update (%), cannot transition from % -> %', OLD.id, OLD.status, NEW.status;
     END IF;
 
     RETURN NEW;
 END $$ LANGUAGE 'plpgsql';
 
 DROP TRIGGER IF EXISTS t_exp_attempt_add ON nimrod_job_attempts;
-CREATE TRIGGER t_exp_attempt_add BEFORE INSERT OR UPDATE ON nimrod_job_attempts
+CREATE TRIGGER t_exp_attempt_add BEFORE UPDATE ON nimrod_job_attempts
     FOR EACH ROW EXECUTE PROCEDURE _exp_t_attempt_add();
 
 
