@@ -24,5 +24,6 @@ package au.edu.uq.rcc.nimrodg.api;
  * Will eventually be used when I do a REST API
  */
 public interface NimrodEntity {
+	@Deprecated
 	String getPath();
 }
