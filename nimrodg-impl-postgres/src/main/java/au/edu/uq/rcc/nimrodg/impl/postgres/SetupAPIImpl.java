@@ -42,7 +42,6 @@ public class SetupAPIImpl implements NimrodSetupAPI {
 		"db/03-ddl-add-compiledexperiment.sql",
 		"db/04-ddl-utility.sql",
 		"db/05-ddl-resources.sql",
-		"db/06-ddl-resource-utility.sql",
 		"db/07-ddl-messages.sql"
 	};
 
