@@ -19,6 +19,8 @@
  */
 package au.edu.uq.rcc.nimrodg.api.utils;
 
+import au.edu.uq.rcc.nimrodg.api.Job;
+
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -129,4 +131,7 @@ public class NimrodUtils {
 		return null;
 	}
 
+	public static String buildUniqueJobId(Job job) {
+		return String.format("%s/%s", job.getExperiment().getName(), job.getIndex());
+	}
 }
