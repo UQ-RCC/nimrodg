@@ -53,7 +53,6 @@ import au.edu.uq.rcc.nimrodg.resource.hpc.HPCActuator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.json.Json;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.Certificate;
@@ -853,7 +852,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 		@Override
 		public UUID runJob(JobAttempt att, Agent agent) {
 			Job job = att.getJob();
-			LOGGER.info("Run job '{}' on agent '{}'", job.getPath(), agent.getUUID());
+			LOGGER.info("Run job '{}' on agent '{}'", NimrodUtils.buildUniqueJobId(job), agent.getUUID());
 
 			UUID uuid = att.getUUID();
 
@@ -864,7 +863,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 				agent.submitJob(nj);
 			} catch(IOException | IllegalArgumentException | IllegalStateException e) {
 				t = e;
-				LOGGER.error("Unable to submit job '{}' on agent '{}'", job.getPath(), agent.getUUID(), e);
+				LOGGER.error("Unable to submit job '{}' on agent '{}'", NimrodUtils.buildUniqueJobId(job), agent.getUUID(), e);
 			}
 
 			if(t == null) {

@@ -220,7 +220,7 @@ public class DefaultAgentScheduler implements AgentScheduler {
 
 	@Override
 	public void onJobCancel(JobAttempt att) {
-		LOGGER.trace("onJobCancel({})", att.getJob().getPath());
+		LOGGER.trace("onJobCancel({})", NimrodUtils.buildUniqueJobId(att.getJob()));
 		m_PendingJobs.remove(att);
 		m_HeldJobs.remove(att);
 	}

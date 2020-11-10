@@ -190,15 +190,15 @@ public class DefaultJobScheduler implements JobScheduler {
 
 		if(stat == JobAttempt.Status.COMPLETED) {
 			++stats.retryCount;
-			LOGGER.info("Job '{}' succeeded on attempt {}!", stats.job.getPath(), stats.retryCount);
+			LOGGER.info("Job '{}' succeeded on attempt {}!", NimrodUtils.buildUniqueJobId(stats.job), stats.retryCount);
 			purgeJobAttempt(stats.job, att);
 		} else if(stat == JobAttempt.Status.FAILED) {
 			++stats.retryCount;
 			if(stats.retryCount > 3) {
-				LOGGER.info("Job '{}' exceeded retry count, failing...", stats.job.getPath());
+				LOGGER.info("Job '{}' exceeded retry count, failing...", NimrodUtils.buildUniqueJobId(stats.job));
 				purgeJobAttempt(stats.job, att);
 			} else {
-				LOGGER.info("Job '{}' failed on attempt {}, rescheduling...", stats.job.getPath(), stats.retryCount);
+				LOGGER.info("Job '{}' failed on attempt {}, rescheduling...", NimrodUtils.buildUniqueJobId(stats.job), stats.retryCount);
 				runningAttempts.remove(att);
 				stats.attempts.remove(att);
 				incomingJobs.offer(stats.job);
@@ -266,7 +266,7 @@ public class DefaultJobScheduler implements JobScheduler {
 		n = jobQueue.size();
 
 		/* FIXME: Keeping the behaviour for now. */
-		jobQueue.forEach(j -> LOGGER.info("Scheduling job '{}'", j.getPath()));
+		jobQueue.forEach(j -> LOGGER.info("Scheduling job '{}'", NimrodUtils.buildUniqueJobId(j)));
 
 		/* FIXME: Just schedule everything */
 		Collection<JobAttempt> attempts = ops.runJobs(jobQueue);
