@@ -39,7 +39,6 @@ public final class TempExperiment {
 	public final String workDir;
 	public final Experiment.State state;
 	public final Instant created;
-	public final String path;
 	public final Set<String> variables;
 
 	/* TODO: These are rarely used, if ever. It might be worth getting them on-demand once and caching it,
@@ -47,13 +46,12 @@ public final class TempExperiment {
 	 */
 	public final Map<Task.Name, CompiledTask> tasks;
 
-	public TempExperiment(long id, String name, String workDir, Experiment.State state, Instant created, String path, Collection<String> variables, Collection<CompiledTask> tasks) {
+	public TempExperiment(long id, String name, String workDir, Experiment.State state, Instant created, Collection<String> variables, Collection<CompiledTask> tasks) {
 		this.id = id;
 		this.name = name;
 		this.workDir = workDir;
 		this.state = state;
 		this.created = created;
-		this.path = path;
 		this.variables = Set.copyOf(variables);
 		this.tasks = Map.copyOf(tasks.stream().collect(Collectors.toMap(ct -> ct.name, ct -> ct)));
 	}
@@ -119,7 +117,7 @@ public final class TempExperiment {
 
 		@Override
 		public String getPath() {
-			return path;
+			return name;
 		}
 
 		@Override

@@ -880,7 +880,6 @@ public class DBExperimentHelpers extends DBBaseHelper {
 				rs.getString("work_dir"),
 				Experiment.stringToState(rs.getString("state")),
 				DBUtils.getLongInstant(rs, "created"),
-				rs.getString("path"),
 				getExperimentUserVars(expId),
 				getExperimentTasks(expId)
 		);

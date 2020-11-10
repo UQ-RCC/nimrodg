@@ -421,7 +421,6 @@ public class DBExperimentHelpers extends DBBaseHelper {
 				rs.getString("work_dir"),
 				Experiment.stringToState(rs.getString("state")),
 				DBUtils.getInstant(rs, "created"),
-				rs.getString("path"),
 				JsonUtils.stringListFromJson(DBUtils.getJSONArray(rs, "vars_json")),
 				JsonUtils.taskListFromJson(DBUtils.getJSONObject(rs, "tasks_json"))
 		);
