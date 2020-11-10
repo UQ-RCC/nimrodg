@@ -21,7 +21,7 @@ package au.edu.uq.rcc.nimrodg.api;
 
 import javax.json.JsonStructure;
 
-public interface Resource extends NimrodEntity {
+public interface Resource {
 
 	String getName();
 

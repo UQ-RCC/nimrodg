@@ -54,9 +54,4 @@ public class TestResource implements Resource {
 	public NimrodURI getTransferUri() {
 		return this.txUri;
 	}
-
-	@Override
-	public String getPath() {
-		return this.name;
-	}
 }

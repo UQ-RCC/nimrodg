@@ -24,7 +24,7 @@ import java.util.Collection;
 import java.util.EnumSet;
 import java.util.Map;
 
-public interface Job extends NimrodEntity {
+public interface Job {
 
 	Experiment getExperiment();
 

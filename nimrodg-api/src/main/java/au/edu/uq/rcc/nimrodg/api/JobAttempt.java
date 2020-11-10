@@ -22,7 +22,7 @@ package au.edu.uq.rcc.nimrodg.api;
 import java.time.Instant;
 import java.util.UUID;
 
-public interface JobAttempt extends NimrodEntity {
+public interface JobAttempt {
 
 	/**
 	 * Valid state transitions:

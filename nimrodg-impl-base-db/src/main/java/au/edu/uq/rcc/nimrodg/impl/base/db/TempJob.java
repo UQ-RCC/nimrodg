@@ -95,12 +95,6 @@ public class TempJob {
 		}
 
 		@Override
-		public String getPath() {
-			/* Just until this is removed. */
-			return NimrodUtils.buildUniqueJobId(this);
-		}
-
-		@Override
 		public int hashCode() {
 			return Long.hashCode(id);
 		}

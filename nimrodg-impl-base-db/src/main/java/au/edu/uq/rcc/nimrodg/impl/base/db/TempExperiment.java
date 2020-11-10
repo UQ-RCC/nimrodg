@@ -116,11 +116,6 @@ public final class TempExperiment {
 		}
 
 		@Override
-		public String getPath() {
-			return name;
-		}
-
-		@Override
 		public boolean equals(Object obj) {
 			if(obj == null || !(obj instanceof Impl)) {
 				return false;

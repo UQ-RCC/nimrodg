@@ -98,11 +98,6 @@ public class TempJobAttempt {
 		}
 
 		@Override
-		public String getPath() {
-			return String.format("%s/%s", job.getPath(), uuid.toString().replace("-", "_"));
-		}
-
-		@Override
 		public boolean equals(Object obj) {
 			if(obj == null || !(obj instanceof Impl)) {
 				return false;

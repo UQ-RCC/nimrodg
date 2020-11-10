@@ -66,11 +66,6 @@ public class TempResource {
 		}
 
 		@Override
-		public String getPath() {
-			return name;
-		}
-
-		@Override
 		public String getTypeName() {
 			return typeName;
 		}

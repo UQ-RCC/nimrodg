@@ -23,7 +23,7 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.Set;
 
-public interface Experiment extends NimrodEntity {
+public interface Experiment {
 
 	enum State {
 		STOPPED,
