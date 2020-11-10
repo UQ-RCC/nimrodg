@@ -37,55 +37,55 @@ public class AgentControlPanel extends javax.swing.JPanel {
 		void onReset();
 	}
 
-	private final ArrayList<Listener> m_Listeners;
+	private final ArrayList<Listener> listeners;
 
 	public AgentControlPanel() {
-		m_Listeners = new ArrayList<>();
+		listeners = new ArrayList<>();
 		initComponents();
-		m_Reset.setEnabled(true);
+		resetBtn.setEnabled(true);
 	}
 
 	public void addListener(Listener l) {
-		m_Listeners.add(l);
+		listeners.add(l);
 	}
 
 	public void removeListener(Listener l) {
-		m_Listeners.remove(l);
+		listeners.remove(l);
 	}
 
 	public void setState(Agent.State state) {
 		if(state == Agent.State.SHUTDOWN) {
-			m_WaitingForAgent.setSelected(true);
-			m_SendingInit.setSelected(true);
-			m_Shutdown.setSelected(true);
-			m_SubmitBtn.setEnabled(false);
-			m_PingBtn.setEnabled(false);
-			m_CancelBtn.setEnabled(false);
-			m_TerminateBtn.setEnabled(false);
+			waitingForAgent.setSelected(true);
+			sendingInit.setSelected(true);
+			shutdown.setSelected(true);
+			submitBtn.setEnabled(false);
+			pingBtn.setEnabled(false);
+			cancelBtn.setEnabled(false);
+			terminateBtn.setEnabled(false);
 		} else if(state == Agent.State.WAITING_FOR_HELLO) {
-			m_WaitingForAgent.setSelected(true);
-			m_SendingInit.setSelected(false);
-			m_Shutdown.setSelected(false);
-			m_SubmitBtn.setEnabled(false);
-			m_PingBtn.setEnabled(false);
-			m_CancelBtn.setEnabled(false);
-			m_TerminateBtn.setEnabled(false);
+			waitingForAgent.setSelected(true);
+			sendingInit.setSelected(false);
+			shutdown.setSelected(false);
+			submitBtn.setEnabled(false);
+			pingBtn.setEnabled(false);
+			cancelBtn.setEnabled(false);
+			terminateBtn.setEnabled(false);
 		} else if(state == Agent.State.READY) {
-			m_SendingInit.setSelected(true);
-			m_WaitingForAgent.setSelected(true);
-			m_Shutdown.setSelected(false);
-			m_SubmitBtn.setEnabled(true);
-			m_PingBtn.setEnabled(true);
-			m_CancelBtn.setEnabled(false);
-			m_TerminateBtn.setEnabled(true);
+			sendingInit.setSelected(true);
+			waitingForAgent.setSelected(true);
+			shutdown.setSelected(false);
+			submitBtn.setEnabled(true);
+			pingBtn.setEnabled(true);
+			cancelBtn.setEnabled(false);
+			terminateBtn.setEnabled(true);
 		} else if(state == Agent.State.BUSY) {
-			m_SendingInit.setSelected(true);
-			m_WaitingForAgent.setSelected(true);
-			m_Shutdown.setSelected(false);
-			m_SubmitBtn.setEnabled(false);
-			m_PingBtn.setEnabled(true);
-			m_CancelBtn.setEnabled(true);
-			m_TerminateBtn.setEnabled(true);
+			sendingInit.setSelected(true);
+			waitingForAgent.setSelected(true);
+			shutdown.setSelected(false);
+			submitBtn.setEnabled(false);
+			pingBtn.setEnabled(true);
+			cancelBtn.setEnabled(true);
+			terminateBtn.setEnabled(true);
 		}
 	}
 
@@ -93,69 +93,69 @@ public class AgentControlPanel extends javax.swing.JPanel {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        m_WaitingForAgent = new javax.swing.JCheckBox();
-        m_SendingInit = new javax.swing.JCheckBox();
-        m_SubmitBtn = new javax.swing.JButton();
-        m_CancelBtn = new javax.swing.JButton();
-        m_TerminateBtn = new javax.swing.JButton();
-        m_Shutdown = new javax.swing.JCheckBox();
-        m_Reset = new javax.swing.JButton();
+        waitingForAgent = new javax.swing.JCheckBox();
+        sendingInit = new javax.swing.JCheckBox();
+        submitBtn = new javax.swing.JButton();
+        cancelBtn = new javax.swing.JButton();
+        terminateBtn = new javax.swing.JButton();
+        shutdown = new javax.swing.JCheckBox();
+        resetBtn = new javax.swing.JButton();
         jScrollPane2 = new javax.swing.JScrollPane();
-        m_JobText = new javax.swing.JTextArea();
-        m_PingBtn = new javax.swing.JButton();
+        jobText = new javax.swing.JTextArea();
+        pingBtn = new javax.swing.JButton();
 
-        m_WaitingForAgent.setText("Waiting for agent connection...");
-        m_WaitingForAgent.setEnabled(false);
+        waitingForAgent.setText("Waiting for agent connection...");
+        waitingForAgent.setEnabled(false);
 
-        m_SendingInit.setText("Sending initialisation message...");
-        m_SendingInit.setEnabled(false);
+        sendingInit.setText("Sending initialisation message...");
+        sendingInit.setEnabled(false);
 
-        m_SubmitBtn.setText("Submit");
-        m_SubmitBtn.setEnabled(false);
-        m_SubmitBtn.addActionListener(new java.awt.event.ActionListener() {
+        submitBtn.setText("Submit");
+        submitBtn.setEnabled(false);
+        submitBtn.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                m_SubmitBtnActionPerformed(evt);
+                submitBtnActionPerformed(evt);
             }
         });
 
-        m_CancelBtn.setText("Cancel");
-        m_CancelBtn.setEnabled(false);
-        m_CancelBtn.addActionListener(new java.awt.event.ActionListener() {
+        cancelBtn.setText("Cancel");
+        cancelBtn.setEnabled(false);
+        cancelBtn.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                m_CancelBtnActionPerformed(evt);
+                cancelBtnActionPerformed(evt);
             }
         });
 
-        m_TerminateBtn.setText("Terminate");
-        m_TerminateBtn.setEnabled(false);
-        m_TerminateBtn.addActionListener(new java.awt.event.ActionListener() {
+        terminateBtn.setText("Terminate");
+        terminateBtn.setEnabled(false);
+        terminateBtn.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                m_TerminateBtnActionPerformed(evt);
+                terminateBtnActionPerformed(evt);
             }
         });
 
-        m_Shutdown.setText("Agent shutdown...");
-        m_Shutdown.setEnabled(false);
+        shutdown.setText("Agent shutdown...");
+        shutdown.setEnabled(false);
 
-        m_Reset.setText("Reset");
-        m_Reset.setEnabled(false);
-        m_Reset.addActionListener(new java.awt.event.ActionListener() {
+        resetBtn.setText("Reset");
+        resetBtn.setEnabled(false);
+        resetBtn.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                m_ResetActionPerformed(evt);
+                resetBtnActionPerformed(evt);
             }
         });
 
-        m_JobText.setColumns(20);
-        m_JobText.setFont(new java.awt.Font("Courier New", 0, 10)); // NOI18N
-        m_JobText.setRows(5);
-        m_JobText.setText("parameter x text \"1\"\n\ntask main\n    redirect stdout to out\n    redirect stderr to out\n    exec uname -a\n    exec pwd\n    copy node:out root:out.txt\n    copy root:out.txt node:out2.txt\n    copy node:out2.txt node:out3.txt\nendtask"); // NOI18N
-        jScrollPane2.setViewportView(m_JobText);
+        jobText.setColumns(20);
+        jobText.setFont(new java.awt.Font("Courier New", 0, 10)); // NOI18N
+        jobText.setRows(5);
+        jobText.setText("parameter x text \"1\"\n\ntask main\n    redirect stdout to out\n    redirect stderr to out\n    exec uname -a\n    exec pwd\n    copy node:out root:out.txt\n    copy root:out.txt node:out2.txt\n    copy node:out2.txt node:out3.txt\nendtask"); // NOI18N
+        jScrollPane2.setViewportView(jobText);
 
-        m_PingBtn.setText("Ping");
-        m_PingBtn.setEnabled(false);
-        m_PingBtn.addActionListener(new java.awt.event.ActionListener() {
+        pingBtn.setText("Ping");
+        pingBtn.setEnabled(false);
+        pingBtn.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                m_PingBtnActionPerformed(evt);
+                pingBtnActionPerformed(evt);
             }
         });
 
@@ -167,75 +167,75 @@ public class AgentControlPanel extends javax.swing.JPanel {
                 .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jScrollPane2)
-                    .addComponent(m_WaitingForAgent, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(m_SendingInit, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(m_Shutdown, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(m_Reset, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(waitingForAgent, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(sendingInit, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(shutdown, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(resetBtn, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addGroup(layout.createSequentialGroup()
-                        .addComponent(m_SubmitBtn)
+                        .addComponent(submitBtn)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(m_PingBtn)
+                        .addComponent(pingBtn)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(m_CancelBtn)
+                        .addComponent(cancelBtn)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(m_TerminateBtn))))
+                        .addComponent(terminateBtn))))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(m_WaitingForAgent)
+                .addComponent(waitingForAgent)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(m_SendingInit)
+                .addComponent(sendingInit)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 209, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(m_SubmitBtn)
-                    .addComponent(m_CancelBtn)
-                    .addComponent(m_TerminateBtn)
-                    .addComponent(m_PingBtn))
+                    .addComponent(submitBtn)
+                    .addComponent(cancelBtn)
+                    .addComponent(terminateBtn)
+                    .addComponent(pingBtn))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(m_Shutdown)
+                .addComponent(shutdown)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(m_Reset)
+                .addComponent(resetBtn)
                 .addContainerGap())
         );
     }// </editor-fold>//GEN-END:initComponents
 
-    private void m_SubmitBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_m_SubmitBtnActionPerformed
-		m_Listeners.forEach((Listener l) -> {
-			l.onSubmit(m_JobText.getText());
+    private void submitBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_submitBtnActionPerformed
+		listeners.forEach((Listener l) -> {
+			l.onSubmit(jobText.getText());
 		});
-    }//GEN-LAST:event_m_SubmitBtnActionPerformed
+    }//GEN-LAST:event_submitBtnActionPerformed
 
-    private void m_CancelBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_m_CancelBtnActionPerformed
-		m_Listeners.forEach(Listener::onCancel);
-    }//GEN-LAST:event_m_CancelBtnActionPerformed
+    private void cancelBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cancelBtnActionPerformed
+		listeners.forEach(Listener::onCancel);
+    }//GEN-LAST:event_cancelBtnActionPerformed
 
-    private void m_TerminateBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_m_TerminateBtnActionPerformed
-		m_Listeners.forEach(Listener::onTerminate);
-    }//GEN-LAST:event_m_TerminateBtnActionPerformed
+    private void terminateBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_terminateBtnActionPerformed
+		listeners.forEach(Listener::onTerminate);
+    }//GEN-LAST:event_terminateBtnActionPerformed
 
-    private void m_ResetActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_m_ResetActionPerformed
-		m_Listeners.forEach(Listener::onReset);
-    }//GEN-LAST:event_m_ResetActionPerformed
+    private void resetBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_resetBtnActionPerformed
+		listeners.forEach(Listener::onReset);
+    }//GEN-LAST:event_resetBtnActionPerformed
 
-    private void m_PingBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_m_PingBtnActionPerformed
-        m_Listeners.forEach(Listener::onPing);
-    }//GEN-LAST:event_m_PingBtnActionPerformed
+    private void pingBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_pingBtnActionPerformed
+        listeners.forEach(Listener::onPing);
+    }//GEN-LAST:event_pingBtnActionPerformed
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton cancelBtn;
     private javax.swing.JScrollPane jScrollPane2;
-    private javax.swing.JButton m_CancelBtn;
-    private javax.swing.JTextArea m_JobText;
-    private javax.swing.JButton m_PingBtn;
-    private javax.swing.JButton m_Reset;
-    private javax.swing.JCheckBox m_SendingInit;
-    private javax.swing.JCheckBox m_Shutdown;
-    private javax.swing.JButton m_SubmitBtn;
-    private javax.swing.JButton m_TerminateBtn;
-    private javax.swing.JCheckBox m_WaitingForAgent;
+    private javax.swing.JTextArea jobText;
+    private javax.swing.JButton pingBtn;
+    private javax.swing.JButton resetBtn;
+    private javax.swing.JCheckBox sendingInit;
+    private javax.swing.JCheckBox shutdown;
+    private javax.swing.JButton submitBtn;
+    private javax.swing.JButton terminateBtn;
+    private javax.swing.JCheckBox waitingForAgent;
     // End of variables declaration//GEN-END:variables
 }

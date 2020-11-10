@@ -31,12 +31,12 @@
                       </Group>
                       <EmptySpace type="separate" max="-2" attributes="0"/>
                       <Group type="103" groupAlignment="0" attributes="0">
-                          <Component id="m_UUIDField" alignment="0" pref="671" max="32767" attributes="0"/>
-                          <Component id="m_QueueField" alignment="0" max="32767" attributes="0"/>
-                          <Component id="m_StateField" alignment="0" max="32767" attributes="0"/>
-                          <Component id="m_ShutdownReasonField" alignment="0" pref="671" max="32767" attributes="0"/>
-                          <Component id="m_ShutdownSignalField" alignment="0" max="32767" attributes="0"/>
-                          <Component id="m_LastHeardFromField" alignment="0" pref="671" max="32767" attributes="0"/>
+                          <Component id="uuidField" alignment="0" pref="671" max="32767" attributes="0"/>
+                          <Component id="queueField" alignment="0" max="32767" attributes="0"/>
+                          <Component id="stateField" alignment="0" max="32767" attributes="0"/>
+                          <Component id="shutdownReasonField" alignment="0" pref="671" max="32767" attributes="0"/>
+                          <Component id="shutdownSignalField" alignment="0" max="32767" attributes="0"/>
+                          <Component id="lastHeardFromField" alignment="0" pref="671" max="32767" attributes="0"/>
                       </Group>
                   </Group>
               </Group>
@@ -49,32 +49,32 @@
           <Group type="102" attributes="0">
               <EmptySpace max="-2" attributes="0"/>
               <Group type="103" groupAlignment="3" attributes="0">
-                  <Component id="m_StateField" alignment="3" min="-2" max="-2" attributes="0"/>
+                  <Component id="stateField" alignment="3" min="-2" max="-2" attributes="0"/>
                   <Component id="jLabel1" alignment="3" min="-2" max="-2" attributes="0"/>
               </Group>
               <EmptySpace max="-2" attributes="0"/>
               <Group type="103" groupAlignment="3" attributes="0">
-                  <Component id="m_QueueField" alignment="3" min="-2" max="-2" attributes="0"/>
+                  <Component id="queueField" alignment="3" min="-2" max="-2" attributes="0"/>
                   <Component id="jLabel4" alignment="3" min="-2" max="-2" attributes="0"/>
               </Group>
               <EmptySpace max="-2" attributes="0"/>
               <Group type="103" groupAlignment="3" attributes="0">
-                  <Component id="m_UUIDField" alignment="3" min="-2" max="-2" attributes="0"/>
+                  <Component id="uuidField" alignment="3" min="-2" max="-2" attributes="0"/>
                   <Component id="jLabel5" alignment="3" min="-2" max="-2" attributes="0"/>
               </Group>
               <EmptySpace max="-2" attributes="0"/>
               <Group type="103" groupAlignment="3" attributes="0">
-                  <Component id="m_ShutdownSignalField" alignment="3" min="-2" max="-2" attributes="0"/>
+                  <Component id="shutdownSignalField" alignment="3" min="-2" max="-2" attributes="0"/>
                   <Component id="jLabel6" alignment="3" min="-2" max="-2" attributes="0"/>
               </Group>
               <EmptySpace max="-2" attributes="0"/>
               <Group type="103" groupAlignment="3" attributes="0">
-                  <Component id="m_ShutdownReasonField" alignment="3" min="-2" max="-2" attributes="0"/>
+                  <Component id="shutdownReasonField" alignment="3" min="-2" max="-2" attributes="0"/>
                   <Component id="jLabel7" alignment="3" min="-2" max="-2" attributes="0"/>
               </Group>
               <EmptySpace max="-2" attributes="0"/>
               <Group type="103" groupAlignment="3" attributes="0">
-                  <Component id="m_LastHeardFromField" alignment="3" min="-2" max="-2" attributes="0"/>
+                  <Component id="lastHeardFromField" alignment="3" min="-2" max="-2" attributes="0"/>
                   <Component id="jLabel8" alignment="3" min="-2" max="-2" attributes="0"/>
               </Group>
               <EmptySpace max="-2" attributes="0"/>
@@ -85,7 +85,7 @@
     </DimensionLayout>
   </Layout>
   <SubComponents>
-    <Component class="javax.swing.JTextField" name="m_StateField">
+    <Component class="javax.swing.JTextField" name="stateField">
       <Properties>
         <Property name="editable" type="boolean" value="false"/>
       </Properties>
@@ -135,22 +135,22 @@
         <AuxValue name="JavaCodeGenerator_VariableModifier" type="java.lang.Integer" value="0"/>
       </AuxValues>
     </Component>
-    <Component class="javax.swing.JTextField" name="m_ShutdownReasonField">
+    <Component class="javax.swing.JTextField" name="shutdownReasonField">
       <Properties>
         <Property name="editable" type="boolean" value="false"/>
       </Properties>
     </Component>
-    <Component class="javax.swing.JTextField" name="m_ShutdownSignalField">
+    <Component class="javax.swing.JTextField" name="shutdownSignalField">
       <Properties>
         <Property name="editable" type="boolean" value="false"/>
       </Properties>
     </Component>
-    <Component class="javax.swing.JTextField" name="m_UUIDField">
+    <Component class="javax.swing.JTextField" name="uuidField">
       <Properties>
         <Property name="editable" type="boolean" value="false"/>
       </Properties>
     </Component>
-    <Component class="javax.swing.JTextField" name="m_QueueField">
+    <Component class="javax.swing.JTextField" name="queueField">
       <Properties>
         <Property name="editable" type="boolean" value="false"/>
       </Properties>
@@ -162,7 +162,7 @@
 
       <Layout class="org.netbeans.modules.form.compat2.layouts.support.JScrollPaneSupportLayout"/>
       <SubComponents>
-        <Component class="javax.swing.JTable" name="m_JobsTable">
+        <Component class="javax.swing.JTable" name="jobsTable">
           <Properties>
             <Property name="model" type="javax.swing.table.TableModel" editor="org.netbeans.modules.form.editors2.TableModelEditor">
               <Table columnCount="6" rowCount="4">
@@ -187,7 +187,7 @@
         <AuxValue name="JavaCodeGenerator_VariableModifier" type="java.lang.Integer" value="0"/>
       </AuxValues>
     </Component>
-    <Component class="javax.swing.JTextField" name="m_LastHeardFromField">
+    <Component class="javax.swing.JTextField" name="lastHeardFromField">
       <Properties>
         <Property name="editable" type="boolean" value="false"/>
       </Properties>

@@ -41,11 +41,11 @@ import javax.swing.UIManager;
 
 public class LogPanel extends JPanel implements ILogger {
 
-	private final _Model m_Model;
+	private final _Model model;
 
-	private final ImageIcon m_InfoIcon;
-	private final ImageIcon m_WarnIcon;
-	private final ImageIcon m_ErrIcon;
+	private final ImageIcon infoIcon;
+	private final ImageIcon warnIcon;
+	private final ImageIcon errIcon;
 
 	private static final Component COMPONENT = new Component() {
 	};
@@ -59,13 +59,13 @@ public class LogPanel extends JPanel implements ILogger {
 
 	public LogPanel() {
 		initComponents();
-		m_Model = new _Model();
-		m_List.setModel(m_Model);
-		m_List.setCellRenderer(new _CellRenderer());
+		model = new _Model();
+		list.setModel(model);
+		list.setCellRenderer(new _CellRenderer());
 
-		m_InfoIcon = extractAndScaleIcon(UIManager.getIcon("OptionPane.informationIcon"));
-		m_WarnIcon = extractAndScaleIcon(UIManager.getIcon("OptionPane.warningIcon"));
-		m_ErrIcon = extractAndScaleIcon(UIManager.getIcon("OptionPane.errorIcon"));
+		infoIcon = extractAndScaleIcon(UIManager.getIcon("OptionPane.informationIcon"));
+		warnIcon = extractAndScaleIcon(UIManager.getIcon("OptionPane.warningIcon"));
+		errIcon = extractAndScaleIcon(UIManager.getIcon("OptionPane.errorIcon"));
 	}
 
 	@SuppressWarnings("unchecked")
@@ -73,9 +73,9 @@ public class LogPanel extends JPanel implements ILogger {
     private void initComponents() {
 
         jScrollPane1 = new javax.swing.JScrollPane();
-        m_List = new javax.swing.JList<>();
+        list = new javax.swing.JList<>();
 
-        jScrollPane1.setViewportView(m_List);
+        jScrollPane1.setViewportView(list);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
         this.setLayout(layout);
@@ -92,10 +92,10 @@ public class LogPanel extends JPanel implements ILogger {
 	@Override
 	public void log(Level level, String fmt, Object... args) {
 		SwingUtilities.invokeLater(() -> {
-			m_Model.addElement(new LogEntry(level, String.format(fmt, args)));
-			int last = m_Model.getSize() - 1;
-			m_List.setSelectedIndex(last);
-			m_List.ensureIndexIsVisible(last);
+			model.addElement(new LogEntry(level, String.format(fmt, args)));
+			int last = model.getSize() - 1;
+			list.setSelectedIndex(last);
+			list.ensureIndexIsVisible(last);
 		});
 	}
 
@@ -107,7 +107,7 @@ public class LogPanel extends JPanel implements ILogger {
 	@Override
 	public void clear() {
 		SwingUtilities.invokeLater(() -> {
-			m_Model.clear();
+			model.clear();
 		});
 	}
 
@@ -139,25 +139,25 @@ public class LogPanel extends JPanel implements ILogger {
 
 	private class _CellRenderer implements ListCellRenderer<LogEntry> {
 
-		private final DefaultListCellRenderer m_Renderer;
+		private final DefaultListCellRenderer renderer;
 
 		public _CellRenderer() {
-			m_Renderer = new DefaultListCellRenderer();
+			renderer = new DefaultListCellRenderer();
 		}
 
 		@Override
 		public Component getListCellRendererComponent(JList<? extends LogEntry> list, LogEntry value, int index, boolean isSelected, boolean cellHasFocus) {
-			JLabel l = (JLabel) m_Renderer.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+			JLabel l = (JLabel) renderer.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
 
 			switch(value.level) {
 				case ERR:
-					l.setIcon(m_ErrIcon);
+					l.setIcon(errIcon);
 					break;
 				case WARN:
-					l.setIcon(m_WarnIcon);
+					l.setIcon(warnIcon);
 					break;
 				case INFO:
-					l.setIcon(m_InfoIcon);
+					l.setIcon(infoIcon);
 					break;
 			}
 			return l;
@@ -167,7 +167,7 @@ public class LogPanel extends JPanel implements ILogger {
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JScrollPane jScrollPane1;
-    private javax.swing.JList<LogEntry> m_List;
+    private javax.swing.JList<LogEntry> list;
     // End of variables declaration//GEN-END:variables
 
 }

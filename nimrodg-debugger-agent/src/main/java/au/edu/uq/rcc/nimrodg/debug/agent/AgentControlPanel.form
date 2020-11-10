@@ -20,18 +20,18 @@
               <EmptySpace max="-2" attributes="0"/>
               <Group type="103" groupAlignment="0" attributes="0">
                   <Component id="jScrollPane2" max="32767" attributes="0"/>
-                  <Component id="m_WaitingForAgent" alignment="0" max="32767" attributes="0"/>
-                  <Component id="m_SendingInit" alignment="0" max="32767" attributes="0"/>
-                  <Component id="m_Shutdown" alignment="1" max="32767" attributes="0"/>
-                  <Component id="m_Reset" alignment="0" max="32767" attributes="0"/>
+                  <Component id="waitingForAgent" alignment="0" max="32767" attributes="0"/>
+                  <Component id="sendingInit" alignment="0" max="32767" attributes="0"/>
+                  <Component id="shutdown" alignment="1" max="32767" attributes="0"/>
+                  <Component id="resetBtn" alignment="0" max="32767" attributes="0"/>
                   <Group type="102" attributes="0">
-                      <Component id="m_SubmitBtn" min="-2" max="-2" attributes="0"/>
+                      <Component id="submitBtn" min="-2" max="-2" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
-                      <Component id="m_PingBtn" min="-2" max="-2" attributes="0"/>
+                      <Component id="pingBtn" min="-2" max="-2" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
-                      <Component id="m_CancelBtn" min="-2" max="-2" attributes="0"/>
+                      <Component id="cancelBtn" min="-2" max="-2" attributes="0"/>
                       <EmptySpace max="32767" attributes="0"/>
-                      <Component id="m_TerminateBtn" min="-2" max="-2" attributes="0"/>
+                      <Component id="terminateBtn" min="-2" max="-2" attributes="0"/>
                   </Group>
               </Group>
           </Group>
@@ -41,80 +41,80 @@
       <Group type="103" groupAlignment="0" attributes="0">
           <Group type="102" alignment="0" attributes="0">
               <EmptySpace max="-2" attributes="0"/>
-              <Component id="m_WaitingForAgent" min="-2" max="-2" attributes="0"/>
+              <Component id="waitingForAgent" min="-2" max="-2" attributes="0"/>
               <EmptySpace max="-2" attributes="0"/>
-              <Component id="m_SendingInit" min="-2" max="-2" attributes="0"/>
+              <Component id="sendingInit" min="-2" max="-2" attributes="0"/>
               <EmptySpace type="unrelated" max="-2" attributes="0"/>
               <Component id="jScrollPane2" pref="209" max="32767" attributes="0"/>
               <EmptySpace max="-2" attributes="0"/>
               <Group type="103" groupAlignment="3" attributes="0">
-                  <Component id="m_SubmitBtn" alignment="3" min="-2" max="-2" attributes="0"/>
-                  <Component id="m_CancelBtn" alignment="3" min="-2" max="-2" attributes="0"/>
-                  <Component id="m_TerminateBtn" alignment="3" min="-2" max="-2" attributes="0"/>
-                  <Component id="m_PingBtn" alignment="3" min="-2" max="-2" attributes="0"/>
+                  <Component id="submitBtn" alignment="3" min="-2" max="-2" attributes="0"/>
+                  <Component id="cancelBtn" alignment="3" min="-2" max="-2" attributes="0"/>
+                  <Component id="terminateBtn" alignment="3" min="-2" max="-2" attributes="0"/>
+                  <Component id="pingBtn" alignment="3" min="-2" max="-2" attributes="0"/>
               </Group>
               <EmptySpace max="-2" attributes="0"/>
-              <Component id="m_Shutdown" min="-2" max="-2" attributes="0"/>
+              <Component id="shutdown" min="-2" max="-2" attributes="0"/>
               <EmptySpace max="-2" attributes="0"/>
-              <Component id="m_Reset" min="-2" max="-2" attributes="0"/>
+              <Component id="resetBtn" min="-2" max="-2" attributes="0"/>
               <EmptySpace max="-2" attributes="0"/>
           </Group>
       </Group>
     </DimensionLayout>
   </Layout>
   <SubComponents>
-    <Component class="javax.swing.JCheckBox" name="m_WaitingForAgent">
+    <Component class="javax.swing.JCheckBox" name="waitingForAgent">
       <Properties>
         <Property name="text" type="java.lang.String" value="Waiting for agent connection..."/>
         <Property name="enabled" type="boolean" value="false"/>
       </Properties>
     </Component>
-    <Component class="javax.swing.JCheckBox" name="m_SendingInit">
+    <Component class="javax.swing.JCheckBox" name="sendingInit">
       <Properties>
         <Property name="text" type="java.lang.String" value="Sending initialisation message..."/>
         <Property name="enabled" type="boolean" value="false"/>
       </Properties>
     </Component>
-    <Component class="javax.swing.JButton" name="m_SubmitBtn">
+    <Component class="javax.swing.JButton" name="submitBtn">
       <Properties>
         <Property name="text" type="java.lang.String" value="Submit"/>
         <Property name="enabled" type="boolean" value="false"/>
       </Properties>
       <Events>
-        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="m_SubmitBtnActionPerformed"/>
+        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="submitBtnActionPerformed"/>
       </Events>
     </Component>
-    <Component class="javax.swing.JButton" name="m_CancelBtn">
+    <Component class="javax.swing.JButton" name="cancelBtn">
       <Properties>
         <Property name="text" type="java.lang.String" value="Cancel"/>
         <Property name="enabled" type="boolean" value="false"/>
       </Properties>
       <Events>
-        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="m_CancelBtnActionPerformed"/>
+        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="cancelBtnActionPerformed"/>
       </Events>
     </Component>
-    <Component class="javax.swing.JButton" name="m_TerminateBtn">
+    <Component class="javax.swing.JButton" name="terminateBtn">
       <Properties>
         <Property name="text" type="java.lang.String" value="Terminate"/>
         <Property name="enabled" type="boolean" value="false"/>
       </Properties>
       <Events>
-        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="m_TerminateBtnActionPerformed"/>
+        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="terminateBtnActionPerformed"/>
       </Events>
     </Component>
-    <Component class="javax.swing.JCheckBox" name="m_Shutdown">
+    <Component class="javax.swing.JCheckBox" name="shutdown">
       <Properties>
         <Property name="text" type="java.lang.String" value="Agent shutdown..."/>
         <Property name="enabled" type="boolean" value="false"/>
       </Properties>
     </Component>
-    <Component class="javax.swing.JButton" name="m_Reset">
+    <Component class="javax.swing.JButton" name="resetBtn">
       <Properties>
         <Property name="text" type="java.lang.String" value="Reset"/>
         <Property name="enabled" type="boolean" value="false"/>
       </Properties>
       <Events>
-        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="m_ResetActionPerformed"/>
+        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="resetBtnActionPerformed"/>
       </Events>
     </Component>
     <Container class="javax.swing.JScrollPane" name="jScrollPane2">
@@ -124,7 +124,7 @@
 
       <Layout class="org.netbeans.modules.form.compat2.layouts.support.JScrollPaneSupportLayout"/>
       <SubComponents>
-        <Component class="javax.swing.JTextArea" name="m_JobText">
+        <Component class="javax.swing.JTextArea" name="jobText">
           <Properties>
             <Property name="columns" type="int" value="20"/>
             <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
@@ -136,13 +136,13 @@
         </Component>
       </SubComponents>
     </Container>
-    <Component class="javax.swing.JButton" name="m_PingBtn">
+    <Component class="javax.swing.JButton" name="pingBtn">
       <Properties>
         <Property name="text" type="java.lang.String" value="Ping"/>
         <Property name="enabled" type="boolean" value="false"/>
       </Properties>
       <Events>
-        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="m_PingBtnActionPerformed"/>
+        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="pingBtnActionPerformed"/>
       </Events>
     </Component>
   </SubComponents>

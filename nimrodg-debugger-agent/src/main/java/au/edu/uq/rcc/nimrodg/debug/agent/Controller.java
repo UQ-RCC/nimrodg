@@ -63,18 +63,18 @@ import javax.swing.*;
 
 public class Controller {
 
-	private final AgentGUI m_View;
+	private final AgentGUI view;
 
-	private AMQProcessorImpl m_AMQP;
+	private AMQProcessorImpl amqp;
 
-	private ReferenceAgent m_Agent;
-	private final _AgentListener m_AgentListener;
-	private final ILogger m_Logger;
-	private final AgentStatusPanel m_StatusPanel;
+	private ReferenceAgent agent;
+	private final _AgentListener agentListener;
+	private final ILogger logger;
+	private final AgentStatusPanel statusPanel;
 
-	private final MessageWindow m_MessageWindow;
+	private final MessageWindow messageWindow;
 
-	private final ArrayList<Message> m_Messages;
+	private final ArrayList<Message> messages;
 
 	private static final String SAMPLE_PLANFILE = "parameter x int range from 0 to 10\n"
 			+ "parameter y int range from 0 to 10\n"
@@ -95,31 +95,31 @@ public class Controller {
 			+ "endtask";
 
 	public Controller() {
-		m_View = new AgentGUI(new _ActionListener());
-		m_View.addWindowListener(new _WindowListener());
+		view = new AgentGUI(new _ActionListener());
+		view.addWindowListener(new _WindowListener());
 
-		SwingUtilities.invokeLater(() -> m_View.setVisible(true));
+		SwingUtilities.invokeLater(() -> view.setVisible(true));
 
-		m_View.setConnectionPanelState(AgentGUI.ConnectionPanelState.CONNECT);
-		m_View.setConnectStatus("Disconnected", Color.red);
-		m_View.getAgentPanel().addListener(new _AgentPanelListener());
+		view.setConnectionPanelState(AgentGUI.ConnectionPanelState.CONNECT);
+		view.setConnectStatus("Disconnected", Color.red);
+		view.getAgentPanel().addListener(new _AgentPanelListener());
 
-		m_Logger = m_View.getLogger();
-		m_StatusPanel = m_View.getStatusPanel();
+		logger = view.getLogger();
+		statusPanel = view.getStatusPanel();
 
-		m_AMQP = null;
+		amqp = null;
 
-		m_Agent = null;
-		m_AgentListener = new _AgentListener();
+		agent = null;
+		agentListener = new _AgentListener();
 
-		m_Agent = new ReferenceAgent(new DefaultAgentState(), m_AgentListener);
-		m_MessageWindow = new MessageWindow();
-		m_Messages = new ArrayList<>();
-		m_MessageWindow.getMessagePanel().setMessages(m_Messages);
+		agent = new ReferenceAgent(new DefaultAgentState(), agentListener);
+		messageWindow = new MessageWindow();
+		messages = new ArrayList<>();
+		messageWindow.getMessagePanel().setMessages(messages);
 	}
 
 	public boolean isConnected() {
-		return m_AMQP != null;
+		return amqp != null;
 	}
 
 	public void connect(String uri) {
@@ -127,25 +127,25 @@ public class Controller {
 			throw new IllegalStateException();
 		}
 
-		String routingKey = m_View.getRoutingKey();
-		m_View.setConnectionPanelState(AgentGUI.ConnectionPanelState.LOCKED);
-		m_View.setConnectStatus("Connecting...", Color.black);
-		m_View.setConnectProgress(0.0f);
+		String routingKey = view.getRoutingKey();
+		view.setConnectionPanelState(AgentGUI.ConnectionPanelState.LOCKED);
+		view.setConnectStatus("Connecting...", Color.black);
+		view.setConnectProgress(0.0f);
 
 		SwingUtilities.invokeLater(() -> {
 			try {
-				m_AMQP = new AMQProcessorImpl(new URI(uri), new Certificate[0], "TLSv1.2", m_View.getRoutingKey(), true, true, new _MessageQueueListener(), ForkJoinPool.commonPool(), m_View.getSigningAlgorithm());
-				m_Logger.log(ILogger.Level.INFO, "Connected to %s", uri);
+				amqp = new AMQProcessorImpl(new URI(uri), new Certificate[0], "TLSv1.2", view.getRoutingKey(), true, true, new _MessageQueueListener(), ForkJoinPool.commonPool(), view.getSigningAlgorithm());
+				logger.log(ILogger.Level.INFO, "Connected to %s", uri);
 
-				m_View.setConnectProgress(1.0f);
-				m_View.setConnectStatus(String.format("%s <===> %s (via %s)", m_AMQP.getQueue(), m_AMQP.getExchange(), routingKey), Color.black);
-				m_View.setConnectionPanelState(AgentGUI.ConnectionPanelState.DISCONNECT);
+				view.setConnectProgress(1.0f);
+				view.setConnectStatus(String.format("%s <===> %s (via %s)", amqp.getQueue(), amqp.getExchange(), routingKey), Color.black);
+				view.setConnectionPanelState(AgentGUI.ConnectionPanelState.DISCONNECT);
 			} catch(IOException | URISyntaxException | GeneralSecurityException | TimeoutException e) {
-				m_AMQP = null;
-				m_View.setConnectProgress(0.0f);
-				m_View.setConnectStatus("Disconnected", Color.red);
-				m_View.setConnectionPanelState(AgentGUI.ConnectionPanelState.CONNECT);
-				m_Logger.log(ILogger.Level.ERR, e);
+				amqp = null;
+				view.setConnectProgress(0.0f);
+				view.setConnectStatus("Disconnected", Color.red);
+				view.setConnectionPanelState(AgentGUI.ConnectionPanelState.CONNECT);
+				logger.log(ILogger.Level.ERR, e);
 			}
 		});
 	}
@@ -156,15 +156,15 @@ public class Controller {
 		}
 
 		try {
-			m_AMQP.close();
+			amqp.close();
 		} catch(IOException e) {
-			m_Logger.log(ILogger.Level.ERR, e);
+			logger.log(ILogger.Level.ERR, e);
 		}
 
-		m_AMQP = null;
-		m_View.setConnectionPanelState(AgentGUI.ConnectionPanelState.CONNECT);
-		m_View.setConnectStatus("Disconnected", Color.red);
-		m_View.setConnectProgress(0.0f);
+		amqp = null;
+		view.setConnectionPanelState(AgentGUI.ConnectionPanelState.CONNECT);
+		view.setConnectStatus("Disconnected", Color.red);
+		view.setConnectProgress(0.0f);
 	}
 
 	private void actionPerformed(ActionEvent e) {
@@ -174,14 +174,14 @@ public class Controller {
 			if(isConnected()) {
 				disconnect();
 			} else {
-				connect(m_View.getAMQPUri());
+				connect(view.getAMQPUri());
 			}
 		} else if(cmd.equals("file->exit")) {
-			m_View.dispatchEvent(new WindowEvent(m_View, WindowEvent.WINDOW_CLOSING));
+			view.dispatchEvent(new WindowEvent(view, WindowEvent.WINDOW_CLOSING));
 		} else if(cmd.equals("file->clear_log")) {
-			m_Logger.clear();
+			logger.clear();
 		} else if(cmd.equals("view->show_message_window")) {
-			m_MessageWindow.setVisible(m_View.getShowMessageWindow());
+			messageWindow.setVisible(view.getShowMessageWindow());
 		}
 	}
 
@@ -209,13 +209,13 @@ public class Controller {
 			if(isConnected()) {
 				disconnect();
 			}
-			m_MessageWindow.dispose();
+			messageWindow.dispose();
 		}
 	}
 
 	private MessageQueueListener.MessageOperation handleAgentMessage(long tag, AMQPMessage amsg) throws IOException {
-		m_Messages.add(Message.create(amsg, true));
-		m_MessageWindow.getMessagePanel().refreshMessages();
+		messages.add(Message.create(amsg, true));
+		messageWindow.getMessagePanel().refreshMessages();
 
 		AgentMessage msg = amsg.message;
 		if(msg == null) {
@@ -225,10 +225,10 @@ public class Controller {
 		boolean validSig;
 
 		try {
-			validSig = SigUtils.verifySignature(amsg.authHeader, m_View.getSecretKey(), amsg.basicProperties, amsg.body);
+			validSig = SigUtils.verifySignature(amsg.authHeader, view.getSecretKey(), amsg.basicProperties, amsg.body);
 		} catch(NoSuchAlgorithmException e) {
-			m_Logger.log(ILogger.Level.ERR, "Error signing header using %s", amsg.authHeader.algorithm);
-			m_Logger.log(ILogger.Level.ERR, e);
+			logger.log(ILogger.Level.ERR, "Error signing header using %s", amsg.authHeader.algorithm);
+			logger.log(ILogger.Level.ERR, e);
 			return MessageQueueListener.MessageOperation.Reject;
 		}
 
@@ -243,71 +243,71 @@ public class Controller {
 		UUID uuid = msg.getAgentUUID();
 
 		boolean terminate =
-				(m_Agent.getUUID() != null && !uuid.equals(m_Agent.getUUID())) ||	/* Mismatching UUID. */
-						(m_Agent.getState() == Agent.State.SHUTDOWN);				/* Already shutdown. */
+				(agent.getUUID() != null && !uuid.equals(agent.getUUID())) ||	/* Mismatching UUID. */
+						(agent.getState() == Agent.State.SHUTDOWN);				/* Already shutdown. */
 
 		if(terminate) {
 			if(msg.getType() == AgentMessage.Type.Hello) {
 				AgentHello hello = (AgentHello)msg;
-				m_Logger.log(ILogger.Level.WARN, "Received agent.hello with key '%s', sending termination...", hello.queue);
+				logger.log(ILogger.Level.WARN, "Received agent.hello with key '%s', sending termination...", hello.queue);
 				sendMessage(hello.queue, new AgentLifeControl.Builder()
 						.agentUuid(uuid)
 						.operation(AgentLifeControl.Operation.Terminate));
 			} else {
-				m_Logger.log(ILogger.Level.WARN, "Ignoring message from unknown agent %s", uuid);
+				logger.log(ILogger.Level.WARN, "Ignoring message from unknown agent %s", uuid);
 			}
 			return MessageQueueListener.MessageOperation.Ack;
 		}
 
-		if(m_Agent.getState() == null) {
-			m_Agent.reset(msg.getAgentUUID());
+		if(agent.getState() == null) {
+			agent.reset(msg.getAgentUUID());
 		}
 
 		try {
-			m_Agent.processMessage(msg, Instant.now());
+			agent.processMessage(msg, Instant.now());
 			return MessageQueueListener.MessageOperation.Ack;
 		} catch(IllegalStateException e) {
-			m_Logger.log(ILogger.Level.ERR, e);
+			logger.log(ILogger.Level.ERR, e);
 			return MessageQueueListener.MessageOperation.Reject;
 		}
 	}
 
 	private void sendMessage(String key, AgentMessage.Builder<?> msg) throws IOException {
-		AMQPMessage amsg = m_AMQP.sendMessage(
+		AMQPMessage amsg = amqp.sendMessage(
 				key,
-				SigUtils.buildAccessKey(m_Agent.getUUID()),
-				m_View.getSecretKey(),
+				SigUtils.buildAccessKey(agent.getUUID()),
+				view.getSecretKey(),
 				msg.timestamp(Instant.now()).build()
 		);
-		m_Messages.add(Message.create(amsg, false));
-		m_MessageWindow.getMessagePanel().refreshMessages();
+		messages.add(Message.create(amsg, false));
+		messageWindow.getMessagePanel().refreshMessages();
 	}
 
 	private void onAgentStateChange(Agent agent, Agent.State oldState, Agent.State newState) {
-		m_Logger.log(ILogger.Level.INFO, "State Change: %s => %s", oldState, newState);
+		logger.log(ILogger.Level.INFO, "State Change: %s => %s", oldState, newState);
 
 		if(newState == Agent.State.SHUTDOWN) {
 			if(agent.getShutdownReason() == AgentShutdown.Reason.Requested) {
-				m_Logger.log(ILogger.Level.INFO, "Agent terminated by request");
+				logger.log(ILogger.Level.INFO, "Agent terminated by request");
 			} else if(agent.getShutdownReason() == AgentShutdown.Reason.HostSignal) {
-				m_Logger.log(ILogger.Level.INFO, "Agent terminated by host signal %d", agent.getShutdownSignal());
+				logger.log(ILogger.Level.INFO, "Agent terminated by host signal %d", agent.getShutdownSignal());
 			}
 		}
 
-		m_View.getAgentPanel().setState(newState);
-		m_StatusPanel.update(m_Agent);
+		view.getAgentPanel().setState(newState);
+		statusPanel.update(agent);
 	}
 
 	private void onAgentJobSubmit(Agent agent, NetworkJob job) {
-		m_StatusPanel.setJob(job);
+		statusPanel.setJob(job);
 	}
 
 	private void onAgentJobUpdate(Agent agent, AgentUpdate au) {
-		m_StatusPanel.updateCommand(m_Agent, au);
+		statusPanel.updateCommand(agent, au);
 	}
 
 	private void onAgentPong(Agent agent, AgentPong pong) {
-		m_StatusPanel.update(m_Agent);
+		statusPanel.update(agent);
 	}
 
 	private void onPanelSubmit(String jobText) {
@@ -315,17 +315,17 @@ public class Controller {
 		try {
 			run = ANTLR4ParseAPIImpl.INSTANCE.parseRunToBuilder(jobText).build();
 		} catch(RunfileBuildException | NullPointerException e) {
-			m_Logger.log(ILogger.Level.ERR, e);
+			logger.log(ILogger.Level.ERR, e);
 			return;
 		} catch(PlanfileParseException ex) {
-			ex.getErrors().forEach(e -> m_Logger.log(ILogger.Level.ERR, e.toString()));
+			ex.getErrors().forEach(e -> logger.log(ILogger.Level.ERR, e.toString()));
 			return;
 		}
 
-		m_Logger.log(ILogger.Level.INFO, "Compiled runfile, %d variables, %d jobs, %d tasks.", run.numVariables, run.numJobs, run.numTasks);
+		logger.log(ILogger.Level.INFO, "Compiled runfile, %d variables, %d jobs, %d tasks.", run.numVariables, run.numJobs, run.numTasks);
 
 		if(run.numJobs != 1) {
-			m_Logger.log(ILogger.Level.ERR, "Planfile cannot have > 1 jobs.");
+			logger.log(ILogger.Level.ERR, "Planfile cannot have > 1 jobs.");
 			return;
 		}
 
@@ -334,46 +334,46 @@ public class Controller {
 				run,
 				1,
 				Task.Name.Main,
-				m_View.getTransferURI(),
+				view.getTransferURI(),
 				"expname"
 		);
 		try {
-			m_Agent.submitJob(j);
+			agent.submitJob(j);
 		} catch(Exception e) {
-			m_Logger.log(ILogger.Level.ERR, e);
+			logger.log(ILogger.Level.ERR, e);
 		}
 	}
 
 	private void onPanelPing() {
 		try {
-			m_Agent.ping();
+			agent.ping();
 		} catch(IOException e) {
-			m_Logger.log(ILogger.Level.ERR, e);
+			logger.log(ILogger.Level.ERR, e);
 		}
 	}
 
 	private void onPanelCancel() {
 		try {
-			m_Agent.cancelJob();
+			agent.cancelJob();
 		} catch(IOException e) {
-			m_Logger.log(ILogger.Level.ERR, e);
+			logger.log(ILogger.Level.ERR, e);
 		}
 	}
 
 	private void onPanelTerminate() {
 		try {
-			m_Agent.terminate();
+			agent.terminate();
 		} catch(IOException e) {
-			m_Logger.log(ILogger.Level.ERR, e);
+			logger.log(ILogger.Level.ERR, e);
 		}
 	}
 
 	private void onPanelReset() {
-		m_Agent.disconnect(AgentShutdown.Reason.Requested, -1);
-		m_Agent.reset(null);
-		m_StatusPanel.setJob(null);
-		m_Messages.clear();
-		m_MessageWindow.getMessagePanel().refreshMessages();
+		agent.disconnect(AgentShutdown.Reason.Requested, -1);
+		agent.reset(null);
+		statusPanel.setJob(null);
+		messages.clear();
+		messageWindow.getMessagePanel().refreshMessages();
 	}
 
 	private class _AgentListener implements ReferenceAgent.AgentListener {

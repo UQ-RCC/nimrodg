@@ -29,8 +29,8 @@ import javax.swing.DefaultComboBoxModel;
 
 public class AgentGUI extends javax.swing.JFrame {
 
-	private final ActionListener m_Listener;
-	private final DefaultComboBoxModel<String> m_SigModel;
+	private final ActionListener listener;
+	private final DefaultComboBoxModel<String> sigModel;
 
 	public AgentGUI() {
 		this((ActionEvent e) -> {
@@ -38,34 +38,34 @@ public class AgentGUI extends javax.swing.JFrame {
 	}
 
 	public AgentGUI(ActionListener listener) {
-		m_Listener = listener;
+		this.listener = listener;
 		initComponents();
 		this.addWindowListener(new _WindowAdapter());
-		m_SigModel = new DefaultComboBoxModel<>(SigUtils.ALGORITHMS.keySet().stream()
+		sigModel = new DefaultComboBoxModel<>(SigUtils.ALGORITHMS.keySet().stream()
                         .sorted().toArray(String[]::new));
-		m_SigModel.setSelectedItem(SigUtils.DEFAULT_ALGORITHM);
-		m_SigningAlgorithm.setModel(m_SigModel);
+		sigModel.setSelectedItem(SigUtils.DEFAULT_ALGORITHM);
+		sigingAlgorithm.setModel(sigModel);
 	}
 
 	public void setConnectProgress(float perc) {
-		m_ConnectProgressBar.setValue((int)(perc * 100));
+		connectProgressBar.setValue((int)(perc * 100));
 	}
 
 	public void setConnectStatus(String status, Color colour) {
-		m_ConnectProgressBar.setString(status);
-		//m_ConnectProgressBar.setForeground(colour);
+		connectProgressBar.setString(status);
+		//connectProgressBar.setForeground(colour);
 	}
 
 	public AgentControlPanel getAgentPanel() {
-		return m_AgentPanel;
+		return agentPanel;
 	}
 
 	public ILogger getLogger() {
-		return m_LogPanel;
+		return logPanel;
 	}
 
 	public AgentStatusPanel getStatusPanel() {
-		return m_StatusPanel;
+		return statusPanel;
 	}
 
 	public enum ConnectionPanelState {
@@ -76,45 +76,45 @@ public class AgentGUI extends javax.swing.JFrame {
 
 	public void setConnectionPanelState(ConnectionPanelState state) {
 		if(state == ConnectionPanelState.CONNECT) {
-			m_ConnectBtn.setText("Connect");
-			m_ConnectBtn.setEnabled(true);
-			m_AMQPUrl.setEditable(true);
-			m_RoutingKey.setEditable(true);
+			connectBtn.setText("Connect");
+			connectBtn.setEnabled(true);
+			amqpUri.setEditable(true);
+			routingKey.setEditable(true);
 		} else if(state == ConnectionPanelState.DISCONNECT) {
-			m_ConnectBtn.setText("Disconnect");
-			m_ConnectBtn.setEnabled(true);
-			m_AMQPUrl.setEditable(false);
-			m_RoutingKey.setEditable(false);
+			connectBtn.setText("Disconnect");
+			connectBtn.setEnabled(true);
+			amqpUri.setEditable(false);
+			routingKey.setEditable(false);
 		} else {
 			assert state == ConnectionPanelState.LOCKED;
-			m_ConnectBtn.setEnabled(false);
-			m_AMQPUrl.setEditable(false);
-			m_RoutingKey.setEditable(false);
+			connectBtn.setEnabled(false);
+			amqpUri.setEditable(false);
+			routingKey.setEditable(false);
 		}
 	}
 
 	public String getAMQPUri() {
-		return m_AMQPUrl.getText();
+		return amqpUri.getText();
 	}
 
 	public String getRoutingKey() {
-		return m_RoutingKey.getText();
+		return routingKey.getText();
 	}
 
 	public String getTransferURI() {
-		return m_TransferUri.getText();
+		return transferUri.getText();
 	}
 
 	public String getSigningAlgorithm() {
-		return (String)m_SigningAlgorithm.getSelectedItem();
+		return (String)sigingAlgorithm.getSelectedItem();
 	}
 
 	public String getSecretKey() {
-		return m_SecretKey.getText();
+		return secretKey.getText();
 	}
 
 	public boolean getShowMessageWindow() {
-		return m_ShowMessageWindow.isSelected();
+		return showMessageWindow.isSelected();
 	}
 
 	@SuppressWarnings("unchecked")
@@ -124,30 +124,30 @@ public class AgentGUI extends javax.swing.JFrame {
         jPanel1 = new javax.swing.JPanel();
         jPanel3 = new javax.swing.JPanel();
         javax.swing.JLabel jLabel3 = new javax.swing.JLabel();
-        m_AMQPUrl = new javax.swing.JTextField();
-        m_ConnectBtn = new javax.swing.JButton();
+        amqpUri = new javax.swing.JTextField();
+        connectBtn = new javax.swing.JButton();
         javax.swing.JLabel jLabel4 = new javax.swing.JLabel();
-        m_TransferUri = new javax.swing.JTextField();
+        transferUri = new javax.swing.JTextField();
         javax.swing.JLabel jLabel7 = new javax.swing.JLabel();
         javax.swing.JLabel jLabel5 = new javax.swing.JLabel();
-        m_RoutingKey = new javax.swing.JTextField();
+        routingKey = new javax.swing.JTextField();
         javax.swing.JLabel jLabel6 = new javax.swing.JLabel();
-        m_SecretKey = new javax.swing.JTextField();
-        m_SigningAlgorithm = new javax.swing.JComboBox<>();
+        secretKey = new javax.swing.JTextField();
+        sigingAlgorithm = new javax.swing.JComboBox<>();
         javax.swing.JSplitPane jSplitPane1 = new javax.swing.JSplitPane();
         jPanel4 = new javax.swing.JPanel();
-        m_AgentPanel = new au.edu.uq.rcc.nimrodg.debug.agent.AgentControlPanel();
-        m_StatusPanel = new au.edu.uq.rcc.nimrodg.debug.agent.AgentStatusPanel();
-        m_LogPanel = new au.edu.uq.rcc.nimrodg.debug.agent.LogPanel();
+        agentPanel = new au.edu.uq.rcc.nimrodg.debug.agent.AgentControlPanel();
+        statusPanel = new au.edu.uq.rcc.nimrodg.debug.agent.AgentStatusPanel();
+        logPanel = new au.edu.uq.rcc.nimrodg.debug.agent.LogPanel();
         jPanel2 = new javax.swing.JPanel();
-        m_ConnectProgressBar = new javax.swing.JProgressBar();
+        connectProgressBar = new javax.swing.JProgressBar();
         jMenuBar1 = new javax.swing.JMenuBar();
         javax.swing.JMenu jMenu1 = new javax.swing.JMenu();
         javax.swing.JMenuItem jMenuItem2 = new javax.swing.JMenuItem();
         javax.swing.JPopupMenu.Separator jSeparator2 = new javax.swing.JPopupMenu.Separator();
         javax.swing.JMenuItem jMenuItem3 = new javax.swing.JMenuItem();
         jMenu2 = new javax.swing.JMenu();
-        m_ShowMessageWindow = new javax.swing.JCheckBoxMenuItem();
+        showMessageWindow = new javax.swing.JCheckBoxMenuItem();
 
         setTitle("Nimrod/G Agent Debugger");
 
@@ -155,11 +155,11 @@ public class AgentGUI extends javax.swing.JFrame {
         jLabel3.setText("AMQP URI");
         jLabel3.setHorizontalTextPosition(javax.swing.SwingConstants.LEADING);
 
-        m_AMQPUrl.setText("amqp://guest:guest@127.0.0.1/nimrod");
+        amqpUri.setText("amqp://guest:guest@127.0.0.1/nimrod");
 
-        m_ConnectBtn.setText("Connect");
-        m_ConnectBtn.setActionCommand("connect");
-        m_ConnectBtn.addActionListener(new java.awt.event.ActionListener() {
+        connectBtn.setText("Connect");
+        connectBtn.setActionCommand("connect");
+        connectBtn.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 onActionPerformed(evt);
             }
@@ -169,7 +169,7 @@ public class AgentGUI extends javax.swing.JFrame {
         jLabel4.setText("Transfer URI");
         jLabel4.setHorizontalTextPosition(javax.swing.SwingConstants.LEADING);
 
-        m_TransferUri.setText("file:///home/zane/Desktop/agentwork");
+        transferUri.setText("file:///home/zane/Desktop/agentwork");
 
         jLabel7.setHorizontalAlignment(javax.swing.SwingConstants.TRAILING);
         jLabel7.setText("Algorithm");
@@ -180,13 +180,13 @@ public class AgentGUI extends javax.swing.JFrame {
         jLabel5.setText("Routing Key");
         jLabel5.setHorizontalTextPosition(javax.swing.SwingConstants.LEADING);
 
-        m_RoutingKey.setText("iamthemaster");
+        routingKey.setText("iamthemaster");
 
         jLabel6.setHorizontalAlignment(javax.swing.SwingConstants.TRAILING);
         jLabel6.setText("Secret Key");
         jLabel6.setHorizontalTextPosition(javax.swing.SwingConstants.LEADING);
 
-        m_SecretKey.setText("abc123");
+        secretKey.setText("abc123");
 
         javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
         jPanel3.setLayout(jPanel3Layout);
@@ -200,12 +200,12 @@ public class AgentGUI extends javax.swing.JFrame {
                 .addGap(4, 4, 4)
                 .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel3Layout.createSequentialGroup()
-                        .addComponent(m_AMQPUrl, javax.swing.GroupLayout.PREFERRED_SIZE, 445, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(amqpUri, javax.swing.GroupLayout.PREFERRED_SIZE, 445, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(jLabel5)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(m_RoutingKey))
-                    .addComponent(m_TransferUri, javax.swing.GroupLayout.DEFAULT_SIZE, 693, Short.MAX_VALUE))
+                        .addComponent(routingKey))
+                    .addComponent(transferUri, javax.swing.GroupLayout.DEFAULT_SIZE, 693, Short.MAX_VALUE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                     .addComponent(jLabel6, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
@@ -213,28 +213,29 @@ public class AgentGUI extends javax.swing.JFrame {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                     .addGroup(jPanel3Layout.createSequentialGroup()
-                        .addComponent(m_SecretKey, javax.swing.GroupLayout.PREFERRED_SIZE, 141, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(secretKey, javax.swing.GroupLayout.PREFERRED_SIZE, 141, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(m_ConnectBtn))
-                    .addComponent(m_SigningAlgorithm, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                        .addComponent(connectBtn))
+                    .addComponent(sigingAlgorithm, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
         );
         jPanel3Layout.setVerticalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel3Layout.createSequentialGroup()
                 .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(m_AMQPUrl, javax.swing.GroupLayout.PREFERRED_SIZE, 32, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(amqpUri, javax.swing.GroupLayout.PREFERRED_SIZE, 32, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jLabel3)
-                    .addComponent(m_ConnectBtn)
+                    .addComponent(connectBtn)
                     .addComponent(jLabel5)
-                    .addComponent(m_RoutingKey, javax.swing.GroupLayout.PREFERRED_SIZE, 32, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(routingKey, javax.swing.GroupLayout.PREFERRED_SIZE, 32, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jLabel6)
-                    .addComponent(m_SecretKey, javax.swing.GroupLayout.PREFERRED_SIZE, 32, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(secretKey, javax.swing.GroupLayout.PREFERRED_SIZE, 32, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(m_TransferUri, javax.swing.GroupLayout.PREFERRED_SIZE, 32, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel4)
-                    .addComponent(jLabel7)
-                    .addComponent(m_SigningAlgorithm, javax.swing.GroupLayout.DEFAULT_SIZE, 32, Short.MAX_VALUE))
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(sigingAlgorithm)
+                    .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                        .addComponent(transferUri, javax.swing.GroupLayout.PREFERRED_SIZE, 32, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(jLabel4)
+                        .addComponent(jLabel7)))
                 .addContainerGap())
         );
 
@@ -249,28 +250,28 @@ public class AgentGUI extends javax.swing.JFrame {
         jPanel4Layout.setHorizontalGroup(
             jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel4Layout.createSequentialGroup()
-                .addComponent(m_AgentPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(agentPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(m_StatusPanel, javax.swing.GroupLayout.DEFAULT_SIZE, 762, Short.MAX_VALUE))
+                .addComponent(statusPanel, javax.swing.GroupLayout.DEFAULT_SIZE, 762, Short.MAX_VALUE))
         );
         jPanel4Layout.setVerticalGroup(
             jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(m_StatusPanel, javax.swing.GroupLayout.DEFAULT_SIZE, 299, Short.MAX_VALUE)
-            .addComponent(m_AgentPanel, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
+            .addComponent(statusPanel, javax.swing.GroupLayout.DEFAULT_SIZE, 299, Short.MAX_VALUE)
+            .addComponent(agentPanel, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
         );
 
         jSplitPane1.setLeftComponent(jPanel4);
-        jSplitPane1.setRightComponent(m_LogPanel);
+        jSplitPane1.setRightComponent(logPanel);
 
         jPanel2.setPreferredSize(new java.awt.Dimension(400, 24));
         jPanel2.setLayout(new javax.swing.BoxLayout(jPanel2, javax.swing.BoxLayout.LINE_AXIS));
 
-        m_ConnectProgressBar.setMaximumSize(new java.awt.Dimension(32767, 20));
-        m_ConnectProgressBar.setMinimumSize(new java.awt.Dimension(128, 20));
-        m_ConnectProgressBar.setPreferredSize(new java.awt.Dimension(128, 20));
-        m_ConnectProgressBar.setString("");
-        m_ConnectProgressBar.setStringPainted(true);
-        jPanel2.add(m_ConnectProgressBar);
+        connectProgressBar.setMaximumSize(new java.awt.Dimension(32767, 20));
+        connectProgressBar.setMinimumSize(new java.awt.Dimension(128, 20));
+        connectProgressBar.setPreferredSize(new java.awt.Dimension(128, 20));
+        connectProgressBar.setString("");
+        connectProgressBar.setStringPainted(true);
+        jPanel2.add(connectProgressBar);
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
@@ -327,15 +328,15 @@ public class AgentGUI extends javax.swing.JFrame {
 
         jMenu2.setText("View");
 
-        m_ShowMessageWindow.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_M, java.awt.event.InputEvent.CTRL_DOWN_MASK));
-        m_ShowMessageWindow.setText("Show Message Window");
-        m_ShowMessageWindow.setActionCommand("view->show_message_window");
-        m_ShowMessageWindow.addActionListener(new java.awt.event.ActionListener() {
+        showMessageWindow.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_M, java.awt.event.InputEvent.CTRL_DOWN_MASK));
+        showMessageWindow.setText("Show Message Window");
+        showMessageWindow.setActionCommand("view->show_message_window");
+        showMessageWindow.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 onActionPerformed(evt);
             }
         });
-        jMenu2.add(m_ShowMessageWindow);
+        jMenu2.add(showMessageWindow);
 
         jMenuBar1.add(jMenu2);
 
@@ -356,7 +357,7 @@ public class AgentGUI extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void onActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_onActionPerformed
-		m_Listener.actionPerformed(evt);
+		listener.actionPerformed(evt);
     }//GEN-LAST:event_onActionPerformed
 
 	private class _WindowAdapter extends WindowAdapter {
@@ -377,22 +378,22 @@ public class AgentGUI extends javax.swing.JFrame {
 //	}
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private au.edu.uq.rcc.nimrodg.debug.agent.AgentControlPanel agentPanel;
+    private javax.swing.JTextField amqpUri;
+    private javax.swing.JButton connectBtn;
+    private javax.swing.JProgressBar connectProgressBar;
     private javax.swing.JMenu jMenu2;
     private javax.swing.JMenuBar jMenuBar1;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel3;
     private javax.swing.JPanel jPanel4;
-    private javax.swing.JTextField m_AMQPUrl;
-    private au.edu.uq.rcc.nimrodg.debug.agent.AgentControlPanel m_AgentPanel;
-    private javax.swing.JButton m_ConnectBtn;
-    private javax.swing.JProgressBar m_ConnectProgressBar;
-    private au.edu.uq.rcc.nimrodg.debug.agent.LogPanel m_LogPanel;
-    private javax.swing.JTextField m_RoutingKey;
-    private javax.swing.JTextField m_SecretKey;
-    private javax.swing.JCheckBoxMenuItem m_ShowMessageWindow;
-    private javax.swing.JComboBox<String> m_SigningAlgorithm;
-    private au.edu.uq.rcc.nimrodg.debug.agent.AgentStatusPanel m_StatusPanel;
-    private javax.swing.JTextField m_TransferUri;
+    private au.edu.uq.rcc.nimrodg.debug.agent.LogPanel logPanel;
+    private javax.swing.JTextField routingKey;
+    private javax.swing.JTextField secretKey;
+    private javax.swing.JCheckBoxMenuItem showMessageWindow;
+    private javax.swing.JComboBox<String> sigingAlgorithm;
+    private au.edu.uq.rcc.nimrodg.debug.agent.AgentStatusPanel statusPanel;
+    private javax.swing.JTextField transferUri;
     // End of variables declaration//GEN-END:variables
 }

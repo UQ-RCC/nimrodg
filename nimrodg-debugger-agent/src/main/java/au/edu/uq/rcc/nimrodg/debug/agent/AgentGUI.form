@@ -63,7 +63,7 @@
             <Property name="text" type="java.lang.String" value="View"/>
           </Properties>
           <SubComponents>
-            <MenuItem class="javax.swing.JCheckBoxMenuItem" name="m_ShowMessageWindow">
+            <MenuItem class="javax.swing.JCheckBoxMenuItem" name="showMessageWindow">
               <Properties>
                 <Property name="accelerator" type="javax.swing.KeyStroke" editor="org.netbeans.modules.form.editors.KeyStrokeEditor">
                   <KeyStroke key="Ctrl+M"/>
@@ -157,13 +157,13 @@
                       <EmptySpace min="4" pref="4" max="-2" attributes="0"/>
                       <Group type="103" groupAlignment="0" attributes="0">
                           <Group type="102" attributes="0">
-                              <Component id="m_AMQPUrl" min="-2" pref="445" max="-2" attributes="0"/>
+                              <Component id="amqpUri" min="-2" pref="445" max="-2" attributes="0"/>
                               <EmptySpace max="-2" attributes="0"/>
                               <Component id="jLabel5" min="-2" max="-2" attributes="0"/>
                               <EmptySpace max="-2" attributes="0"/>
-                              <Component id="m_RoutingKey" max="32767" attributes="0"/>
+                              <Component id="routingKey" max="32767" attributes="0"/>
                           </Group>
-                          <Component id="m_TransferUri" pref="693" max="32767" attributes="0"/>
+                          <Component id="transferUri" pref="693" max="32767" attributes="0"/>
                       </Group>
                       <EmptySpace max="-2" attributes="0"/>
                       <Group type="103" groupAlignment="0" max="-2" attributes="0">
@@ -173,11 +173,11 @@
                       <EmptySpace max="-2" attributes="0"/>
                       <Group type="103" groupAlignment="0" max="-2" attributes="0">
                           <Group type="102" attributes="0">
-                              <Component id="m_SecretKey" min="-2" pref="141" max="-2" attributes="0"/>
+                              <Component id="secretKey" min="-2" pref="141" max="-2" attributes="0"/>
                               <EmptySpace max="-2" attributes="0"/>
-                              <Component id="m_ConnectBtn" min="-2" max="-2" attributes="0"/>
+                              <Component id="connectBtn" min="-2" max="-2" attributes="0"/>
                           </Group>
-                          <Component id="m_SigningAlgorithm" max="32767" attributes="0"/>
+                          <Component id="sigingAlgorithm" max="32767" attributes="0"/>
                       </Group>
                   </Group>
               </Group>
@@ -186,20 +186,22 @@
               <Group type="103" groupAlignment="0" attributes="0">
                   <Group type="102" attributes="0">
                       <Group type="103" groupAlignment="3" attributes="0">
-                          <Component id="m_AMQPUrl" alignment="3" min="-2" pref="32" max="-2" attributes="0"/>
+                          <Component id="amqpUri" alignment="3" min="-2" pref="32" max="-2" attributes="0"/>
                           <Component id="jLabel3" alignment="3" min="-2" max="-2" attributes="0"/>
-                          <Component id="m_ConnectBtn" alignment="3" min="-2" max="-2" attributes="0"/>
+                          <Component id="connectBtn" alignment="3" min="-2" max="-2" attributes="0"/>
                           <Component id="jLabel5" alignment="3" min="-2" max="-2" attributes="0"/>
-                          <Component id="m_RoutingKey" alignment="3" min="-2" pref="32" max="-2" attributes="0"/>
+                          <Component id="routingKey" alignment="3" min="-2" pref="32" max="-2" attributes="0"/>
                           <Component id="jLabel6" alignment="3" min="-2" max="-2" attributes="0"/>
-                          <Component id="m_SecretKey" alignment="3" min="-2" pref="32" max="-2" attributes="0"/>
+                          <Component id="secretKey" alignment="3" min="-2" pref="32" max="-2" attributes="0"/>
                       </Group>
                       <EmptySpace max="-2" attributes="0"/>
-                      <Group type="103" groupAlignment="3" attributes="0">
-                          <Component id="m_TransferUri" alignment="3" min="-2" pref="32" max="-2" attributes="0"/>
-                          <Component id="jLabel4" alignment="3" min="-2" max="-2" attributes="0"/>
-                          <Component id="jLabel7" alignment="3" min="-2" max="-2" attributes="0"/>
-                          <Component id="m_SigningAlgorithm" alignment="0" pref="32" max="32767" attributes="0"/>
+                      <Group type="103" groupAlignment="0" attributes="0">
+                          <Component id="sigingAlgorithm" alignment="0" max="32767" attributes="0"/>
+                          <Group type="103" groupAlignment="3" attributes="0">
+                              <Component id="transferUri" alignment="3" min="-2" pref="32" max="-2" attributes="0"/>
+                              <Component id="jLabel4" alignment="3" min="-2" max="-2" attributes="0"/>
+                              <Component id="jLabel7" alignment="3" min="-2" max="-2" attributes="0"/>
+                          </Group>
                       </Group>
                       <EmptySpace max="-2" attributes="0"/>
                   </Group>
@@ -218,12 +220,12 @@
                 <AuxValue name="JavaCodeGenerator_VariableModifier" type="java.lang.Integer" value="0"/>
               </AuxValues>
             </Component>
-            <Component class="javax.swing.JTextField" name="m_AMQPUrl">
+            <Component class="javax.swing.JTextField" name="amqpUri">
               <Properties>
                 <Property name="text" type="java.lang.String" value="amqp://guest:guest@127.0.0.1/nimrod"/>
               </Properties>
             </Component>
-            <Component class="javax.swing.JButton" name="m_ConnectBtn">
+            <Component class="javax.swing.JButton" name="connectBtn">
               <Properties>
                 <Property name="text" type="java.lang.String" value="Connect"/>
                 <Property name="actionCommand" type="java.lang.String" value="connect"/>
@@ -243,7 +245,7 @@
                 <AuxValue name="JavaCodeGenerator_VariableModifier" type="java.lang.Integer" value="0"/>
               </AuxValues>
             </Component>
-            <Component class="javax.swing.JTextField" name="m_TransferUri">
+            <Component class="javax.swing.JTextField" name="transferUri">
               <Properties>
                 <Property name="text" type="java.lang.String" value="file:///home/zane/Desktop/agentwork"/>
               </Properties>
@@ -271,7 +273,7 @@
                 <AuxValue name="JavaCodeGenerator_VariableModifier" type="java.lang.Integer" value="0"/>
               </AuxValues>
             </Component>
-            <Component class="javax.swing.JTextField" name="m_RoutingKey">
+            <Component class="javax.swing.JTextField" name="routingKey">
               <Properties>
                 <Property name="text" type="java.lang.String" value="iamthemaster"/>
               </Properties>
@@ -287,12 +289,12 @@
                 <AuxValue name="JavaCodeGenerator_VariableModifier" type="java.lang.Integer" value="0"/>
               </AuxValues>
             </Component>
-            <Component class="javax.swing.JTextField" name="m_SecretKey">
+            <Component class="javax.swing.JTextField" name="secretKey">
               <Properties>
                 <Property name="text" type="java.lang.String" value="abc123"/>
               </Properties>
             </Component>
-            <Component class="javax.swing.JComboBox" name="m_SigningAlgorithm">
+            <Component class="javax.swing.JComboBox" name="sigingAlgorithm">
               <AuxValues>
                 <AuxValue name="JavaCodeGenerator_TypeParameters" type="java.lang.String" value="&lt;String&gt;"/>
               </AuxValues>
@@ -328,27 +330,27 @@
                 <DimensionLayout dim="0">
                   <Group type="103" groupAlignment="0" attributes="0">
                       <Group type="102" alignment="0" attributes="0">
-                          <Component id="m_AgentPanel" min="-2" max="-2" attributes="0"/>
+                          <Component id="agentPanel" min="-2" max="-2" attributes="0"/>
                           <EmptySpace max="-2" attributes="0"/>
-                          <Component id="m_StatusPanel" pref="762" max="32767" attributes="0"/>
+                          <Component id="statusPanel" pref="762" max="32767" attributes="0"/>
                       </Group>
                   </Group>
                 </DimensionLayout>
                 <DimensionLayout dim="1">
                   <Group type="103" groupAlignment="0" attributes="0">
-                      <Component id="m_StatusPanel" pref="299" max="32767" attributes="0"/>
-                      <Component id="m_AgentPanel" alignment="0" pref="0" max="32767" attributes="0"/>
+                      <Component id="statusPanel" pref="299" max="32767" attributes="0"/>
+                      <Component id="agentPanel" alignment="0" pref="0" max="32767" attributes="0"/>
                   </Group>
                 </DimensionLayout>
               </Layout>
               <SubComponents>
-                <Component class="au.edu.uq.rcc.nimrodg.debug.agent.AgentControlPanel" name="m_AgentPanel">
+                <Component class="au.edu.uq.rcc.nimrodg.debug.agent.AgentControlPanel" name="agentPanel">
                 </Component>
-                <Component class="au.edu.uq.rcc.nimrodg.debug.agent.AgentStatusPanel" name="m_StatusPanel">
+                <Component class="au.edu.uq.rcc.nimrodg.debug.agent.AgentStatusPanel" name="statusPanel">
                 </Component>
               </SubComponents>
             </Container>
-            <Component class="au.edu.uq.rcc.nimrodg.debug.agent.LogPanel" name="m_LogPanel">
+            <Component class="au.edu.uq.rcc.nimrodg.debug.agent.LogPanel" name="logPanel">
               <Constraints>
                 <Constraint layoutClass="org.netbeans.modules.form.compat2.layouts.support.JSplitPaneSupportLayout" value="org.netbeans.modules.form.compat2.layouts.support.JSplitPaneSupportLayout$JSplitPaneConstraintsDescription">
                   <JSplitPaneConstraints position="right"/>
@@ -366,7 +368,7 @@
 
           <Layout class="org.netbeans.modules.form.compat2.layouts.DesignBoxLayout"/>
           <SubComponents>
-            <Component class="javax.swing.JProgressBar" name="m_ConnectProgressBar">
+            <Component class="javax.swing.JProgressBar" name="connectProgressBar">
               <Properties>
                 <Property name="maximumSize" type="java.awt.Dimension" editor="org.netbeans.beaninfo.editors.DimensionEditor">
                   <Dimension value="[32767, 20]"/>
