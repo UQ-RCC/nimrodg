@@ -53,10 +53,9 @@ public class MsgUtils {
 		return new NetworkJob(uuid, -1, txuri.toString(), buildCommandList(task, new HashMap<>()), new HashMap<>());
 	}
 
-	private static Map<String, String> buildEnvironment(String expName, String jobPath, UUID jobUuid, long jobIndex, String txuri, Map<String, String> vars) {
+	private static Map<String, String> buildEnvironment(String expName, UUID jobUuid, long jobIndex, String txuri, Map<String, String> vars) {
 		Map<String, String> env = new HashMap<>();
 		env.put("NIMROD_EXPNAME", expName);
-		env.put("NIMROD_JOBPATH", jobPath);
 		env.put("NIMROD_JOBUUID", jobUuid.toString());
 		env.put("NIMROD_JOBINDEX", Long.toString(jobIndex));
 		env.put("NIMROD_TXURI", txuri);
@@ -92,7 +91,6 @@ public class MsgUtils {
 
 		Map<String, String> env = buildEnvironment(
 				exp.getName(),
-				job.getPath(),
 				uuid,
 				job.getIndex(),
 				txuri.toString(),
@@ -188,7 +186,6 @@ public class MsgUtils {
 
 		Map<String, String> env = buildEnvironment(
 				expName,
-				String.join("/", expName, Integer.toString(index)),
 				uuid,
 				index,
 				txuri,
