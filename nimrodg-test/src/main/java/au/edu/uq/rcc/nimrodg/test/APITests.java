@@ -57,7 +57,6 @@ import org.junit.Test;
 
 import javax.json.Json;
 import javax.json.JsonObject;
-import javax.json.JsonObjectBuilder;
 import javax.json.JsonValue;
 import java.io.IOException;
 import java.io.UncheckedIOException;
