@@ -25,7 +25,7 @@ public class TestAgentProvider implements AgentProvider {
 					}
 
 					@Override
-					public Path getAgentPath() {
+					public Path getPath() {
 						return path.resolve(".agents").resolve("x86_64-pc-linux-musl");
 					}
 
@@ -44,7 +44,7 @@ public class TestAgentProvider implements AgentProvider {
 					}
 
 					@Override
-					public Path getAgentPath() {
+					public Path getPath() {
 						return path.resolve(".agents").resolve("i686-pc-linux-musl");
 					}
 
@@ -60,7 +60,7 @@ public class TestAgentProvider implements AgentProvider {
 					}
 
 					@Override
-					public Path getAgentPath() {
+					public Path getPath() {
 						return path.resolve("bin").resolve("true");
 					}
 

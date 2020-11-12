@@ -26,22 +26,7 @@ public interface AgentInfo {
 
 	String getPlatformString();
 
-	/**
-	 * TODO: Will be removed next major version bump.
-	 *  Replaced with {@link AgentInfo#getAgentPath()}.
-	 */
-	@Deprecated
-	default String getPath() {
-		return this.getAgentPath().toString();
-	}
-
-	/**
-	 * TODO: Temporary replacement for {@link AgentInfo#getPath()}.
-	 *  Will be replaced with {@code Path AgentInfo#getPath()} next major
-	 *  version bump.
-	 */
-	@Deprecated
-	Path getAgentPath();
+	Path getPath();
 
 	Set<MachinePair> posixMappings();
 }

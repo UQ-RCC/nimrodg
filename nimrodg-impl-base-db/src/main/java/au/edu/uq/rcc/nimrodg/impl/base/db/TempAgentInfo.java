@@ -58,7 +58,7 @@ public class TempAgentInfo {
 		}
 
 		@Override
-		public Path getAgentPath() {
+		public Path getPath() {
 			return Paths.get(path);
 		}
 
