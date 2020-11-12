@@ -45,11 +45,6 @@ public interface Experiment {
 
 	Task getTask(Task.Name name);
 
-	@Deprecated
-	default String getToken() {
-		return getName();
-	}
-
 	boolean isPersistent();
 
 	boolean isActive();
