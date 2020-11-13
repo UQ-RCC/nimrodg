@@ -48,9 +48,6 @@ BEGIN
     DROP FUNCTION add_agent(_state nimrod_agent_state, _queue TEXT, _uuid UUID, _shutdown_signal INTEGER,
         _shutdown_reason    nimrod_agent_shutdown_reason, _expiry_time TIMESTAMP WITH TIME ZONE, _location BIGINT,
         _actuator_data JSONB);
-    DROP FUNCTION update_agent(_uuid UUID, _state nimrod_agent_state, _queue TEXT,
-        _signal INTEGER, _reason nimrod_agent_shutdown_reason, _connected_at TIMESTAMP WITH TIME ZONE,
-        _last_heard_from TIMESTAMP WITH TIME ZONE, _expiry_time TIMESTAMP WITH TIME ZONE, _expired BOOLEAN);
 
     RAISE NOTICE 'Done.';
 END $upgrade$;
