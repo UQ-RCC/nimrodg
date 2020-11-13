@@ -5,6 +5,9 @@ set -e
 #MIGRATE_SCRIPT=-1.0.0_to_0.0.0.sql
 #MIGRATE_SCRIPT=0.0.0_to_1.0.0.sql
 #MIGRATE_SCRIPT=1.0.0_to_2.0.0.sql
+#MIGRATE_SCRIPT=2.0.0_to_2.1.0.sql
+#MIGRATE_SCRIPT=2.1.0_to_3.0.0.sql
+MIGRATE_SCRIPT=3.0.0_to_4.0.0.sql
 
 if [ -z $PGPASSWORD ]; then
     echo 'PGPASSWORD not set'
