@@ -854,7 +854,7 @@ public abstract class APITests {
 		Assert.assertEquals(0, counts.completed);
 		Assert.assertEquals(0, counts.failed);
 		Assert.assertEquals(0, counts.running);
-		Assert.assertEquals(cr.jobs.size(), counts.pending);
+		Assert.assertEquals(cr.jobs.size(), counts.notRun);
 		Assert.assertEquals(cr.jobs.size(), counts.total);
 
 		/* Get the first 100 jobs. */
@@ -878,7 +878,7 @@ public abstract class APITests {
 		Assert.assertEquals(completed.size(), counts.completed);
 		Assert.assertEquals(failed.size(), counts.failed);
 		Assert.assertEquals(running.size(), counts.running);
-		Assert.assertEquals(cr.jobs.size() - completed.size() - failed.size(), running.size(), counts.pending);
+		Assert.assertEquals(cr.jobs.size() - completed.size() - failed.size(), running.size(), counts.notRun);
 		Assert.assertEquals(cr.jobs.size(), counts.total);
 	}
 

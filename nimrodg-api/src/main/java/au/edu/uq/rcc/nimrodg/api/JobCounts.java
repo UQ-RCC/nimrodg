@@ -23,14 +23,14 @@ public class JobCounts {
 	public final long completed;
 	public final long failed;
 	public final long running;
-	public final long pending;
+	public final long notRun;
 	public final long total;
 
-	public JobCounts(long completed, long failed, long running, long pending, long total) {
+	public JobCounts(long completed, long failed, long running, long notRun, long total) {
 		this.completed = completed;
 		this.failed = failed;
 		this.running = running;
-		this.pending = pending;
+		this.notRun = notRun;
 		this.total = total;
 	}
 }
