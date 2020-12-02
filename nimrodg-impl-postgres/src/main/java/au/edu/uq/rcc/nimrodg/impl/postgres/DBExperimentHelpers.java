@@ -22,6 +22,8 @@ package au.edu.uq.rcc.nimrodg.impl.postgres;
 import au.edu.uq.rcc.nimrodg.api.CommandResult;
 import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.JobAttempt;
+import au.edu.uq.rcc.nimrodg.api.JobCounts;
+import au.edu.uq.rcc.nimrodg.api.NimrodException;
 import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledRun;
 import au.edu.uq.rcc.nimrodg.api.utils.run.JsonUtils;
 import au.edu.uq.rcc.nimrodg.impl.base.db.BrokenDBInvariantException;
@@ -64,6 +66,7 @@ public class DBExperimentHelpers extends DBBaseHelper {
 	private final PreparedStatement qDelExperimentById;
 	private final PreparedStatement qDelExperimentByName;
 	private final PreparedStatement qUpdateExperimentState;
+	private final PreparedStatement qGetJobCounts;
 
 	/* Jobs */
 	private final PreparedStatement qGetSingleJob;
@@ -95,6 +98,7 @@ public class DBExperimentHelpers extends DBBaseHelper {
 		this.qDelExperimentById = prepareStatement("DELETE FROM nimrod_experiments WHERE id = ?");
 		this.qDelExperimentByName = prepareStatement("DELETE FROM nimrod_experiments WHERE name = ?");
 		this.qUpdateExperimentState = prepareStatement("UPDATE nimrod_experiments SET state = ?::nimrod_experiment_state WHERE id = ?");
+		this.qGetJobCounts = prepareStatement("SELECT * FROM get_run_counts(?)");
 
 		this.qGetSingleJob = prepareStatement("SELECT * FROM nimrod_full_jobs WHERE id = ?::BIGINT");
 
@@ -159,6 +163,22 @@ public class DBExperimentHelpers extends DBBaseHelper {
 	public boolean deleteExperiment(String name) throws SQLException {
 		qDelExperimentByName.setString(1, name);
 		return qDelExperimentByName.execute();
+	}
+
+	public JobCounts getJobCounts(long id) throws SQLException {
+		qGetJobCounts.setLong(1, id);
+		try(ResultSet rs = qGetJobCounts.executeQuery()) {
+			if(!rs.next()) {
+				throw new IllegalArgumentException("get_run_counts() returned no rows");
+			}
+			return new JobCounts(
+					rs.getLong("completed"),
+					rs.getLong("failed"),
+					rs.getLong("running"),
+					rs.getLong("not_run"),
+					rs.getLong("total_count")
+			);
+		}
 	}
 
 	/*

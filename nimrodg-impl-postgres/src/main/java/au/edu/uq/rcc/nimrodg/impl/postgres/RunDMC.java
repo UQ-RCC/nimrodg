@@ -23,6 +23,7 @@ import au.edu.uq.rcc.nimrodg.agent.AgentState;
 import au.edu.uq.rcc.nimrodg.api.CommandResult;
 import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.JobAttempt;
+import au.edu.uq.rcc.nimrodg.api.JobCounts;
 import au.edu.uq.rcc.nimrodg.api.NimrodConfig;
 import au.edu.uq.rcc.nimrodg.api.NimrodException;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
@@ -186,6 +187,11 @@ public class RunDMC extends SQLUUUUU<NimrodException.DbError> implements NimrodD
 	@Override
 	public synchronized boolean deleteExperiment(String name) throws SQLException {
 		return experimentHelpers.deleteExperiment(name);
+	}
+
+	@Override
+	public synchronized JobCounts getJobCounts(long id) throws SQLException {
+		return experimentHelpers.getJobCounts(id);
 	}
 
 	@Override

@@ -22,6 +22,7 @@ package au.edu.uq.rcc.nimrodg.impl.base.db;
 import au.edu.uq.rcc.nimrodg.api.CommandResult;
 import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.JobAttempt;
+import au.edu.uq.rcc.nimrodg.api.JobCounts;
 import au.edu.uq.rcc.nimrodg.api.NimrodConfig;
 import au.edu.uq.rcc.nimrodg.api.NimrodException;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
@@ -65,6 +66,8 @@ public interface NimrodDBAPI extends ResourceFunctions<TempResource.Impl, TempEx
 	boolean deleteExperiment(long id) throws SQLException;
 
 	boolean deleteExperiment(String name) throws SQLException;
+
+	JobCounts getJobCounts(long id) throws SQLException;
 
 	Optional<TempExperiment> getTempExp(long id) throws SQLException;
 

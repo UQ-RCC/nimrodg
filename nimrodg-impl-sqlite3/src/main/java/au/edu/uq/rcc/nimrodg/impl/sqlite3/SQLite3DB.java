@@ -23,6 +23,7 @@ import au.edu.uq.rcc.nimrodg.agent.AgentState;
 import au.edu.uq.rcc.nimrodg.api.CommandResult;
 import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.JobAttempt;
+import au.edu.uq.rcc.nimrodg.api.JobCounts;
 import au.edu.uq.rcc.nimrodg.api.MachinePair;
 import au.edu.uq.rcc.nimrodg.api.NimrodConfig;
 import au.edu.uq.rcc.nimrodg.api.NimrodException;
@@ -325,6 +326,12 @@ public class SQLite3DB extends SQLUUUUU<NimrodException.DbError> implements Nimr
 	@Override
 	public synchronized boolean deleteExperiment(String name) throws SQLException {
 		return experimentHelpers.deleteExperiment(name);
+	}
+
+	@Override
+	public synchronized JobCounts getJobCounts(long id) throws SQLException {
+		throw new UnsupportedOperationException();
+		//return experimentHelpers.getJobCounts(id);
 	}
 
 	@Override

@@ -379,11 +379,11 @@ BEGIN
     LOOP
         IF _s.status = 'NOT_RUN' THEN
             _not_run := _not_run + 1;
-        ELSIF _s._status = 'RUNNING' THEN
+        ELSIF _s.status = 'RUNNING' THEN
             _running := _running + 1;
-        ELSIF _s._status = 'COMPLETED' THEN
+        ELSIF _s.status = 'COMPLETED' THEN
             _completed := _completed + 1;
-        ELSIF _s._status = 'FAILED' THEN
+        ELSIF _s.status = 'FAILED' THEN
             _failed := _failed + 1;
         END IF;
     END LOOP;

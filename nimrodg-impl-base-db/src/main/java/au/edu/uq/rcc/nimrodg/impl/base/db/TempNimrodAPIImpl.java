@@ -97,26 +97,27 @@ public abstract class TempNimrodAPIImpl implements NimrodAPI, NimrodMasterAPI {
 
 	@Override
 	public JobCounts getJobCounts(Experiment exp) {
-		validateExperiment(exp);
-		Collection<Job> jobs = db.runSQL(() -> this.filterJobs(exp, EnumSet.allOf(JobAttempt.Status.class), 0, -1));
-		long nComplete = 0, nFailed = 0, nPending = 0, nRunning = 0;
-		for(Job j : jobs) {
-			switch(j.getCachedStatus()) {
-				case COMPLETED:
-					++nComplete;
-					break;
-				case RUNNING:
-					++nRunning;
-					break;
-				case FAILED:
-					++nFailed;
-					break;
-				case NOT_RUN:
-					++nPending;
-					break;
-			}
-		}
-		return new JobCounts(nComplete, nFailed, nRunning, nPending, jobs.size());
+		return db.runSQL(() -> db.getJobCounts(validateExperiment(exp).base.id));
+//		validateExperiment(exp);
+//		Collection<Job> jobs = db.runSQL(() -> this.filterJobs(exp, EnumSet.allOf(JobAttempt.Status.class), 0, -1));
+//		long nComplete = 0, nFailed = 0, nPending = 0, nRunning = 0;
+//		for(Job j : jobs) {
+//			switch(j.getCachedStatus()) {
+//				case COMPLETED:
+//					++nComplete;
+//					break;
+//				case RUNNING:
+//					++nRunning;
+//					break;
+//				case FAILED:
+//					++nFailed;
+//					break;
+//				case NOT_RUN:
+//					++nPending;
+//					break;
+//			}
+//		}
+//		return new JobCounts(nComplete, nFailed, nRunning, nPending, jobs.size());
 	}
 
 	@Override
