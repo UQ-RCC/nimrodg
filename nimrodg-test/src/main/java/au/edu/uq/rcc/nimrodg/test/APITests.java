@@ -851,7 +851,6 @@ public abstract class APITests {
 		Experiment exp = api.addExperiment("test", cr);
 		JobCounts counts = api.getJobCounts(exp);
 
-		Assert.assertEquals(exp, counts.experiment);
 		Assert.assertEquals(0, counts.completed);
 		Assert.assertEquals(0, counts.failed);
 		Assert.assertEquals(0, counts.running);
@@ -876,7 +875,6 @@ public abstract class APITests {
 
 		counts = api.getJobCounts(exp);
 
-		Assert.assertEquals(exp, counts.experiment);
 		Assert.assertEquals(completed.size(), counts.completed);
 		Assert.assertEquals(failed.size(), counts.failed);
 		Assert.assertEquals(running.size(), counts.running);

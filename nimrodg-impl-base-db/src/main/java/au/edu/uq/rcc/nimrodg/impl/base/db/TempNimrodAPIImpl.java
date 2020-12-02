@@ -116,7 +116,7 @@ public abstract class TempNimrodAPIImpl implements NimrodAPI, NimrodMasterAPI {
 					break;
 			}
 		}
-		return new JobCounts(exp, nComplete, nFailed, nRunning, nPending, jobs.size());
+		return new JobCounts(nComplete, nFailed, nRunning, nPending, jobs.size());
 	}
 
 	@Override
