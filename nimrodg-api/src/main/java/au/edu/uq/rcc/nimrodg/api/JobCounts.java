@@ -21,13 +21,13 @@ package au.edu.uq.rcc.nimrodg.api;
 
 public class JobCounts {
 	public final Experiment experiment;
-	public final int completed;
-	public final int failed;
-	public final int running;
-	public final int pending;
-	public final int total;
+	public final long completed;
+	public final long failed;
+	public final long running;
+	public final long pending;
+	public final long total;
 
-	public JobCounts(Experiment experiment, int completed, int failed, int running, int pending, int total) {
+	public JobCounts(Experiment experiment, long completed, long failed, long running, long pending, long total) {
 		this.experiment = experiment;
 		this.completed = completed;
 		this.failed = failed;

@@ -99,7 +99,7 @@ public abstract class TempNimrodAPIImpl implements NimrodAPI, NimrodMasterAPI {
 	public JobCounts getJobCounts(Experiment exp) {
 		validateExperiment(exp);
 		Collection<Job> jobs = db.runSQL(() -> this.filterJobs(exp, EnumSet.allOf(JobAttempt.Status.class), 0, -1));
-		int nComplete = 0, nFailed = 0, nPending = 0, nRunning = 0;
+		long nComplete = 0, nFailed = 0, nPending = 0, nRunning = 0;
 		for(Job j : jobs) {
 			switch(j.getCachedStatus()) {
 				case COMPLETED:
