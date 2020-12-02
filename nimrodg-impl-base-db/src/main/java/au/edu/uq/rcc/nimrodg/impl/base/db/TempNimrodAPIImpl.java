@@ -26,6 +26,7 @@ import au.edu.uq.rcc.nimrodg.api.CommandResult;
 import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.Job;
 import au.edu.uq.rcc.nimrodg.api.JobAttempt;
+import au.edu.uq.rcc.nimrodg.api.JobCounts;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodConfig;
 import au.edu.uq.rcc.nimrodg.api.NimrodException;
@@ -92,6 +93,30 @@ public abstract class TempNimrodAPIImpl implements NimrodAPI, NimrodMasterAPI {
 	@Override
 	public void deleteExperiment(Experiment _exp) {
 		db.runSQL(() -> db.deleteExperiment(validateExperiment(_exp).base.id));
+	}
+
+	@Override
+	public JobCounts getJobCounts(Experiment exp) {
+		validateExperiment(exp);
+		Collection<Job> jobs = db.runSQL(() -> this.filterJobs(exp, EnumSet.allOf(JobAttempt.Status.class), 0, -1));
+		int nComplete = 0, nFailed = 0, nPending = 0, nRunning = 0;
+		for(Job j : jobs) {
+			switch(j.getCachedStatus()) {
+				case COMPLETED:
+					++nComplete;
+					break;
+				case RUNNING:
+					++nRunning;
+					break;
+				case FAILED:
+					++nFailed;
+					break;
+				case NOT_RUN:
+					++nPending;
+					break;
+			}
+		}
+		return new JobCounts(exp, nComplete, nFailed, nRunning, nPending, jobs.size());
 	}
 
 	@Override

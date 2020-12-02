@@ -70,6 +70,8 @@ public interface NimrodAPI extends AgentProvider, AutoCloseable {
 	 */
 	void deleteExperiment(Experiment exp);
 
+	JobCounts getJobCounts(Experiment exp);
+
 	Job addSingleJob(Experiment exp, Map<String, String> values);
 
 	Collection<Job> addJobs(Experiment exp, Collection<Map<String, String>> values);

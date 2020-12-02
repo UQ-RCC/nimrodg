@@ -33,6 +33,7 @@ import au.edu.uq.rcc.nimrodg.api.CommandResult;
 import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.Job;
 import au.edu.uq.rcc.nimrodg.api.JobAttempt;
+import au.edu.uq.rcc.nimrodg.api.JobCounts;
 import au.edu.uq.rcc.nimrodg.api.MachinePair;
 import au.edu.uq.rcc.nimrodg.agent.messages.NetworkJob;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
@@ -840,6 +841,47 @@ public abstract class APITests {
 		NimrodAPI api = getNimrod();
 		/* This will trigger postgres to batch jobs. */
 		api.addExperiment("exp1", TestUtils.get250000Run());
+	}
+
+	@Test
+	public void jobCountsTest() throws RunfileBuildException {
+		NimrodMasterAPI api = getNimrodMasterAPI();
+
+		CompiledRun cr = TestUtils.getBenchRun();
+		Experiment exp = api.addExperiment("test", cr);
+		JobCounts counts = api.getJobCounts(exp);
+
+		Assert.assertEquals(exp, counts.experiment);
+		Assert.assertEquals(0, counts.completed);
+		Assert.assertEquals(0, counts.failed);
+		Assert.assertEquals(0, counts.running);
+		Assert.assertEquals(cr.jobs.size(), counts.pending);
+		Assert.assertEquals(cr.jobs.size(), counts.total);
+
+		/* Get the first 100 jobs. */
+		List<Job> jobs = api.filterJobs(exp, EnumSet.allOf(JobAttempt.Status.class), 0, 100)
+				.stream().collect(Collectors.toList());
+		Assert.assertEquals(100, jobs.size());
+
+		List<JobAttempt> running = api.createJobAttempts(jobs.subList(0, 10));
+		List<JobAttempt> failed = api.createJobAttempts(jobs.subList(10, 11));
+		List<JobAttempt> completed = api.createJobAttempts(jobs.subList(20, 25));
+
+		running.forEach(att -> api.startJobAttempt(att, UUID.randomUUID()));
+		failed.forEach(att -> api.finishJobAttempt(att, true));
+		completed.forEach(att -> {
+			api.startJobAttempt(att, UUID.randomUUID());
+			api.finishJobAttempt(att, false);
+		});
+
+		counts = api.getJobCounts(exp);
+
+		Assert.assertEquals(exp, counts.experiment);
+		Assert.assertEquals(completed.size(), counts.completed);
+		Assert.assertEquals(failed.size(), counts.failed);
+		Assert.assertEquals(running.size(), counts.running);
+		Assert.assertEquals(cr.jobs.size() - completed.size() - failed.size(), running.size(), counts.pending);
+		Assert.assertEquals(cr.jobs.size(), counts.total);
 	}
 
 	@Test
