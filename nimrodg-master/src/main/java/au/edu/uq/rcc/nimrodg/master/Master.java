@@ -309,10 +309,6 @@ public class Master implements MessageQueueListener, AutoCloseable {
 		return allAgents.getOrDefault(uuid, null);
 	}
 
-	private AgentInfo getAgentInfo(Agent agent) {
-		return getAgentInfo(agent.getUUID());
-	}
-
 	public boolean tick() {
 		if(state != oldState) {
 			if(stateHandlers[oldState.value].handler != null) {
@@ -960,7 +956,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 
 		@Override
 		public void onStateChange(Agent agent, Agent.State oldState, Agent.State newState) {
-			AgentInfo ai = getAgentInfo(agent);
+			AgentInfo ai = getAgentInfo(agent.getUUID());
 			assert agent == ai.instance;
 
 			LOGGER.debug("Agent {}: State change from {} -> {}", agent.getUUID(), oldState, newState);
