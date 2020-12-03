@@ -20,7 +20,7 @@
 package au.edu.uq.rcc.nimrodg.resource.act;
 
 import au.edu.uq.rcc.nimrodg.api.Actuator;
-import au.edu.uq.rcc.nimrodg.api.AgentInfo;
+import au.edu.uq.rcc.nimrodg.api.AgentDefinition;
 import au.edu.uq.rcc.nimrodg.api.AgentProvider;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 
@@ -58,8 +58,6 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.json.Json;
-import javax.json.JsonArray;
-import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonStructure;
@@ -454,8 +452,8 @@ public class ActuatorUtils {
 		return Optional.empty();
 	}
 
-	public static Optional<AgentInfo> lookupAgentByPlatform(AgentProvider ap, String plat, List<String> errors) {
-		Optional<AgentInfo> op = Optional.ofNullable(plat).map(p -> ap.lookupAgentByPlatform(plat));
+	public static Optional<AgentDefinition> lookupAgentByPlatform(AgentProvider ap, String plat, List<String> errors) {
+		Optional<AgentDefinition> op = Optional.ofNullable(plat).map(p -> ap.lookupAgentByPlatform(plat));
 		if(!op.isPresent()) {
 			errors.add(String.format("No agent exists with platform string '%s'.", plat));
 		}

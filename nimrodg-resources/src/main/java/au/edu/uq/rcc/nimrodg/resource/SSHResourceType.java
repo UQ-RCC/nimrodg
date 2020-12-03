@@ -19,7 +19,7 @@
  */
 package au.edu.uq.rcc.nimrodg.resource;
 
-import au.edu.uq.rcc.nimrodg.api.AgentInfo;
+import au.edu.uq.rcc.nimrodg.api.AgentDefinition;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.api.Actuator;
 import au.edu.uq.rcc.nimrodg.api.AgentProvider;
@@ -55,7 +55,6 @@ import java.nio.file.attribute.PosixFilePermissions;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import net.sourceforge.argparse4j.impl.Arguments;
@@ -194,7 +193,7 @@ public abstract class SSHResourceType extends BaseResourceType {
 
 		try(RemoteShell shell = tf.create(cfg, tmpDir)) {
 			SystemInformation sysInfo = SystemInformation.getSystemInformation(shell);
-			AgentInfo agent = ap.lookupAgentByPosix(sysInfo.kernelName, sysInfo.machine);
+			AgentDefinition agent = ap.lookupAgentByPosix(sysInfo.kernelName, sysInfo.machine);
 			if(agent == null) {
 				return null;
 			}
@@ -324,7 +323,7 @@ public abstract class SSHResourceType extends BaseResourceType {
 			throw new IOException(errors.get(0));
 		}
 
-		Optional<AgentInfo> ai = ActuatorUtils.lookupAgentByPlatform(ops, cfg.getString("agent_platform"), errors);
+		Optional<AgentDefinition> ai = ActuatorUtils.lookupAgentByPlatform(ops, cfg.getString("agent_platform"), errors);
 		if(!ai.isPresent()) {
 			throw new IOException(errors.get(0));
 		}
@@ -340,12 +339,12 @@ public abstract class SSHResourceType extends BaseResourceType {
 
 	public static class SSHConfig {
 
-		public final AgentInfo agentInfo;
+		public final AgentDefinition agentInfo;
 		public final TransportFactory transportFactory;
 		public final TransportFactory.Config transportConfig;
 		public final List<String> forwardedEnvironment;
 
-		public SSHConfig(AgentInfo ai, TransportFactory transportFactory, TransportFactory.Config transportConfig, List<String> forwardedEnvironment) {
+		public SSHConfig(AgentDefinition ai, TransportFactory transportFactory, TransportFactory.Config transportConfig, List<String> forwardedEnvironment) {
 			this.agentInfo = ai;
 			this.transportFactory = transportFactory;
 			this.transportConfig = transportConfig;

@@ -37,7 +37,7 @@ import au.edu.uq.rcc.nimrodg.impl.base.db.DBUtils;
 import au.edu.uq.rcc.nimrodg.impl.base.db.NimrodDBAPI;
 import au.edu.uq.rcc.nimrodg.impl.base.db.SQLUUUUU;
 import au.edu.uq.rcc.nimrodg.impl.base.db.TempAgent;
-import au.edu.uq.rcc.nimrodg.impl.base.db.TempAgentInfo;
+import au.edu.uq.rcc.nimrodg.impl.base.db.TempAgentDefinition;
 import au.edu.uq.rcc.nimrodg.impl.base.db.TempCommandResult;
 import au.edu.uq.rcc.nimrodg.impl.base.db.TempExperiment;
 import au.edu.uq.rcc.nimrodg.impl.base.db.TempJob;
@@ -144,18 +144,18 @@ public class RunDMC extends SQLUUUUU<NimrodException.DbError> implements NimrodD
 	}
 
 	@Override
-	public synchronized Map<String, TempAgentInfo.Impl> lookupAgents() throws SQLException {
+	public synchronized Map<String, TempAgentDefinition.Impl> lookupAgents() throws SQLException {
 		return agentHelpers.lookupAgents();
 	}
 
 	@Override
-	public synchronized Optional<TempAgentInfo.Impl> lookupAgentByPlatform(String platform) throws SQLException {
-		return agentHelpers.lookupAgentByPlatform(platform).map(TempAgentInfo::create);
+	public synchronized Optional<TempAgentDefinition.Impl> lookupAgentByPlatform(String platform) throws SQLException {
+		return agentHelpers.lookupAgentByPlatform(platform).map(TempAgentDefinition::create);
 	}
 
 	@Override
-	public synchronized Optional<TempAgentInfo.Impl> lookupAgentByPOSIX(String system, String machine) throws SQLException {
-		return agentHelpers.lookupAgentByPOSIX(system, machine).map(TempAgentInfo::create);
+	public synchronized Optional<TempAgentDefinition.Impl> lookupAgentByPOSIX(String system, String machine) throws SQLException {
+		return agentHelpers.lookupAgentByPOSIX(system, machine).map(TempAgentDefinition::create);
 	}
 
 	@Override

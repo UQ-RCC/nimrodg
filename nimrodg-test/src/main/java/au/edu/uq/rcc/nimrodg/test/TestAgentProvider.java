@@ -1,6 +1,6 @@
 package au.edu.uq.rcc.nimrodg.test;
 
-import au.edu.uq.rcc.nimrodg.api.AgentInfo;
+import au.edu.uq.rcc.nimrodg.api.AgentDefinition;
 import au.edu.uq.rcc.nimrodg.api.AgentProvider;
 import au.edu.uq.rcc.nimrodg.api.MachinePair;
 
@@ -16,9 +16,9 @@ public class TestAgentProvider implements AgentProvider {
 	}
 
 	@Override
-	public Map<String, AgentInfo> lookupAgents() {
+	public Map<String, AgentDefinition> lookupAgents() {
 		return Map.of(
-				"x86_64-pc-linux-musl", new AgentInfo() {
+				"x86_64-pc-linux-musl", new AgentDefinition() {
 					@Override
 					public String getPlatformString() {
 						return "x86_64-pc-linux-musl";
@@ -37,7 +37,7 @@ public class TestAgentProvider implements AgentProvider {
 						);
 					}
 				},
-				"i686-pc-linux-musl", new AgentInfo() {
+				"i686-pc-linux-musl", new AgentDefinition() {
 					@Override
 					public String getPlatformString() {
 						return "i686-pc-linux-musl";
@@ -53,7 +53,7 @@ public class TestAgentProvider implements AgentProvider {
 						return Set.of(MachinePair.of("Linux", "i686"));
 					}
 				},
-				"noop", new AgentInfo() {
+				"noop", new AgentDefinition() {
 					@Override
 					public String getPlatformString() {
 						return "noop";
@@ -73,12 +73,12 @@ public class TestAgentProvider implements AgentProvider {
 	}
 
 	@Override
-	public AgentInfo lookupAgentByPlatform(String platString) {
+	public AgentDefinition lookupAgentByPlatform(String platString) {
 		return this.lookupAgents().get(platString);
 	}
 
 	@Override
-	public AgentInfo lookupAgentByPosix(String system, String machine) {
+	public AgentDefinition lookupAgentByPosix(String system, String machine) {
 		return this.lookupAgents().values().stream()
 				.filter(ai -> ai.posixMappings().contains(MachinePair.of(system, machine)))
 				.findFirst()

@@ -48,11 +48,11 @@ public interface NimrodDBAPI extends ResourceFunctions<TempResource.Impl, TempEx
 
 	Map<String, String> getProperties() throws SQLException;
 
-	Map<String, TempAgentInfo.Impl> lookupAgents() throws SQLException;
+	Map<String, TempAgentDefinition.Impl> lookupAgents() throws SQLException;
 
-	Optional<TempAgentInfo.Impl> lookupAgentByPlatform(String platform) throws SQLException;
+	Optional<TempAgentDefinition.Impl> lookupAgentByPlatform(String platform) throws SQLException;
 
-	Optional<TempAgentInfo.Impl> lookupAgentByPOSIX(String system, String machine) throws SQLException;
+	Optional<TempAgentDefinition.Impl> lookupAgentByPOSIX(String system, String machine) throws SQLException;
 
 	TempExperiment.Impl addExperiment(String name, String workDir, CompiledRun r) throws SQLException;
 

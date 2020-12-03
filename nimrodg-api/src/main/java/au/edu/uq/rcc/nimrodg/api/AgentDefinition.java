@@ -22,7 +22,7 @@ package au.edu.uq.rcc.nimrodg.api;
 import java.nio.file.Path;
 import java.util.Set;
 
-public interface AgentInfo {
+public interface AgentDefinition {
 
 	String getPlatformString();
 

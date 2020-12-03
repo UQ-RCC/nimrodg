@@ -19,21 +19,21 @@
  */
 package au.edu.uq.rcc.nimrodg.impl.base.db;
 
-import au.edu.uq.rcc.nimrodg.api.AgentInfo;
+import au.edu.uq.rcc.nimrodg.api.AgentDefinition;
 import au.edu.uq.rcc.nimrodg.api.MachinePair;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Set;
 
-public class TempAgentInfo {
+public class TempAgentDefinition {
 
 	public final long id;
 	public final String platform;
 	public final String path;
 	public final Set<MachinePair> posixMappings;
 
-	public TempAgentInfo(long id, String platform, String path, Set<MachinePair> posixMappings) {
+	public TempAgentDefinition(long id, String platform, String path, Set<MachinePair> posixMappings) {
 		this.id = id;
 		this.platform = platform;
 		this.path = path;
@@ -44,12 +44,12 @@ public class TempAgentInfo {
 		return new Impl();
 	}
 
-	public class Impl implements AgentInfo {
+	public class Impl implements AgentDefinition {
 
-		public final TempAgentInfo base;
+		public final TempAgentDefinition base;
 
 		private Impl() {
-			this.base = TempAgentInfo.this;
+			this.base = TempAgentDefinition.this;
 		}
 
 		@Override

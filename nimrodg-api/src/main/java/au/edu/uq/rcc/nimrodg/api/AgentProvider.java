@@ -23,9 +23,9 @@ import java.util.Map;
 
 public interface AgentProvider {
 
-	Map<String, AgentInfo> lookupAgents();
+	Map<String, AgentDefinition> lookupAgents();
 
-	AgentInfo lookupAgentByPlatform(String platString);
+	AgentDefinition lookupAgentByPlatform(String platString);
 
-	AgentInfo lookupAgentByPosix(String system, String machine);
+	AgentDefinition lookupAgentByPosix(String system, String machine);
 }

@@ -27,7 +27,7 @@ import au.edu.uq.rcc.nimrodg.agent.messages.AgentHello;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
 import au.edu.uq.rcc.nimrodg.api.Actuator;
 import au.edu.uq.rcc.nimrodg.api.ActuatorOpsAdapter;
-import au.edu.uq.rcc.nimrodg.api.AgentInfo;
+import au.edu.uq.rcc.nimrodg.api.AgentDefinition;
 import au.edu.uq.rcc.nimrodg.api.AgentProvider;
 import au.edu.uq.rcc.nimrodg.api.CommandResult;
 import au.edu.uq.rcc.nimrodg.api.Experiment;
@@ -689,13 +689,13 @@ public abstract class APITests {
 	public void agentLookupTests() {
 		NimrodAPI api = getNimrod();
 
-		AgentInfo ai = api.lookupAgentByPlatform("x86_64-pc-linux-musl");
+		AgentDefinition ai = api.lookupAgentByPlatform("x86_64-pc-linux-musl");
 		Assert.assertNotNull(ai);
 		Assert.assertEquals("x86_64-pc-linux-musl", ai.getPlatformString());
 
 		Assert.assertEquals(Set.of(MachinePair.of("Linux", "x86_64"), MachinePair.of("Linux", "k10m")), ai.posixMappings());
 
-		AgentInfo ai2 = api.lookupAgentByPosix("Linux", "x86_64");
+		AgentDefinition ai2 = api.lookupAgentByPosix("Linux", "x86_64");
 		Assert.assertNotNull(ai2);
 		Assert.assertEquals(ai, ai2);
 

@@ -22,7 +22,7 @@ package au.edu.uq.rcc.nimrodg.resource.act;
 import au.edu.uq.rcc.nimrodg.agent.Agent;
 import au.edu.uq.rcc.nimrodg.agent.AgentState;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
-import au.edu.uq.rcc.nimrodg.api.AgentInfo;
+import au.edu.uq.rcc.nimrodg.api.AgentDefinition;
 import au.edu.uq.rcc.nimrodg.api.NimrodException;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.api.Actuator;
@@ -103,7 +103,7 @@ public class LocalActuator implements Actuator {
 	private final Path tmpRoot;
 	private final Resource node;
 	private final int parallelism;
-	private final AgentInfo agentInfo;
+	private final AgentDefinition agentInfo;
 	private final CaptureMode captureMode;
 	private final Map<UUID, LocalAgent> agents;
 	private final JsonObject baseConfig;

@@ -38,7 +38,7 @@ import au.edu.uq.rcc.nimrodg.impl.base.db.DBUtils;
 import au.edu.uq.rcc.nimrodg.impl.base.db.NimrodDBAPI;
 import au.edu.uq.rcc.nimrodg.impl.base.db.SQLUUUUU;
 import au.edu.uq.rcc.nimrodg.impl.base.db.TempAgent;
-import au.edu.uq.rcc.nimrodg.impl.base.db.TempAgentInfo;
+import au.edu.uq.rcc.nimrodg.impl.base.db.TempAgentDefinition;
 import au.edu.uq.rcc.nimrodg.impl.base.db.TempCommandResult;
 import au.edu.uq.rcc.nimrodg.impl.base.db.TempConfig;
 import au.edu.uq.rcc.nimrodg.impl.base.db.TempExperiment;
@@ -81,9 +81,9 @@ public class SQLite3DB extends SQLUUUUU<NimrodException.DbError> implements Nimr
 	private final PreparedStatement qInsertProperty;
 	private final PreparedStatement qDeleteProperty;
 	private final PreparedStatement qGetProperties;
-	private final PreparedStatement qGetAgentInfo;
-	private final PreparedStatement qGetAgentInfoByPlatform;
-	private final PreparedStatement qGetAgentInfoByPOSIX;
+	private final PreparedStatement qGetAgentDefinition;
+	private final PreparedStatement qGetAgentDefinitionByPlatform;
+	private final PreparedStatement qGetAgentDefinitionByPosix;
 
 	private final DBExperimentHelpers experimentHelpers;
 	private final DBResourceHelpers resourceHelpers;
@@ -122,9 +122,9 @@ public class SQLite3DB extends SQLUUUUU<NimrodException.DbError> implements Nimr
 			this.qGetProperties = prepareStatement("SELECT key, value FROM nimrod_kv_config");
 		}
 
-		this.qGetAgentInfo = prepareStatement("SELECT * FROM nimrod_agentinfo_by_platform");
-		this.qGetAgentInfoByPlatform = prepareStatement("SELECT * FROM nimrod_agentinfo_by_platform WHERE platform_string = ?");
-		this.qGetAgentInfoByPOSIX = prepareStatement("SELECT * FROM nimrod_agentinfo_by_posix WHERE system = ? AND machine = ?");
+		this.qGetAgentDefinition = prepareStatement("SELECT * FROM nimrod_agentinfo_by_platform");
+		this.qGetAgentDefinitionByPlatform = prepareStatement("SELECT * FROM nimrod_agentinfo_by_platform WHERE platform_string = ?");
+		this.qGetAgentDefinitionByPosix = prepareStatement("SELECT * FROM nimrod_agentinfo_by_posix WHERE system = ? AND machine = ?");
 
 		this.experimentHelpers = new DBExperimentHelpers(conn, statements);
 		this.resourceHelpers = new DBResourceHelpers(conn, statements);
@@ -235,7 +235,7 @@ public class SQLite3DB extends SQLUUUUU<NimrodException.DbError> implements Nimr
 		return props;
 	}
 
-	private TempAgentInfo.Impl tempAgentInfoFromResultSet(ResultSet rs) throws SQLException {
+	private TempAgentDefinition.Impl tempAgentInfoFromResultSet(ResultSet rs) throws SQLException {
 		String plat = null;
 		String path = null;
 		Long id = null;
@@ -265,15 +265,15 @@ public class SQLite3DB extends SQLUUUUU<NimrodException.DbError> implements Nimr
 		if(id == null) {
 			return null;
 		}
-		return new TempAgentInfo(id, plat, path, mappings).create();
+		return new TempAgentDefinition(id, plat, path, mappings).create();
 	}
 
 	@Override
-	public synchronized Map<String, TempAgentInfo.Impl> lookupAgents() throws SQLException {
-		Map<String, TempAgentInfo.Impl> a = new HashMap<>();
-		try(ResultSet rs = qGetAgentInfo.executeQuery()) {
+	public synchronized Map<String, TempAgentDefinition.Impl> lookupAgents() throws SQLException {
+		Map<String, TempAgentDefinition.Impl> a = new HashMap<>();
+		try(ResultSet rs = qGetAgentDefinition.executeQuery()) {
 			while(rs.next()) {
-				TempAgentInfo.Impl tai = tempAgentInfoFromResultSet(rs);
+				TempAgentDefinition.Impl tai = tempAgentInfoFromResultSet(rs);
 				a.put(tai.getPlatformString(), tai);
 			}
 		}
@@ -281,18 +281,18 @@ public class SQLite3DB extends SQLUUUUU<NimrodException.DbError> implements Nimr
 	}
 
 	@Override
-	public synchronized Optional<TempAgentInfo.Impl> lookupAgentByPlatform(String platform) throws SQLException {
-		qGetAgentInfoByPlatform.setString(1, platform);
-		try(ResultSet rs = qGetAgentInfoByPlatform.executeQuery()) {
+	public synchronized Optional<TempAgentDefinition.Impl> lookupAgentByPlatform(String platform) throws SQLException {
+		qGetAgentDefinitionByPlatform.setString(1, platform);
+		try(ResultSet rs = qGetAgentDefinitionByPlatform.executeQuery()) {
 			return Optional.of(tempAgentInfoFromResultSet(rs));
 		}
 	}
 
 	@Override
-	public synchronized Optional<TempAgentInfo.Impl> lookupAgentByPOSIX(String system, String machine) throws SQLException {
-		qGetAgentInfoByPOSIX.setString(1, system);
-		qGetAgentInfoByPOSIX.setString(2, machine);
-		try(ResultSet rs = qGetAgentInfoByPOSIX.executeQuery()) {
+	public synchronized Optional<TempAgentDefinition.Impl> lookupAgentByPOSIX(String system, String machine) throws SQLException {
+		qGetAgentDefinitionByPosix.setString(1, system);
+		qGetAgentDefinitionByPosix.setString(2, machine);
+		try(ResultSet rs = qGetAgentDefinitionByPosix.executeQuery()) {
 			return Optional.of(tempAgentInfoFromResultSet(rs));
 		}
 	}

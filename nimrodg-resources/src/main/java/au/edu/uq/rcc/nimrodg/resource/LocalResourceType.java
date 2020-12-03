@@ -19,7 +19,7 @@
  */
 package au.edu.uq.rcc.nimrodg.resource;
 
-import au.edu.uq.rcc.nimrodg.api.AgentInfo;
+import au.edu.uq.rcc.nimrodg.api.AgentDefinition;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.api.Actuator;
 import au.edu.uq.rcc.nimrodg.api.AgentProvider;
@@ -308,7 +308,7 @@ public class LocalResourceType extends BaseResourceType {
 		if(plat.getKey() == OS.Unix) {
 			String unameSystem = spawnProcessAndReadSingleTrimmedLine("uname", "-s");
 			String unameMachine = spawnProcessAndReadSingleTrimmedLine("uname", "-m");
-			AgentInfo ai = ap.lookupAgentByPosix(unameSystem, unameMachine);
+			AgentDefinition ai = ap.lookupAgentByPosix(unameSystem, unameMachine);
 			if(ai != null) {
 				return ai.getPlatformString();
 			}

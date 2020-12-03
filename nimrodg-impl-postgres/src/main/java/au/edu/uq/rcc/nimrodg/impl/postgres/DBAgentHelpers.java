@@ -21,7 +21,7 @@ package au.edu.uq.rcc.nimrodg.impl.postgres;
 
 import au.edu.uq.rcc.nimrodg.api.MachinePair;
 import au.edu.uq.rcc.nimrodg.impl.base.db.DBBaseHelper;
-import au.edu.uq.rcc.nimrodg.impl.base.db.TempAgentInfo;
+import au.edu.uq.rcc.nimrodg.impl.base.db.TempAgentDefinition;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -46,18 +46,18 @@ public class DBAgentHelpers extends DBBaseHelper {
 		this.qLookupAgentByPOSIX = prepareStatement("SELECT * FROM nimrod_mapped_agents WHERE system = ? AND machine = ?");
 	}
 
-	public Map<String, TempAgentInfo.Impl> lookupAgents() throws SQLException {
-		Map<String, TempAgentInfo.Impl> a = new HashMap<>();
+	public Map<String, TempAgentDefinition.Impl> lookupAgents() throws SQLException {
+		Map<String, TempAgentDefinition.Impl> a = new HashMap<>();
 		try(ResultSet rs = qLookupAgents.executeQuery()) {
 			while(rs.next()) {
-				TempAgentInfo tai = tempAgentFromRow(rs);
-				a.put(tai.platform, tai.create());
+				TempAgentDefinition tad = tempAgentFromRow(rs);
+				a.put(tad.platform, tad.create());
 			}
 		}
 		return a;
 	}
 
-	public Optional<TempAgentInfo> lookupAgentByPlatform(String plat) throws SQLException {
+	public Optional<TempAgentDefinition> lookupAgentByPlatform(String plat) throws SQLException {
 		qLookupAgentByPlatform.setString(1, plat);
 		try(ResultSet rs = qLookupAgentByPlatform.executeQuery()) {
 			if(rs.next()) {
@@ -70,7 +70,7 @@ public class DBAgentHelpers extends DBBaseHelper {
 		}
 	}
 
-	public Optional<TempAgentInfo> lookupAgentByPOSIX(String system, String machine) throws SQLException {
+	public Optional<TempAgentDefinition> lookupAgentByPOSIX(String system, String machine) throws SQLException {
 		qLookupAgentByPOSIX.setString(1, system);
 		qLookupAgentByPOSIX.setString(2, machine);
 		try(ResultSet rs = qLookupAgentByPOSIX.executeQuery()) {
@@ -84,8 +84,8 @@ public class DBAgentHelpers extends DBBaseHelper {
 		}
 	}
 
-	private static TempAgentInfo tempAgentFromRow(ResultSet rs) throws SQLException {
-		return new TempAgentInfo(
+	private static TempAgentDefinition tempAgentFromRow(ResultSet rs) throws SQLException {
+		return new TempAgentDefinition(
 				rs.getLong("id"),
 				rs.getString("platform_string"),
 				rs.getString("path"),

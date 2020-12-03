@@ -1,7 +1,5 @@
 package au.edu.uq.rcc.nimrodg.api;
 
-import au.edu.uq.rcc.nimrodg.api.*;
-
 import java.util.Map;
 
 public abstract class ActuatorOpsAdapter implements Actuator.Operations {
@@ -22,17 +20,17 @@ public abstract class ActuatorOpsAdapter implements Actuator.Operations {
 	}
 
 	@Override
-	public Map<String, AgentInfo> lookupAgents() {
+	public Map<String, AgentDefinition> lookupAgents() {
 		return nimrod.lookupAgents();
 	}
 
 	@Override
-	public AgentInfo lookupAgentByPlatform(String platString) {
+	public AgentDefinition lookupAgentByPlatform(String platString) {
 		return nimrod.lookupAgentByPlatform(platString);
 	}
 
 	@Override
-	public AgentInfo lookupAgentByPosix(String system, String machine) {
+	public AgentDefinition lookupAgentByPosix(String system, String machine) {
 		return nimrod.lookupAgentByPosix(system, machine);
 	}
 }

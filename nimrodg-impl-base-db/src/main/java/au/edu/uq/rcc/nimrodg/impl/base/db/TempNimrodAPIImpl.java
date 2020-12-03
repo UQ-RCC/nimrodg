@@ -21,7 +21,7 @@ package au.edu.uq.rcc.nimrodg.impl.base.db;
 
 import au.edu.uq.rcc.nimrodg.agent.AgentState;
 import au.edu.uq.rcc.nimrodg.api.Actuator;
-import au.edu.uq.rcc.nimrodg.api.AgentInfo;
+import au.edu.uq.rcc.nimrodg.api.AgentDefinition;
 import au.edu.uq.rcc.nimrodg.api.CommandResult;
 import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.Job;
@@ -230,17 +230,17 @@ public abstract class TempNimrodAPIImpl implements NimrodAPI, NimrodMasterAPI {
 	}
 
 	@Override
-	public Map<String, AgentInfo> lookupAgents() {
+	public Map<String, AgentDefinition> lookupAgents() {
 		return db.runSQL(() -> Collections.unmodifiableMap(db.lookupAgents()));
 	}
 
 	@Override
-	public AgentInfo lookupAgentByPlatform(String platString) {
+	public AgentDefinition lookupAgentByPlatform(String platString) {
 		return db.runSQL(() -> db.lookupAgentByPlatform(platString).orElse(null));
 	}
 
 	@Override
-	public AgentInfo lookupAgentByPosix(String system, String machine) {
+	public AgentDefinition lookupAgentByPosix(String system, String machine) {
 		return db.runSQL(() -> db.lookupAgentByPOSIX(system, machine).orElse(null));
 	}
 

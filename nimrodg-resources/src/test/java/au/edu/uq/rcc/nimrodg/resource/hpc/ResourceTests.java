@@ -21,7 +21,7 @@ package au.edu.uq.rcc.nimrodg.resource.hpc;
 
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
 import au.edu.uq.rcc.nimrodg.api.Actuator;
-import au.edu.uq.rcc.nimrodg.api.AgentInfo;
+import au.edu.uq.rcc.nimrodg.api.AgentDefinition;
 import au.edu.uq.rcc.nimrodg.api.AgentProvider;
 import au.edu.uq.rcc.nimrodg.api.MasterResourceType;
 import au.edu.uq.rcc.nimrodg.api.NimrodConfig;
@@ -184,7 +184,7 @@ public class ResourceTests {
 		nimrodConfig = new TestNimrodConfig(fsRoot);
 
 		/* Create placeholder files for the agents. */
-		for(AgentInfo ai : agentProvider.lookupAgents().values()) {
+		for(AgentDefinition ai : agentProvider.lookupAgents().values()) {
 			Path p = ai.getPath();
 			Files.createDirectories(p.getParent());
 			Files.write(p, new byte[0]);
@@ -384,17 +384,17 @@ public class ResourceTests {
 		}
 
 		@Override
-		public Map<String, AgentInfo> lookupAgents() {
+		public Map<String, AgentDefinition> lookupAgents() {
 			return agentProvider.lookupAgents();
 		}
 
 		@Override
-		public AgentInfo lookupAgentByPlatform(String platString) {
+		public AgentDefinition lookupAgentByPlatform(String platString) {
 			return agentProvider.lookupAgentByPlatform(platString);
 		}
 
 		@Override
-		public AgentInfo lookupAgentByPosix(String system, String machine) {
+		public AgentDefinition lookupAgentByPosix(String system, String machine) {
 			return agentProvider.lookupAgentByPosix(system, machine);
 		}
 	}
