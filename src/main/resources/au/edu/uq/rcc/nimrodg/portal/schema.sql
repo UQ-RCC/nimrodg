@@ -81,6 +81,10 @@ BEGIN
     EXECUTE format('GRANT USAGE                         ON %I.nimrod_resource_agents_id_seq         TO %I', _username, _username);
     EXECUTE format('GRANT SELECT,UPDATE,INSERT,DELETE   ON %I.nimrod_command_results                TO %I', _username, _username);
     EXECUTE format('GRANT USAGE                         ON %I.nimrod_command_results_id_seq         TO %I', _username, _username);
+    EXECUTE format('GRANT SELECT,UPDATE,INSERT,DELETE   ON %I.nimrod_kv_config                      TO %I', _username, _username);
+    EXECUTE format('GRANT USAGE                         ON %I.nimrod_kv_config_id_seq               TO %I', _username, _username);
+    EXECUTE format('GRANT SELECT,UPDATE,INSERT,DELETE   ON %I.nimrod_master_message_storage         TO %I', _username, _username);
+    EXECUTE format('GRANT USAGE                         ON %I.nimrod_master_message_storage_id_seq  TO %I', _username, _username);
 END $$ LANGUAGE 'plpgsql';
 
 CREATE OR REPLACE FUNCTION public.portal_set_user_debug(_username NAME) RETURNS VOID AS $$
