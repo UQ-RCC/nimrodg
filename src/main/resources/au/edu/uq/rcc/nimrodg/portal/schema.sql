@@ -83,6 +83,27 @@ BEGIN
     EXECUTE format('GRANT USAGE                         ON %I.nimrod_command_results_id_seq         TO %I', _username, _username);
 END $$ LANGUAGE 'plpgsql';
 
+CREATE OR REPLACE FUNCTION public.portal_set_user_debug(_username NAME) RETURNS VOID AS $$
+    EXECUTE format('GRANT SELECT,INSERT,UPDATE,DELETE   ON %I.nimrod_full_experiments               TO %I', _username, _username);
+    EXECUTE format('GRANT USAGE                         ON %I.nimrod_experiments_id_seq             TO %I', _username, _username);
+    EXECUTE format('GRANT SELECT,INSERT,UPDATE,DELETE   ON %I.nimrod_variables                      TO %I', _username, _username);
+    EXECUTE format('GRANT USAGE                         ON %I.nimrod_variables_id_seq               TO %I', _username, _username);
+    EXECUTE format('GRANT SELECT,INSERT,UPDATE,DELETE   ON %I.nimrod_variables                      TO %I', _username, _username);
+    EXECUTE format('GRANT USAGE                         ON %I.nimrod_variables_id_seq               TO %I', _username, _username);
+    EXECUTE format('GRANT SELECT,INSERT,UPDATE,DELETE   ON %I.nimrod_tasks                          TO %I', _username, _username);
+    EXECUTE format('GRANT USAGE                         ON %I.nimrod_tasks_id_seq                   TO %I', _username, _username);
+    EXECUTE format('GRANT SELECT,INSERT,UPDATE,DELETE   ON %I.nimrod_tasks                          TO %I', _username, _username);
+    EXECUTE format('GRANT USAGE                         ON %I.nimrod_tasks_id_seq                   TO %I', _username, _username);
+    EXECUTE format('GRANT SELECT,INSERT,UPDATE,DELETE   ON %I.nimrod_commands                       TO %I', _username, _username);
+    EXECUTE format('GRANT USAGE                         ON %I.nimrod_commands_id_seq                TO %I', _username, _username);
+    EXECUTE format('GRANT SELECT,INSERT,UPDATE,DELETE   ON %I.nimrod_substitutions                  TO %I', _username, _username);
+    EXECUTE format('GRANT USAGE                         ON %I.nimrod_substitutions_id_seq           TO %I', _username, _username);
+    EXECUTE format('GRANT SELECT,INSERT,UPDATE,DELETE   ON %I.nimrod_jobs                           TO %I', _username, _username);
+    EXECUTE format('GRANT USAGE                         ON %I.nimrod_jobs_id_seq                    TO %I', _username, _username);
+
+    EXECUTE format('GRANT USAGE                         ON %I.nimrod_resource_assignments_id_seq    TO %I', _username, _username);
+END $$ LANGUAGE 'plpgsql';
+
 CREATE OR REPLACE FUNCTION public.portal_create_user(_username NAME) RETURNS SETOF public.portal_user_status AS $$
 DECLARE
     _user public.portal_users;
