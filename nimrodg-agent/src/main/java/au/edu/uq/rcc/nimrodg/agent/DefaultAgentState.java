@@ -19,18 +19,17 @@
  */
 package au.edu.uq.rcc.nimrodg.agent;
 
-import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
 import java.time.Instant;
 import java.util.UUID;
 import javax.json.JsonObject;
 
 public final class DefaultAgentState implements AgentState {
 
-	private Agent.State state;
+	private State state;
 	private String queue;
 	private UUID uuid;
 	private int shutdownSignal;
-	private AgentShutdown.Reason shutdownReason;
+	private ShutdownReason shutdownReason;
 	private Instant lastHeardFrom;
 	private Instant creationTime;
 	private Instant connectionTime;
@@ -64,12 +63,12 @@ public final class DefaultAgentState implements AgentState {
 	}
 
 	@Override
-	public Agent.State getState() {
+	public State getState() {
 		return state;
 	}
 
 	@Override
-	public void setState(Agent.State state) {
+	public void setState(State state) {
 		this.state = state;
 	}
 
@@ -104,12 +103,12 @@ public final class DefaultAgentState implements AgentState {
 	}
 
 	@Override
-	public AgentShutdown.Reason getShutdownReason() {
+	public ShutdownReason getShutdownReason() {
 		return shutdownReason;
 	}
 
 	@Override
-	public void setShutdownReason(AgentShutdown.Reason r) {
+	public void setShutdownReason(ShutdownReason r) {
 		shutdownReason = r;
 	}
 

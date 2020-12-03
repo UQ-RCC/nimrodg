@@ -1,6 +1,7 @@
 package au.edu.uq.rcc.nimrodg.master;
 
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
+import au.edu.uq.rcc.nimrodg.api.AgentInfo;
 import au.edu.uq.rcc.nimrodg.api.utils.NimrodUtils;
 
 import java.time.Instant;
@@ -177,7 +178,7 @@ public class TestOps implements Heart.Operations {
 	}
 
 	@Override
-	public void disconnectAgent(UUID u, AgentShutdown.Reason reason, int signal) {
+	public void disconnectAgent(UUID u, AgentInfo.ShutdownReason reason, int signal) {
 		System.err.printf("[%s] %s: Force Disconnect, %s, %d\n", currentTime, u, reason, signal);
 		runLater(() -> removeAgent(u));
 	}

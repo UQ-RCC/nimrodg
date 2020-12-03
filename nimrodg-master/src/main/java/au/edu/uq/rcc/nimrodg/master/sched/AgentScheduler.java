@@ -21,6 +21,7 @@ package au.edu.uq.rcc.nimrodg.master.sched;
 
 import au.edu.uq.rcc.nimrodg.agent.Agent;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentUpdate;
+import au.edu.uq.rcc.nimrodg.api.AgentInfo;
 import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.JobAttempt;
 import au.edu.uq.rcc.nimrodg.agent.messages.NetworkJob;
@@ -140,7 +141,7 @@ public interface AgentScheduler extends ConfigListener {
 	 * @param oldState The old state. If null, this is the initial transition.
 	 * @param newState The new state.
 	 */
-	void onAgentStateUpdate(Agent agent, Resource node, Agent.State oldState, Agent.State newState);
+	void onAgentStateUpdate(Agent agent, Resource node, AgentInfo.State oldState, AgentInfo.State newState);
 
 	void onAgentLaunchFailure(Agent agent, Resource node, Throwable t);
 

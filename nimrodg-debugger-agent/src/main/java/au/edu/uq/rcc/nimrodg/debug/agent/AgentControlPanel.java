@@ -20,6 +20,8 @@
 package au.edu.uq.rcc.nimrodg.debug.agent;
 
 import au.edu.uq.rcc.nimrodg.agent.Agent;
+import au.edu.uq.rcc.nimrodg.api.AgentInfo;
+
 import java.util.ArrayList;
 
 public class AgentControlPanel extends javax.swing.JPanel {
@@ -53,8 +55,8 @@ public class AgentControlPanel extends javax.swing.JPanel {
 		listeners.remove(l);
 	}
 
-	public void setState(Agent.State state) {
-		if(state == Agent.State.SHUTDOWN) {
+	public void setState(AgentInfo.State state) {
+		if(state == AgentInfo.State.SHUTDOWN) {
 			waitingForAgent.setSelected(true);
 			sendingInit.setSelected(true);
 			shutdown.setSelected(true);
@@ -62,7 +64,7 @@ public class AgentControlPanel extends javax.swing.JPanel {
 			pingBtn.setEnabled(false);
 			cancelBtn.setEnabled(false);
 			terminateBtn.setEnabled(false);
-		} else if(state == Agent.State.WAITING_FOR_HELLO) {
+		} else if(state == AgentInfo.State.WAITING_FOR_HELLO) {
 			waitingForAgent.setSelected(true);
 			sendingInit.setSelected(false);
 			shutdown.setSelected(false);
@@ -70,7 +72,7 @@ public class AgentControlPanel extends javax.swing.JPanel {
 			pingBtn.setEnabled(false);
 			cancelBtn.setEnabled(false);
 			terminateBtn.setEnabled(false);
-		} else if(state == Agent.State.READY) {
+		} else if(state == AgentInfo.State.READY) {
 			sendingInit.setSelected(true);
 			waitingForAgent.setSelected(true);
 			shutdown.setSelected(false);
@@ -78,7 +80,7 @@ public class AgentControlPanel extends javax.swing.JPanel {
 			pingBtn.setEnabled(true);
 			cancelBtn.setEnabled(false);
 			terminateBtn.setEnabled(true);
-		} else if(state == Agent.State.BUSY) {
+		} else if(state == AgentInfo.State.BUSY) {
 			sendingInit.setSelected(true);
 			waitingForAgent.setSelected(true);
 			shutdown.setSelected(false);

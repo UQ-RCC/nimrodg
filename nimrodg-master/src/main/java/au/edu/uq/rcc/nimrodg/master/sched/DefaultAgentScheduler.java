@@ -21,6 +21,7 @@ package au.edu.uq.rcc.nimrodg.master.sched;
 
 import au.edu.uq.rcc.nimrodg.agent.Agent;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentUpdate;
+import au.edu.uq.rcc.nimrodg.api.AgentInfo;
 import au.edu.uq.rcc.nimrodg.api.CommandResult;
 import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.JobAttempt;
@@ -84,10 +85,10 @@ public class DefaultAgentScheduler implements AgentScheduler {
 	public void resync(Set<Agent> agents, Set<Master.RunningJob> jobs) {
 		m_AllAgents.addAll(agents);
 		agents.stream()
-				.filter(ag -> ag.getState() == Agent.State.READY)
+				.filter(ag -> ag.getState() == AgentInfo.State.READY)
 				.forEach(m_ReadyAgents::add);
 		agents.stream()
-				.filter(ag -> ag.getState() == Agent.State.WAITING_FOR_HELLO)
+				.filter(ag -> ag.getState() == AgentInfo.State.WAITING_FOR_HELLO)
 				.map(ag -> ag.getUUID())
 				.forEach(m_LaunchingAgents::add);
 
@@ -120,32 +121,32 @@ public class DefaultAgentScheduler implements AgentScheduler {
 	}
 
 	@Override
-	public void onAgentStateUpdate(Agent agent, Resource res, Agent.State oldState, Agent.State newState) {
+	public void onAgentStateUpdate(Agent agent, Resource res, AgentInfo.State oldState, AgentInfo.State newState) {
 		LOGGER.trace("onAgentStateUpdate({}, {}, {}, {})", agent.getUUID(), res.getName(), oldState, newState);
 
 		boolean scheduleNext = false;
 		if(oldState == null) {
-			assert newState == Agent.State.WAITING_FOR_HELLO;
+			assert newState == AgentInfo.State.WAITING_FOR_HELLO;
 			m_AllAgents.add(agent);
-		} else if(oldState == Agent.State.WAITING_FOR_HELLO && newState == Agent.State.READY) {
+		} else if(oldState == AgentInfo.State.WAITING_FOR_HELLO && newState == AgentInfo.State.READY) {
 			/* WAITING_FOR_HELLO -> READY, we can start doing things. */
 			scheduleNext = true;
 			m_AgentHeuristic.onAgentLaunchSuccess(res);
 			m_LaunchingAgents.remove(agent.getUUID());
-		} else if(oldState == Agent.State.READY) {
+		} else if(oldState == AgentInfo.State.READY) {
 			m_ReadyAgents.remove(agent);
 
-			if(newState == Agent.State.SHUTDOWN) {
+			if(newState == AgentInfo.State.SHUTDOWN) {
 				/* READY->SHUTDOWN, we died. */
 				m_AllAgents.remove(agent);
 			}
-		} else if(oldState == Agent.State.BUSY) {
+		} else if(oldState == AgentInfo.State.BUSY) {
 
 			JobAttempt att = m_AssJob.reportAgentFinish(agent);
-			if(newState == Agent.State.READY) {
+			if(newState == AgentInfo.State.READY) {
 				/* BUSY->READY, we're done (for our purposes anyway, this might have been a cancel). */
 				scheduleNext = true;
-			} else if(newState == Agent.State.SHUTDOWN) {
+			} else if(newState == AgentInfo.State.SHUTDOWN) {
 				/* BUSY->SHUTDOWN, we died. */
 				m_AllAgents.remove(agent);
 				ops.reportJobFailure(att, agent, Operations.FailureReason.CRASHED);
@@ -320,7 +321,7 @@ public class DefaultAgentScheduler implements AgentScheduler {
 							m_Setups.markAgentRequested(ops.launchAgents(n, 1)[0], n, exp);
 						}
 					} else {
-						Optional<Agent> ag = agents.stream().filter(a -> a.getState() == Agent.State.READY).findFirst();
+						Optional<Agent> ag = agents.stream().filter(a -> a.getState() == AgentInfo.State.READY).findFirst();
 
 						if(!ag.isPresent()) {
 							/* No available agent, ignore for now */
@@ -485,7 +486,7 @@ public class DefaultAgentScheduler implements AgentScheduler {
 	}
 
 	private List<Agent> getReadyAgents(Resource node) {
-		return ops.getResourceAgents(node).stream().filter(a -> a.getState() == Agent.State.READY).collect(Collectors.toList());
+		return ops.getResourceAgents(node).stream().filter(a -> a.getState() == AgentInfo.State.READY).collect(Collectors.toList());
 	}
 
 	@Override

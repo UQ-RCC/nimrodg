@@ -22,6 +22,7 @@ package au.edu.uq.rcc.nimrodg.resource.hpc;
 import au.edu.uq.rcc.nimrodg.agent.Agent;
 import au.edu.uq.rcc.nimrodg.agent.AgentState;
 import au.edu.uq.rcc.nimrodg.api.Actuator;
+import au.edu.uq.rcc.nimrodg.api.AgentInfo;
 import au.edu.uq.rcc.nimrodg.api.NimrodException;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.resource.act.ActuatorUtils;
@@ -512,7 +513,7 @@ public final class HPCActuator extends POSIXActuator<HPCConfig> {
 			return AdoptStatus.Rejected;
 		}
 
-		if(state.getState() == Agent.State.SHUTDOWN) {
+		if(state.getState() == AgentInfo.State.SHUTDOWN) {
 			return AdoptStatus.Rejected;
 		}
 

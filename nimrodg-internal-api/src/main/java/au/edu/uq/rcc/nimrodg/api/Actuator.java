@@ -47,7 +47,7 @@ public interface Actuator extends AutoCloseable {
 		 *
 		 * @throws IllegalArgumentException if uuid is null or is not owned by this actuator.
 		 */
-		void reportAgentFailure(Actuator act, UUID uuid, AgentShutdown.Reason reason, int signal) throws IllegalArgumentException;
+		void reportAgentFailure(Actuator act, UUID uuid, AgentInfo.ShutdownReason reason, int signal) throws IllegalArgumentException;
 
 		NimrodConfig getConfig();
 

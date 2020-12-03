@@ -27,6 +27,7 @@ import au.edu.uq.rcc.nimrodg.agent.messages.AgentMessage;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentPong;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentUpdate;
 import au.edu.uq.rcc.nimrodg.agent.messages.NetworkJob;
+import au.edu.uq.rcc.nimrodg.api.AgentInfo;
 import au.edu.uq.rcc.nimrodg.api.NimrodMasterAPI;
 
 import java.time.Instant;
@@ -47,7 +48,7 @@ public class FakeAgentListener implements ReferenceAgent.AgentListener {
 	}
 
 	@Override
-	public void onStateChange(Agent _agent, Agent.State oldState, Agent.State newState) {
+	public void onStateChange(Agent _agent, AgentInfo.State oldState, AgentInfo.State newState) {
 		ReferenceAgent agent = (ReferenceAgent)_agent;
 		DefaultAgentState as = (DefaultAgentState)agent.getDataStore();
 
@@ -57,10 +58,10 @@ public class FakeAgentListener implements ReferenceAgent.AgentListener {
 			return;
 		}
 
-		if(oldState == Agent.State.WAITING_FOR_HELLO && newState == Agent.State.READY) {
+		if(oldState == AgentInfo.State.WAITING_FOR_HELLO && newState == AgentInfo.State.READY) {
 			as.setConnectionTime(Instant.now());
 			actuator.notifyAgentConnection(as);
-		} else if(newState == Agent.State.SHUTDOWN) {
+		} else if(newState == AgentInfo.State.SHUTDOWN) {
 			as.setExpired(true);
 			actuator.notifyAgentDisconnection(as.getUUID());
 		}

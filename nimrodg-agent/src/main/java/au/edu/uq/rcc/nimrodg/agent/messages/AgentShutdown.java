@@ -23,17 +23,14 @@ import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 
+import static au.edu.uq.rcc.nimrodg.api.AgentInfo.ShutdownReason;
+
 public class AgentShutdown extends AgentMessage {
 
-	public enum Reason {
-		HostSignal,
-		Requested
-	}
-
-	public final Reason reason;
+	public final ShutdownReason reason;
 	public final int signal;
 
-	private AgentShutdown(UUID agentUuid, Instant timestamp, Reason reason, int signal) {
+	private AgentShutdown(UUID agentUuid, Instant timestamp, ShutdownReason reason, int signal) {
 		super(agentUuid, timestamp);
 		Objects.requireNonNull(reason, "reason");
 		this.reason = reason;
@@ -46,10 +43,10 @@ public class AgentShutdown extends AgentMessage {
 	}
 
 	public static class Builder extends AgentMessage.Builder<Builder> {
-		private Reason reason;
+		private ShutdownReason reason;
 		private int signal;
 
-		public Builder reason(Reason reason) {
+		public Builder reason(ShutdownReason reason) {
 			this.reason = reason;
 			return this;
 		}
@@ -65,7 +62,7 @@ public class AgentShutdown extends AgentMessage {
 		}
 	}
 
-	public static String reasonToString(Reason r) {
+	public static String reasonToString(ShutdownReason r) {
 		switch(r) {
 			case HostSignal:
 				return "HostSignal";
@@ -76,12 +73,12 @@ public class AgentShutdown extends AgentMessage {
 		throw new IllegalArgumentException();
 	}
 
-	public static Reason reasonFromString(String s) {
+	public static ShutdownReason reasonFromString(String s) {
 		switch(s) {
 			case "HostSignal":
-				return Reason.HostSignal;
+				return ShutdownReason.HostSignal;
 			case "Requested":
-				return Reason.Requested;
+				return ShutdownReason.Requested;
 		}
 
 		throw new IllegalArgumentException();

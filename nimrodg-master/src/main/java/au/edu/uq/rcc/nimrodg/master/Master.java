@@ -30,6 +30,7 @@ import au.edu.uq.rcc.nimrodg.agent.messages.AgentUpdate;
 import au.edu.uq.rcc.nimrodg.api.Actuator;
 import au.edu.uq.rcc.nimrodg.api.Actuator.LaunchResult;
 import au.edu.uq.rcc.nimrodg.api.ActuatorOpsAdapter;
+import au.edu.uq.rcc.nimrodg.api.AgentInfo;
 import au.edu.uq.rcc.nimrodg.api.CommandResult;
 import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.Job;
@@ -552,7 +553,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 
 	/* Expire an agent. */
 	private void doExpire(MasterAgentInfo ai) {
-		if(ai.state.getState() == Agent.State.WAITING_FOR_HELLO) {
+		if(ai.state.getState() == AgentInfo.State.WAITING_FOR_HELLO) {
 			/*
 			 * We're still WAITING_FOR_HELLO, ask the actuator what's going on.
 			 * This could just be a really slow launch, i.e. stuck in a PBS/SLURM queue.
@@ -610,7 +611,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 		// TODO: Consider doing an adoption check here
 		// TODO: Handle expiry (by checking nimrod)
 
-		if(msg.getType() == AgentMessage.Type.Shutdown && ai.state.getState() == Agent.State.SHUTDOWN) {
+		if(msg.getType() == AgentMessage.Type.Shutdown && ai.state.getState() == AgentInfo.State.SHUTDOWN) {
 			/*
 			 * We can ignore a stray shutdown.
 			 *
@@ -645,7 +646,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 					ai.instance.terminate();
 				} catch(IOException e) {
 					LOGGER.warn("Unable to kill agent '{}', mimicking successful shutdown.", ai.uuid, e);
-					ai.instance.disconnect(AgentShutdown.Reason.Requested, -1);
+					ai.instance.disconnect(AgentInfo.ShutdownReason.Requested, -1);
 				}
 			}
 
@@ -789,9 +790,9 @@ public class Master implements MessageQueueListener, AutoCloseable {
 			}
 
 			/* If the agent's started work before the actuator's done, notify it. */
-			if(ai.state.getState() == Agent.State.READY || ai.state.getState() == Agent.State.BUSY) {
+			if(ai.state.getState() == AgentInfo.State.READY || ai.state.getState() == AgentInfo.State.BUSY) {
 				act.notifyAgentConnection(ai.state);
-			} else if(ai.state.getState() == Agent.State.SHUTDOWN) {
+			} else if(ai.state.getState() == AgentInfo.State.SHUTDOWN) {
 				act.notifyAgentConnection(ai.state);
 				act.notifyAgentDisconnection(ai.uuid);
 			}
@@ -955,22 +956,22 @@ public class Master implements MessageQueueListener, AutoCloseable {
 		}
 
 		@Override
-		public void onStateChange(Agent agent, Agent.State oldState, Agent.State newState) {
+		public void onStateChange(Agent agent, AgentInfo.State oldState, AgentInfo.State newState) {
 			MasterAgentInfo ai = getMasterAgentInfo(agent.getUUID());
 			assert agent == ai.instance;
 
 			LOGGER.debug("Agent {}: State change from {} -> {}", agent.getUUID(), oldState, newState);
 
 			if(oldState == null) {
-				assert newState == Agent.State.WAITING_FOR_HELLO;
+				assert newState == AgentInfo.State.WAITING_FOR_HELLO;
 				AgentState nas = nimrod.addAgent(ai.resource, ai.state);
 				ai.state.update(nas);
 				heart.onAgentCreate(ai.uuid, Instant.now());
-			} else if(oldState == Agent.State.WAITING_FOR_HELLO && newState == Agent.State.READY) {
+			} else if(oldState == AgentInfo.State.WAITING_FOR_HELLO && newState == AgentInfo.State.READY) {
 				ai.state.setConnectionTime(Instant.now());
 				aaaaa.runWithActuator(ai.resource, a -> a.notifyAgentConnection(ai.state));
 				nimrod.updateAgent(ai.state);
-			} else if(newState == Agent.State.SHUTDOWN) {
+			} else if(newState == AgentInfo.State.SHUTDOWN) {
 				ai.state.setExpired(true);
 				aaaaa.runWithActuator(ai.resource, a -> a.notifyAgentDisconnection(ai.uuid));
 				heart.onAgentDisconnect(ai.uuid);
@@ -1032,7 +1033,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 		}
 
 		@Override
-		public void reportAgentFailure(Actuator act, UUID uuid, AgentShutdown.Reason reason, int signal) throws IllegalArgumentException {
+		public void reportAgentFailure(Actuator act, UUID uuid, AgentInfo.ShutdownReason reason, int signal) throws IllegalArgumentException {
 			Instant now = Instant.now();
 			// FIXME: Should probably be some way to tell this message was faked.
 			agentMessages.offer(new _AgentMessage(-1, UUID.randomUUID(), new AgentShutdown.Builder()
@@ -1074,7 +1075,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 		}
 
 		@Override
-		public void disconnectAgent(UUID u, AgentShutdown.Reason reason, int signal) {
+		public void disconnectAgent(UUID u, AgentInfo.ShutdownReason reason, int signal) {
 			allAgents.get(u).instance.disconnect(reason, signal);
 		}
 

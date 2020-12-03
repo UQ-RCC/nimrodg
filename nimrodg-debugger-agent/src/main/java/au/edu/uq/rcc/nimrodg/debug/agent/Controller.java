@@ -30,6 +30,7 @@ import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentUpdate;
 import au.edu.uq.rcc.nimrodg.agent.messages.json.JsonBackend;
 import au.edu.uq.rcc.nimrodg.agent.messages.NetworkJob;
+import au.edu.uq.rcc.nimrodg.api.AgentInfo;
 import au.edu.uq.rcc.nimrodg.api.PlanfileParseException;
 import au.edu.uq.rcc.nimrodg.api.Task;
 import au.edu.uq.rcc.nimrodg.api.utils.MsgUtils;
@@ -244,7 +245,7 @@ public class Controller {
 
 		boolean terminate =
 				(agent.getUUID() != null && !uuid.equals(agent.getUUID())) ||	/* Mismatching UUID. */
-						(agent.getState() == Agent.State.SHUTDOWN);				/* Already shutdown. */
+						(agent.getState() == AgentInfo.State.SHUTDOWN);				/* Already shutdown. */
 
 		if(terminate) {
 			if(msg.getType() == AgentMessage.Type.Hello) {
@@ -283,13 +284,13 @@ public class Controller {
 		messageWindow.getMessagePanel().refreshMessages();
 	}
 
-	private void onAgentStateChange(Agent agent, Agent.State oldState, Agent.State newState) {
+	private void onAgentStateChange(Agent agent, AgentInfo.State oldState, AgentInfo.State newState) {
 		logger.log(ILogger.Level.INFO, "State Change: %s => %s", oldState, newState);
 
-		if(newState == Agent.State.SHUTDOWN) {
-			if(agent.getShutdownReason() == AgentShutdown.Reason.Requested) {
+		if(newState == AgentInfo.State.SHUTDOWN) {
+			if(agent.getShutdownReason() == AgentInfo.ShutdownReason.Requested) {
 				logger.log(ILogger.Level.INFO, "Agent terminated by request");
-			} else if(agent.getShutdownReason() == AgentShutdown.Reason.HostSignal) {
+			} else if(agent.getShutdownReason() == AgentInfo.ShutdownReason.HostSignal) {
 				logger.log(ILogger.Level.INFO, "Agent terminated by host signal %d", agent.getShutdownSignal());
 			}
 		}
@@ -369,7 +370,7 @@ public class Controller {
 	}
 
 	private void onPanelReset() {
-		agent.disconnect(AgentShutdown.Reason.Requested, -1);
+		agent.disconnect(AgentInfo.ShutdownReason.Requested, -1);
 		agent.reset(null);
 		statusPanel.setJob(null);
 		messages.clear();
@@ -384,7 +385,7 @@ public class Controller {
 		}
 
 		@Override
-		public void onStateChange(Agent agent, Agent.State oldState, Agent.State newState) {
+		public void onStateChange(Agent agent, AgentInfo.State oldState, AgentInfo.State newState) {
 			Controller.this.onAgentStateChange(agent, oldState, newState);
 		}
 

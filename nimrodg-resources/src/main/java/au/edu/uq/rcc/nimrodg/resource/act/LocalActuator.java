@@ -23,6 +23,7 @@ import au.edu.uq.rcc.nimrodg.agent.Agent;
 import au.edu.uq.rcc.nimrodg.agent.AgentState;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
 import au.edu.uq.rcc.nimrodg.api.AgentDefinition;
+import au.edu.uq.rcc.nimrodg.api.AgentInfo;
 import au.edu.uq.rcc.nimrodg.api.NimrodException;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.api.Actuator;
@@ -211,7 +212,7 @@ public class LocalActuator implements Actuator {
 			if(LOGGER.isWarnEnabled()) {
 				LOGGER.warn(String.format("Agent %s future failed exceptionally.", la.uuid), t);
 			}
-			ops.reportAgentFailure(this, la.uuid, AgentShutdown.Reason.HostSignal, 9);
+			ops.reportAgentFailure(this, la.uuid, AgentInfo.ShutdownReason.HostSignal, 9);
 		} else {
 			int ret;
 			if(la.process == null) {
@@ -241,9 +242,9 @@ public class LocalActuator implements Actuator {
 			 */
 			if(ret != 0) {
 				if(ret > 128) {
-					ops.reportAgentFailure(this, la.uuid, AgentShutdown.Reason.HostSignal, ret - 128);
+					ops.reportAgentFailure(this, la.uuid, AgentInfo.ShutdownReason.HostSignal, ret - 128);
 				} else {
-					ops.reportAgentFailure(this, la.uuid, AgentShutdown.Reason.HostSignal, -1);
+					ops.reportAgentFailure(this, la.uuid, AgentInfo.ShutdownReason.HostSignal, -1);
 				}
 			}
 		}
@@ -461,7 +462,7 @@ public class LocalActuator implements Actuator {
 			return AdoptStatus.Rejected;
 		}
 
-		if(state.getState() == Agent.State.SHUTDOWN) {
+		if(state.getState() == AgentInfo.State.SHUTDOWN) {
 			return AdoptStatus.Rejected;
 		}
 

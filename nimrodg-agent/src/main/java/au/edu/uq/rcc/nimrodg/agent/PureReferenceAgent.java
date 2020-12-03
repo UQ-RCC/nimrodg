@@ -26,13 +26,15 @@ import au.edu.uq.rcc.nimrodg.agent.messages.AgentMessage;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentPing;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentPong;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
-import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown.Reason;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentSubmit;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentUpdate;
 import au.edu.uq.rcc.nimrodg.agent.messages.NetworkJob;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.UUID;
+
+import static au.edu.uq.rcc.nimrodg.api.AgentInfo.State;
+import static au.edu.uq.rcc.nimrodg.api.AgentInfo.ShutdownReason;
 
 /**
  * A reference implementation of the agent logic.
@@ -59,7 +61,7 @@ public class PureReferenceAgent implements Agent {
 	private String queue;
 	private UUID uuid;
 	private int shutdownSignal;
-	private Reason reason;
+	private ShutdownReason reason;
 	private Instant lastHeardFrom;
 
 	public PureReferenceAgent(AgentListener listener) {
@@ -92,7 +94,7 @@ public class PureReferenceAgent implements Agent {
 	}
 
 	@Override
-	public AgentShutdown.Reason getShutdownReason() {
+	public ShutdownReason getShutdownReason() {
 		return reason;
 	}
 
@@ -108,7 +110,7 @@ public class PureReferenceAgent implements Agent {
 	}
 
 	@Override
-	public void disconnect(Reason reason, int signal) {
+	public void disconnect(ShutdownReason reason, int signal) {
 		if(this.getState() != State.SHUTDOWN) {
 			this.reason = reason;
 			this.shutdownSignal = signal;
@@ -129,7 +131,7 @@ public class PureReferenceAgent implements Agent {
 		queue = null;
 		this.uuid = uuid;
 		shutdownSignal = -1;
-		reason = Reason.HostSignal;
+		reason = ShutdownReason.HostSignal;
 		lastHeardFrom = null;
 		setState(State.WAITING_FOR_HELLO);
 	}
@@ -189,7 +191,7 @@ public class PureReferenceAgent implements Agent {
 		if(state == State.WAITING_FOR_HELLO) {
 			/* Fake a shutdown */
 			shutdownSignal = -1;
-			reason = Reason.Requested;
+			reason = ShutdownReason.Requested;
 			this.setState(State.SHUTDOWN);
 			return;
 		}

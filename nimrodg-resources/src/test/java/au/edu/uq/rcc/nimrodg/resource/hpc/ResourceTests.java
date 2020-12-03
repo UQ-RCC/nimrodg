@@ -22,6 +22,7 @@ package au.edu.uq.rcc.nimrodg.resource.hpc;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
 import au.edu.uq.rcc.nimrodg.api.Actuator;
 import au.edu.uq.rcc.nimrodg.api.AgentDefinition;
+import au.edu.uq.rcc.nimrodg.api.AgentInfo;
 import au.edu.uq.rcc.nimrodg.api.AgentProvider;
 import au.edu.uq.rcc.nimrodg.api.MasterResourceType;
 import au.edu.uq.rcc.nimrodg.api.NimrodConfig;
@@ -364,7 +365,7 @@ public class ResourceTests {
 		public int agentCount = 0;
 
 		@Override
-		public void reportAgentFailure(Actuator act, UUID uuid, AgentShutdown.Reason reason, int signal) throws IllegalArgumentException {
+		public void reportAgentFailure(Actuator act, UUID uuid, AgentInfo.ShutdownReason reason, int signal) throws IllegalArgumentException {
 
 		}
 

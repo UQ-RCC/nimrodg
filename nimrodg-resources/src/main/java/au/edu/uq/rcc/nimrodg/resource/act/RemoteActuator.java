@@ -21,6 +21,7 @@ package au.edu.uq.rcc.nimrodg.resource.act;
 
 import au.edu.uq.rcc.nimrodg.agent.Agent;
 import au.edu.uq.rcc.nimrodg.agent.AgentState;
+import au.edu.uq.rcc.nimrodg.api.AgentInfo;
 import au.edu.uq.rcc.nimrodg.api.NimrodException;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.api.Resource;
@@ -238,7 +239,7 @@ public class RemoteActuator extends POSIXActuator<SSHResourceType.SSHConfig> {
 			return AdoptStatus.Rejected;
 		}
 
-		if(state.getState() == Agent.State.SHUTDOWN) {
+		if(state.getState() == AgentInfo.State.SHUTDOWN) {
 			return AdoptStatus.Rejected;
 		}
 
@@ -253,7 +254,7 @@ public class RemoteActuator extends POSIXActuator<SSHResourceType.SSHConfig> {
 		}
 
 		RemoteAgent ra = new RemoteAgent(state.getUUID(), jpid.intValue(), jworkroot.getString());
-		ra.state = state.getState() == Agent.State.WAITING_FOR_HELLO ? RemoteState.NOT_CONNECTED : RemoteState.CONNECTED;
+		ra.state = state.getState() == AgentInfo.State.WAITING_FOR_HELLO ? RemoteState.NOT_CONNECTED : RemoteState.CONNECTED;
 		agents.putIfAbsent(ra.uuid, ra);
 
 		return AdoptStatus.Adopted;

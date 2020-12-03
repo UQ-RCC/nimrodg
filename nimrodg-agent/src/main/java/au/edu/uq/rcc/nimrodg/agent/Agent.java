@@ -21,64 +21,17 @@ package au.edu.uq.rcc.nimrodg.agent;
 
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentMessage;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentPong;
-import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentUpdate;
 import au.edu.uq.rcc.nimrodg.agent.messages.NetworkJob;
+
+import static au.edu.uq.rcc.nimrodg.api.AgentInfo.State;
+import static au.edu.uq.rcc.nimrodg.api.AgentInfo.ShutdownReason;
+
 import java.io.IOException;
 import java.time.Instant;
 import java.util.UUID;
 
 public interface Agent {
-
-	/**
-	 * All the possible server-side states for an agent.
-	 */
-	enum State {
-		/**
-		 * No agent is connected, waiting for initialisation.
-		 *
-		 * <ul>
-		 * <li>
-		 * Calling {@link #terminate()} here will cause the state to change to {@link #SHUTDOWN} with the shutdown
-		 * reason set to {@link au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown.Reason#Requested}.
-		 * </li>
-		 * </ul>
-		 */
-		WAITING_FOR_HELLO,
-		/**
-		 * The agent is ready and willing to accept jobs.
-		 *
-		 * <ul>
-		 * <li> {@link #submitJob(NetworkJob)} may be called to submit a job and change to {@link #BUSY}.
-		 * </li>
-		 * <li>{@link #terminate()} may be called to request an agent termination.</li>
-		 * </ul>
-		 */
-		READY,
-		/**
-		 * The agent is currently processing a job. No new jobs may be submitted.
-		 *
-		 * <ul>
-		 * <li>{@link #cancelJob()} may be called to abort the current job and return to {@link #READY}.</li>
-		 * <li>{@link #terminate()} may be called to request an agent termination.</li>
-		 * </ul>
-		 */
-		BUSY,
-		/**
-		 * The agent has shutdown.
-		 *
-		 * <ul>
-		 * <li> {@link #getQueue()}, {@link #getQueue()}, and {@link #getUUID()} will return the values that were valid
-		 * at agent shutdown.
-		 * </li>
-		 * <li>
-		 * The shutdown details may be queried with {@link #getShutdownSignal()} and {@link #getShutdownReason()}.
-		 * </li>
-		 * <li>{@link #terminate()} may be called, but will have no effect.</li>
-		 * </ul>
-		 */
-		SHUTDOWN
-	}
 
 	enum ClientState {
 		WAITING_FOR_INIT,
@@ -115,7 +68,7 @@ public interface Agent {
 	 *
 	 * @return The POSIX signal that caused the agent to shutdown. This is only meaningful if {@link #getState()}
 	 * returns {@link State#SHUTDOWN} and {@link #getShutdownReason()} returns
-	 * {@link au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown.Reason#HostSignal}.
+	 * {@link ShutdownReason#HostSignal}.
 	 */
 	int getShutdownSignal();
 
@@ -124,7 +77,7 @@ public interface Agent {
 	 *
 	 * @return The reason the agent shutdown.
 	 */
-	AgentShutdown.Reason getShutdownReason();
+	ShutdownReason getShutdownReason();
 
 	/**
 	 * Get the instant at which the last message was received.
@@ -176,7 +129,7 @@ public interface Agent {
 	 * <li>
 	 * If {@link #getState()} would return {@link State#WAITING_FOR_HELLO}, this simulates a termination. The state will
 	 * be changed to {@link State#SHUTDOWN} and {@link #getShutdownReason()} will return
-	 * {@link au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown.Reason#HostSignal}.
+	 * {@link ShutdownReason#HostSignal}.
 	 * </li>
 	 * <li>This may be called at any point in the agent's lifecycle.</li>
 	 * </ul>
@@ -206,7 +159,7 @@ public interface Agent {
 	 * @param reason The shutdown reason.
 	 * @param signal The shutdown signal.
 	 */
-	void disconnect(AgentShutdown.Reason reason, int signal);
+	void disconnect(ShutdownReason reason, int signal);
 
 	/**
 	 * Called when the agent wants to send a message to the remote client.

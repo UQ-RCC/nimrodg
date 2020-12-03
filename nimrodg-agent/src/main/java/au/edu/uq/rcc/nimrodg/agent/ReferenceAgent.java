@@ -26,13 +26,15 @@ import au.edu.uq.rcc.nimrodg.agent.messages.AgentMessage;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentPing;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentPong;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
-import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown.Reason;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentSubmit;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentUpdate;
 import au.edu.uq.rcc.nimrodg.agent.messages.NetworkJob;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.UUID;
+
+import static au.edu.uq.rcc.nimrodg.api.AgentInfo.State;
+import static au.edu.uq.rcc.nimrodg.api.AgentInfo.ShutdownReason;
 
 /**
  * A reference implementation of the agent logic.
@@ -94,7 +96,7 @@ public class ReferenceAgent implements Agent {
 	}
 
 	@Override
-	public AgentShutdown.Reason getShutdownReason() {
+	public ShutdownReason getShutdownReason() {
 		return storage.getShutdownReason();
 	}
 
@@ -110,7 +112,7 @@ public class ReferenceAgent implements Agent {
 	}
 
 	@Override
-	public void disconnect(Reason reason, int signal) {
+	public void disconnect(ShutdownReason reason, int signal) {
 		if(this.getState() != State.SHUTDOWN) {
 			storage.setShutdownReason(reason);
 			storage.setShutdownSignal(signal);
@@ -133,7 +135,7 @@ public class ReferenceAgent implements Agent {
 		storage.setUUID(uuid);
 		storage.setSecretKey(secretKey);
 		storage.setShutdownSignal(-1);
-		storage.setShutdownReason(Reason.HostSignal);
+		storage.setShutdownReason(ShutdownReason.HostSignal);
 		setState(State.WAITING_FOR_HELLO);
 	}
 
@@ -192,7 +194,7 @@ public class ReferenceAgent implements Agent {
 		if(storage.getState() == State.WAITING_FOR_HELLO) {
 			/* Fake a shutdown */
 			storage.setShutdownSignal(-1);
-			storage.setShutdownReason(Reason.Requested);
+			storage.setShutdownReason(ShutdownReason.Requested);
 			this.setState(State.SHUTDOWN);
 			return;
 		}

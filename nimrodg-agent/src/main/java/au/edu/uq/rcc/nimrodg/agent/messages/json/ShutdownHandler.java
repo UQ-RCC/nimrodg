@@ -21,6 +21,7 @@ package au.edu.uq.rcc.nimrodg.agent.messages.json;
 
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentMessage;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
+import au.edu.uq.rcc.nimrodg.api.AgentInfo;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -48,7 +49,7 @@ public class ShutdownHandler implements JsonHandler {
 		jo.add("signal", as.signal);
 	}
 
-	public static JsonString toJson(AgentShutdown.Reason reason) {
+	public static JsonString toJson(AgentInfo.ShutdownReason reason) {
 		switch(reason) {
 			case HostSignal:
 				return Json.createValue("hostsignal");
@@ -59,16 +60,16 @@ public class ShutdownHandler implements JsonHandler {
 		throw new IllegalArgumentException();
 	}
 
-	public static AgentShutdown.Reason readShutdownReason(String s) {
+	public static AgentInfo.ShutdownReason readShutdownReason(String s) {
 		if(s == null) {
 			throw new IllegalArgumentException();
 		}
 
 		switch(s) {
 			case "hostsignal":
-				return AgentShutdown.Reason.HostSignal;
+				return AgentInfo.ShutdownReason.HostSignal;
 			case "requested":
-				return AgentShutdown.Reason.Requested;
+				return AgentInfo.ShutdownReason.Requested;
 		}
 
 		throw new IllegalArgumentException();

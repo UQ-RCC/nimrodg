@@ -28,6 +28,7 @@ import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
 import au.edu.uq.rcc.nimrodg.api.Actuator;
 import au.edu.uq.rcc.nimrodg.api.ActuatorOpsAdapter;
 import au.edu.uq.rcc.nimrodg.api.AgentDefinition;
+import au.edu.uq.rcc.nimrodg.api.AgentInfo;
 import au.edu.uq.rcc.nimrodg.api.AgentProvider;
 import au.edu.uq.rcc.nimrodg.api.CommandResult;
 import au.edu.uq.rcc.nimrodg.api.Experiment;
@@ -375,7 +376,7 @@ public abstract class APITests {
 		}
 
 		@Override
-		public void reportAgentFailure(Actuator act, UUID uuid, AgentShutdown.Reason reason, int signal) throws IllegalArgumentException {
+		public void reportAgentFailure(Actuator act, UUID uuid, AgentInfo.ShutdownReason reason, int signal) throws IllegalArgumentException {
 
 		}
 
@@ -409,7 +410,7 @@ public abstract class APITests {
 		as.update(nas);
 		Assert.assertNotNull(as.getSecretKey());
 
-		ra.disconnect(AgentShutdown.Reason.HostSignal, 9);
+		ra.disconnect(AgentInfo.ShutdownReason.HostSignal, 9);
 
 		/* Use a specific key. */
 		ra.reset(UUID.randomUUID(), "abc123");
@@ -493,7 +494,7 @@ public abstract class APITests {
 				ra.processMessage(new AgentShutdown.Builder()
 						.agentUuid(requests[i].uuid)
 						.timestamp(Instant.now())
-						.reason(AgentShutdown.Reason.HostSignal)
+						.reason(AgentInfo.ShutdownReason.HostSignal)
 						.signal(15)
 						.build(), Instant.now());
 			}
@@ -530,10 +531,10 @@ public abstract class APITests {
 		/* This is a new instance. */
 		AgentState as = api.getAgentByUUID(uuid);
 
-		Assert.assertEquals(Agent.State.SHUTDOWN, as.getState());
+		Assert.assertEquals(AgentInfo.State.SHUTDOWN, as.getState());
 		Assert.assertNull(as.getQueue());
 		Assert.assertTrue(as.getExpired());
-		Assert.assertEquals(AgentShutdown.Reason.Requested, as.getShutdownReason());
+		Assert.assertEquals(AgentInfo.ShutdownReason.Requested, as.getShutdownReason());
 		Assert.assertEquals(-1, as.getShutdownSignal());
 	}
 

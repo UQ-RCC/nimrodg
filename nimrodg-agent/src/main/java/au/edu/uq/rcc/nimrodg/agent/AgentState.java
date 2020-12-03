@@ -19,62 +19,33 @@
  */
 package au.edu.uq.rcc.nimrodg.agent;
 
-import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
+import au.edu.uq.rcc.nimrodg.api.AgentInfo;
+
 import java.time.Instant;
 import java.util.UUID;
 import javax.json.JsonObject;
 
-public interface AgentState {
+public interface AgentState extends AgentInfo {
 
-	Agent.State getState();
-
-	void setState(Agent.State state);
-
-	String getQueue();
+	void setState(State state);
 
 	void setQueue(String q);
 
-	UUID getUUID();
-
 	void setUUID(UUID uuid);
-
-	int getShutdownSignal();
 
 	void setShutdownSignal(int s);
 
-	AgentShutdown.Reason getShutdownReason();
-
-	void setShutdownReason(AgentShutdown.Reason r);
-
-	Instant getCreationTime();
-
-	// The time at which the state changed from WAITING_FOR_HELLO to READY
-	Instant getConnectionTime();
+	void setShutdownReason(ShutdownReason r);
 
 	void setConnectionTime(Instant time);
 
-	Instant getLastHeardFrom();
-
 	void setLastHeardFrom(Instant time);
-
-	/**
-	 * Get the Unix timestamp at which this agent should be expired.
-	 *
-	 * @return The Unix timestamp at which this agent should be expired. If no expiry, returns {@link Instant#MAX}
-	 */
-	Instant getExpiryTime();
 
 	void setExpiryTime(Instant time);
 
-	boolean getExpired();
-
 	void setExpired(boolean expired);
 
-	String getSecretKey();
-
 	void setSecretKey(String secretKey);
-
-	JsonObject getActuatorData();
 
 	void setActuatorData(JsonObject data);
 }

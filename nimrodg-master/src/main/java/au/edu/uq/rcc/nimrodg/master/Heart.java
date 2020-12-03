@@ -20,6 +20,7 @@
 package au.edu.uq.rcc.nimrodg.master;
 
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
+import au.edu.uq.rcc.nimrodg.api.AgentInfo;
 import au.edu.uq.rcc.nimrodg.api.utils.NimrodUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,7 +85,7 @@ class Heart implements ConfigListener {
 
 		void terminateAgent(UUID u);
 
-		void disconnectAgent(UUID u, AgentShutdown.Reason reason, int signal);
+		void disconnectAgent(UUID u, AgentInfo.ShutdownReason reason, int signal);
 
 		void pingAgent(UUID u);
 
@@ -135,7 +136,7 @@ class Heart implements ConfigListener {
 
 		if(ei.retryCount >= expiryRetryCount) {
 			ops.logInfo("Agent %s ignored %d termination requests, marking as disconnected...", u, ei.retryCount);
-			ops.disconnectAgent(u, AgentShutdown.Reason.Requested, -1);
+			ops.disconnectAgent(u, AgentInfo.ShutdownReason.Requested, -1);
 			ei.lastExpiryCheck = now;
 			return;
 		}

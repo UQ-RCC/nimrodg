@@ -19,9 +19,9 @@
  */
 package au.edu.uq.rcc.nimrodg.impl.base.db;
 
-import au.edu.uq.rcc.nimrodg.agent.Agent;
 import au.edu.uq.rcc.nimrodg.agent.AgentState;
-import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
+import au.edu.uq.rcc.nimrodg.api.AgentInfo;
+
 import java.time.Instant;
 import java.util.UUID;
 import javax.json.JsonObject;
@@ -29,11 +29,11 @@ import javax.json.JsonObject;
 public class TempAgent {
 
 	public final long id;
-	public final Agent.State state;
+	public final AgentInfo.State state;
 	public final String queue;
 	public final UUID uuid;
 	public final int shutdownSignal;
-	public final AgentShutdown.Reason shutdownReason;
+	public final AgentInfo.ShutdownReason shutdownReason;
 	public final Instant created;
 	public final Instant connectedAt;
 	public final Instant lastHeardFrom;
@@ -43,7 +43,7 @@ public class TempAgent {
 	public final Long location;
 	public final JsonObject actuatorData;
 
-	public TempAgent(long id, Agent.State state, String queue, UUID uuid, int shutdownSignal, AgentShutdown.Reason shutdownReason, Instant created, Instant connectedAt, Instant lastHeardFrom, Instant expiryTime, boolean expired, String secretKey, Long location, JsonObject actuatorData) {
+	public TempAgent(long id, AgentInfo.State state, String queue, UUID uuid, int shutdownSignal, AgentInfo.ShutdownReason shutdownReason, Instant created, Instant connectedAt, Instant lastHeardFrom, Instant expiryTime, boolean expired, String secretKey, Long location, JsonObject actuatorData) {
 		this.id = id;
 		this.state = state;
 		this.queue = queue;
@@ -73,12 +73,12 @@ public class TempAgent {
 		}
 
 		@Override
-		public Agent.State getState() {
+		public AgentInfo.State getState() {
 			return ta.state;
 		}
 
 		@Override
-		public void setState(Agent.State state) {
+		public void setState(AgentInfo.State state) {
 			throw new UnsupportedOperationException();
 		}
 
@@ -113,12 +113,12 @@ public class TempAgent {
 		}
 
 		@Override
-		public AgentShutdown.Reason getShutdownReason() {
+		public AgentInfo.ShutdownReason getShutdownReason() {
 			return ta.shutdownReason;
 		}
 
 		@Override
-		public void setShutdownReason(AgentShutdown.Reason r) {
+		public void setShutdownReason(AgentInfo.ShutdownReason r) {
 			throw new UnsupportedOperationException();
 		}
 
