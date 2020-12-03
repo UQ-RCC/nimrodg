@@ -28,7 +28,7 @@ import au.edu.uq.rcc.nimrodg.api.Resource;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
-class AgentInfo {
+class MasterAgentInfo {
 
 	public final UUID uuid;
 	public final Resource resource;
@@ -36,7 +36,7 @@ class AgentInfo {
 	public final ReferenceAgent instance;
 	public final DefaultAgentState state;
 
-	public AgentInfo(UUID uuid, Resource resource, Optional<Actuator> actuator, ReferenceAgent instance, DefaultAgentState state) {
+	public MasterAgentInfo(UUID uuid, Resource resource, Optional<Actuator> actuator, ReferenceAgent instance, DefaultAgentState state) {
 		this.uuid = uuid;
 		this.resource = resource;
 		this.actuator = new CompletableFuture<>();
@@ -61,7 +61,7 @@ class AgentInfo {
 		if(getClass() != obj.getClass()) {
 			return false;
 		}
-		final AgentInfo other = (AgentInfo)obj;
+		final MasterAgentInfo other = (MasterAgentInfo)obj;
 		return Objects.equals(this.uuid, other.uuid);
 	}
 
