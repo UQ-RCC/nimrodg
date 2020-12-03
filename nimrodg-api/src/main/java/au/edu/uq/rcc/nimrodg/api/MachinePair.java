@@ -22,8 +22,8 @@ package au.edu.uq.rcc.nimrodg.api;
 import java.util.Objects;
 
 public final class MachinePair {
-	private String system;
-	private String machine;
+	private final String system;
+	private final String machine;
 
 	public static MachinePair of(String system, String machine) {
 		if(system == null || machine == null) {
