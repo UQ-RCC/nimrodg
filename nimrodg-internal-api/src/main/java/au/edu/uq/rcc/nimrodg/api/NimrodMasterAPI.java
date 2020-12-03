@@ -59,10 +59,10 @@ public interface NimrodMasterAPI extends NimrodAPI {
 
 	void removeResourceCaps(Resource node, Experiment exp);
 
+	@Override
 	AgentState getAgentByUUID(UUID uuid);
 
-	Resource getAgentResource(UUID uuid);
-
+	@Override
 	Collection<AgentState> getResourceAgents(Resource node);
 
 	AgentState addAgent(Resource node, AgentState agent);

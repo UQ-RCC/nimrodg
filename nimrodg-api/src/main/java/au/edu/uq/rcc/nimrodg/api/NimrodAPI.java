@@ -27,6 +27,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * The public API for Nimrod/G.
@@ -216,6 +217,12 @@ public interface NimrodAPI extends AgentProvider, AutoCloseable {
 	Collection<ResourceType> getResourceTypeInfo();
 
 	ResourceType getResourceTypeInfo(String name);
+
+	AgentInfo getAgentByUUID(UUID uuid);
+
+	Resource getAgentResource(UUID uuid);
+
+	Collection<? extends AgentInfo> getResourceAgents(Resource node);
 
 	@Override
 	void close() throws NimrodException;
