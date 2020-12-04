@@ -19,6 +19,7 @@
  */
 package au.edu.uq.rcc.nimrodg.portal;
 
+import au.edu.uq.rcc.nimrodg.api.AgentInfo;
 import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.Job;
 import au.edu.uq.rcc.nimrodg.api.JobAttempt;
@@ -82,6 +83,7 @@ import org.springframework.web.util.UriBuilder;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import javax.json.JsonValue;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
@@ -109,11 +111,13 @@ import java.security.cert.CertificateFactory;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -599,6 +603,70 @@ public class NimrodPortalEndpoints {
 		} catch(NimrodException.ResourceBusy e) {
 			return ResponseEntity.status(HttpStatus.CONFLICT).build();
 		}
+	}
+
+	@RequestMapping(method = RequestMethod.GET, value = "/api/resources/{resName}/agents")
+	@ResponseBody
+	public ResponseEntity<JsonNode> getResourceAgents(JwtAuthenticationToken jwt, @PathVariable String resName) throws SQLException {
+		UserState userState = getUserState(jwt);
+
+		try(NimrodAPI nimrod = createNimrod(userState.username)) {
+			Resource res = nimrod.getResource(resName);
+			if(res == null) {
+				return ResponseEntity.notFound().build();
+			}
+
+			Collection<? extends AgentInfo> agents = nimrod.getResourceAgents(res);
+
+			ArrayNode jas = objectMapper.createArrayNode();
+			agents.forEach(ai -> jas.add(toJson(ai)));
+
+			return ResponseEntity.ok(jas);
+		}
+	}
+
+	private ObjectNode toJson(AgentInfo ai) {
+		ObjectNode on = objectMapper.createObjectNode()
+				.put("state", ai.getState().toString())
+				.put("queue", ai.getQueue())
+				.put("uuid", ai.getUUID().toString())
+				.put("shutdown_signal", ai.getShutdownSignal())
+				.put("shutdown_reason", ai.getShutdownReason().toString().toLowerCase(Locale.ENGLISH)) /* FIXME */
+				.put("creation_time", ai.getCreationTime().toString());
+
+		Instant connTime = ai.getConnectionTime();
+		if(connTime == null) {
+			on.putNull("connection_time");
+		} else {
+			on.put("connection_time", ai.getConnectionTime().toString());
+		}
+
+		Instant lastTime = ai.getLastHeardFrom();
+		if(lastTime == null) {
+			on.putNull("last_heard_from");
+		} else {
+			on.put("last_heard_from", lastTime.toString());
+		}
+
+		Instant expireTime = ai.getExpiryTime();
+		if(expireTime == null) {
+			on.putNull("expiry_time");
+		} else {
+			on.put("expiry_time", expireTime.toString());
+		}
+
+		on.put("expired", ai.getExpired());
+
+		/* on.put("secret_key", ai.getSecretKey()); */
+
+		JsonValue actData = ai.getActuatorData();
+		if(actData == null) {
+			on.putNull("actuator_data");
+		} else {
+			on.set("actuator_data", javaxJsonToJackson(actData));
+		}
+
+		return on;
 	}
 
 	/* FIXME: These should be in Nimrod proper */
