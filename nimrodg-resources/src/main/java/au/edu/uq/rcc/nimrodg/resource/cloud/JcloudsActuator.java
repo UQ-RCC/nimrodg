@@ -26,15 +26,13 @@ import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
 import au.edu.uq.rcc.nimrodg.api.Actuator;
 import au.edu.uq.rcc.nimrodg.api.AgentInfo;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
-import au.edu.uq.rcc.nimrodg.api.NimrodAPIException;
+import au.edu.uq.rcc.nimrodg.api.NimrodException;
 import au.edu.uq.rcc.nimrodg.api.NimrodMasterAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.api.Resource;
-import au.edu.uq.rcc.nimrodg.api.ResourceFullException;
 import au.edu.uq.rcc.nimrodg.resource.SSHResourceType;
 import au.edu.uq.rcc.nimrodg.resource.act.ActuatorUtils;
 import au.edu.uq.rcc.nimrodg.resource.act.RemoteActuator;
-import au.edu.uq.rcc.nimrodg.resource.ssh.SSHClient;
 import au.edu.uq.rcc.nimrodg.resource.ssh.TransportFactory;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -68,8 +66,6 @@ import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonString;
 import javax.json.JsonValue;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.jclouds.ContextBuilder;
 import org.jclouds.compute.ComputeService;
 import org.jclouds.compute.ComputeServiceContext;
@@ -78,15 +74,16 @@ import org.jclouds.compute.domain.NodeMetadata;
 import org.jclouds.compute.domain.Template;
 import org.jclouds.compute.options.TemplateOptions;
 import org.jclouds.openstack.nova.v2_0.compute.options.NovaTemplateOptions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class JcloudsActuator implements Actuator {
 
-	private static final Logger LOGGER = LogManager.getLogger(JcloudsActuator.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(JcloudsActuator.class);
 
 	private static final TransportFactory TRANSPORT_FACTORY = SSHClient.FACTORY;
 
 	private final Operations ops;
-	private final NimrodAPI nimrod;
 	private final Resource node;
 	private final NimrodURI amqpUri;
 	private final Certificate[] certs;
@@ -131,7 +128,6 @@ public class JcloudsActuator implements Actuator {
 
 	public JcloudsActuator(Operations ops, Resource node, NimrodURI amqpUri, Certificate[] certs, AgentInfo agentInfo, int agentsPerNode, String tmpDir, CloudConfig config) {
 		this.ops = ops;
-		this.nimrod = ops.getNimrod();
 		this.node = node;
 		this.amqpUri = amqpUri;
 		this.certs = certs;
@@ -172,19 +168,10 @@ public class JcloudsActuator implements Actuator {
 	}
 
 	@Override
-	public Resource getResource() throws NimrodAPIException {
+	public Resource getResource() {
 		return node;
 	}
 
-	@Override
-	public NimrodURI getAMQPUri() {
-		return amqpUri;
-	}
-
-	@Override
-	public Collection<Certificate> getAMQPCertificates() {
-		return List.of(certs);
-	}
 
 	/* Launch agents on a given actuator, remapping the launch results to the correct index. */
 	@SuppressWarnings("UseSpecificCatch")
@@ -341,7 +328,7 @@ public class JcloudsActuator implements Actuator {
 					.forEach(i -> results[i] = new LaunchResult(node, t));
 		}
 
-		LaunchResult fullResult = new LaunchResult(null, new ResourceFullException(node));
+		LaunchResult fullResult = new LaunchResult(null, new NimrodException.ResourceFull(node));
 		fr.leftovers.stream()
 				.map(u -> fr.indexMap.get(u))
 				.forEach(i -> results[i] = fullResult);
@@ -646,13 +633,8 @@ public class JcloudsActuator implements Actuator {
 	private class SubOptions implements Actuator.Operations {
 
 		@Override
-		public void reportAgentFailure(Actuator act, UUID uuid, AgentShutdown.Reason reason, int signal) throws IllegalArgumentException {
+		public void reportAgentFailure(Actuator act, UUID uuid, AgentInfo.ShutdownReason reason, int signal) throws IllegalArgumentException {
 			JcloudsActuator.this.ops.reportAgentFailure(JcloudsActuator.this, uuid, reason, signal);
-		}
-
-		@Override
-		public NimrodMasterAPI getNimrod() {
-			return JcloudsActuator.this.ops.getNimrod();
 		}
 	}
 
