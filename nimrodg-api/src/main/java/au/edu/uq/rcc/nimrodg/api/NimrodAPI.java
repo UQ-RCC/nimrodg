@@ -103,6 +103,8 @@ public interface NimrodAPI extends AgentProvider, AutoCloseable {
 	 */
 	Map<Job, List<JobAttempt>> filterJobAttempts(Collection<Job> jobs, EnumSet<JobAttempt.Status> status);
 
+	Map<JobAttempt, List<CommandResult>> getCommandResults(Collection<JobAttempt> attempts);
+
 	/**
 	 * Get the status of the job.
 	 *

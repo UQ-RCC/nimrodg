@@ -282,6 +282,11 @@ public class RunDMC extends SQLUUUUU<NimrodException.DbError> implements NimrodD
 	}
 
 	@Override
+	public List<TempCommandResult.Impl> getCommandResultsByAttempt(Map<Long, TempJobAttempt.Impl> attempts) throws SQLException {
+		return experimentHelpers.getCommandResultsByAttempt(attempts.keySet()).stream().map(TempCommandResult::create).collect(Collectors.toList());
+	}
+
+	@Override
 	public synchronized List<NimrodMasterEvent> pollMasterEventsT() throws SQLException {
 		List<NimrodMasterEvent> evts = new ArrayList<>();
 		try(ResultSet rs = qPollMasterMessages.executeQuery()) {

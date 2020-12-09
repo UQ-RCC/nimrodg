@@ -100,6 +100,8 @@ public interface NimrodDBAPI extends ResourceFunctions<TempResource.Impl, TempEx
 
 	Map<TempJob.Impl, List<TempJobAttempt.Impl>> filterJobAttempts(TempExperiment.Impl exp, EnumSet<JobAttempt.Status> status) throws SQLException;
 
+	List<TempCommandResult.Impl> getCommandResultsByAttempt(Map<Long, TempJobAttempt.Impl> attempts) throws SQLException;
+
 	TempCommandResult.Impl addCommandResult(TempJobAttempt.Impl att, CommandResult.CommandResultStatus status, long index, float time, int retval, String message, int errcode, boolean stop) throws SQLException;
 
 	List<NimrodMasterEvent> pollMasterEventsT() throws SQLException;

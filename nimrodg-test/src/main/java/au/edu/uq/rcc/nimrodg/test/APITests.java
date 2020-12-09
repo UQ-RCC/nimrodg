@@ -30,6 +30,7 @@ import au.edu.uq.rcc.nimrodg.api.ActuatorOpsAdapter;
 import au.edu.uq.rcc.nimrodg.api.AgentDefinition;
 import au.edu.uq.rcc.nimrodg.api.AgentInfo;
 import au.edu.uq.rcc.nimrodg.api.AgentProvider;
+import au.edu.uq.rcc.nimrodg.api.Command;
 import au.edu.uq.rcc.nimrodg.api.CommandResult;
 import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.Job;
@@ -335,6 +336,38 @@ public abstract class APITests {
 		/* This used to throw "java.sql.SQLException: No such command". */
 		api.addCommandResult(att2, CommandResult.CommandResultStatus.SUCCESS, 0, 10.0f, 0, "Success", 0, true);
 	}
+
+	@Test
+	public void commandResultTest4() throws RunfileBuildException {
+		NimrodMasterAPI api = getNimrodMasterAPI();
+		Experiment exp = api.addExperiment("test1", TestUtils.getSimpleSampleExperiment());
+
+		Job j = api.filterJobs(exp, EnumSet.allOf(JobAttempt.Status.class), 0, 1).stream()
+				.findFirst().orElseThrow(IllegalStateException::new);
+
+		UUID[] agentUuids = new UUID[2];
+		for(int i = 0; i < agentUuids.length; ++i) {
+			agentUuids[i] = UUID.randomUUID();
+		}
+
+		JobAttempt att1 = api.createJobAttempts(List.of(j)).get(0);
+		JobAttempt att2 = api.createJobAttempts(List.of(j)).get(0);
+
+		api.startJobAttempt(att1, agentUuids[0]);
+		CommandResult att1cr1 = api.addCommandResult(att1, CommandResult.CommandResultStatus.SUCCESS, 0, 10.0f, 0, "Success", 0, true);
+
+		api.startJobAttempt(att2, agentUuids[1]);
+
+		/* This used to throw "java.sql.SQLException: No such command". */
+		CommandResult att2cr1 = api.addCommandResult(att2, CommandResult.CommandResultStatus.SUCCESS, 0, 10.0f, 0, "Success", 0, true);
+
+		Map<JobAttempt, List<CommandResult>> crs = api.getCommandResults(List.of(att1, att2));
+		Assert.assertEquals(Map.of(
+				att1, List.of(att1cr1),
+				att2, List.of(att2cr1)
+		), crs);
+	}
+
 
 	@Test
 	public void substitutionApplicationTest() throws RunfileBuildException, PlanfileParseException {

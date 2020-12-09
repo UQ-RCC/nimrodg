@@ -390,6 +390,27 @@ public abstract class TempNimrodAPIImpl implements NimrodAPI, NimrodMasterAPI {
 	}
 
 	@Override
+	public Map<JobAttempt, List<CommandResult>> getCommandResults(Collection<JobAttempt> attempts) {
+		Objects.requireNonNull(attempts, "attempts");
+		TempJobAttempt.Impl[] atts = attempts.stream()
+				.map(TempNimrodAPIImpl::validateJobAttempt)
+				.toArray(TempJobAttempt.Impl[]::new);
+
+		Map<Long, TempJobAttempt.Impl> idMap = Arrays.stream(atts)
+				.collect(Collectors.toMap(att -> att.base.id, att -> att));
+
+		/*
+		 * NB: This has to be in a transaction due to there being no way to
+		 * do a WHERE IN () in SQLite's JDBC driver.
+		 */
+		return NimrodUtils.mapToParent(
+				db.runSQLTransaction(() -> db.getCommandResultsByAttempt(idMap)).stream(),
+				tcr -> idMap.get(tcr.base.attemptId),
+				tcr -> tcr
+		);
+	}
+
+	@Override
 	public CommandResult addCommandResult(JobAttempt att, CommandResult.CommandResultStatus status, long index, float time, int retval, String message, int errcode, boolean stop) {
 		return db.runSQLTransaction(() -> db.addCommandResult(validateJobAttempt(att), status, index, time, retval, message, errcode, stop));
 	}

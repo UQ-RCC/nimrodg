@@ -80,6 +80,7 @@ public class DBExperimentHelpers extends DBBaseHelper {
 
 	private final PreparedStatement qFilterJobAttemptsByExperiment;
 	private final PreparedStatement qAddCommandResult;
+	private final PreparedStatement qGetCommandResultsByAttempt;
 
 	/* Utility */
 	private final PreparedStatement qAddCompiledExperiment;
@@ -120,6 +121,7 @@ public class DBExperimentHelpers extends DBBaseHelper {
 		this.qFilterJobAttemptsByExperiment = prepareStatement("SELECT * FROM filter_job_attempts_by_experiment(?::BIGINT, ?::nimrod_job_status[])");
 
 		this.qAddCommandResult = prepareStatement("SELECT * FROM add_command_result(?::BIGINT, ?::nimrod_command_result_status, ?::BIGINT, ?::REAL, ?::INT, ?::TEXT, ?::INT, ?::BOOLEAN)");
+		this.qGetCommandResultsByAttempt = prepareStatement("SELECT * FROM nimrod_command_results WHERE attempt_id = ANY(?::BIGINT[])");
 
 		this.qAddCompiledExperiment = prepareStatement("SELECT * FROM add_compiled_experiment(?::TEXT, ?::TEXT, ?::jsonb)");
 		this.qAddMultipleJobs = prepareStatement("SELECT * FROM add_multiple_jobs(?::BIGINT, ?::JSONB)");
@@ -420,6 +422,19 @@ public class DBExperimentHelpers extends DBBaseHelper {
 
 			return commandResultFromRow(rs);
 		}
+	}
+
+	public List<TempCommandResult> getCommandResultsByAttempt(Collection<Long> attemptIds) throws SQLException {
+		qGetCommandResultsByAttempt.setArray(1, conn.createArrayOf("BIGINT", attemptIds.toArray()));
+
+		List<TempCommandResult> crs = new ArrayList<>();
+		try(ResultSet rs = qGetCommandResultsByAttempt.executeQuery()) {
+			while(rs.next()) {
+				crs.add(commandResultFromRow(rs));
+			}
+		}
+
+		return crs;
 	}
 
 	private static TempExperiment expFromRow(ResultSet rs) throws SQLException {

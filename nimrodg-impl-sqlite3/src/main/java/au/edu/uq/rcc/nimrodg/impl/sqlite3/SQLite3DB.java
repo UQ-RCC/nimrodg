@@ -436,6 +436,11 @@ public class SQLite3DB extends SQLUUUUU<NimrodException.DbError> implements Nimr
 	}
 
 	@Override
+	public List<TempCommandResult.Impl> getCommandResultsByAttempt(Map<Long, TempJobAttempt.Impl> attempts) throws SQLException {
+		return experimentHelpers.getCommandResultsByAttempt(attempts.keySet()).stream().map(TempCommandResult::create).collect(Collectors.toList());
+	}
+
+	@Override
 	public synchronized List<NimrodMasterEvent> pollMasterEventsT() throws SQLException {
 		List<NimrodMasterEvent> evts = new ArrayList<>();
 		try(ResultSet rs = qGetMasterMessages.executeQuery()) {
