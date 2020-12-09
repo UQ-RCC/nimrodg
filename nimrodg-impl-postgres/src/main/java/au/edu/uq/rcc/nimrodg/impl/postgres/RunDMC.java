@@ -278,7 +278,7 @@ public class RunDMC extends SQLUUUUU<NimrodException.DbError> implements NimrodD
 
 	@Override
 	public synchronized TempCommandResult.Impl addCommandResult(TempJobAttempt.Impl att, CommandResult.CommandResultStatus status, long index, float time, int retval, String message, int errcode, boolean stop) throws SQLException {
-		return experimentHelpers.addCommandResult(att.base.id, status, index, time, retval, message, errcode, stop).create(att);
+		return experimentHelpers.addCommandResult(att.base.id, status, index, time, retval, message, errcode, stop).create();
 	}
 
 	@Override

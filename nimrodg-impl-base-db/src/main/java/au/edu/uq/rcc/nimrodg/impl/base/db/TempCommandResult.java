@@ -20,7 +20,6 @@
 package au.edu.uq.rcc.nimrodg.impl.base.db;
 
 import au.edu.uq.rcc.nimrodg.api.CommandResult;
-import au.edu.uq.rcc.nimrodg.api.JobAttempt;
 
 public class TempCommandResult {
 
@@ -46,7 +45,7 @@ public class TempCommandResult {
 		this.stop = stop;
 	}
 
-	public Impl create(TempJobAttempt.Impl attempt) {
+	public Impl create() {
 		return new Impl();
 	}
 
