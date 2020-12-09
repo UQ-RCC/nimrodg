@@ -70,12 +70,13 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter  {
 		http.csrf().ignoringAntMatchers("/api/compile");
 
 		http.authorizeRequests()
-				.antMatchers("/api/compile").permitAll()
+				.antMatchers("/api/compile", "/swagger-ui.html", "/swagger-ui/*", "/v3/api-docs", "/v3/api-docs/*").permitAll()
 				.anyRequest().hasAuthority("USER")
 				.and()
 				.oauth2ResourceServer()
 				.jwt()
 				.jwtAuthenticationConverter(jc);
+
 	}
 
 	/* All of this is edited from OAuth2ResourceServerJwtConfiguration */
