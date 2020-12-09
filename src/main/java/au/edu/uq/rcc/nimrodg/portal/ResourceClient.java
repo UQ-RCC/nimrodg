@@ -44,10 +44,10 @@ public class ResourceClient {
 	}
 
 	public ResponseEntity<String> executeJob(String task, Map<String, String> parameters) {
-		return this.executeJob(task, null, null, 0, parameters);
+		return this.executeJob(task, null, null, 0, parameters, String.class);
 	}
 
-	public ResponseEntity<String> executeJob(String task, String configuration, String host, int retries, Map<String, String> parameters) {
+	public <T> ResponseEntity<T> executeJob(String task, String configuration, String host, int retries, Map<String, String> parameters, Class<T> clazz) {
 		if(task == null) {
 			throw new IllegalArgumentException();
 		}
@@ -66,6 +66,6 @@ public class ResourceClient {
 		parameters.forEach(urib::queryParam);
 		urib.replaceQueryParam("retries", retries);
 
-		return rest.exchange(urib.build(new Object[0]), HttpMethod.GET, new HttpEntity<>("", headers), String.class);
+		return rest.exchange(urib.build(new Object[0]), HttpMethod.GET, new HttpEntity<>("", headers), clazz);
 	}
 }
