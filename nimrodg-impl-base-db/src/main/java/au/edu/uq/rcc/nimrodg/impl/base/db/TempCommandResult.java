@@ -92,6 +92,19 @@ public class TempCommandResult {
 			return stop;
 		}
 
+		@Override
+		public int hashCode() {
+			return Long.hashCode(id);
+		}
+
+		public boolean equals(Object obj) {
+			if(!(obj instanceof Impl)) {
+				return false;
+			}
+
+			return id == ((TempCommandResult.Impl)obj).base.id;
+		}
+
 	}
 
 }
