@@ -51,6 +51,12 @@ public class TempCommandResult {
 	}
 
 	public class Impl implements CommandResult {
+		public final TempCommandResult base;
+
+		private Impl() {
+			this.base = TempCommandResult.this;
+		}
+
 		@Override
 		public CommandResultStatus getStatus() {
 			return status;
