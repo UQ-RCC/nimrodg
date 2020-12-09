@@ -22,7 +22,6 @@ package au.edu.uq.rcc.nimrodg.impl.base.db;
 import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.Job;
 import au.edu.uq.rcc.nimrodg.api.JobAttempt;
-import au.edu.uq.rcc.nimrodg.api.utils.NimrodUtils;
 
 import java.time.Instant;
 import java.util.Collection;
@@ -101,13 +100,11 @@ public class TempJob {
 
 		@Override
 		public boolean equals(Object obj) {
-			if(obj == null || !(obj instanceof Impl)) {
+			if(!(obj instanceof Impl)) {
 				return false;
 			}
 
-			Impl job = (Impl)obj;
-
-			return id == job.base.id;
+			return id == ((Impl)obj).base.id;
 		}
 
 	}
