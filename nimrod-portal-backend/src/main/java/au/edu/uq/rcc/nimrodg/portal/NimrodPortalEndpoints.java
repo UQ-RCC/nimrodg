@@ -48,6 +48,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.hubspot.jinjava.Jinjava;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.impl.client.HttpClientBuilder;
@@ -121,6 +123,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 @Controller
 @ConfigurationProperties(prefix = "nimrod.remote")
@@ -175,6 +178,7 @@ public class NimrodPortalEndpoints {
 	}
 
 	@RequestMapping(method = {RequestMethod.PUT}, value = "/api/provision/{username}")
+	@Operation(security = @SecurityRequirement(name = "rccPortal"))
 	@ResponseBody
 	public ResponseEntity<Void> provisionUser(@PathVariable String username, JwtAuthenticationToken jwt) {
 		UserState userState = getUserState(jwt, true);
@@ -245,6 +249,7 @@ public class NimrodPortalEndpoints {
 
 
 	@RequestMapping(method = {RequestMethod.GET}, value = "/api/experiments")
+	@Operation(security = @SecurityRequirement(name = "rccPortal"))
 	@ResponseBody
 	public ResponseEntity<JsonNode> getExperiments(JwtAuthenticationToken jwt) throws SQLException {
 		UserState userState = getUserState(jwt);
@@ -261,6 +266,7 @@ public class NimrodPortalEndpoints {
 	}
 
 	@RequestMapping(method = RequestMethod.POST, value = "/api/experiments")
+	@Operation(security = @SecurityRequirement(name = "rccPortal"))
 	@ResponseBody
 	public ResponseEntity<JsonNode> addExperiment(JwtAuthenticationToken jwt, UriComponentsBuilder uriComponentsBuilder, @RequestBody AddExperiment addExperiment) throws SQLException {
 		UserState userState = getUserState(jwt);
@@ -300,6 +306,7 @@ public class NimrodPortalEndpoints {
 	}
 
 	@RequestMapping(method = {RequestMethod.DELETE}, value = "/api/experiments/{expName}")
+	@Operation(security = @SecurityRequirement(name = "rccPortal"))
 	@ResponseBody
 	public ResponseEntity<JsonNode> deleteExperiment(JwtAuthenticationToken jwt, @PathVariable String expName) throws SQLException {
 		UserState userState = getUserState(jwt);
@@ -385,6 +392,7 @@ public class NimrodPortalEndpoints {
 	}
 
 	@RequestMapping(method = {RequestMethod.GET}, value = "/api/experiments/{expName}")
+	@Operation(security = @SecurityRequirement(name = "rccPortal"))
 	@ResponseBody
 	public ResponseEntity<JsonNode> getExperiment(JwtAuthenticationToken jwt, @PathVariable String expName) throws SQLException {
 		UserState userState = getUserState(jwt);
@@ -413,6 +421,7 @@ public class NimrodPortalEndpoints {
 	}
 
 	@RequestMapping(method = {RequestMethod.POST}, value = "/api/experiments/{expName}/control")
+	@Operation(security = @SecurityRequirement(name = "rccPortal"))
 	@ResponseBody
 	public ResponseEntity<Void> controlExperiment(
 			JwtAuthenticationToken jwt,
@@ -475,6 +484,7 @@ public class NimrodPortalEndpoints {
 	}
 
 	@RequestMapping(method = {RequestMethod.GET}, value = "/api/experiments/{expName}/resources")
+	@Operation(security = @SecurityRequirement(name = "rccPortal"))
 	@ResponseBody
 	public ResponseEntity<JsonNode> getAssignments(JwtAuthenticationToken jwt, @PathVariable String expName) throws SQLException {
 		UserState userState = getUserState(jwt);
@@ -494,6 +504,7 @@ public class NimrodPortalEndpoints {
 	}
 
 	@RequestMapping(method = {RequestMethod.PUT}, value = "/api/experiments/{expName}/resources")
+	@Operation(security = @SecurityRequirement(name = "rccPortal"))
 	@ResponseBody
 	public ResponseEntity<JsonNode> setAssignments(JwtAuthenticationToken jwt, @PathVariable String expName, @RequestBody List<String> ds) throws SQLException {
 		UserState userState = getUserState(jwt);
@@ -517,6 +528,7 @@ public class NimrodPortalEndpoints {
 	}
 
 	@RequestMapping(method = RequestMethod.GET, value = "/api/resources")
+	@Operation(security = @SecurityRequirement(name = "rccPortal"))
 	@ResponseBody
 	public ResponseEntity<JsonNode> getResources(JwtAuthenticationToken jwt) throws SQLException {
 		UserState userState = getUserState(jwt);
@@ -527,6 +539,7 @@ public class NimrodPortalEndpoints {
 	}
 
 	@RequestMapping(method = RequestMethod.GET, value = "/api/resources/{resName}")
+	@Operation(security = @SecurityRequirement(name = "rccPortal"))
 	@ResponseBody
 	public ResponseEntity<JsonNode> getResource(JwtAuthenticationToken jwt, @PathVariable String resName) throws SQLException {
 		UserState userState = getUserState(jwt);
@@ -542,6 +555,7 @@ public class NimrodPortalEndpoints {
 	}
 
 	@RequestMapping(method = RequestMethod.POST, value = "/api/resources")
+	@Operation(security = @SecurityRequirement(name = "rccPortal"))
 	@ResponseBody
 	public ResponseEntity<Void> addResource(JwtAuthenticationToken jwt, UriComponentsBuilder uriComponentsBuilder, @RequestBody AddResource addResource) throws SQLException {
 		UserState userState = getUserState(jwt);
@@ -589,6 +603,7 @@ public class NimrodPortalEndpoints {
 	}
 
 	@RequestMapping(method = RequestMethod.DELETE, value = "/api/resources/{resName}")
+	@Operation(security = @SecurityRequirement(name = "rccPortal"))
 	@ResponseBody
 	public ResponseEntity<JsonNode> deleteResource(JwtAuthenticationToken jwt, @PathVariable String resName) throws SQLException {
 		UserState userState = getUserState(jwt);
@@ -607,6 +622,7 @@ public class NimrodPortalEndpoints {
 	}
 
 	@RequestMapping(method = RequestMethod.GET, value = "/api/resources/{resName}/agents")
+	@Operation(security = @SecurityRequirement(name = "rccPortal"))
 	@ResponseBody
 	public ResponseEntity<JsonNode> getResourceAgents(JwtAuthenticationToken jwt, @PathVariable String resName) throws SQLException {
 		UserState userState = getUserState(jwt);

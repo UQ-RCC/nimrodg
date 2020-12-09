@@ -76,8 +76,21 @@ spring:
           client-id: example-realm1-client
           client-secret: 00000000-0000-0000-0000-000000000000
           audience-id: audience-id
+
 management:
   endpoint:
     health:
       probes:
         enabled: true
+
+springdoc:
+  swagger-ui:
+    enabled: true
+      # Only enable these when debugging
+      #oauth:
+      #  clientId: example-realm1-client
+      #  clientSecret: 00000000-0000-0000-0000-000000000000
+  oAuthFlow:
+    authorizationUrl: https://keycloak.example.com/auth/realms/example-realm1/protocol/openid-connect/auth
+    tokenUrl: https://keycloak.example.com/auth/realms/example-realm1/protocol/openid-connect/token
+
