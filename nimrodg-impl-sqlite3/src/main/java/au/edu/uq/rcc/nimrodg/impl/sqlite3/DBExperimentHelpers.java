@@ -102,6 +102,7 @@ public class DBExperimentHelpers extends DBBaseHelper {
 
 	private final PreparedStatement qAddCommandResult;
 	private final PreparedStatement qGetCommandResult;
+	private final PreparedStatement qGetCommandResultsByAttempt;
 
 	private final PreparedStatement qGetCommandIdForResult;
 	private final PreparedStatement qGetNextCommandIndex;
@@ -160,6 +161,7 @@ public class DBExperimentHelpers extends DBBaseHelper {
 
 		this.qAddCommandResult = prepareStatement("INSERT INTO nimrod_command_results(attempt_id, status, command_index, time, retval, message, error_code, stop, command_id) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)", true);
 		this.qGetCommandResult = prepareStatement("SELECT * FROM nimrod_command_results WHERE id = ?");
+		this.qGetCommandResultsByAttempt = prepareStatement("SELECT * FROM nimrod_command_results WHERE attempt_id = ?");
 		this.qGetNextCommandIndex = prepareStatement("SELECT COALESCE(MAX(command_index) + 1, 0) FROM nimrod_command_results WHERE attempt_id = ?");
 
 		this.qGetCommandIdForResult = prepareStatement("SELECT\n" +
@@ -864,6 +866,22 @@ public class DBExperimentHelpers extends DBBaseHelper {
 
 			return commandResultFromRow(rs);
 		}
+	}
+
+	public List<TempCommandResult> getCommandResultsByAttempt(Collection<Long> ids) throws SQLException {
+		/* The SQLite driver doesn't support setArray() */
+		List<TempCommandResult> crs = new ArrayList<>();
+
+		for(Long l : ids) {
+			qGetCommandResultsByAttempt.setLong(1, l);
+			try(ResultSet rs = qGetCommandResultsByAttempt.executeQuery()) {
+				while(rs.next()) {
+					crs.add(commandResultFromRow(rs));
+				}
+			}
+		}
+
+		return crs;
 	}
 
 	private TempExperiment experimentFromRow(ResultSet rs) throws SQLException {
