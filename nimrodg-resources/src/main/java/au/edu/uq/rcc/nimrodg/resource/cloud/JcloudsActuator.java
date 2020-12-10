@@ -30,6 +30,7 @@ import au.edu.uq.rcc.nimrodg.api.NimrodException;
 import au.edu.uq.rcc.nimrodg.api.NimrodMasterAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.api.Resource;
+import au.edu.uq.rcc.nimrodg.api.utils.NimrodUtils;
 import au.edu.uq.rcc.nimrodg.resource.SSHResourceType;
 import au.edu.uq.rcc.nimrodg.resource.act.ActuatorUtils;
 import au.edu.uq.rcc.nimrodg.resource.act.RemoteActuator;
@@ -47,6 +48,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
@@ -422,6 +424,35 @@ public class JcloudsActuator implements Actuator {
 
 			results[i] = new LaunchResult(old.node, old.t, old.expiryTime, jb.build());
 		}
+	}
+
+	@Override
+	public void forceTerminateAgent(UUID[] uuid) {
+		/* FIXME: Check how this handles NULL keys. */
+		Map<NodeInfo, List<UUID>> nodeMap = NimrodUtils.mapToParent(Arrays.stream(uuid), u -> {
+			NodeInfo ni = agentMap.get(u);
+			if(ni == null) {
+				return null;
+			}
+
+			if(!ni.agents.remove(u)) {
+				return null;
+			}
+
+			return ni;
+		});
+
+		Arrays.stream(uuid).forEach(agentMap::remove);
+
+		nodeMap.forEach((ni, uuids) -> {
+			final UUID[] uu = uuids.toArray(UUID[]::new);
+			ni.actuator.thenAccept(act -> act.forceTerminateAgent(uu))
+					.exceptionally(t -> {
+						ni.
+						LOGGER.error("Caught exception");
+						return null;
+					});
+		});
 	}
 
 	@Override
