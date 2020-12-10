@@ -42,8 +42,10 @@ public interface Job {
 	 * @param status The statuses of the attempts.
 	 * @return An immutable list of jobs that satisfy the given criteria.
 	 */
+	@Deprecated
 	Collection<JobAttempt> filterAttempts(EnumSet<JobAttempt.Status> status);
 
+	@Deprecated
 	default Collection<JobAttempt> filterAttempts() {
 		return filterAttempts(EnumSet.allOf(JobAttempt.Status.class));
 	}
