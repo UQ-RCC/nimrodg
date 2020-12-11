@@ -91,7 +91,7 @@ public class DBExperimentHelpers extends DBBaseHelper {
 
 	private final PreparedStatement qGetSingleJob;
 	private final PreparedStatement qGetJobRange;
-	private final PreparedStatement qGetJobAttempts;
+	private final PreparedStatement qGetJobAttemptsByJob;
 	private final PreparedStatement qGetNextJobId;
 
 	private final PreparedStatement qCreateJobAttempt;
@@ -138,7 +138,7 @@ public class DBExperimentHelpers extends DBBaseHelper {
 
 		this.qGetSingleJob = prepareStatement("SELECT * FROM nimrod_jobs WHERE id = ?");
 		this.qGetJobRange = prepareStatement("SELECT * FROM nimrod_jobs WHERE exp_id = ? AND job_index >= COALESCE(?, 0) ORDER BY job_index ASC LIMIT ?");
-		this.qGetJobAttempts = prepareStatement("SELECT * FROM nimrod_job_attempts WHERE job_id = ?");
+		this.qGetJobAttemptsByJob = prepareStatement("SELECT * FROM nimrod_job_attempts WHERE job_id = ?");
 
 		/* The finer-grained filtering is done application-side, row by row. */
 		this.qGetNextJobId = prepareStatement("SELECT COALESCE(MAX(job_index) + 1, 1) FROM nimrod_jobs WHERE exp_id = ?");
@@ -665,9 +665,9 @@ public class DBExperimentHelpers extends DBBaseHelper {
 	}
 
 	private JobCounts getJobCounts(long jobId) throws SQLException {
-		qGetJobAttempts.setLong(1, jobId);
+		qGetJobAttemptsByJob.setLong(1, jobId);
 		long total = 0, notRun = 0, completed = 0, failed = 0, running = 0;
-		try(ResultSet rs = qGetJobAttempts.executeQuery()) {
+		try(ResultSet rs = qGetJobAttemptsByJob.executeQuery()) {
 			while(rs.next()) {
 				JobAttempt.Status s = JobAttempt.stringToStatus(rs.getString("status"));
 				switch(s) {
@@ -765,11 +765,11 @@ public class DBExperimentHelpers extends DBBaseHelper {
 		return getJobAttempt(attId);
 	}
 
-	public List<TempJobAttempt> getJobAttempts(long jobId) throws SQLException {
-		qGetJobAttempts.setLong(1, jobId);
+	public List<TempJobAttempt> getJobAttemptsByJob(long jobId) throws SQLException {
+		qGetJobAttemptsByJob.setLong(1, jobId);
 
 		List<TempJobAttempt> atts = new ArrayList<>();
-		try(ResultSet rs = qGetJobAttempts.executeQuery()) {
+		try(ResultSet rs = qGetJobAttemptsByJob.executeQuery()) {
 			while(rs.next()) {
 				atts.add(attemptFromRow(rs));
 			}
