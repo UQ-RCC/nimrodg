@@ -89,6 +89,18 @@ public interface NimrodAPI extends AgentProvider, AutoCloseable {
 	 */
 	Collection<Job> filterJobs(Experiment exp, EnumSet<JobAttempt.Status> status, long start, int limit);
 
+	default List<JobAttempt> filterJobAttempts(Job job, EnumSet<JobAttempt.Status> status) {
+		return this.filterJobAttempts(List.of(job), status).getOrDefault(job, List.of());
+	}
+
+	/**
+	 * Get a list of job attempts that satisfy the given criteria.
+	 *
+	 * @param jobs The set of jobs whose attempts to query.
+	 * @param status The statuses of the attempts.
+	 *
+	 * @return A list of attempts that satisfy the given criteria.
+	 */
 	Map<Job, List<JobAttempt>> filterJobAttempts(Collection<Job> jobs, EnumSet<JobAttempt.Status> status);
 
 	/**
