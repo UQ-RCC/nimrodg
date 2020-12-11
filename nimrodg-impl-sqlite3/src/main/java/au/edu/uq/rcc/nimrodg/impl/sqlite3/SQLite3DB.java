@@ -53,6 +53,7 @@ import java.sql.SQLException;
 import java.time.Instant;
 import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -393,10 +394,16 @@ public class SQLite3DB extends SQLUUUUU<NimrodException.DbError> implements Nimr
 	}
 
 	@Override
-	public synchronized List<TempJobAttempt.Impl> filterJobAttempts(TempJob.Impl job, EnumSet<JobAttempt.Status> status) throws SQLException {
-		return experimentHelpers.getJobAttemptsByJob(job.base.id).stream()
+	public List<TempJobAttempt.Impl> filterJobAttempts(Map<Long, TempJob.Impl> jobs, EnumSet<JobAttempt.Status> status) throws SQLException {
+		List<TempJobAttempt> atts = new ArrayList<>();
+		/* NB: Can't flatMap() due to SQLException */
+		for(TempJob.Impl tj : jobs.values()) {
+			atts.addAll(experimentHelpers.getJobAttemptsByJob(tj.base.id));
+		}
+
+		return atts.stream()
 				.filter(att -> status.contains(att.status))
-				.map(att -> att.create(this, job))
+				.map(att -> att.create(this, jobs.get(att.jobId)))
 				.collect(Collectors.toList());
 	}
 

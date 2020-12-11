@@ -35,6 +35,7 @@ import au.edu.uq.rcc.nimrodg.api.Resource;
 import au.edu.uq.rcc.nimrodg.api.ResourceType;
 import au.edu.uq.rcc.nimrodg.api.ResourceTypeInfo;
 import au.edu.uq.rcc.nimrodg.api.events.NimrodMasterEvent;
+import au.edu.uq.rcc.nimrodg.api.utils.NimrodUtils;
 import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledRun;
 
 import javax.json.JsonStructure;
@@ -43,11 +44,13 @@ import java.security.cert.Certificate;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -364,6 +367,26 @@ public abstract class TempNimrodAPIImpl implements NimrodAPI, NimrodMasterAPI {
 		return db.runSQLTransaction(() -> db.filterJobAttempts(validateExperiment(_exp), status))
 				.entrySet().stream()
 				.collect(Collectors.toMap(Map.Entry::getKey, e -> Collections.unmodifiableCollection(e.getValue())));
+	}
+
+	@Override
+	public Map<Job, List<JobAttempt>> filterJobAttempts(Collection<Job> jobs, EnumSet<JobAttempt.Status> status) {
+		Objects.requireNonNull(jobs, "jobs");
+		Objects.requireNonNull(status, "status");
+		TempJob.Impl[] jjobs = jobs.stream().map(TempNimrodAPIImpl::validateJob).toArray(TempJob.Impl[]::new);
+
+		Map<Long, TempJob.Impl> idMap = Arrays.stream(jjobs)
+				.collect(Collectors.toMap(j -> j.base.id, j -> j));
+
+		/*
+		 * NB: This has to be in a transaction due to there being no way to
+		 * do a WHERE IN () in SQLite's JDBC driver.
+		 */
+		return NimrodUtils.mapToParent(
+				db.runSQLTransaction(() -> db.filterJobAttempts(idMap, status)).stream(),
+				att -> idMap.get(att.base.jobId),
+				att -> att
+		);
 	}
 
 	@Override

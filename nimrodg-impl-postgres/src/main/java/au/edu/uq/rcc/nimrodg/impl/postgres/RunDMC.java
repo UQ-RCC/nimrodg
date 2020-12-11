@@ -247,9 +247,9 @@ public class RunDMC extends SQLUUUUU<NimrodException.DbError> implements NimrodD
 	}
 
 	@Override
-	public synchronized List<TempJobAttempt.Impl> filterJobAttempts(TempJob.Impl job, EnumSet<JobAttempt.Status> status) throws SQLException {
-		return experimentHelpers.filterJobAttempts(job.base.id, status).stream()
-				.map(att -> att.create(this, job))
+	public List<TempJobAttempt.Impl> filterJobAttempts(Map<Long, TempJob.Impl> jobs, EnumSet<JobAttempt.Status> status) throws SQLException {
+		return experimentHelpers.filterJobAttempts(jobs.keySet(), status).stream()
+				.map(att -> att.create(this, jobs.get(att.jobId)))
 				.collect(Collectors.toList());
 	}
 

@@ -106,7 +106,15 @@ public class DBExperimentHelpers extends DBBaseHelper {
 		this.qCreateJobAttempt = prepareStatement("SELECT * FROM create_job_attempt(?::BIGINT, ?::UUID)");
 		this.qStartJobAttempt = prepareStatement("SELECT * FROM start_job_attempt(?::BIGINT, ?::UUID)");
 		this.qFinishJobAttempt = prepareStatement("SELECT * FROM finish_job_attempt(?::BIGINT, ?::BOOLEAN)");
-		this.qFilterJobAttempts = prepareStatement("SELECT * FROM filter_job_attempts(?::BIGINT, ?::nimrod_job_status[])");
+		this.qFilterJobAttempts = prepareStatement(
+				"SELECT\n" +
+				"    *\n" +
+				"FROM\n" +
+				"    nimrod_job_attempts\n" +
+				"WHERE\n" +
+				"    job_id = ANY(?::BIGINT[]) AND\n" +
+				"    status = ANY(COALESCE(?::nimrod_job_status[], enum_range(NULL::nimrod_job_status)))\n" +
+				";");
 		this.qGetJobAttempt = prepareStatement("SELECT * FROM nimrod_job_attempts WHERE id = ?");
 
 		this.qFilterJobAttemptsByExperiment = prepareStatement("SELECT * FROM filter_job_attempts_by_experiment(?::BIGINT, ?::nimrod_job_status[])");
@@ -349,8 +357,8 @@ public class DBExperimentHelpers extends DBBaseHelper {
 		}
 	}
 
-	public List<TempJobAttempt> filterJobAttempts(long jobId, EnumSet<JobAttempt.Status> status) throws SQLException {
-		qFilterJobAttempts.setLong(1, jobId);
+	public List<TempJobAttempt> filterJobAttempts(Collection<Long> ids, EnumSet<JobAttempt.Status> status) throws SQLException {
+		qFilterJobAttempts.setArray(1, conn.createArrayOf("BIGINT", ids.toArray()));
 		qFilterJobAttempts.setArray(2, conn.createArrayOf("TEXT", status.stream()
 				.filter(Objects::nonNull)
 				.map(Enum::toString)

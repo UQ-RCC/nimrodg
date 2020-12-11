@@ -85,7 +85,7 @@ public class TempJob {
 
 		@Override
 		public Collection<JobAttempt> filterAttempts(EnumSet<JobAttempt.Status> status) {
-			return m_DB.runSQL(() -> Collections.unmodifiableCollection(m_DB.filterJobAttempts(this, status)));
+			return m_DB.runSQL(() -> Collections.unmodifiableCollection(m_DB.filterJobAttempts(Map.of(base.id, this), status)));
 		}
 
 		@Override
