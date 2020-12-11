@@ -251,18 +251,16 @@ public abstract class APITests {
 
 			/* Check filtering everything. */
 			Set<JobAttempt> js0 = new HashSet<>(attempts);
-			Set<JobAttempt> js1 = new HashSet<>(j.filterAttempts(EnumSet.allOf(JobAttempt.Status.class)));
-			Set<JobAttempt> js2 = new HashSet<>(j.filterAttempts());
+			Set<JobAttempt> js1 = new HashSet<>(api.filterJobAttempts(j, EnumSet.allOf(JobAttempt.Status.class)));
 
 			Assert.assertEquals(js0, js1);
-			Assert.assertEquals(js0, js2);
 
 			/* See if we can filter the NOT_RUN attempt. */
-			Assert.assertEquals(notRunAtt, j.filterAttempts(EnumSet.of(JobAttempt.Status.NOT_RUN)).stream()
+			Assert.assertEquals(notRunAtt, api.filterJobAttempts(j, EnumSet.of(JobAttempt.Status.NOT_RUN)).stream()
 					.findFirst().orElseThrow(IllegalStateException::new));
 
 			/* See if we can filter the RUNNING attempt. */
-			Assert.assertEquals(runningAtt, j.filterAttempts(EnumSet.of(JobAttempt.Status.RUNNING)).stream()
+			Assert.assertEquals(runningAtt, api.filterJobAttempts(j, EnumSet.of(JobAttempt.Status.RUNNING)).stream()
 					.findFirst().orElseThrow(IllegalStateException::new));
 		}
 
