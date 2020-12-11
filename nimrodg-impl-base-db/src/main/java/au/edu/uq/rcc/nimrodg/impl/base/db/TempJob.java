@@ -24,9 +24,6 @@ import au.edu.uq.rcc.nimrodg.api.Job;
 import au.edu.uq.rcc.nimrodg.api.JobAttempt;
 
 import java.time.Instant;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.EnumSet;
 import java.util.Map;
 
 public class TempJob {
@@ -47,18 +44,15 @@ public class TempJob {
 		this.variables = Map.copyOf(variables);
 	}
 
-	public Impl create(NimrodDBAPI db, Experiment exp) {
-		return new Impl(db, exp);
+	public Impl create(Experiment exp) {
+		return new Impl(exp);
 	}
 
 	public class Impl implements Job {
-
-		private final NimrodDBAPI m_DB;
 		private final Experiment m_Experiment;
 		public final TempJob base;
 
-		private Impl(NimrodDBAPI db, Experiment exp) {
-			this.m_DB = db;
+		private Impl(Experiment exp) {
 			this.m_Experiment = exp;
 			this.base = TempJob.this;
 		}
@@ -81,11 +75,6 @@ public class TempJob {
 		@Override
 		public Instant getCreationTime() {
 			return created;
-		}
-
-		@Override
-		public Collection<JobAttempt> filterAttempts(EnumSet<JobAttempt.Status> status) {
-			return m_DB.runSQL(() -> Collections.unmodifiableCollection(m_DB.filterJobAttempts(Map.of(base.id, this), status)));
 		}
 
 		@Override

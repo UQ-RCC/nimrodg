@@ -213,7 +213,7 @@ public class RunDMC extends SQLUUUUU<NimrodException.DbError> implements NimrodD
 			throw new IllegalStateException();
 		}
 
-		return Optional.of(job.create(this, exp.get()));
+		return Optional.of(job.create(exp.get()));
 	}
 
 	@Override
@@ -223,12 +223,12 @@ public class RunDMC extends SQLUUUUU<NimrodException.DbError> implements NimrodD
 
 	@Override
 	public synchronized List<TempJob.Impl> filterJobs(TempExperiment.Impl exp, EnumSet<JobAttempt.Status> status, long start, long limit) throws SQLException {
-		return experimentHelpers.filterJobs(exp.base.id, status, start, limit).stream().map(tj -> tj.create(this, exp)).collect(Collectors.toList());
+		return experimentHelpers.filterJobs(exp.base.id, status, start, limit).stream().map(tj -> tj.create(exp)).collect(Collectors.toList());
 	}
 
 	@Override
 	public synchronized List<TempJob.Impl> addJobs(TempExperiment.Impl exp, Collection<Map<String, String>> vars) throws SQLException {
-		return experimentHelpers.addJobs(exp.base.id, vars).stream().map(tj -> tj.create(this, exp)).collect(Collectors.toList());
+		return experimentHelpers.addJobs(exp.base.id, vars).stream().map(tj -> tj.create(exp)).collect(Collectors.toList());
 	}
 
 	@Override
@@ -267,7 +267,7 @@ public class RunDMC extends SQLUUUUU<NimrodException.DbError> implements NimrodD
 				.toArray();
 
 		Map<Long, TempJob.Impl> jobs = experimentHelpers.getJobsById(jids).stream()
-				.map(j -> j.create(this, exp))
+				.map(j -> j.create(exp))
 				.collect(Collectors.toMap(j -> j.base.id, j -> j));
 
 		return NimrodUtils.mapToParent(
