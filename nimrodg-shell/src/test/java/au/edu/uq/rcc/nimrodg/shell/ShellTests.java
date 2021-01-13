@@ -82,9 +82,9 @@ public class ShellTests {
 
     @Test
     public void opensshClientTest() throws IOException {
-        String travis = System.getenv("TRAVIS");
+        String travis = System.getenv("CI");
         if(Objects.equals("true", travis)) {
-            System.err.println("Skipping OpenSSH tests on Travis due to https://github.com/UQ-RCC/nimrodg/issues/36");
+            System.err.println("Skipping OpenSSH tests on CI due to https://github.com/UQ-RCC/nimrodg/issues/36");
             return;
         }
 
