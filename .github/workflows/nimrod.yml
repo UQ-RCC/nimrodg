@@ -40,14 +40,14 @@ jobs:
           java-version: 11
 
       - run: chmod +x gradlew
-      - run: ./gradlew --no-daemon --info assemble
-      - run: ./gradlew --no-daemon --info test
+      - run: ./gradlew --info assemble
+      - run: ./gradlew --info test
         env:
           NIMRODG_TEST_PGUSER: nimrod
           NIMRODG_TEST_PGPASSWORD: nimrod
           NIMRODG_TEST_PGHOST: 127.0.0.1
           NIMRODG_TEST_PGDATABASE: nimrod
-      - run: ./gradlew --no-daemon --info generateArtifacts
+      - run: ./gradlew --info generateArtifacts
       - uses: actions/upload-artifact@v2
         with:
           name: release-artifacts
