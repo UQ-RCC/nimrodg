@@ -62,6 +62,32 @@ jobs:
         with:
           name: release-artifacts
           path: dist
+
+      - name: Sign packages
+        run: |
+          sudo apt-get -y install dpkg-sig rpm
+          printf '%s' "$RCC_PACKAGE_SIGNING_KEY" | gpg --import --batch
+          dpkg-sig -k $RCC_PACKAGE_SIGNING_KEY_ID -s builder dist/*.deb
+          rpmsign --key-id=$RCC_PACKAGE_SIGNING_KEY_ID --addsign dist/*.rpm
+        env:
+          RCC_PACKAGE_SIGNING_KEY: ${{ secrets.RCC_PACKAGE_SIGNING_KEY }}
+          RCC_PACKAGE_SIGNING_KEY_ID: ${{ secrets.RCC_PACKAGE_SIGNING_KEY_ID }}
+
+      - name: Push packages to packages.rcc.uq.edu.au
+        run: |
+          mkdir -p ~/.ssh && chmod 0700 ~/.ssh
+          printf '%s' "$RCC_PACKAGE_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          printf '%s' "$RCC_PACKAGE_SSH_KEY" > deploy
+          chmod 0600 deploy
+
+          sftp -i deploy gh-actions@packages.rcc.uq.edu.au <<EOF
+            put dist/*.deb /ubuntu/pool/main/nimrod
+            put dist/*.rpm /centos7
+          EOF
+        env:
+          RCC_PACKAGE_SSH_KEY: ${{ secrets.RCC_PACKAGE_SSH_KEY }}
+          RCC_PACKAGE_KNOWN_HOSTS: ${{ secrets.RCC_PACKAGE_KNOWN_HOSTS }}
+
       - uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
