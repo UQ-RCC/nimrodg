@@ -19,6 +19,7 @@
  */
 package au.edu.uq.rcc.nimrodg.cli;
 
+import au.edu.uq.rcc.nimrodg.api.utils.AppDirs;
 import au.edu.uq.rcc.nimrodg.cli.commands.AddExp;
 import au.edu.uq.rcc.nimrodg.cli.commands.AddJobs;
 import au.edu.uq.rcc.nimrodg.cli.commands.Compile;
