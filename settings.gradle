@@ -19,5 +19,6 @@ include 'nimrodg-cli'
 include 'nimrodg-master'
 
 include 'nimrodg-debugger-agent'
+include 'nimrodg-browser'
 
 include 'nimrod'

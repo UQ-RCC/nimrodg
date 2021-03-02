@@ -1,0 +1,11 @@
+apply plugin: 'application'
+
+mainClassName = 'au.uq.edu.rcc.nimrodg.debug.Browser'
+
+dependencies {
+    implementation project(':nimrodg-internal-api')
+    implementation project(':nimrodg-impl-postgres')
+    implementation project(':nimrodg-impl-sqlite3')
+    implementation project(':nimrodg-resources')
+    implementation project(':nimrodg-utils')
+}
