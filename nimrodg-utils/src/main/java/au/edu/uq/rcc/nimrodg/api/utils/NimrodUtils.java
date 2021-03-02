@@ -38,6 +38,18 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 public class NimrodUtils {
+	public enum OS {
+		Unknown,
+		Windows,
+		Mac,
+		Unix
+	}
+
+	public enum Arch {
+		Unknown,
+		x86,
+		x86_64
+	}
 
 	public static <T> T selectRandomFromContainer(Collection<T> c) {
 		return selectRandomFromContainer(c, new Random());
@@ -133,5 +145,88 @@ public class NimrodUtils {
 
 	public static String buildUniqueJobId(Job job) {
 		return String.format("%s/%s", job.getExperiment().getName(), job.getIndex());
+	}
+
+
+	public static OS detectOSFromProperties() {
+		String osname = System.getProperty("os.name");
+		if(osname == null) {
+			return OS.Unknown;
+		}
+
+		osname = osname.toLowerCase();
+		if(osname.contains("win")) {
+			return OS.Windows;
+		} else if(osname.contains("mac")) {
+			return OS.Mac;
+		} else if(osname.contains("nix") || osname.contains("nux") || osname.contains("aix") || osname.endsWith("ix") || osname.endsWith("ux")) {
+			return OS.Unix;
+		}
+
+		return OS.Unknown;
+	}
+
+	public static Arch detectArchFromProperties() {
+		String osarch = System.getProperty("os.arch");
+		if(osarch == null) {
+			return Arch.Unknown;
+		}
+
+		osarch = osarch.toLowerCase();
+		if(osarch.equals("x86") || osarch.equals("i386") || (osarch.startsWith("i") && osarch.endsWith("86"))) {
+			return Arch.x86;
+		} else if(osarch.equals("x86_64") || osarch.equals("amd64") || osarch.equals("x64")) {
+			return Arch.x86_64;
+		}
+
+		return Arch.Unknown;
+	}
+
+	public static Map.Entry<OS, Arch> detectPlatform() {
+		OS propsOS = detectOSFromProperties();
+		Arch propsArch = detectArchFromProperties();
+
+		/* See if it maps "x" to "x.dll" or "libx.so". */
+		String xdll = System.mapLibraryName("x");
+		if(xdll.equals("x.dll")) {
+
+			int win64Count = 0;
+
+			/* These aren't used anymore, keeping them around for reference.
+			{
+				int winCount = 0;
+				String envOs = System.getenv("OS");
+				String windir = System.getenv("WINDIR");
+				String systemRoot = System.getenv("SystemRoot");
+				String programData = System.getenv("ProgramData");
+				String programFiles = System.getenv("ProgramFiles");
+
+				winCount += (envOs != null && envOs.equals("Windows_NT")) ? 1 : 0;
+				winCount += (windir != null && !windir.isEmpty()) ? 1 : 0;
+				winCount += (systemRoot != null && !systemRoot.isEmpty()) ? 1 : 0;
+				winCount += (programData != null && !programData.isEmpty()) ? 1 : 0;
+				winCount += (programFiles != null && !programFiles.isEmpty()) ? 1 : 0;
+
+				winCount += (propsOS == OS.Windows) ? 1 : 0;
+			} */
+			String programFiles86 = System.getenv("ProgramFiles(x86)");
+			String programW6432 = System.getenv("ProgramW6432");
+			win64Count += (programFiles86 != null && !programFiles86.isEmpty()) ? 1 : 0;
+			win64Count += (programW6432 != null && !programW6432.isEmpty()) ? 1 : 0;
+			win64Count += (propsArch == Arch.x86_64) ? 1 : 0;
+
+			/* This is pretty-much a guarantee it's Windows. */
+			if(win64Count > 0) {
+				return Map.entry(OS.Windows, Arch.x86_64);
+			} else {
+				return Map.entry(OS.Windows, Arch.x86);
+			}
+		} else if(xdll.equals("libx.so")) {
+			/* It's a UNIX system! */
+			propsOS = OS.Unix;
+		}
+
+		/* Fall back to our os.* properties. */
+		return Map.entry(propsOS, propsArch);
 	}
 }

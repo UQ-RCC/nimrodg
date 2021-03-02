@@ -19,8 +19,8 @@
  */
 package au.edu.uq.rcc.nimrodg.cli;
 
+import au.edu.uq.rcc.nimrodg.api.utils.NimrodUtils;
 import au.edu.uq.rcc.nimrodg.api.utils.XDGDirs;
-import au.edu.uq.rcc.nimrodg.resource.LocalResourceType;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
@@ -37,8 +37,8 @@ public class AppDirs {
 	}
 
 	public static AppDirs resolve() {
-		Map.Entry<LocalResourceType.OS, LocalResourceType.Arch> plat = LocalResourceType.detectPlatform();
-		if(plat.getKey() == LocalResourceType.OS.Windows) {
+		Map.Entry<NimrodUtils.OS, NimrodUtils.Arch> plat = NimrodUtils.detectPlatform();
+		if(plat.getKey() == NimrodUtils.OS.Windows) {
 			/* Can't use SHGetKnownFolderPath() unfortunately. */
 			Path appData = Paths.get(System.getenv("APPDATA"));
 			return new AppDirs(appData.resolve("Nimrod"), List.of());
