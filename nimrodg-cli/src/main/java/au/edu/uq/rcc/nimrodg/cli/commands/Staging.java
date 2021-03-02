@@ -33,7 +33,7 @@ import au.edu.uq.rcc.nimrodg.cli.CommandEntry;
 import au.edu.uq.rcc.nimrodg.cli.DefaultCLICommand;
 import au.edu.uq.rcc.nimrodg.cli.NimrodCLI;
 import au.edu.uq.rcc.nimrodg.cli.NimrodCLICommand;
-import au.edu.uq.rcc.nimrodg.cli.XDGDirs;
+import au.edu.uq.rcc.nimrodg.api.utils.XDGDirs;
 import au.edu.uq.rcc.nimrodg.parsing.ANTLR4ParseAPIImpl;
 import au.edu.uq.rcc.nimrodg.setup.UserConfig;
 import net.sourceforge.argparse4j.inf.Namespace;

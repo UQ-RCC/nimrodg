@@ -19,6 +19,7 @@
  */
 package au.edu.uq.rcc.nimrodg.cli;
 
+import au.edu.uq.rcc.nimrodg.api.utils.XDGDirs;
 import au.edu.uq.rcc.nimrodg.resource.LocalResourceType;
 import java.nio.file.Path;
 import java.nio.file.Paths;
