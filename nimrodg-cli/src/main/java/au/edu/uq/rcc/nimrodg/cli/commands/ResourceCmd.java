@@ -31,14 +31,10 @@ import au.edu.uq.rcc.nimrodg.cli.NimrodCLICommand;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.URI;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Objects;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
-import javax.json.Json;
 import javax.json.JsonStructure;
-import javax.json.stream.JsonGenerator;
 
 import com.inamik.text.tables.SimpleTable;
 import net.sourceforge.argparse4j.inf.Namespace;
@@ -168,6 +164,24 @@ public class ResourceCmd extends NimrodCLICommand {
 				.nextCell(Integer.toString(api.getResourceAgents(n).size()));
 	}
 
+	private void addUriRows(SimpleTable st, NimrodURI uri, String prefix) {
+		st.nextRow()
+				.nextCell(prefix + " Uri")
+				.nextCell(uri.uri == null ? "" : uri.uri.toString());
+
+		st.nextRow()
+				.nextCell(prefix + " Peer Verification")
+				.nextCell(uri.noVerifyPeer == null ? "" : uri.noVerifyPeer.toString());
+
+		st.nextRow()
+				.nextCell(prefix + " Host Verification")
+				.nextCell(uri.noVerifyHost == null ? "" : uri.noVerifyHost.toString());
+
+		st.nextRow()
+				.nextCell(prefix + " Certificate Path")
+				.nextCell(uri.certPath == null ? "" : uri.certPath);
+	}
+
 	private int executeQuery(NimrodAPI api, Namespace args, PrintStream out, PrintStream err) throws NimrodException {
 		Resource n = api.getResource(args.get("resource_name"));
 
@@ -176,12 +190,27 @@ public class ResourceCmd extends NimrodCLICommand {
 			return 0;
 		}
 
-		out.print("Resource Information:\n");
-		out.printf("  Name:   %s\n", n.getName());
-		out.printf("  Type:   %s\n", n.getTypeName());
+		SimpleTable st = SimpleTable.of().nextRow()
+				.nextCell("Property")
+				.nextCell("Value");
 
-		out.print("Config:");
-		prettyPrint(n.getConfig(), out);
+		st.nextRow()
+				.nextCell("Name")
+				.nextCell(n.getName());
+
+		st.nextRow()
+				.nextCell("Type")
+				.nextCell(n.getTypeName());
+
+		addUriRows(st, n.getAMQPUri(), "AMQP");
+		addUriRows(st, n.getTransferUri(), "Transfer");
+
+		st.nextRow()
+				.nextCell("Config")
+				.nextCell(n.getConfig().toString());
+
+		printTable(st, out);
+
 		return 0;
 	}
 
