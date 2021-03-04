@@ -54,7 +54,7 @@ public abstract class NimrodCLICommand extends DefaultCLICommand {
 		Class<?> clazz = Class.forName(factory);
 
 		if(!NimrodAPIFactory.class.isAssignableFrom(clazz)) {
-			throw new IllegalArgumentException(String.format("API Factory is not actually a factory."));
+			throw new IllegalArgumentException("API Factory is not actually a factory.");
 		}
 
 		return (NimrodAPIFactory)clazz.getConstructor().newInstance();

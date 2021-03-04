@@ -82,7 +82,7 @@ public class MasterCmd extends NimrodCLICommand {
 		}
 
 		@Override
-		public Optional<MessageOperation> processAgentMessage(long tag, AMQPMessage amsg) throws IllegalStateException, IOException {
+		public Optional<MessageOperation> processAgentMessage(long tag, AMQPMessage amsg) throws IllegalStateException {
 			Optional<MessageQueueListener.MessageOperation> op = m.processAgentMessage(tag, amsg);
 			synchronized(monitor) {
 				monitor.notify();

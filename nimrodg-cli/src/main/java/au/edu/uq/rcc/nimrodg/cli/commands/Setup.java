@@ -87,8 +87,8 @@ public class Setup extends DefaultCLICommand {
 				}
 
 				System.err.printf("Sample setup configuration written to %s.\n", _ini.equals("-") ? "stdout" : _ini);
-				System.err.printf("Please edit appropriately and run:\n");
-				System.err.printf("  nimrod setup init <path>\n");
+				System.err.println("Please edit appropriately and run:");
+				System.err.println("  nimrod setup init <path>");
 				return 0;
 			}
 			case "bareinit": {
@@ -191,12 +191,11 @@ public class Setup extends DefaultCLICommand {
 		Stream<Ini> sysInis = Stream.empty();
 		if(!skipSystem) {
 			/* Load system-wide configuration from each of the configuration dirs. */
-			List<Path> confDirs = new ArrayList<>();
-			confDirs.addAll(Arrays.asList(configDirs));
+			List<Path> confDirs = new ArrayList<>(Arrays.asList(configDirs));
 			Collections.reverse(confDirs);
 			sysInis = confDirs.stream()
 					.map(p -> p.resolve("setup-defaults.ini"))
-					.filter(p -> Files.exists(p))
+					.filter(Files::exists)
 					.map(p -> {
 						try(InputStream is = Files.newInputStream(p)) {
 							return new Ini(is);
@@ -275,7 +274,7 @@ public class Setup extends DefaultCLICommand {
 			}
 
 			{
-				Subparser sp = subs.addParser("bareinit");
+				subs.addParser("bareinit");
 			}
 
 			{

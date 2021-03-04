@@ -38,7 +38,7 @@ public class SetProp extends NimrodCLICommand {
 	}
 
 	@Override
-	public int execute(Namespace args, UserConfig config, NimrodAPI nimrod, PrintStream out, PrintStream err, Path[] configDirs) throws IOException, NimrodException {
+	public int execute(Namespace args, UserConfig config, NimrodAPI nimrod, PrintStream out, PrintStream err, Path[] configDirs) throws NimrodException {
 		nimrod.setProperty(args.getString("key"), args.getString("value"));
 		return 0;
 	}

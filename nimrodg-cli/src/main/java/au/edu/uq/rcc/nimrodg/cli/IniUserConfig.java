@@ -50,7 +50,7 @@ public class IniUserConfig implements UserConfig {
 		/* "Resolve" the entire ini file and strip any "env:" entries. */
 		this.actualConfig = ini.entrySet().stream()
 				.collect(Collectors.toMap(
-						e -> e.getKey(),
+						Map.Entry::getKey,
 						e -> e.getValue().keySet().stream()
 								.filter(k -> !k.startsWith("env:") && !k.startsWith("nimrod:"))
 								.collect(Collectors.toMap(k -> k, v -> e.getValue().fetch(v))))
@@ -79,7 +79,7 @@ public class IniUserConfig implements UserConfig {
 
 	public static Map<String, String> buildEnvironmentMap() {
 		return System.getenv().entrySet().stream()
-				.collect(Collectors.toMap(e -> "env:" + e.getKey(), e -> e.getValue()));
+				.collect(Collectors.toMap(e -> "env:" + e.getKey(), Map.Entry::getValue));
 	}
 
 	private static void _patch(Section s, Map<String, String> envMap) {

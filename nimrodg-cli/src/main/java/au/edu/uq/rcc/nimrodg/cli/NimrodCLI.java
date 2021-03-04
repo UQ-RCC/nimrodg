@@ -94,7 +94,7 @@ public class NimrodCLI {
 		return argparser;
 	}
 
-	public static int cliMain(String[] args) throws Exception {
+	public static int cliMain(String[] args) {
 		System.setProperty("java.util.logging.manager", "org.apache.logging.log4j.jul.LogManager");
 
 		Path userHome = AppDirs.INSTANCE.configHome;

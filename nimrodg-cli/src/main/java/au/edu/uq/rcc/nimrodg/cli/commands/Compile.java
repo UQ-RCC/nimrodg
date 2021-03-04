@@ -69,13 +69,13 @@ public class Compile implements CLICommand {
 			throw new NimrodException(e);
 		}
 
-		err.printf("Successfully compiled planfile:\n");
+		err.println("Successfully compiled planfile:");
 		err.printf("  %d variables, %d jobs, %d tasks\n", rf.numVariables, rf.numJobs, rf.numTasks);
 
 		if(!args.getBoolean("noout")) {
 			out.print(JsonUtils.toJson(rf).toString());
 		}
-		out.println("");
+		out.println();
 		return 0;
 	}
 
