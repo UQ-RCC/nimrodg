@@ -9,6 +9,7 @@ import au.edu.uq.rcc.nimrodg.cli.CommandEntry;
 import au.edu.uq.rcc.nimrodg.cli.NimrodCLICommand;
 import au.edu.uq.rcc.nimrodg.parsing.ANTLR4ParseAPIImpl;
 import au.edu.uq.rcc.nimrodg.setup.UserConfig;
+import com.inamik.text.tables.SimpleTable;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
 import net.sourceforge.argparse4j.inf.Subparsers;
@@ -19,6 +20,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collection;
 
 public class ExperimentCmd extends NimrodCLICommand {
     @Override
@@ -33,6 +35,8 @@ public class ExperimentCmd extends NimrodCLICommand {
                 return executeAdd(args, config, nimrod, out, err, configDirs);
             case "delete":
                 return executeDelete(args, config, nimrod, out, err, configDirs);
+            case "list":
+                return executeList(args, config, nimrod, out, err, configDirs);
         }
         return 0;
     }
@@ -104,6 +108,26 @@ public class ExperimentCmd extends NimrodCLICommand {
         return 0;
     }
 
+    private int executeList(Namespace args, UserConfig config, NimrodAPI nimrod, PrintStream out, PrintStream err, Path[] configDirs) throws IOException, NimrodException {
+        Collection<Experiment> exps = nimrod.getExperiments();
+
+        SimpleTable st = SimpleTable.of()
+                .nextRow()
+                .nextCell("Name")
+                .nextCell("State")
+                .nextCell("Working Directory");
+
+        for(Experiment e : exps) {
+            st.nextRow()
+                    .nextCell(e.getName())
+                    .nextCell(Experiment.stateToString(e.getState()))
+                    .nextCell(e.getWorkingDirectory());
+        }
+
+        printTable(st, out);
+        return 0;
+    }
+
     public static final CommandEntry DEFINITION = new CommandEntry(new ExperimentCmd(), "Experiment Operations.") {
         @Override
         public void addArgs(Subparser parser) {
@@ -131,6 +155,12 @@ public class ExperimentCmd extends NimrodCLICommand {
                         .description("Delete an experiment and all associated data from the database.");
 
                 addExpNameArg(sp);
+            }
+
+            {
+                subs.addParser("list")
+                        .help("List experiments")
+                        .description("List all the experiments.");
             }
         }
     };
