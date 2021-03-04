@@ -85,5 +85,6 @@ limitations under the License.
 | [Apache Commons Collections](https://commons.apache.org/proper/commons-collections/) | Apache 2.0 | http://www.apache.org/licenses/LICENSE-2.0.txt |
 | [Apache Tomcat](http://tomcat.apache.org/) | Apache 2.0 | http://www.apache.org/licenses/LICENSE-2.0.txt |
 | [Apache Mina SSHD](https://mina.apache.org/sshd-project/index.html) | Apache 2.0 | http://www.apache.org/licenses/LICENSE-2.0.txt |
+| [java_text_tables](https://github.com/iNamik/java_text_tables) | MIT License | https://raw.githubusercontent.com/iNamik/java_text_tables/master/LICENSE.txt |
 
 

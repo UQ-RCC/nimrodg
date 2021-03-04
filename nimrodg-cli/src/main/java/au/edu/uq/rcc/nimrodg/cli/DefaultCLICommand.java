@@ -28,6 +28,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
 
+import com.inamik.text.tables.GridTable;
+import com.inamik.text.tables.SimpleTable;
+import com.inamik.text.tables.grid.Border;
+import com.inamik.text.tables.grid.Util;
 import net.sourceforge.argparse4j.inf.Namespace;
 import org.ini4j.Ini;
 
@@ -66,5 +70,13 @@ public abstract class DefaultCLICommand implements CLICommand {
 	public static void prettyPrint(JsonStructure json, PrintStream ps) {
 		JSON_WRITER_FACTORY.createWriter(ps).write(json);
 		ps.println();
+	}
+
+	public static void printTable(GridTable g, PrintStream ps) {
+		ps.print(Util.asString(Border.of(Border.Chars.of('+', '-', '|')).apply(g)));
+	}
+
+	public static void printTable(SimpleTable st, PrintStream ps) {
+		printTable(st.toGrid(), ps);
 	}
 }
