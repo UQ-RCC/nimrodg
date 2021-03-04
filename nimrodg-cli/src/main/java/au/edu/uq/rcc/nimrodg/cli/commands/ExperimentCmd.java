@@ -21,8 +21,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
+import java.util.Map;
 
 public class ExperimentCmd extends NimrodCLICommand {
+    private static final Map<String, Subcommand> COMMAND_MAP = Map.of(
+            "add", ExperimentCmd::executeAdd,
+            "delete", ExperimentCmd::executeDelete,
+            "remove", ExperimentCmd::executeDelete,
+            "list", ExperimentCmd::executeList
+    );
+
     @Override
     public String getCommand() {
         return "experiment";
@@ -30,18 +38,10 @@ public class ExperimentCmd extends NimrodCLICommand {
 
     @Override
     public int execute(Namespace args, UserConfig config, NimrodAPI nimrod, PrintStream out, PrintStream err, Path[] configDirs) throws IOException, NimrodException {
-        switch(args.getString("operation")) {
-            case "add":
-                return executeAdd(args, config, nimrod, out, err, configDirs);
-            case "delete":
-                return executeDelete(args, config, nimrod, out, err, configDirs);
-            case "list":
-                return executeList(args, config, nimrod, out, err, configDirs);
-        }
-        return 0;
+        return COMMAND_MAP.get(args.getString("operation")).main(nimrod, args, out, err, configDirs);
     }
 
-    private int executeAdd(Namespace args, UserConfig config, NimrodAPI nimrod, PrintStream out, PrintStream err, Path[] configDirs) throws IOException, NimrodException {
+    private static int executeAdd(NimrodAPI nimrod, Namespace args, PrintStream out, PrintStream err, Path[] configDirs) throws IOException, NimrodException {
         String expName = args.getString("exp_name");
         String runFile = args.getString("planfile");
 
@@ -92,7 +92,7 @@ public class ExperimentCmd extends NimrodCLICommand {
         return 0;
     }
 
-    private int executeDelete(Namespace args, UserConfig config, NimrodAPI nimrod, PrintStream out, PrintStream err, Path[] configDirs) throws IOException, NimrodException {
+    private static int executeDelete(NimrodAPI nimrod, Namespace args, PrintStream out, PrintStream err, Path[] configDirs) throws IOException, NimrodException {
         String expName = args.getString("exp_name");
 
         Experiment exp = nimrod.getExperiment(expName);
@@ -108,7 +108,7 @@ public class ExperimentCmd extends NimrodCLICommand {
         return 0;
     }
 
-    private int executeList(Namespace args, UserConfig config, NimrodAPI nimrod, PrintStream out, PrintStream err, Path[] configDirs) throws IOException, NimrodException {
+    private static int executeList(NimrodAPI nimrod, Namespace args, PrintStream out, PrintStream err, Path[] configDirs) throws NimrodException {
         Collection<Experiment> exps = nimrod.getExperiments();
 
         SimpleTable st = SimpleTable.of()

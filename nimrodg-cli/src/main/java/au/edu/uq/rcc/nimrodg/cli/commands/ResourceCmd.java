@@ -31,6 +31,7 @@ import au.edu.uq.rcc.nimrodg.cli.NimrodCLICommand;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.URI;
+import java.util.Map;
 import java.util.Objects;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -46,6 +47,15 @@ import java.util.List;
 import java.util.Optional;
 
 public class ResourceCmd extends NimrodCLICommand {
+
+	private static final Map<String, Subcommand> COMMAND_MAP = Map.of(
+			"add", ResourceCmd::executeAdd,
+			"remove", ResourceCmd::executeRemove,
+			"list", ResourceCmd::executeList,
+			"query", ResourceCmd::executeQuery,
+			"assign", ResourceCmd::executeAssign,
+			"unassign", ResourceCmd::executeUnassign
+	);
 
 	@Override
 	public String getCommand() {
@@ -64,27 +74,10 @@ public class ResourceCmd extends NimrodCLICommand {
 
 	@Override
 	public int execute(Namespace args, UserConfig config, NimrodAPI nimrod, PrintStream out, PrintStream err, Path[] configDirs) throws IOException, NimrodException {
-
-		/* NB: add-root and add-child are separate because they might use separate parsers. */
-		switch(args.getString("operation")) {
-			case "add":
-				return executeAdd(nimrod, args, out, err, configDirs);
-			case "remove":
-				return executeRemove(nimrod, args, out, err);
-			case "list":
-				return executeList(nimrod, args, out, err);
-			case "query":
-				return executeQuery(nimrod, args, out, err);
-			case "assign":
-				return executeAssign(nimrod, args, out, err);
-			case "unassign":
-				return executeUnassign(nimrod, args, out, err);
-		}
-		return 0;
-
+		return COMMAND_MAP.get(args.getString("operation")).main(nimrod, args, out, err, configDirs);
 	}
 
-	private int executeAdd(NimrodAPI api, Namespace args, PrintStream out, PrintStream err, Path[] configDirs) throws NimrodException {
+	private static int executeAdd(NimrodAPI api, Namespace args, PrintStream out, PrintStream err, Path[] configDirs) throws NimrodException {
 		String name = args.getString("resource_name");
 
 		Resource node = api.getResource(name);
@@ -123,7 +116,7 @@ public class ResourceCmd extends NimrodCLICommand {
 		return 0;
 	}
 
-	private int executeRemove(NimrodAPI api, Namespace args, PrintStream out, PrintStream err) throws NimrodException {
+	private static int executeRemove(NimrodAPI api, Namespace args, PrintStream out, PrintStream err, Path[] configDirs) throws NimrodException {
 		args.getList("resource_name").stream()
 				.distinct()
 				.map(r -> api.getResource((String)r))
@@ -132,7 +125,7 @@ public class ResourceCmd extends NimrodCLICommand {
 		return 0;
 	}
 
-	private int executeList(NimrodAPI api, Namespace args, PrintStream out, PrintStream err) throws NimrodException {
+	private static  int executeList(NimrodAPI api, Namespace args, PrintStream out, PrintStream err, Path[] configDirs) throws NimrodException {
 		Pattern p;
 		try {
 			p = Pattern.compile(args.getString("pathspec"));
@@ -152,7 +145,7 @@ public class ResourceCmd extends NimrodCLICommand {
 		return 0;
 	}
 
-	private void dumpResource(NimrodAPI api, Resource n, SimpleTable st, Pattern pattern) {
+	private static void dumpResource(NimrodAPI api, Resource n, SimpleTable st, Pattern pattern) {
 		String name = n.getName();
 		if(!pattern.matcher(name).matches()) {
 			return;
@@ -164,7 +157,7 @@ public class ResourceCmd extends NimrodCLICommand {
 				.nextCell(Integer.toString(api.getResourceAgents(n).size()));
 	}
 
-	private void addUriRows(SimpleTable st, NimrodURI uri, String prefix) {
+	private static void addUriRows(SimpleTable st, NimrodURI uri, String prefix) {
 		st.nextRow()
 				.nextCell(prefix + " Uri")
 				.nextCell(uri.uri == null ? "" : uri.uri.toString());
@@ -182,7 +175,7 @@ public class ResourceCmd extends NimrodCLICommand {
 				.nextCell(uri.certPath == null ? "" : uri.certPath);
 	}
 
-	private int executeQuery(NimrodAPI api, Namespace args, PrintStream out, PrintStream err) throws NimrodException {
+	private static int executeQuery(NimrodAPI api, Namespace args, PrintStream out, PrintStream err, Path[] configDirs) throws NimrodException {
 		Resource n = api.getResource(args.get("resource_name"));
 
 		if(n == null) {
@@ -214,7 +207,7 @@ public class ResourceCmd extends NimrodCLICommand {
 		return 0;
 	}
 
-	private int executeAssign(NimrodAPI api, Namespace args, PrintStream out, PrintStream err) throws NimrodException {
+	private static int executeAssign(NimrodAPI api, Namespace args, PrintStream out, PrintStream err, Path[] configDirs) throws NimrodException {
 		String expName = args.getString("exp_name");
 
 		Experiment exp = api.getExperiment(expName);
@@ -240,7 +233,7 @@ public class ResourceCmd extends NimrodCLICommand {
 		return failed ? 1 : 0;
 	}
 
-	private int executeUnassign(NimrodAPI api, Namespace args, PrintStream out, PrintStream err) throws NimrodException {
+	private static int executeUnassign(NimrodAPI api, Namespace args, PrintStream out, PrintStream err, Path[] configDirs) throws NimrodException {
 
 		String expName = args.getString("exp_name");
 		Experiment exp = api.getExperiment(expName);

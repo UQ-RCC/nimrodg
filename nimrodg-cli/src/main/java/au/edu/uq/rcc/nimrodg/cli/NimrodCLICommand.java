@@ -59,4 +59,8 @@ public abstract class NimrodCLICommand extends DefaultCLICommand {
 
 		return (NimrodAPIFactory)clazz.getConstructor().newInstance();
 	}
+
+	public interface Subcommand {
+		int main(NimrodAPI nimrod, Namespace args, PrintStream out, PrintStream err, Path[] configDirs) throws IOException, NimrodException;
+	}
 }
