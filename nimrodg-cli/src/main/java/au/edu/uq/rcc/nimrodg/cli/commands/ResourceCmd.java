@@ -39,6 +39,8 @@ import java.util.regex.PatternSyntaxException;
 import javax.json.Json;
 import javax.json.JsonStructure;
 import javax.json.stream.JsonGenerator;
+
+import com.inamik.text.tables.SimpleTable;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
 import net.sourceforge.argparse4j.inf.Subparsers;
@@ -144,15 +146,26 @@ public class ResourceCmd extends NimrodCLICommand {
 			return 1;
 		}
 
-		api.getResources().forEach(n -> dumpResource(n, out, p));
+		/* TODO: Print AMQP and TX Uris, stripping passwords */
+		SimpleTable st = SimpleTable.of().nextRow()
+				.nextCell("Name")
+				.nextCell("Type")
+				.nextCell("No. Agents");
+		api.getResources().forEach(n -> dumpResource(api, n, st, p));
+		printTable(st, out);
 		return 0;
 	}
 
-	private void dumpResource(Resource n, PrintStream out, Pattern pattern) {
+	private void dumpResource(NimrodAPI api, Resource n, SimpleTable st, Pattern pattern) {
 		String name = n.getName();
-		if(pattern.matcher(name).matches()) {
-			out.println(name);
+		if(!pattern.matcher(name).matches()) {
+			return;
 		}
+
+		st.nextRow()
+				.nextCell(n.getName())
+				.nextCell(n.getTypeName())
+				.nextCell(Integer.toString(api.getResourceAgents(n).size()));
 	}
 
 	private int executeQuery(NimrodAPI api, Namespace args, PrintStream out, PrintStream err) throws NimrodException {
