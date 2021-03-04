@@ -59,7 +59,7 @@ public abstract class DefaultCLICommand implements CLICommand {
 		return new IniUserConfig(ini, configFile);
 	}
 
-	private static JsonWriterFactory JSON_WRITER_FACTORY = Json.createWriterFactory(
+	private static final JsonWriterFactory JSON_WRITER_FACTORY = Json.createWriterFactory(
 			Map.of(JsonGenerator.PRETTY_PRINTING, true)
 	);
 
