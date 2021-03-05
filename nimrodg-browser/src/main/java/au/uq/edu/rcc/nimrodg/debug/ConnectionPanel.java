@@ -1,12 +1,22 @@
 package au.uq.edu.rcc.nimrodg.debug;
 
+import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
+import au.edu.uq.rcc.nimrodg.api.NimrodAPIFactory;
+import au.edu.uq.rcc.nimrodg.api.NimrodException;
+import au.edu.uq.rcc.nimrodg.api.setup.UserConfig;
+import au.edu.uq.rcc.nimrodg.impl.postgres.NimrodAPIFactoryImpl;
+import au.edu.uq.rcc.nimrodg.impl.sqlite3.SQLite3APIFactory;
 import au.edu.uq.rcc.nimrodg.utils.AppDirs;
+import au.edu.uq.rcc.nimrodg.utils.IniUserConfig;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.io.IOException;
+import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
+import org.ini4j.Ini;
 
 public class ConnectionPanel extends javax.swing.JPanel {
 
@@ -218,23 +228,91 @@ public class ConnectionPanel extends javax.swing.JPanel {
     }//GEN-LAST:event_loadLocalBtnActionPerformed
 
     private void connectBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_connectBtnActionPerformed
-        switch(tabbedPane.getSelectedIndex()) {
+        UserConfig cfg;
+		switch(tabbedPane.getSelectedIndex()) {
 			case 0:
-				connect();
-				return;
-			case 1:
-				connectManual();
-			default:
+				cfg = connect();
 				break;
+			case 1:
+				cfg = connectManual();
+				break;
+			default:
+				return;
+		}
+
+		NimrodAPIFactory factory;
+		
+		try {
+			Class<?> clazz = Class.forName(cfg.factory());
+			factory = (NimrodAPIFactory)clazz.getConstructor().newInstance();
+		} catch(ReflectiveOperationException e) {
+			e.printStackTrace(System.err);
+			return;
+		}
+
+		try(NimrodAPI nimrod = factory.createNimrod(cfg)) {
+			
+		} catch(NimrodException e) {
+			e.printStackTrace(System.err);
+			return;
 		}
     }//GEN-LAST:event_connectBtnActionPerformed
 
-	private void connect() {
+	private UserConfig connect() {
+		Object id = factoryBox.getSelectedItem();
 		
+		UserConfig cfg;
+		if("SQLite3".equals(id)) {
+			return new UserConfig() {
+				@Override
+				public String factory() {
+					return SQLite3APIFactory.class.getCanonicalName();
+				}
+
+				@Override
+				public Map<String, Map<String, String>> config() {
+					return Map.of("sqlite3", Map.of(
+							"driver", driverField.getText(),
+							"url", urlField.getText()	
+					));
+				}
+			};
+		} else if("PostgreSQL".equals(id)) {
+			return new UserConfig() {
+				@Override
+				public String factory() {
+					return NimrodAPIFactoryImpl.class.getCanonicalName();
+				}
+
+				@Override
+				public Map<String, Map<String, String>> config() {
+					return Map.of("postgres", Map.of(
+							"driver", driverField.getText(),
+							"url", urlField.getText(),
+							"username", usernameField.getText(),
+							"password", passwordField.getText()
+					));
+				}
+			};
+		} else {
+			throw new IllegalStateException();
+		}
 	}
 
-	private void connectManual() {
-		//manualConfigArea.getText()
+	private UserConfig connectManual() {
+		Ini ini = new Ini();
+		try(StringReader sr = new StringReader(manualConfigArea.getText())) {
+			ini.load(sr);
+		} catch(IOException e) {
+			/* nop */
+		}
+		
+		return new IniUserConfig(ini, localConfig);
+	}
+
+	private NimrodAPIFactory createFactory(UserConfig cfg) throws ReflectiveOperationException {
+		Class<?> clazz = Class.forName(cfg.factory());
+		return (NimrodAPIFactory)clazz.getConstructor().newInstance();
 	}
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
