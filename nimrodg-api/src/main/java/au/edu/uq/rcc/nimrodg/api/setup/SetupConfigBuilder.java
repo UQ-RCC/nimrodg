@@ -26,7 +26,7 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
-public class SetupConfigBuilder {
+public final class SetupConfigBuilder {
 
 	private String workDir;
 	private String storeDir;
