@@ -13,6 +13,7 @@ include 'nimrodg-impl-sqlite3'
 
 include 'nimrodg-shell'
 include 'nimrodg-resources'
+include 'nimrodg-client'
 include 'nimrodg-cli'
 
 include 'nimrodg-master'
