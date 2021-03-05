@@ -25,7 +25,7 @@ import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.Job;
 import au.edu.uq.rcc.nimrodg.api.JobAttempt;
 import au.edu.uq.rcc.nimrodg.api.JobAttempt.Status;
-import au.edu.uq.rcc.nimrodg.api.utils.NimrodUtils;
+import au.edu.uq.rcc.nimrodg.utils.NimrodUtils;
 import au.edu.uq.rcc.nimrodg.master.ConfigListener;
 import au.edu.uq.rcc.nimrodg.master.JobSchedulerFactory;
 import org.slf4j.Logger;

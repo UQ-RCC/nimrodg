@@ -38,9 +38,9 @@ import javax.json.JsonStructure;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.Namespace;
 import au.edu.uq.rcc.nimrodg.api.Resource;
-import au.edu.uq.rcc.nimrodg.api.utils.NimrodUtils;
-import au.edu.uq.rcc.nimrodg.api.utils.NimrodUtils.Arch;
-import au.edu.uq.rcc.nimrodg.api.utils.NimrodUtils.OS;
+import au.edu.uq.rcc.nimrodg.utils.NimrodUtils;
+import au.edu.uq.rcc.nimrodg.utils.NimrodUtils.Arch;
+import au.edu.uq.rcc.nimrodg.utils.NimrodUtils.OS;
 import java.nio.file.Path;
 import java.util.Map;
 

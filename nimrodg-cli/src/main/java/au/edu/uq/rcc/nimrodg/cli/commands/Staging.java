@@ -33,7 +33,7 @@ import au.edu.uq.rcc.nimrodg.cli.CommandEntry;
 import au.edu.uq.rcc.nimrodg.cli.DefaultCLICommand;
 import au.edu.uq.rcc.nimrodg.cli.NimrodCLI;
 import au.edu.uq.rcc.nimrodg.cli.NimrodCLICommand;
-import au.edu.uq.rcc.nimrodg.api.utils.XDGDirs;
+import au.edu.uq.rcc.nimrodg.utils.XDGDirs;
 import au.edu.uq.rcc.nimrodg.parsing.ANTLR4ParseAPIImpl;
 import au.edu.uq.rcc.nimrodg.setup.UserConfig;
 import net.sourceforge.argparse4j.inf.Namespace;
@@ -49,9 +49,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.List;
-import java.util.UUID;
 
 public class Staging extends DefaultCLICommand {
 

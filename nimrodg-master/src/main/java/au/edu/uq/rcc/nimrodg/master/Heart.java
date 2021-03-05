@@ -19,9 +19,7 @@
  */
 package au.edu.uq.rcc.nimrodg.master;
 
-import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
 import au.edu.uq.rcc.nimrodg.api.AgentInfo;
-import au.edu.uq.rcc.nimrodg.api.utils.NimrodUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

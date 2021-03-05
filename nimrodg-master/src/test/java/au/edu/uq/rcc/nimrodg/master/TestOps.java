@@ -1,8 +1,7 @@
 package au.edu.uq.rcc.nimrodg.master;
 
-import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
 import au.edu.uq.rcc.nimrodg.api.AgentInfo;
-import au.edu.uq.rcc.nimrodg.api.utils.NimrodUtils;
+import au.edu.uq.rcc.nimrodg.utils.NimrodUtils;
 
 import java.time.Instant;
 import java.util.*;

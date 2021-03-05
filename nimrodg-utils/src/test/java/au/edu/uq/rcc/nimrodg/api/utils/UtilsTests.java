@@ -19,6 +19,7 @@
  */
 package au.edu.uq.rcc.nimrodg.api.utils;
 
+import au.edu.uq.rcc.nimrodg.utils.NimrodUtils;
 import org.junit.Assert;
 import org.junit.Test;
 

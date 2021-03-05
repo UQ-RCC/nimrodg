@@ -44,7 +44,7 @@ import au.edu.uq.rcc.nimrodg.api.events.ConfigChangeMasterEvent;
 import au.edu.uq.rcc.nimrodg.api.events.JobAddMasterEvent;
 import au.edu.uq.rcc.nimrodg.api.events.NimrodMasterEvent;
 import au.edu.uq.rcc.nimrodg.api.utils.MsgUtils;
-import au.edu.uq.rcc.nimrodg.api.utils.NimrodUtils;
+import au.edu.uq.rcc.nimrodg.utils.NimrodUtils;
 import au.edu.uq.rcc.nimrodg.master.AAAAA.LaunchRequest;
 import au.edu.uq.rcc.nimrodg.master.sched.AgentScheduler;
 import au.edu.uq.rcc.nimrodg.master.sched.JobScheduler;

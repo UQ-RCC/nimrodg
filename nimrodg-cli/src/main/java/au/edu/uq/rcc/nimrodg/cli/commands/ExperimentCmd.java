@@ -1,7 +1,7 @@
 package au.edu.uq.rcc.nimrodg.cli.commands;
 
 import au.edu.uq.rcc.nimrodg.api.*;
-import au.edu.uq.rcc.nimrodg.api.utils.NimrodUtils;
+import au.edu.uq.rcc.nimrodg.utils.NimrodUtils;
 import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledRun;
 import au.edu.uq.rcc.nimrodg.api.utils.run.RunBuilder;
 import au.edu.uq.rcc.nimrodg.api.utils.run.RunfileBuildException;

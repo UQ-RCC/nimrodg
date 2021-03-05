@@ -30,7 +30,7 @@ import au.edu.uq.rcc.nimrodg.api.NimrodException;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.api.Task;
 import au.edu.uq.rcc.nimrodg.api.utils.MsgUtils;
-import au.edu.uq.rcc.nimrodg.api.utils.NimrodUtils;
+import au.edu.uq.rcc.nimrodg.utils.NimrodUtils;
 import au.edu.uq.rcc.nimrodg.master.AgentSchedulerFactory;
 import java.util.ArrayList;
 import java.util.Collection;

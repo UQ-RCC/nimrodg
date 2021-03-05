@@ -21,7 +21,7 @@ package au.edu.uq.rcc.nimrodg.master;
 
 import au.edu.uq.rcc.nimrodg.api.Actuator;
 import au.edu.uq.rcc.nimrodg.api.Actuator.LaunchResult;
-import au.edu.uq.rcc.nimrodg.api.utils.NimrodUtils;
+import au.edu.uq.rcc.nimrodg.utils.NimrodUtils;
 import java.io.IOException;
 import java.util.UUID;
 import java.util.concurrent.CancellationException;
@@ -37,7 +37,6 @@ import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
 /**

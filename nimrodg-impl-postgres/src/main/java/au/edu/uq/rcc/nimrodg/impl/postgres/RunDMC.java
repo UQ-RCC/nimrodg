@@ -30,7 +30,7 @@ import au.edu.uq.rcc.nimrodg.api.ResourceTypeInfo;
 import au.edu.uq.rcc.nimrodg.api.events.ConfigChangeMasterEvent;
 import au.edu.uq.rcc.nimrodg.api.events.JobAddMasterEvent;
 import au.edu.uq.rcc.nimrodg.api.events.NimrodMasterEvent;
-import au.edu.uq.rcc.nimrodg.api.utils.NimrodUtils;
+import au.edu.uq.rcc.nimrodg.utils.NimrodUtils;
 import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledRun;
 import au.edu.uq.rcc.nimrodg.impl.base.db.BrokenDBInvariantException;
 import au.edu.uq.rcc.nimrodg.impl.base.db.DBUtils;

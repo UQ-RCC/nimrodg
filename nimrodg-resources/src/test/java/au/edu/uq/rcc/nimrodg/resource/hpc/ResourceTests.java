@@ -19,7 +19,6 @@
  */
 package au.edu.uq.rcc.nimrodg.resource.hpc;
 
-import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
 import au.edu.uq.rcc.nimrodg.api.Actuator;
 import au.edu.uq.rcc.nimrodg.api.AgentDefinition;
 import au.edu.uq.rcc.nimrodg.api.AgentInfo;
@@ -29,7 +28,7 @@ import au.edu.uq.rcc.nimrodg.api.NimrodConfig;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.api.Resource;
 import au.edu.uq.rcc.nimrodg.api.ResourceType;
-import au.edu.uq.rcc.nimrodg.api.utils.NimrodUtils;
+import au.edu.uq.rcc.nimrodg.utils.NimrodUtils;
 import au.edu.uq.rcc.nimrodg.api.utils.StringUtils;
 import au.edu.uq.rcc.nimrodg.resource.SSHResourceType;
 import au.edu.uq.rcc.nimrodg.resource.TestShell;

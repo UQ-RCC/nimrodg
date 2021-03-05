@@ -19,7 +19,6 @@
  */
 package au.edu.uq.rcc.nimrodg.resource.hpc;
 
-import au.edu.uq.rcc.nimrodg.agent.Agent;
 import au.edu.uq.rcc.nimrodg.agent.AgentState;
 import au.edu.uq.rcc.nimrodg.api.Actuator;
 import au.edu.uq.rcc.nimrodg.api.AgentInfo;
@@ -41,7 +40,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import au.edu.uq.rcc.nimrodg.api.Resource;
-import au.edu.uq.rcc.nimrodg.api.utils.NimrodUtils;
+import au.edu.uq.rcc.nimrodg.utils.NimrodUtils;
 import au.edu.uq.rcc.nimrodg.resource.act.POSIXActuator;
 import au.edu.uq.rcc.nimrodg.shell.RemoteShell;
 import au.edu.uq.rcc.nimrodg.shell.ShellUtils;
