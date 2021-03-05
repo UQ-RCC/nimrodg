@@ -50,16 +50,10 @@ public abstract class DefaultCLICommand implements CLICommand {
 	public abstract int execute(Namespace args, UserConfig cfg, PrintStream out, PrintStream err, Path[] configDirs) throws Exception;
 
 	public static IniUserConfig loadConfigFile(Path configFile) throws IOException {
-		/* Load the configuration */
-		if(!Files.exists(configFile)) {
-			throw new IOException(String.format("Configuration file %s doesn't exist", configFile));
-		}
-
 		Ini ini = new Ini();
 		try(InputStream is = Files.newInputStream(configFile)) {
 			ini.load(is);
 		}
-
 		return new IniUserConfig(ini, configFile);
 	}
 
