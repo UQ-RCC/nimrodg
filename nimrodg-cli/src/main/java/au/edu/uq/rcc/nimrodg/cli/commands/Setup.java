@@ -28,7 +28,7 @@ import au.edu.uq.rcc.nimrodg.api.setup.TransferConfigBuilder;
 import au.edu.uq.rcc.nimrodg.api.setup.UserConfig;
 import au.edu.uq.rcc.nimrodg.cli.CommandEntry;
 import au.edu.uq.rcc.nimrodg.cli.DefaultCLICommand;
-import au.edu.uq.rcc.nimrodg.cli.IniSetupConfig;
+import au.edu.uq.rcc.nimrodg.utils.IniSetupConfig;
 import au.edu.uq.rcc.nimrodg.cli.NimrodCLI;
 import au.edu.uq.rcc.nimrodg.cli.NimrodCLICommand;
 import java.io.IOException;

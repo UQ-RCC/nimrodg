@@ -17,7 +17,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package au.edu.uq.rcc.nimrodg.cli;
+package au.edu.uq.rcc.nimrodg.utils;
 
 import au.edu.uq.rcc.nimrodg.api.setup.UserConfig;
 import java.nio.file.Path;

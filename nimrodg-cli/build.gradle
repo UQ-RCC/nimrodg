@@ -6,7 +6,6 @@ dependencies {
 	implementation group: 'net.sourceforge.argparse4j', name: 'argparse4j', version: '0.7.0'
 
 	implementation group: 'org.apache.commons', name: 'commons-csv', version: '1.5'
-	implementation group: 'org.ini4j', name: 'ini4j', version: '0.5.4'
 
 	implementation group: 'com.github.inamik.text.tables', name: 'inamik-text-tables', version: '0.8'
 
