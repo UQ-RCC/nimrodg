@@ -24,11 +24,11 @@ import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.impl.base.db.DBUtils;
 import au.edu.uq.rcc.nimrodg.impl.base.db.SQLUUUUU;
 import au.edu.uq.rcc.nimrodg.impl.base.db.TempConfig;
-import au.edu.uq.rcc.nimrodg.setup.AMQPConfig;
-import au.edu.uq.rcc.nimrodg.setup.NimrodSetupAPI;
-import au.edu.uq.rcc.nimrodg.setup.NimrodSetupAPI.SetupException;
-import au.edu.uq.rcc.nimrodg.setup.SetupConfig;
-import au.edu.uq.rcc.nimrodg.setup.TransferConfig;
+import au.edu.uq.rcc.nimrodg.api.setup.AMQPConfig;
+import au.edu.uq.rcc.nimrodg.api.setup.NimrodSetupAPI;
+import au.edu.uq.rcc.nimrodg.api.setup.NimrodSetupAPI.SetupException;
+import au.edu.uq.rcc.nimrodg.api.setup.SetupConfig;
+import au.edu.uq.rcc.nimrodg.api.setup.TransferConfig;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

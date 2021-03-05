@@ -22,7 +22,7 @@ package au.edu.uq.rcc.nimrodg.cli;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodException;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPIFactory;
-import au.edu.uq.rcc.nimrodg.setup.UserConfig;
+import au.edu.uq.rcc.nimrodg.api.setup.UserConfig;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Path;

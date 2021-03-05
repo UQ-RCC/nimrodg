@@ -19,7 +19,7 @@
  */
 package au.edu.uq.rcc.nimrodg.cli;
 
-import au.edu.uq.rcc.nimrodg.setup.UserConfig;
+import au.edu.uq.rcc.nimrodg.api.setup.UserConfig;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;

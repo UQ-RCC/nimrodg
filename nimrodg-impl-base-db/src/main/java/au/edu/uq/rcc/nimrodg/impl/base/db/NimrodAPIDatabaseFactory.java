@@ -22,7 +22,7 @@ package au.edu.uq.rcc.nimrodg.impl.base.db;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPIFactory;
 import au.edu.uq.rcc.nimrodg.api.NimrodException;
-import au.edu.uq.rcc.nimrodg.setup.NimrodSetupAPI;
+import au.edu.uq.rcc.nimrodg.api.setup.NimrodSetupAPI;
 
 import java.sql.Connection;
 import java.sql.SQLException;

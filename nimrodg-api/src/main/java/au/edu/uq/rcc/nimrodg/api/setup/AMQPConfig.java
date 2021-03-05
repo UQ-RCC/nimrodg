@@ -1,4 +1,4 @@
-package au.edu.uq.rcc.nimrodg.setup;
+package au.edu.uq.rcc.nimrodg.api.setup;
 
 import java.net.URI;
 

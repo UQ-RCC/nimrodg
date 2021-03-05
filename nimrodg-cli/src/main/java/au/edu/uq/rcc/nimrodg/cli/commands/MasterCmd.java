@@ -36,7 +36,7 @@ import au.edu.uq.rcc.nimrodg.master.sched.DefaultAgentScheduler;
 import au.edu.uq.rcc.nimrodg.master.sched.DefaultJobScheduler;
 import au.edu.uq.rcc.nimrodg.master.sig.SigUtils;
 import au.edu.uq.rcc.nimrodg.resource.act.ActuatorUtils;
-import au.edu.uq.rcc.nimrodg.setup.UserConfig;
+import au.edu.uq.rcc.nimrodg.api.setup.UserConfig;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
 import org.apache.log4j.LogManager;

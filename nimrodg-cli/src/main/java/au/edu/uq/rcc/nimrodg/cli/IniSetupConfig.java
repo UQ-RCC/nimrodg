@@ -19,9 +19,9 @@
  */
 package au.edu.uq.rcc.nimrodg.cli;
 
-import au.edu.uq.rcc.nimrodg.setup.AMQPConfigBuilder;
-import au.edu.uq.rcc.nimrodg.setup.SetupConfigBuilder;
-import au.edu.uq.rcc.nimrodg.setup.TransferConfigBuilder;
+import au.edu.uq.rcc.nimrodg.api.setup.AMQPConfigBuilder;
+import au.edu.uq.rcc.nimrodg.api.setup.SetupConfigBuilder;
+import au.edu.uq.rcc.nimrodg.api.setup.TransferConfigBuilder;
 import org.ini4j.Ini;
 import org.ini4j.Profile.Section;
 

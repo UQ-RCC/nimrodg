@@ -20,8 +20,8 @@
 package au.edu.uq.rcc.nimrodg.impl.sqlite3;
 
 import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
-import au.edu.uq.rcc.nimrodg.setup.NimrodSetupAPI;
-import au.edu.uq.rcc.nimrodg.setup.UserConfig;
+import au.edu.uq.rcc.nimrodg.api.setup.NimrodSetupAPI;
+import au.edu.uq.rcc.nimrodg.api.setup.UserConfig;
 import au.edu.uq.rcc.nimrodg.test.APITests;
 import org.junit.After;
 import org.junit.Assert;
@@ -30,7 +30,6 @@ import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Map;
 
 public class SQLite3Tests extends APITests {

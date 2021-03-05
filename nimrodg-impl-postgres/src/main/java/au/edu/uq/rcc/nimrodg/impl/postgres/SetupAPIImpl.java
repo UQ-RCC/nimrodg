@@ -19,8 +19,8 @@
  */
 package au.edu.uq.rcc.nimrodg.impl.postgres;
 
-import au.edu.uq.rcc.nimrodg.setup.NimrodSetupAPI;
-import au.edu.uq.rcc.nimrodg.setup.SetupConfig;
+import au.edu.uq.rcc.nimrodg.api.setup.NimrodSetupAPI;
+import au.edu.uq.rcc.nimrodg.api.setup.SetupConfig;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

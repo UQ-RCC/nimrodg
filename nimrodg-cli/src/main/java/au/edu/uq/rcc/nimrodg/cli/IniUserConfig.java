@@ -19,7 +19,7 @@
  */
 package au.edu.uq.rcc.nimrodg.cli;
 
-import au.edu.uq.rcc.nimrodg.setup.UserConfig;
+import au.edu.uq.rcc.nimrodg.api.setup.UserConfig;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Map;

@@ -20,12 +20,12 @@
 package au.edu.uq.rcc.nimrodg.cli.commands;
 
 import au.edu.uq.rcc.nimrodg.api.NimrodAPIFactory;
-import au.edu.uq.rcc.nimrodg.setup.AMQPConfigBuilder;
-import au.edu.uq.rcc.nimrodg.setup.NimrodSetupAPI;
-import au.edu.uq.rcc.nimrodg.setup.SetupConfig;
-import au.edu.uq.rcc.nimrodg.setup.SetupConfigBuilder;
-import au.edu.uq.rcc.nimrodg.setup.TransferConfigBuilder;
-import au.edu.uq.rcc.nimrodg.setup.UserConfig;
+import au.edu.uq.rcc.nimrodg.api.setup.AMQPConfigBuilder;
+import au.edu.uq.rcc.nimrodg.api.setup.NimrodSetupAPI;
+import au.edu.uq.rcc.nimrodg.api.setup.SetupConfig;
+import au.edu.uq.rcc.nimrodg.api.setup.SetupConfigBuilder;
+import au.edu.uq.rcc.nimrodg.api.setup.TransferConfigBuilder;
+import au.edu.uq.rcc.nimrodg.api.setup.UserConfig;
 import au.edu.uq.rcc.nimrodg.cli.CommandEntry;
 import au.edu.uq.rcc.nimrodg.cli.DefaultCLICommand;
 import au.edu.uq.rcc.nimrodg.cli.IniSetupConfig;

@@ -19,7 +19,6 @@
  */
 package au.edu.uq.rcc.nimrodg.test;
 
-import au.edu.uq.rcc.nimrodg.agent.Agent;
 import au.edu.uq.rcc.nimrodg.agent.AgentState;
 import au.edu.uq.rcc.nimrodg.agent.DefaultAgentState;
 import au.edu.uq.rcc.nimrodg.agent.ReferenceAgent;
@@ -30,7 +29,6 @@ import au.edu.uq.rcc.nimrodg.api.ActuatorOpsAdapter;
 import au.edu.uq.rcc.nimrodg.api.AgentDefinition;
 import au.edu.uq.rcc.nimrodg.api.AgentInfo;
 import au.edu.uq.rcc.nimrodg.api.AgentProvider;
-import au.edu.uq.rcc.nimrodg.api.Command;
 import au.edu.uq.rcc.nimrodg.api.CommandResult;
 import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.Job;
@@ -50,10 +48,10 @@ import au.edu.uq.rcc.nimrodg.api.events.NimrodMasterEvent;
 import au.edu.uq.rcc.nimrodg.api.utils.MsgUtils;
 import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledRun;
 import au.edu.uq.rcc.nimrodg.api.utils.run.RunfileBuildException;
-import au.edu.uq.rcc.nimrodg.setup.AMQPConfigBuilder;
-import au.edu.uq.rcc.nimrodg.setup.SetupConfig;
-import au.edu.uq.rcc.nimrodg.setup.SetupConfigBuilder;
-import au.edu.uq.rcc.nimrodg.setup.TransferConfigBuilder;
+import au.edu.uq.rcc.nimrodg.api.setup.AMQPConfigBuilder;
+import au.edu.uq.rcc.nimrodg.api.setup.SetupConfig;
+import au.edu.uq.rcc.nimrodg.api.setup.SetupConfigBuilder;
+import au.edu.uq.rcc.nimrodg.api.setup.TransferConfigBuilder;
 import org.junit.Assert;
 import org.junit.Test;
 
