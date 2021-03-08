@@ -19,6 +19,7 @@
  */
 package au.edu.uq.rcc.nimrodg.cli;
 
+import au.edu.uq.rcc.nimrodg.cli.commands.JobCmd;
 import au.edu.uq.rcc.nimrodg.utils.AppDirs;
 import au.edu.uq.rcc.nimrodg.cli.commands.AddExp;
 import au.edu.uq.rcc.nimrodg.cli.commands.AddJobs;
@@ -59,6 +60,7 @@ public class NimrodCLI {
 		ExperimentCmd.DEFINITION,
 		MasterCmd.DEFINITION,
 		ResourceCmd.DEFINITION,
+		JobCmd.DEFINITION,
 		Setup.DEFINITION,
 		Compile.DEFINITION,
 		GenConfig.DEFINITION,
