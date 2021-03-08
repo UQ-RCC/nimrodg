@@ -19,6 +19,7 @@
  */
 package au.edu.uq.rcc.nimrodg.cli;
 
+import net.sourceforge.argparse4j.inf.Argument;
 import net.sourceforge.argparse4j.inf.Subparser;
 
 public class CommandEntry {
@@ -41,8 +42,8 @@ public class CommandEntry {
 
 	}
 
-	protected final void addExpNameArg(Subparser parser) {
-		parser.addArgument("exp_name")
+	protected final Argument addExpNameArg(Subparser parser) {
+		return parser.addArgument("exp_name")
 				.type(String.class)
 				.help("The name of the experiment.");
 	}
