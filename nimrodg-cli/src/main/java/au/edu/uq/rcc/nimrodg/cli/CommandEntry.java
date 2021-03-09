@@ -48,6 +48,22 @@ public class CommandEntry {
 				.help("The name of the experiment.");
 	}
 
+	protected static Argument addResNameMultipleArg(Subparser sp) {
+		return sp.addArgument("resource_name")
+				.type(String.class)
+				.help("The name of the resource")
+				.nargs("+")
+				.required(true);
+	}
+
+	protected static Argument addResNameArg(Subparser sp) {
+		return sp.addArgument("resource_name")
+				.type(String.class)
+				.help("The name of the resource")
+				.required(true);
+	}
+
+
 	protected final void addPrefixedUriArg(Subparser parser, String prefix, String name, boolean required) {
 		parser.addArgument(String.format("--%s-uri", prefix))
 				.dest(String.format("%s_uri", prefix))

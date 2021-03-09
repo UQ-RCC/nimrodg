@@ -251,21 +251,6 @@ public class ResourceCmd extends NimrodCLICommand {
 		return 0;
 	}
 
-	private static void addNameArgument(Subparser sp) {
-		sp.addArgument("resource_name")
-				.type(String.class)
-				.help("The name of the resource")
-				.required(true);
-	}
-
-	private static void addNameArgumentMultiple(Subparser sp) {
-		sp.addArgument("resource_name")
-				.type(String.class)
-				.help("The name of the resource")
-				.nargs("+")
-				.required(true);
-	}
-
 	public static void main(String[] args) throws Exception {
 		System.exit(NimrodCLI.cliMain(new String[]{"resource", "add-root", "local", "local"}));
 	}
@@ -282,7 +267,7 @@ public class ResourceCmd extends NimrodCLICommand {
 						.help("Add a resource.")
 						.description("Add a resource.");
 
-				addNameArgument(sp);
+				addResNameArg(sp);
 
 				sp.addArgument("type")
 						.type(String.class)
@@ -301,7 +286,7 @@ public class ResourceCmd extends NimrodCLICommand {
 						.help("Remove resources.")
 						.description("Remove one or more resources.");
 
-				addNameArgumentMultiple(sp);
+				addResNameMultipleArg(sp);
 			}
 
 			{
@@ -321,7 +306,7 @@ public class ResourceCmd extends NimrodCLICommand {
 						.help("Query resource information.")
 						.description("Query resource information.");
 
-				addNameArgument(sp);
+				addResNameArg(sp);
 			}
 
 			{
@@ -329,7 +314,7 @@ public class ResourceCmd extends NimrodCLICommand {
 						.help("Assign resource(s) to an experiment.")
 						.description("Assign resource(s) to an experiment.");
 
-				addNameArgumentMultiple(sp);
+				addResNameMultipleArg(sp);
 				addExpNameArg(sp);
 
 				addPrefixedUriArg(sp, "tx", "Transfer", false);
@@ -340,7 +325,7 @@ public class ResourceCmd extends NimrodCLICommand {
 						.help("Unassign a resource from an experiment.")
 						.description("Unassign a resource from an experiment.");
 
-				addNameArgumentMultiple(sp);
+				addResNameMultipleArg(sp);
 				addExpNameArg(sp);
 			}
 
