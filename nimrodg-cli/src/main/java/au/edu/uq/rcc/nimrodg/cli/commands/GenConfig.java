@@ -36,6 +36,10 @@ import net.sourceforge.argparse4j.inf.Subparser;
 
 public final class GenConfig implements CLICommand {
 
+	private GenConfig() {
+
+	}
+
 	@Override
 	public String getCommand() {
 		return "genconfig";

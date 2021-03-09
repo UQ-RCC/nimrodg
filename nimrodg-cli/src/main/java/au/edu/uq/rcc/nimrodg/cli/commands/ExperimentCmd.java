@@ -31,6 +31,10 @@ public final class ExperimentCmd extends NimrodCLICommand {
             "list", ExperimentCmd::executeList
     );
 
+    private ExperimentCmd() {
+
+    }
+
     @Override
     public String getCommand() {
         return "experiment";

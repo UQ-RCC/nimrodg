@@ -56,6 +56,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public final class MasterCmd extends NimrodCLICommand {
 
+	private MasterCmd() {
+
+	}
+
 	@Override
 	public String getCommand() {
 		return "master";

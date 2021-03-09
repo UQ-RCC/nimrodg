@@ -39,6 +39,10 @@ import net.sourceforge.argparse4j.inf.Subparser;
 
 public final class Compile implements CLICommand {
 
+	private Compile() {
+
+	}
+
 	@Override
 	public String getCommand() {
 		return "compile";

@@ -59,6 +59,10 @@ import org.ini4j.Ini;
  */
 public final class Setup extends DefaultCLICommand {
 
+	private Setup() {
+
+	}
+
 	@Override
 	public String getCommand() {
 		return "setup";

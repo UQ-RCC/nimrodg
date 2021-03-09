@@ -40,6 +40,10 @@ public final class JobCmd extends NimrodCLICommand {
 			"add", JobCmd::executeAdd
 	);
 
+	private JobCmd() {
+
+	}
+
 	@Override
 	public String getCommand() {
 		return "job";

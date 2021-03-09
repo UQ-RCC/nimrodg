@@ -23,6 +23,10 @@ public final class PropertyCmd extends NimrodCLICommand {
 			"delete", PropertyCmd::executeDelete
 	);
 
+	private PropertyCmd() {
+
+	}
+
 	@Override
 	public String getCommand() {
 		return "property";

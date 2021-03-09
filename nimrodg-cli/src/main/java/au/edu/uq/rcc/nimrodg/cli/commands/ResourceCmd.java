@@ -57,6 +57,10 @@ public final class ResourceCmd extends NimrodCLICommand {
 			"unassign", ResourceCmd::executeUnassign
 	);
 
+	private ResourceCmd() {
+
+	}
+
 	@Override
 	public String getCommand() {
 		return "resource";

@@ -55,6 +55,10 @@ public final class Staging extends DefaultCLICommand {
 
 	public static final NimrodParseAPI PARSE_API = ANTLR4ParseAPIImpl.INSTANCE;
 
+	private Staging() {
+
+	}
+
 	@Override
 	public String getCommand() {
 		return "staging";
