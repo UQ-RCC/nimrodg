@@ -33,7 +33,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class JobCmd extends NimrodCLICommand {
+public final class JobCmd extends NimrodCLICommand {
 
 	private static final Map<String, Subcommand> COMMAND_MAP = Map.of(
 			"list", JobCmd::executeList,

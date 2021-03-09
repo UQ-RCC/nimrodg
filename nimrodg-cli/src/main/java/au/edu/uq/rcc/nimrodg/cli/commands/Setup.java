@@ -57,7 +57,7 @@ import org.ini4j.Ini;
 /**
  * Nimrod/G Setup commands. These aren't given an API instance, they can create it themselves if they need it.
  */
-public class Setup extends DefaultCLICommand {
+public final class Setup extends DefaultCLICommand {
 
 	@Override
 	public String getCommand() {

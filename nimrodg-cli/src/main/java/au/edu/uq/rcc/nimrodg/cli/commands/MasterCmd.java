@@ -54,7 +54,7 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class MasterCmd extends NimrodCLICommand {
+public final class MasterCmd extends NimrodCLICommand {
 
 	@Override
 	public String getCommand() {

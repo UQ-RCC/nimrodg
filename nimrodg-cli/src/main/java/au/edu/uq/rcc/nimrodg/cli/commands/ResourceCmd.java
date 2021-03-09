@@ -46,7 +46,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 
-public class ResourceCmd extends NimrodCLICommand {
+public final class ResourceCmd extends NimrodCLICommand {
 
 	private static final Map<String, Subcommand> COMMAND_MAP = Map.of(
 			"add", ResourceCmd::executeAdd,

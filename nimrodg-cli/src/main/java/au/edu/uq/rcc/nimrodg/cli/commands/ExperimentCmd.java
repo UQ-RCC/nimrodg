@@ -23,7 +23,7 @@ import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Map;
 
-public class ExperimentCmd extends NimrodCLICommand {
+public final class ExperimentCmd extends NimrodCLICommand {
     private static final Map<String, Subcommand> COMMAND_MAP = Map.of(
             "add", ExperimentCmd::executeAdd,
             "delete", ExperimentCmd::executeDelete,

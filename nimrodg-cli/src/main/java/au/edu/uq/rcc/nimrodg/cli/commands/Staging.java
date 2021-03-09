@@ -51,7 +51,7 @@ import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
 
-public class Staging extends DefaultCLICommand {
+public final class Staging extends DefaultCLICommand {
 
 	public static final NimrodParseAPI PARSE_API = ANTLR4ParseAPIImpl.INSTANCE;
 

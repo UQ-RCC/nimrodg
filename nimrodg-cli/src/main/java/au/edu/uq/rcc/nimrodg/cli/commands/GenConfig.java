@@ -34,7 +34,7 @@ import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
 
-public class GenConfig implements CLICommand {
+public final class GenConfig implements CLICommand {
 
 	@Override
 	public String getCommand() {
