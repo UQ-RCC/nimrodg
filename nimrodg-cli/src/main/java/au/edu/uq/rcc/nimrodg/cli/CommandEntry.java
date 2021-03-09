@@ -42,7 +42,7 @@ public class CommandEntry {
 
 	}
 
-	protected final Argument addExpNameArg(Subparser parser) {
+	protected static Argument addExpNameArg(Subparser parser) {
 		return parser.addArgument("exp_name")
 				.type(String.class)
 				.help("The name of the experiment.");
