@@ -20,6 +20,7 @@
 package au.edu.uq.rcc.nimrodg.cli;
 
 import au.edu.uq.rcc.nimrodg.cli.commands.JobCmd;
+import au.edu.uq.rcc.nimrodg.cli.commands.PropertyCmd;
 import au.edu.uq.rcc.nimrodg.utils.AppDirs;
 import au.edu.uq.rcc.nimrodg.cli.commands.AddExp;
 import au.edu.uq.rcc.nimrodg.cli.commands.AddJobs;
@@ -54,6 +55,7 @@ public class NimrodCLI {
 	private static final CommandEntry[] CLI_COMMANDS = new CommandEntry[]{
 		SetProp.DEFINITION,
 		GetProp.DEFINITION,
+		PropertyCmd.DEFINITION,
 		AddExp.DEFINITION,
 		DelExp.DEFINITION,
 		AddJobs.DEFINITION,
