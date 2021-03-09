@@ -20,6 +20,7 @@
 package au.edu.uq.rcc.nimrodg.portal;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.security.oauth2.resource.IssuerUriCondition;
 import org.springframework.boot.autoconfigure.security.oauth2.resource.OAuth2ResourceServerProperties;
@@ -71,6 +72,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter  {
 
 		http.authorizeRequests()
 				.antMatchers("/api/compile").permitAll()
+				.requestMatchers(EndpointRequest.toAnyEndpoint()).permitAll()
 				.anyRequest().hasAuthority("USER")
 				.and()
 				.oauth2ResourceServer()
