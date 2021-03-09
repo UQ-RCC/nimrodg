@@ -49,16 +49,16 @@ public class NimrodCLI {
 
 	//private static final Logger LOGGER = LogManager.getLogger(NimrodCLI.class);
 	private static final CommandEntry[] CLI_COMMANDS = new CommandEntry[]{
-		PropertyCmd.DEFINITION,
-		ExperimentCmd.DEFINITION,
-		MasterCmd.DEFINITION,
-		ResourceCmd.DEFINITION,
-		JobCmd.DEFINITION,
-		Setup.DEFINITION,
-		Compile.DEFINITION,
-		GenConfig.DEFINITION,
-		AgentCmd.DEFINITION,
-		Staging.DEFINITION
+			PropertyCmd.DEFINITION,
+			ExperimentCmd.DEFINITION,
+			MasterCmd.DEFINITION,
+			ResourceCmd.DEFINITION,
+			JobCmd.DEFINITION,
+			Setup.DEFINITION,
+			Compile.DEFINITION,
+			GenConfig.DEFINITION,
+			AgentCmd.DEFINITION,
+			Staging.DEFINITION
 	};
 
 	private static ArgumentParser buildParser(Map<String, CLICommand> commands, Path defaultConfig) {
