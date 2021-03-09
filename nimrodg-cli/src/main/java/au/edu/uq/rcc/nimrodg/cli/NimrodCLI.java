@@ -22,16 +22,11 @@ package au.edu.uq.rcc.nimrodg.cli;
 import au.edu.uq.rcc.nimrodg.cli.commands.JobCmd;
 import au.edu.uq.rcc.nimrodg.cli.commands.PropertyCmd;
 import au.edu.uq.rcc.nimrodg.utils.AppDirs;
-import au.edu.uq.rcc.nimrodg.cli.commands.AddExp;
-import au.edu.uq.rcc.nimrodg.cli.commands.AddJobs;
 import au.edu.uq.rcc.nimrodg.cli.commands.Compile;
-import au.edu.uq.rcc.nimrodg.cli.commands.DelExp;
 import au.edu.uq.rcc.nimrodg.cli.commands.ExperimentCmd;
 import au.edu.uq.rcc.nimrodg.cli.commands.GenConfig;
-import au.edu.uq.rcc.nimrodg.cli.commands.GetProp;
 import au.edu.uq.rcc.nimrodg.cli.commands.MasterCmd;
 import au.edu.uq.rcc.nimrodg.cli.commands.ResourceCmd;
-import au.edu.uq.rcc.nimrodg.cli.commands.SetProp;
 import au.edu.uq.rcc.nimrodg.cli.commands.Setup;
 import au.edu.uq.rcc.nimrodg.cli.commands.Staging;
 
@@ -53,12 +48,7 @@ public class NimrodCLI {
 
 	//private static final Logger LOGGER = LogManager.getLogger(NimrodCLI.class);
 	private static final CommandEntry[] CLI_COMMANDS = new CommandEntry[]{
-		SetProp.DEFINITION,
-		GetProp.DEFINITION,
 		PropertyCmd.DEFINITION,
-		AddExp.DEFINITION,
-		DelExp.DEFINITION,
-		AddJobs.DEFINITION,
 		ExperimentCmd.DEFINITION,
 		MasterCmd.DEFINITION,
 		ResourceCmd.DEFINITION,
