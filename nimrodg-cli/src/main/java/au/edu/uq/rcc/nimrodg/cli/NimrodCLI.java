@@ -19,6 +19,7 @@
  */
 package au.edu.uq.rcc.nimrodg.cli;
 
+import au.edu.uq.rcc.nimrodg.cli.commands.AgentCmd;
 import au.edu.uq.rcc.nimrodg.cli.commands.JobCmd;
 import au.edu.uq.rcc.nimrodg.cli.commands.PropertyCmd;
 import au.edu.uq.rcc.nimrodg.utils.AppDirs;
@@ -56,6 +57,7 @@ public class NimrodCLI {
 		Setup.DEFINITION,
 		Compile.DEFINITION,
 		GenConfig.DEFINITION,
+		AgentCmd.DEFINITION,
 		Staging.DEFINITION
 	};
 
