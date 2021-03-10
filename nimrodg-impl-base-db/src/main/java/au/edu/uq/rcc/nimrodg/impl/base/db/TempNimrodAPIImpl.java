@@ -158,6 +158,7 @@ public abstract class TempNimrodAPIImpl implements NimrodAPI, NimrodMasterAPI {
 		return db.runSQLTransaction(() -> {
 			/* Multiple DB hits, but this isn't really a problem right now. */
 			ResourceType rt = db.getResourceTypeInfo(type)
+					.map(DBUtils::createTypeInfo)
 					.map(this::createResourceType)
 					.orElseThrow(() -> new NimrodException.InvalidResourceType(type));
 
@@ -206,10 +207,11 @@ public abstract class TempNimrodAPIImpl implements NimrodAPI, NimrodMasterAPI {
 
 	@Override
 	public Collection<ResourceType> getResourceTypeInfo() {
-		Collection<Map.Entry<String, String>> types = db.runSQL(() -> db.getResourceTypeInfo());
+		List<ResourceTypeInfo> types = db.runSQL(() -> db.getResourceTypeInfo()).stream()
+				.map(DBUtils::createTypeInfo).collect(Collectors.toList());
 
 		List<ResourceType> tl = new ArrayList<>();
-		for(Map.Entry<String, String> e : types) {
+		for(ResourceTypeInfo e : types) {
 			tl.add(createResourceType(e));
 		}
 		return tl;
@@ -217,16 +219,16 @@ public abstract class TempNimrodAPIImpl implements NimrodAPI, NimrodMasterAPI {
 
 	@Override
 	public ResourceType getResourceTypeInfo(String name) {
-		return createResourceType(db.runSQL(() -> db.getResourceTypeInfo(name).orElse(null)));
+		return createResourceType(db.runSQL(() -> db.getResourceTypeInfo(name).map(DBUtils::createTypeInfo).orElse(null)));
 	}
 
-	private ResourceType createResourceType(Map.Entry<String, String> t) {
+	private ResourceType createResourceType(ResourceTypeInfo t) {
 		if(t == null) {
 			return null;
 		}
 
 		try {
-			return DBUtils.createType(t.getValue());
+			return DBUtils.createType(t);
 		} catch(ReflectiveOperationException ex) {
 			throw new NimrodException(ex);
 		}

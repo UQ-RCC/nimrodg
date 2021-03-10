@@ -327,14 +327,13 @@ public class RunDMC extends SQLUUUUU<NimrodException.DbError> implements NimrodD
 
 	//------------START OF RESOURCE TREE-------------
 	@Override
-	public synchronized Collection<Map.Entry<String, String>> getResourceTypeInfo() throws SQLException {
-		Collection<TempResourceType> t = resourceHelpers.getResourceTypeInfo();
-		return t.stream().map(tt -> new AbstractMap.SimpleImmutableEntry<>(tt.name, tt.clazz)).collect(Collectors.toList());
+	public synchronized Collection<TempResourceType> getResourceTypeInfo() throws SQLException {
+		return resourceHelpers.getResourceTypeInfo();
 	}
 
 	@Override
-	public synchronized Optional<Map.Entry<String, String>> getResourceTypeInfo(String name) throws SQLException {
-		return resourceHelpers.getResourceTypeInfo(name).map(t -> new AbstractMap.SimpleImmutableEntry<>(t.name, t.clazz));
+	public synchronized Optional<TempResourceType> getResourceTypeInfo(String name) throws SQLException {
+		return resourceHelpers.getResourceTypeInfo(name);
 	}
 
 	@Override

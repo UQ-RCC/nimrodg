@@ -22,6 +22,7 @@ package au.edu.uq.rcc.nimrodg.impl.base.db;
 import au.edu.uq.rcc.nimrodg.api.MasterResourceType;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.api.ResourceType;
+import au.edu.uq.rcc.nimrodg.api.ResourceTypeInfo;
 import au.edu.uq.rcc.nimrodg.utils.NimrodUtils;
 import java.io.StringReader;
 import java.net.URI;
@@ -196,6 +197,14 @@ public class DBUtils {
 		return ((JsonString)v).getString();
 	}
 
+	public static MasterResourceType createType(ResourceTypeInfo ti) throws ReflectiveOperationException {
+		if(ti.clazz != null) {
+			return createType(ti.clazz);
+		}
+
+		return createType(ti.className);
+	}
+
 	public static MasterResourceType createType(String className) throws ReflectiveOperationException {
 		return createType(Class.forName(className));
 	}
@@ -208,5 +217,17 @@ public class DBUtils {
 		}
 
 		return (MasterResourceType)clazz.getConstructor().newInstance();
+	}
+
+	public static ResourceTypeInfo createTypeInfo(TempResourceType trt) {
+		Class<?> clazz;
+
+		try {
+			clazz = Class.forName(trt.clazz);
+		} catch(ClassNotFoundException e) {
+			clazz = null;
+		}
+
+		return new ResourceTypeInfo(trt.name, trt.clazz, clazz);
 	}
 }

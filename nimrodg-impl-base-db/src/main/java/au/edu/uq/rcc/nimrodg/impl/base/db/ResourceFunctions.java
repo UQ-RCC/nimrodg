@@ -41,9 +41,9 @@ import java.util.Optional;
  */
 public interface ResourceFunctions<T extends Resource, E extends Experiment, A extends AgentState, X extends Exception> {
 
-	Collection<Map.Entry<String, String>> getResourceTypeInfo() throws X;
+	Collection<TempResourceType> getResourceTypeInfo() throws X;
 
-	Optional<Map.Entry<String, String>> getResourceTypeInfo(String name) throws X;
+	Optional<TempResourceType> getResourceTypeInfo(String name) throws X;
 
 	Optional<T> getResource(String path) throws X;
 
