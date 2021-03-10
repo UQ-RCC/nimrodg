@@ -21,11 +21,14 @@ package au.edu.uq.rcc.nimrodg.impl.base.db;
 
 import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.NimrodException;
+
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.UUID;
 import javax.json.JsonStructure;
 import au.edu.uq.rcc.nimrodg.agent.AgentState;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
+import au.edu.uq.rcc.nimrodg.api.ResourceType;
 import au.edu.uq.rcc.nimrodg.api.ResourceTypeInfo;
 import java.util.Map;
 import au.edu.uq.rcc.nimrodg.api.Resource;
@@ -44,6 +47,10 @@ public interface ResourceFunctions<T extends Resource, E extends Experiment, A e
 	Collection<TempResourceType> getResourceTypeInfo() throws X;
 
 	Optional<TempResourceType> getResourceTypeInfo(String name) throws X;
+
+	TempResourceType addResourceTypeInfo(String name, String clazz) throws X;
+
+	boolean deleteResourceTypeInfo(String name) throws X;
 
 	Optional<T> getResource(String path) throws X;
 
@@ -81,4 +88,12 @@ public interface ResourceFunctions<T extends Resource, E extends Experiment, A e
 	AgentState addAgent(T node, AgentState agent) throws X;
 
 	void updateAgent(AgentState agent) throws X;
+
+	boolean addAgentPlatform(String platformString, Path path) throws X;
+
+	boolean deleteAgentPlatform(String platformString) throws X;
+
+	boolean mapAgentPosixPlatform(String platformString, String system, String machine) throws X;
+
+	boolean unmapAgentPosixPlatform(String system, String machine) throws X;
 }

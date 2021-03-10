@@ -30,6 +30,7 @@ import au.edu.uq.rcc.nimrodg.impl.base.db.TempAgent;
 import au.edu.uq.rcc.nimrodg.impl.base.db.TempResource;
 import au.edu.uq.rcc.nimrodg.impl.base.db.TempResourceType;
 
+import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -68,6 +69,13 @@ public class DBResourceHelpers extends DBBaseHelper {
 	private final PreparedStatement qAddAgent;
 	private final PreparedStatement qUpdateAgent;
 
+	private final PreparedStatement qAddResourceType;
+	private final PreparedStatement qDeleteResourceType;
+	private final PreparedStatement qAddAgentPlatform;
+	private final PreparedStatement qDelAgentPlatform;
+	private final PreparedStatement qMapAgent;
+	private final PreparedStatement qUnmapAgent;
+
 	public DBResourceHelpers(Connection conn, List<PreparedStatement> statements) throws SQLException {
 		super(conn, statements);
 		this.qGetResourceTypeInfo = prepareStatement("SELECT * FROM nimrod_resource_types WHERE name = ?");
@@ -102,6 +110,14 @@ public class DBResourceHelpers extends DBBaseHelper {
 				+ "	expiry_time, secret_key, location, actuator_data\n"
 				+ ") VALUES(?, ?, ?, ?, ?, ?, COALESCE(?, LOWER(HEX(RANDOMBLOB(16)))), ?, ?)", true);
 		this.qUpdateAgent = prepareStatement("UPDATE nimrod_resource_agents SET state = ?, queue = ?, shutdown_signal = ?, shutdown_reason = ?, connected_at = ?, last_heard_from = ?, expiry_time = ?, expired = ?, actuator_data = ? WHERE agent_uuid = ?");
+
+		this.qAddResourceType = prepareStatement("INSERT INTO nimrod_resource_types(name, implementation_class) VALUES (?, ?)", true);
+		this.qDeleteResourceType = prepareStatement("DELETE FROM nimrod_resource_types WHERE name = ?");
+		this.qAddAgentPlatform = prepareStatement("INSERT INTO nimrod_agents(platform_string, path) VALUES(?, ?)");
+		this.qDelAgentPlatform = prepareStatement("DELETE FROM nimrod_agents WHERE platform_string = ?");
+		this.qMapAgent = prepareStatement("INSERT INTO nimrod_agent_mappings(system, machine, agent_id)"
+										  + "SELECT ?, ?, id FROM nimrod_agents WHERE platform_string = ?");
+		this.qUnmapAgent = prepareStatement("DELETE FROM nimrod_agents WHERE platform_string = ?");
 	}
 
 	public Optional<TempResourceType> getResourceTypeInfo(String name) throws SQLException {
@@ -125,6 +141,30 @@ public class DBResourceHelpers extends DBBaseHelper {
 		}
 
 		return tt;
+	}
+
+	public TempResourceType addResourceTypeInfo(String name, String clazz) throws SQLException {
+		qAddResourceType.setString(1, name);
+		qAddResourceType.setString(2, clazz);
+		if(qAddResourceType.executeUpdate() == 0) {
+			throw new SQLException("Creating resource type failed, no rows affected");
+		}
+
+		long id;
+		try(ResultSet rs = qAddResourceType.getGeneratedKeys()) {
+			if(rs.next()) {
+				id = rs.getLong(1);
+			} else {
+				throw new SQLException("Creating resource type failed, no id obtained");
+			}
+		}
+
+		return new TempResourceType(id, name, clazz);
+	}
+
+	public boolean deleteResourceTypeInfo(String name) throws SQLException {
+		qDeleteResourceType.setString(1, name);
+		return qDeleteResourceType.executeUpdate() == 1;
 	}
 
 	public Optional<TempResource> getResource(String path) throws SQLException {
@@ -341,6 +381,31 @@ public class DBResourceHelpers extends DBBaseHelper {
 		qUpdateAgent.setString(10, agent.getUUID().toString());
 
 		return qUpdateAgent.executeUpdate() != 0;
+	}
+
+
+	public boolean addAgentPlatform(String platformString, Path path) throws SQLException {
+		qAddAgentPlatform.setString(1, platformString);
+		qAddAgentPlatform.setString(2, path.toString());
+		return qAddAgentPlatform.executeUpdate() == 1;
+	}
+
+	public boolean deleteAgentPlatform(String platformString) throws SQLException {
+		qDelAgentPlatform.setString(1, platformString);
+		return qDelAgentPlatform.executeUpdate() == 1;
+	}
+
+	public boolean mapAgentPosixPlatform(String platformString, String system, String machine) throws SQLException {
+		qMapAgent.setString(1, system);
+		qMapAgent.setString(2, machine);
+		qMapAgent.setString(3, platformString);
+		return qMapAgent.executeUpdate() == 1;
+	}
+
+	public boolean unmapAgentPosixPlatform(String system, String machine) throws SQLException {
+		qUnmapAgent.setString(1, system);
+		qUnmapAgent.setString(2, machine);
+		return qUnmapAgent.executeUpdate() == 1;
 	}
 
 	private static TempResourceType typeFromResultSet(ResultSet rs) throws SQLException {

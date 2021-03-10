@@ -23,18 +23,25 @@ import au.edu.uq.rcc.nimrodg.agent.Agent;
 import au.edu.uq.rcc.nimrodg.agent.AgentState;
 import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
+import au.edu.uq.rcc.nimrodg.api.ResourceType;
+import au.edu.uq.rcc.nimrodg.api.ResourceTypeInfo;
+import au.edu.uq.rcc.nimrodg.api.setup.NimrodSetupAPI;
 import au.edu.uq.rcc.nimrodg.impl.base.db.BrokenDBInvariantException;
 import au.edu.uq.rcc.nimrodg.impl.base.db.DBBaseHelper;
 import au.edu.uq.rcc.nimrodg.impl.base.db.DBUtils;
 import au.edu.uq.rcc.nimrodg.impl.base.db.TempAgent;
 import au.edu.uq.rcc.nimrodg.impl.base.db.TempResource;
 import au.edu.uq.rcc.nimrodg.impl.base.db.TempResourceType;
+
+import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import javax.json.JsonObject;
@@ -65,6 +72,13 @@ public class DBResourceHelpers extends DBBaseHelper {
 	private final PreparedStatement qAddAgent;
 	private final PreparedStatement qUpdateAgent;
 
+	private final PreparedStatement qAddResourceType;
+	private final PreparedStatement qDeleteResourceType;
+	private final PreparedStatement qAddAgentPlatform;
+	private final PreparedStatement qDelAgentPlatform;
+	private final PreparedStatement qMapAgent;
+	private final PreparedStatement qUnmapAgent;
+
 	public DBResourceHelpers(Connection conn, List<PreparedStatement> statements) throws SQLException {
 		super(conn, statements);
 		this.qGetResourceTypeInfo = prepareStatement("SELECT * FROM nimrod_resource_types WHERE name = ?");
@@ -89,6 +103,24 @@ public class DBResourceHelpers extends DBBaseHelper {
 		this.qGetAgentsOnResource = prepareStatement("SELECT * FROM nimrod_resource_agents WHERE expired = FALSE AND location = ?");
 		this.qAddAgent = prepareStatement("SELECT * FROM add_agent(?::nimrod_agent_state, ?, ?::UUID, ?, ?::nimrod_agent_shutdown_reason, ?, ?, ?, ?::JSONB)");
 		this.qUpdateAgent = prepareStatement("SELECT * FROM update_agent(?::UUID, ?::nimrod_agent_state, ?, ?, ?::nimrod_agent_shutdown_reason, ?, ?, ?, ?, ?::JSONB)");
+
+		this.qAddResourceType = conn.prepareStatement(
+				"INSERT INTO nimrod_resource_types(name, implementation_class) VALUES (?, ?) RETURNING id"
+		);
+
+		this.qDeleteResourceType = conn.prepareStatement("DELETE FROM nimrod_resource_types WHERE name = ?");
+
+		this.qAddAgentPlatform = conn.prepareStatement("INSERT INTO nimrod_agents(platform_string, path) VALUES(?, ?)");
+		this.qDelAgentPlatform = conn.prepareStatement("DELETE FROM nimrod_agents WHERE platform_string = ?");
+
+		this.qMapAgent = conn.prepareStatement(
+				"INSERT INTO nimrod_agent_mappings(system, machine, agent_id)"
+				+ "SELECT ?, ?, id FROM nimrod_agents WHERE platform_string = ?"
+		);
+
+		this.qUnmapAgent = conn.prepareStatement(
+				"DELETE FROM nimrod_agent_mappings WHERE system = ? AND machine = ?"
+		);
 	}
 
 	// <editor-fold defaultstate="collapsed" desc="Resources">
@@ -113,6 +145,23 @@ public class DBResourceHelpers extends DBBaseHelper {
 		}
 
 		return tt;
+	}
+
+	public TempResourceType addResourceTypeInfo(String name, String clazz) throws SQLException {
+		qAddResourceType.setString(1, name);
+		qAddResourceType.setString(2, clazz);
+		try(ResultSet rs = qAddResourceType.executeQuery()) {
+			if(!rs.next()) {
+				throw new SQLException("no items inserted");
+			}
+
+			return new TempResourceType(rs.getLong("id"), name, clazz);
+		}
+	}
+
+	public boolean deleteResourceTypeInfo(String name) throws SQLException {
+		qDeleteResourceType.setString(1, name);
+		return qDeleteResourceType.executeUpdate() == 1;
 	}
 
 	public TempResource addResource(String name, String type, JsonStructure config, NimrodURI amqpUri, NimrodURI txUri) throws SQLException {
@@ -297,6 +346,30 @@ public class DBResourceHelpers extends DBBaseHelper {
 		try(ResultSet rs = qUpdateAgent.executeQuery()) {
 			return rs.next();
 		}
+	}
+
+	public boolean addAgentPlatform(String platformString, Path path) throws SQLException {
+		qAddAgentPlatform.setString(1, platformString);
+		qAddAgentPlatform.setString(2, path.toString());
+		return qAddAgentPlatform.executeUpdate() == 1;
+	}
+
+	public boolean deleteAgentPlatform(String platformString) throws SQLException {
+		qDelAgentPlatform.setString(1, platformString);
+		return qDelAgentPlatform.executeUpdate() == 1;
+	}
+
+	public boolean mapAgentPosixPlatform(String platformString, String system, String machine) throws SQLException {
+		qMapAgent.setString(1, system);
+		qMapAgent.setString(2, machine);
+		qMapAgent.setString(3, platformString);
+		return qMapAgent.executeUpdate() == 1;
+	}
+
+	public boolean unmapAgentPosixPlatform(String system, String machine) throws SQLException {
+		qUnmapAgent.setString(1, system);
+		qUnmapAgent.setString(2, machine);
+		return qUnmapAgent.executeUpdate() == 1;
 	}
 
 	// </editor-fold>

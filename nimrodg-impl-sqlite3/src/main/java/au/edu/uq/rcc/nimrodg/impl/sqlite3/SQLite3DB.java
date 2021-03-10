@@ -46,6 +46,8 @@ import au.edu.uq.rcc.nimrodg.impl.base.db.TempJob;
 import au.edu.uq.rcc.nimrodg.impl.base.db.TempJobAttempt;
 import au.edu.uq.rcc.nimrodg.impl.base.db.TempResource;
 import au.edu.uq.rcc.nimrodg.impl.base.db.TempResourceType;
+
+import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -466,6 +468,16 @@ public class SQLite3DB extends SQLUUUUU<NimrodException.DbError> implements Nimr
 	}
 
 	@Override
+	public synchronized TempResourceType addResourceTypeInfo(String name, String clazz) throws SQLException {
+		return resourceHelpers.addResourceTypeInfo(name, clazz);
+	}
+
+	@Override
+	public synchronized boolean deleteResourceTypeInfo(String name) throws SQLException {
+		return resourceHelpers.deleteResourceTypeInfo(name);
+	}
+
+	@Override
 	public synchronized Optional<TempResource.Impl> getResource(String path) throws SQLException {
 		return resourceHelpers.getResource(path).map(r -> r.create(this));
 	}
@@ -558,6 +570,26 @@ public class SQLite3DB extends SQLUUUUU<NimrodException.DbError> implements Nimr
 	@Override
 	public synchronized void updateAgent(AgentState agent) throws SQLException {
 		resourceHelpers.updateAgent(agent);
+	}
+
+	@Override
+	public synchronized boolean addAgentPlatform(String platformString, Path path) throws SQLException {
+		return resourceHelpers.addAgentPlatform(platformString, path);
+	}
+
+	@Override
+	public synchronized boolean deleteAgentPlatform(String platformString) throws SQLException {
+		return resourceHelpers.deleteAgentPlatform(platformString);
+	}
+
+	@Override
+	public synchronized boolean mapAgentPosixPlatform(String platformString, String system, String machine) throws SQLException {
+		return resourceHelpers.mapAgentPosixPlatform(platformString, system, machine);
+	}
+
+	@Override
+	public synchronized boolean unmapAgentPosixPlatform(String system, String machine) throws SQLException {
+		return resourceHelpers.unmapAgentPosixPlatform(system, machine);
 	}
 
 	@Override

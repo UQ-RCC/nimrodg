@@ -56,12 +56,16 @@ public interface NimrodSetupAPI extends AutoCloseable {
 
 	void reset() throws SetupException;
 
+	@Deprecated
 	void setup(SetupConfig cfg) throws SetupException;
 
+	@Deprecated
 	String getProperty(String prop) throws SetupException;
 
+	@Deprecated
 	String setProperty(String prop, String val) throws SetupException;
 
+	@Deprecated
 	default boolean addResourceType(String name, Class<? extends ResourceType> clazz) throws SetupException {
 		if(name == null || clazz == null) {
 			throw new IllegalArgumentException();
@@ -70,16 +74,22 @@ public interface NimrodSetupAPI extends AutoCloseable {
 		return addResourceType(name, clazz.getCanonicalName());
 	}
 
+	@Deprecated
 	boolean addResourceType(String name, String clazz) throws SetupException;
 
+	@Deprecated
 	boolean deleteResourceType(String name) throws SetupException;
 
+	@Deprecated
 	boolean addAgent(String platformString, Path path) throws SetupException;
 
+	@Deprecated
 	boolean deleteAgent(String platformString) throws SetupException;
 
+	@Deprecated
 	boolean mapAgent(String platformString, String system, String machine) throws SetupException;
 
+	@Deprecated
 	boolean unmapAgent(String system, String machine) throws SetupException;
 
 	@Override

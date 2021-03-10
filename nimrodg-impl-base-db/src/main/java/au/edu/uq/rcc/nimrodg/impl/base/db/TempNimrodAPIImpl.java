@@ -26,6 +26,7 @@ import au.edu.uq.rcc.nimrodg.api.CommandResult;
 import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.Job;
 import au.edu.uq.rcc.nimrodg.api.JobAttempt;
+import au.edu.uq.rcc.nimrodg.api.MachinePair;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodConfig;
 import au.edu.uq.rcc.nimrodg.api.NimrodException;
@@ -40,6 +41,7 @@ import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledRun;
 
 import javax.json.JsonStructure;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.security.cert.Certificate;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -235,6 +237,16 @@ public abstract class TempNimrodAPIImpl implements NimrodAPI, NimrodMasterAPI {
 	}
 
 	@Override
+	public ResourceType addResourceType(String name, String clazz) {
+		return createResourceType(DBUtils.createTypeInfo(db.runSQL(() -> db.addResourceTypeInfo(name, clazz))));
+	}
+
+	@Override
+	public boolean deleteResourceType(ResourceType type) {
+		return db.runSQL(() -> db.deleteResourceTypeInfo(type.getName()));
+	}
+
+	@Override
 	public Map<String, AgentDefinition> lookupAgents() {
 		return db.runSQL(() -> Collections.unmodifiableMap(db.lookupAgents()));
 	}
@@ -326,6 +338,26 @@ public abstract class TempNimrodAPIImpl implements NimrodAPI, NimrodMasterAPI {
 	@Override
 	public Collection<AgentState> getResourceAgents(Resource node) {
 		return db.runSQL(() -> Collections.unmodifiableCollection(db.getResourceAgentInformation(validateResource(node))));
+	}
+
+	@Override
+	public boolean addAgentPlatform(String platformString, Path path) {
+		return db.runSQL(() -> db.addAgentPlatform(platformString, path));
+	}
+
+	@Override
+	public boolean deleteAgentPlatform(String platformString) {
+		return db.runSQL(() -> db.deleteAgentPlatform(platformString));
+	}
+
+	@Override
+	public boolean mapAgentPosixPlatform(String platformString, MachinePair pair) {
+		return db.runSQL(() -> db.mapAgentPosixPlatform(platformString, pair.system(), pair.machine()));
+	}
+
+	@Override
+	public boolean unmapAgentPosixPlatform(MachinePair pair) {
+		return db.runSQL(() -> db.unmapAgentPosixPlatform(pair.system(), pair.machine()));
 	}
 
 	@Override

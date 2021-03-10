@@ -22,6 +22,7 @@ package au.edu.uq.rcc.nimrodg.api;
 import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledRun;
 
 import javax.json.JsonStructure;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
@@ -234,11 +235,23 @@ public interface NimrodAPI extends AgentProvider, AutoCloseable {
 
 	ResourceType getResourceTypeInfo(String name);
 
+	ResourceType addResourceType(String name, String clazz);
+
+	boolean deleteResourceType(ResourceType type);
+
 	AgentInfo getAgentByUUID(UUID uuid);
 
 	Resource getAgentResource(UUID uuid);
 
 	Collection<? extends AgentInfo> getResourceAgents(Resource node);
+
+	boolean addAgentPlatform(String platformString, Path path);
+
+	boolean deleteAgentPlatform(String platformString);
+
+	boolean mapAgentPosixPlatform(String platformString, MachinePair pair);
+
+	boolean unmapAgentPosixPlatform(MachinePair pair);
 
 	@Override
 	void close() throws NimrodException;
