@@ -52,7 +52,7 @@ public interface NimrodSetupAPI extends AutoCloseable {
 	 *
 	 * @return if the database schema is compatible with the current implementation.
 	 */
-	boolean isCompatibleSchema();
+	boolean isCompatibleSchema() throws SetupException;
 
 	void reset() throws SetupException;
 
