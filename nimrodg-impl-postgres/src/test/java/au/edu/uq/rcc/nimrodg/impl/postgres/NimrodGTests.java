@@ -25,6 +25,8 @@ import au.edu.uq.rcc.nimrodg.api.setup.UserConfig;
 import au.edu.uq.rcc.nimrodg.test.APITests;
 import java.nio.file.Path;
 import java.util.Map;
+
+import au.edu.uq.rcc.nimrodg.utils.NimrodUtils;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -63,10 +65,10 @@ public class NimrodGTests extends APITests {
 		try(NimrodSetupAPI api = fimpl.getSetupAPI(ucfg)) {
 			api.reset();
 			Assert.assertTrue(api.isCompatibleSchema());
-			api.setup(APITests.getTestSetupConfig(root));
 		}
 
 		nimrod = fimpl.createNimrod(ucfg);
+		NimrodUtils.setupApi(nimrod, APITests.getTestSetupConfig(root));
 	}
 
 	@After
