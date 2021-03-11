@@ -33,6 +33,7 @@ dependencies {
     implementation project(':nimrodg-impl-postgres')
     implementation project(':nimrodg-parsing')
     implementation project(':nimrodg-resources')
+    implementation project(':nimrodg-utils')
 
     // FIXME: For Nimrod
     runtimeOnly group: 'org.glassfish', name: 'javax.json', version: '1.1'

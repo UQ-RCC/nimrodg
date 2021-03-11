@@ -39,8 +39,9 @@ import au.edu.uq.rcc.nimrodg.resource.hpc.HPCDefinition;
 import au.edu.uq.rcc.nimrodg.resource.hpc.HPCResourceType;
 import au.edu.uq.rcc.nimrodg.resource.ssh.ClientFactories;
 import au.edu.uq.rcc.nimrodg.resource.ssh.TransportFactory;
-import au.edu.uq.rcc.nimrodg.setup.NimrodSetupAPI;
-import au.edu.uq.rcc.nimrodg.setup.SetupConfigBuilder;
+import au.edu.uq.rcc.nimrodg.api.setup.NimrodSetupAPI;
+import au.edu.uq.rcc.nimrodg.api.setup.SetupConfigBuilder;
+import au.edu.uq.rcc.nimrodg.utils.NimrodUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -208,11 +209,17 @@ public class NimrodPortalEndpoints {
 
 		if(!userState.initialised) {
 			try(NimrodSetupAPI setup = createNimrodSetup(userState.username)) {
-				SetupConfigBuilder b = setupConfig.toBuilder(userState.vars);
 				setup.reset();
-				setup.setup(b.build());
 			} catch(NimrodSetupAPI.SetupException | SQLException e) {
 				LOGGER.error(String.format("Unable to initialise Nimrod tables for user %s", userState.username), e);
+				return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+			}
+
+			try(NimrodAPI nimrod = createNimrod(userState.username)) {
+				SetupConfigBuilder b = setupConfig.toBuilder(userState.vars);
+				NimrodUtils.setupApi(nimrod, b.build());
+			} catch(NimrodSetupAPI.SetupException | SQLException e) {
+				LOGGER.error(String.format("Unable to configure Nimrod for user %s", userState.username), e);
 				return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
 			}
 		}

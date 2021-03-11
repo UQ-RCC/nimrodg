@@ -1,8 +1,8 @@
 package au.edu.uq.rcc.nimrodg.portal;
 
-import au.edu.uq.rcc.nimrodg.setup.AMQPConfigBuilder;
-import au.edu.uq.rcc.nimrodg.setup.SetupConfigBuilder;
-import au.edu.uq.rcc.nimrodg.setup.TransferConfigBuilder;
+import au.edu.uq.rcc.nimrodg.api.setup.AMQPConfigBuilder;
+import au.edu.uq.rcc.nimrodg.api.setup.SetupConfigBuilder;
+import au.edu.uq.rcc.nimrodg.api.setup.TransferConfigBuilder;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.ConstructorBinding;
 import org.springframework.web.util.DefaultUriBuilderFactory;
