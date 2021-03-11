@@ -4,4 +4,6 @@ dependencies {
 	implementation project(':nimrodg-impl-base-db')
 	implementation project(':nimrodg-utils')
 	testImplementation project(':nimrodg-test')
+
+	testRuntimeOnly group: 'org.glassfish', name: 'javax.json', version: JAVAX_JSON_VERSION
 }

@@ -68,6 +68,7 @@ import java.util.stream.Collectors;
 import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.JsonStructure;
+import javax.json.JsonValue;
 
 public class SQLite3DB extends SQLUUUUU<NimrodException.DbError> implements NimrodDBAPI, AutoCloseable {
 
@@ -614,11 +615,12 @@ public class SQLite3DB extends SQLUUUUU<NimrodException.DbError> implements Nimr
 		} else if(_old != null && _new == null) {
 			qAddMasterMessage.setString(1, "DELETE");
 		}
+
 		qAddMasterMessage.setString(2, "config");
 		qAddMasterMessage.setString(3, Json.createObjectBuilder()
 				.add("key", key)
-				.add("old", _old)
-				.add("value", _new)
+				.add("old", _old == null ? JsonValue.NULL : Json.createValue(_old))
+				.add("value", _new == null ? JsonValue.NULL : Json.createValue(_new))
 				.build().toString());
 
 		qAddMasterMessage.executeUpdate();

@@ -23,6 +23,7 @@ import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
 import au.edu.uq.rcc.nimrodg.api.setup.NimrodSetupAPI;
 import au.edu.uq.rcc.nimrodg.api.setup.UserConfig;
 import au.edu.uq.rcc.nimrodg.test.APITests;
+import au.edu.uq.rcc.nimrodg.utils.NimrodUtils;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -68,10 +69,11 @@ public class SQLite3Tests extends APITests {
 		try(NimrodSetupAPI api = fimpl.getSetupAPI(ucfg)) {
 			api.reset();
 			Assert.assertTrue(api.isCompatibleSchema());
-			api.setup(APITests.getTestSetupConfig(root));
 		}
 
-		return fimpl.createNimrod(ucfg);
+		NimrodAPI nimrod = fimpl.createNimrod(ucfg);
+		NimrodUtils.setupApi(nimrod, APITests.getTestSetupConfig(root));
+		return nimrod;
 	}
 
 	@After
