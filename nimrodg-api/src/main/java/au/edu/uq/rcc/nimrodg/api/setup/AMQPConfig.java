@@ -1,5 +1,7 @@
 package au.edu.uq.rcc.nimrodg.api.setup;
 
+import au.edu.uq.rcc.nimrodg.api.NimrodURI;
+
 import java.net.URI;
 
 public final class AMQPConfig {
@@ -35,5 +37,9 @@ public final class AMQPConfig {
 
 	public boolean noVerifyHost() {
 		return this.noVerifyHost;
+	}
+
+	public NimrodURI toNimrodUri() {
+		return NimrodURI.create(uri, certPath, noVerifyPeer, noVerifyHost);
 	}
 }
