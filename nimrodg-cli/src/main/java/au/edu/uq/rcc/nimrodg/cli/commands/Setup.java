@@ -19,7 +19,10 @@
  */
 package au.edu.uq.rcc.nimrodg.cli.commands;
 
+import au.edu.uq.rcc.nimrodg.api.MachinePair;
+import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPIFactory;
+import au.edu.uq.rcc.nimrodg.api.ResourceType;
 import au.edu.uq.rcc.nimrodg.api.setup.AMQPConfigBuilder;
 import au.edu.uq.rcc.nimrodg.api.setup.NimrodSetupAPI;
 import au.edu.uq.rcc.nimrodg.api.setup.SetupConfig;
@@ -48,6 +51,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
+
+import au.edu.uq.rcc.nimrodg.utils.NimrodUtils;
 import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
@@ -112,7 +117,10 @@ public final class Setup extends DefaultCLICommand {
 				SetupConfig cfg = IniSetupConfig.parseToBuilder(ini, config.configPath()).build();
 				try(NimrodSetupAPI api = fact.getSetupAPI(config)) {
 					api.reset();
-					api.setup(cfg);
+				}
+
+				try(NimrodAPI api = fact.createNimrod(config)) {
+					NimrodUtils.setupApi(api, cfg);
 				}
 				return 0;
 			}
@@ -136,43 +144,49 @@ public final class Setup extends DefaultCLICommand {
 						.build();
 				try(NimrodSetupAPI api = fact.getSetupAPI(config)) {
 					api.reset();
-					api.setup(cfg);
+				}
+
+				try(NimrodAPI api = fact.createNimrod(config)) {
+					NimrodUtils.setupApi(api, cfg);
 				}
 				return 0;
 			}
 			case "addtype": {
-				try(NimrodSetupAPI api = fact.getSetupAPI(config)) {
+				try(NimrodAPI api = fact.createNimrod(config)) {
 					api.addResourceType(args.getString("name"), args.getString("class"));
 				}
 				return 0;
 			}
 			case "deltype": {
-				try(NimrodSetupAPI api = fact.getSetupAPI(config)) {
-					api.deleteResourceType(args.getString("name"));
+				try(NimrodAPI api = fact.createNimrod(config)) {
+					ResourceType rt = api.getResourceTypeInfo(args.getString("name"));
+					if(rt != null) {
+						api.deleteResourceType(rt);
+					}
 				}
 				return 0;
 			}
 			case "addagent": {
-				try(NimrodSetupAPI api = fact.getSetupAPI(config)) {
-					api.addAgent(args.getString("platform_string"), Paths.get(args.getString("path")));
+				try(NimrodAPI api = fact.createNimrod(config)) {
+					api.addAgentPlatform(args.getString("platform_string"), Paths.get(args.getString("path")));
 				}
 				return 0;
 			}
 			case "delagent": {
-				try(NimrodSetupAPI api = fact.getSetupAPI(config)) {
-					api.deleteAgent(args.getString("platform_string"));
+				try(NimrodAPI api = fact.createNimrod(config)) {
+					api.deleteAgentPlatform(args.getString("platform_string"));
 				}
 				return 0;
 			}
 			case "mapagent": {
-				try(NimrodSetupAPI api = fact.getSetupAPI(config)) {
-					api.mapAgent(args.getString("platform_string"), args.getString("system"), args.getString("machine"));
+				try(NimrodAPI api = fact.createNimrod(config)) {
+					api.mapAgentPosixPlatform(args.getString("platform_string"), MachinePair.of(args.getString("system"), args.getString("machine")));
 				}
 				return 0;
 			}
 			case "unmapagent": {
-				try(NimrodSetupAPI api = fact.getSetupAPI(config)) {
-					api.unmapAgent(args.getString("system"), args.getString("machine"));
+				try(NimrodAPI api = fact.createNimrod(config)) {
+					api.unmapAgentPosixPlatform(MachinePair.of(args.getString("system"), args.getString("machine")));
 				}
 				return 0;
 			}
