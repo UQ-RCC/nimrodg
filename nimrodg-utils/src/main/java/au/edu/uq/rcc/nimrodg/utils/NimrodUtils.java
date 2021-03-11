@@ -20,6 +20,10 @@
 package au.edu.uq.rcc.nimrodg.utils;
 
 import au.edu.uq.rcc.nimrodg.api.Job;
+import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
+import au.edu.uq.rcc.nimrodg.api.setup.AMQPConfig;
+import au.edu.uq.rcc.nimrodg.api.setup.SetupConfig;
+import au.edu.uq.rcc.nimrodg.api.setup.TransferConfig;
 
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
@@ -228,5 +232,21 @@ public class NimrodUtils {
 
 		/* Fall back to our os.* properties. */
 		return Map.entry(propsOS, propsArch);
+	}
+
+	public static NimrodAPI setupApi(NimrodAPI nimrod, SetupConfig cfg) {
+		Objects.requireNonNull(nimrod, "nimrod");
+		Objects.requireNonNull(cfg, "cfg");
+
+		AMQPConfig amqp = cfg.amqp();
+		TransferConfig tx = cfg.transfer();
+
+		nimrod.updateConfig(cfg.workDir(), cfg.storeDir(), amqp.toNimrodUri(), amqp.routingKey(), tx.toNimrodUri());
+		cfg.agents().forEach(nimrod::addAgentPlatform);
+		cfg.agentMappings().forEach((pair, plat) -> nimrod.mapAgentPosixPlatform(plat, pair));
+		cfg.resourceTypes().forEach(nimrod::addResourceType);
+		cfg.properties().forEach(nimrod::setProperty);
+
+		return nimrod;
 	}
 }
