@@ -1,5 +1,6 @@
 /nbproject/private/
 **/build/
+**/logs/
 /dist/
 /.nb-gradle/
 /proguard.conf
@@ -19,5 +20,15 @@
 /.vscode/
 /debian/usr/share/nimrod*
 /debian/DEBIAN/control
+/debian/*.log
+/debian/*.debhelper
+/debian/changelog
+/debian/files
+/debian/package/
+/debian/nimrod-portal-backend/
+/debian/*.substvars
+/debian/debhelper-build-stamp
 /.citemp/
 /nimrodg-parsing/src/main/gen/
+/nimrod-portal-backend/src/main/resources/application.yml
+/nimrod-portal-backend/src/main/resources/logback-spring.xml

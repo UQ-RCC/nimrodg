@@ -20,3 +20,4 @@ include 'nimrodg-master'
 include 'nimrodg-debugger-agent'
 
 include 'nimrod'
+include 'nimrod-portal-backend'

@@ -1,0 +1,78 @@
+server:
+  port: 8082
+  servlet:
+    contextPath: /nimrod
+
+nimrod:
+  rabbitmq:
+    user: nimrod-portal
+    password: password
+    api: https://amqp.example.com:15671/
+    cacert: /etc/ssl/certs/ca-bundle.crt
+  resource:
+    api: https://resourceserver.example.com/resource/
+    cacert: /etc/ssl/certs/ca-bundle.crt
+  remote:
+    postgres_uritemplate: postgresql://{pg_host}/nimrod_portal?currentSchema={username}&ssl=true&sslmode=verify-ca&sslrootcert={ssl_cacert}
+    vars:
+      ssl_cacert: /etc/ssl/certs/ca-bundle.crt
+      amqp_host: amqp.example.com
+      pg_host: db.example.com
+      # These are provided by the implementation
+      #pg_username:
+      #pg_password:
+      #amqp_username:
+      #amqp_password:
+      #amqp_routing_key:
+      #jdbc_url:
+      #amqp_url:
+  max_job_count: 10000000
+  home: /usr/share/nimrod
+  setup:
+    workdir: /home/{username}/.config/nimrod-portal
+    storedir: ${nimrod.setup.workdir}/experiments
+    amqp:
+      uri: amqps://{amqp_username}:{amqp_password}@{amqp_host}/{amqp_username}
+      routing_key: nimrod-portal
+      cert: /etc/ssl/certs/ca-bundle.crt
+      no_verify_peer: false
+      no_verify_host: false
+    transfer:
+      #uri: file:///30days/{username}/
+      # Default for now, should eventually be sftp://data.qriscloud.org.au/data
+      uri: sftp://{username}@awoonga.rcc.uq.edu.au/QRISdata
+      cert: /etc/ssl/certs/ca-bundle.crt
+      no_verify_peer: false
+      no_verify_host: false
+    agents:
+      x86_64-pc-linux-musl: ${nimrod.home}/agents/agent-x86_64-pc-linux-musl
+    agentmap:
+      Linux:
+        x86_64: x86_64-pc-linux-musl
+    resource_types:
+      hpc: au.edu.uq.rcc.nimrodg.resource.HPCResourceType
+    properties:
+      nimrod.sched.default.launch_penalty: -10
+      nimrod.sched.default.spawn_cap: 10
+      nimrod.sched.default.job_buf_size: 1000
+      nimrod.sched.default.job_buf_refill_threshold: 100
+      nimrod.master.heart.expiry_retry_interval: 5
+      nimrod.master.heart.expiry_retry_count: 5
+      nimrod.master.heart.interval: 30
+      nimrod.master.heart.missed_threshold: 3
+      nimrod.master.amqp.tls_protocol: TLSv1.2
+spring:
+  datasource:
+    url: jdbc:postgresql://db.example.com:5432/nimrod_portal
+    username: nimrod-portal
+    password: password
+    driver: org.postgresql.Driver
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: https://keycloak.example.com/auth/realms/example-realm1/protocol/openid-connect/certs
+          issuer-uri: https://keycloak.example.com/auth/realms/example-realm1
+          client-id: example-realm1-client
+          client-secret: 00000000-0000-0000-0000-000000000000
+          audience-id: audience-id

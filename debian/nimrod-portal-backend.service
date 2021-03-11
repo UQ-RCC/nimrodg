@@ -1,0 +1,21 @@
+[Unit]
+Description=Nimrod Portal Backend Server
+After=network.target
+ConditionPathExists=/etc/nimrod-portal-backend/application.yml
+ConditionPathExists=/etc/nimrod-portal-backend/logback-spring.xml
+
+[Service]
+Type=simple
+User=nimrod-portal-backend
+Group=nimrod-portal-backend
+RuntimeDirectory=nimrod-portal-backend
+RuntimeDirectoryMode=770
+PrivateTmp=true
+WorkingDirectory=/var/lib/nimrod-portal-backend
+ExecStart=/usr/share/nimrod-portal-backend/bin/nimrod-portal-backend \
+    --spring.config.location=/etc/nimrod-portal-backend/application.yml \
+    --logging.config=/etc/nimrod-portal-backend/logback-spring.xml
+SuccessExitStatus=143
+
+[Install]
+WantedBy=multi-user.target
