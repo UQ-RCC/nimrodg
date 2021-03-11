@@ -20,8 +20,6 @@ dependencies {
     implementation group: 'org.bouncycastle', name: 'bcprov-jdk15on', version: '1.64'
     implementation group: 'org.bouncycastle', name: 'bcpkix-jdk15on', version: '1.64'
 
-    testImplementation 'junit:junit:4.12'
-
     implementation group: 'org.postgresql', name: 'postgresql', version: '42.2.8'
     implementation group: 'org.apache.httpcomponents', name: 'httpclient', version: '+'
     implementation group: 'com.hubspot.jinjava', name: 'jinjava', version: '2.5.1'
