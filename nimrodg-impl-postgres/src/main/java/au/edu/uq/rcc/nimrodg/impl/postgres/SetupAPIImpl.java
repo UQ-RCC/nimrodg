@@ -20,6 +20,7 @@
 package au.edu.uq.rcc.nimrodg.impl.postgres;
 
 import au.edu.uq.rcc.nimrodg.api.setup.NimrodSetupAPI;
+import au.edu.uq.rcc.nimrodg.api.setup.SchemaVersion;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -32,6 +33,8 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 public class SetupAPIImpl implements NimrodSetupAPI {
+
+	public static final SchemaVersion NATIVE_SCHEMA = SchemaVersion.of(5, 0, 0);
 
 	private static final String[] DATABASE_FILES = new String[]{
 		"db/00-ddl.sql",
@@ -46,6 +49,7 @@ public class SetupAPIImpl implements NimrodSetupAPI {
 	private final Connection conn;
 	private final boolean managed;
 	private final PreparedStatement qIsSchemaCompatible;
+	private final PreparedStatement qGetSchemaVersion;
 
 	public SetupAPIImpl(Connection conn) throws SQLException {
 		this(conn, true);
@@ -56,14 +60,15 @@ public class SetupAPIImpl implements NimrodSetupAPI {
 		this.managed = manage;
 
 		this.qIsSchemaCompatible = conn.prepareStatement("SELECT is_schema_compatible(?, ?, ?)");
+		this.qGetSchemaVersion = conn.prepareStatement("SELECT major, minor, patch FROM get_schema_version()");
 	}
 
 	@Override
 	public synchronized boolean isCompatibleSchema() throws SetupException {
 		try {
-			qIsSchemaCompatible.setInt(1, NimrodAPIFactoryImpl.SCHEMA_MAJOR);
-			qIsSchemaCompatible.setInt(2, NimrodAPIFactoryImpl.SCHEMA_MINOR);
-			qIsSchemaCompatible.setInt(3, NimrodAPIFactoryImpl.SCHEMA_PATCH);
+			qIsSchemaCompatible.setInt(1, NimrodAPIFactoryImpl.NATIVE_SCHEMA.major);
+			qIsSchemaCompatible.setInt(2, NimrodAPIFactoryImpl.NATIVE_SCHEMA.minor);
+			qIsSchemaCompatible.setInt(3, NimrodAPIFactoryImpl.NATIVE_SCHEMA.patch);
 
 			try(ResultSet rs = qIsSchemaCompatible.executeQuery()) {
 				if(!rs.next()) {
@@ -79,6 +84,27 @@ public class SetupAPIImpl implements NimrodSetupAPI {
 
 			throw new SetupException(e);
 		}
+	}
+
+	@Override
+	public synchronized SchemaVersion getCurrentSchemaVersion() {
+		try {
+			try(ResultSet rs = qGetSchemaVersion.executeQuery()) {
+				return SchemaVersion.of(rs.getInt("major"), rs.getInt("minor"), rs.getInt("patch"));
+			}
+		} catch(SQLException e) {
+			if("42883".equals(e.getSQLState())) {
+				/* undefined_function */
+				return SchemaVersion.of(0, 0, 0);
+			}
+
+			throw new SetupException(e);
+		}
+	}
+
+	@Override
+	public SchemaVersion getNativeSchemaVersion() {
+		return NATIVE_SCHEMA;
 	}
 
 	@Override

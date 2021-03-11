@@ -51,6 +51,10 @@ public interface NimrodSetupAPI extends AutoCloseable {
 	 */
 	boolean isCompatibleSchema() throws SetupException;
 
+	SchemaVersion getCurrentSchemaVersion() throws SetupException;
+
+	SchemaVersion getNativeSchemaVersion();
+
 	void reset() throws SetupException;
 
 	@Override

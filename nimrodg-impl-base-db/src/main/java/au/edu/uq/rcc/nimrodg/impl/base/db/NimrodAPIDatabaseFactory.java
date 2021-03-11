@@ -23,9 +23,11 @@ import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPIFactory;
 import au.edu.uq.rcc.nimrodg.api.NimrodException;
 import au.edu.uq.rcc.nimrodg.api.setup.NimrodSetupAPI;
+import au.edu.uq.rcc.nimrodg.api.setup.SchemaVersion;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.List;
 
 public interface NimrodAPIDatabaseFactory extends NimrodAPIFactory {
 
@@ -38,4 +40,12 @@ public interface NimrodAPIDatabaseFactory extends NimrodAPIFactory {
 	NimrodAPI createNimrod(Connection conn) throws SQLException;
 
 	NimrodSetupAPI getSetupAPI(Connection conn) throws SQLException;
+
+	SchemaVersion getNativeSchemaVersion();
+
+	SchemaVersion getCurrentSchemaVersion(Connection conn) throws SQLException;
+
+	void upgradeSchemaTo(Connection conn, SchemaVersion targetVersion) throws SQLException;
+
+	List<UpgradeStep> getUpgradePairs();
 }
