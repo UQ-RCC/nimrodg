@@ -44,3 +44,5 @@ includeBuild('nimrodg') {
         substitute(module('au.edu.uq.rcc.nimrodg:nimrodg-resources')).with(project(':nimrodg-resources'))
     }
 }
+
+include 'nimrod-portal-backend'
