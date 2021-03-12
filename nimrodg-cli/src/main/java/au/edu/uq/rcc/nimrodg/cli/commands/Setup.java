@@ -124,33 +124,6 @@ public final class Setup extends DefaultCLICommand {
 				}
 				return 0;
 			}
-			case "init2": {
-				SetupConfig cfg = new SetupConfigBuilder()
-						.workDir(args.getString("workdir"))
-						.storeDir(args.getString("storedir"))
-						.amqp(new AMQPConfigBuilder()
-								.uri(URI.create(args.getString("amqp_uri")))
-								.routingKey(args.getString("amqp_routing_key"))
-								.certPath(args.getString("amqp_cert"))
-								.noVerifyPeer(Objects.requireNonNullElse(args.getBoolean("amqp_no_verify_peer"), false))
-								.noVerifyHost(Objects.requireNonNullElse(args.getBoolean("amqp_no_verify_host"), false))
-								.build())
-						.transfer(new TransferConfigBuilder()
-								.uri(URI.create(args.getString("tx_uri")))
-								.certPath(args.getString("tx_cert"))
-								.noVerifyPeer(Objects.requireNonNullElse(args.getBoolean("tx_no_verify_peer"), false))
-								.noVerifyHost(Objects.requireNonNullElse(args.getBoolean("tx_no_verify_host"), false))
-								.build())
-						.build();
-				try(NimrodSetupAPI api = fact.getSetupAPI(config)) {
-					api.reset();
-				}
-
-				try(NimrodAPI api = fact.createNimrod(config)) {
-					NimrodUtils.setupApi(api, cfg);
-				}
-				return 0;
-			}
 			case "addtype": {
 				try(NimrodAPI api = fact.createNimrod(config)) {
 					api.addResourceType(args.getString("name"), args.getString("class"));
@@ -305,28 +278,6 @@ public final class Setup extends DefaultCLICommand {
 						.setDefault((String)null)
 						.nargs("?")
 						.help("The user setup configuration. May be omitted.");
-			}
-
-			{
-				Subparser sp = subs.addParser("init2");
-				sp.addArgument("--workdir")
-						.dest("workdir")
-						.help("Base Working Directory.")
-						.required(true);
-
-				sp.addArgument("--storedir")
-						.dest("storedir")
-						.help("Root File Store.")
-						.required(true);
-
-				addPrefixedUriArg(sp, "amqp", "AMQP", true);
-
-				sp.addArgument("--amqp-routing-key")
-						.dest("amqp_routing_key")
-						.help("AMQP routing key.")
-						.required(true);
-
-				addPrefixedUriArg(sp, "tx", "Transfer", true);
 			}
 
 			{
