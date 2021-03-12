@@ -124,18 +124,6 @@ public final class Setup extends DefaultCLICommand {
 				}
 				return 0;
 			}
-			case "addtype": {
-				try(NimrodAPI api = fact.createNimrod(config)) {
-					api.addResourceType(args.getString("name"), args.getString("class"));
-				}
-				return 0;
-			}
-			case "deltype": {
-				try(NimrodAPI api = fact.createNimrod(config)) {
-					api.deleteResourceType(args.getString("name"));
-				}
-				return 0;
-			}
 			case "addagent": {
 				try(NimrodAPI api = fact.createNimrod(config)) {
 					api.addAgentPlatform(args.getString("platform_string"), Paths.get(args.getString("path")));
@@ -278,17 +266,6 @@ public final class Setup extends DefaultCLICommand {
 						.setDefault((String)null)
 						.nargs("?")
 						.help("The user setup configuration. May be omitted.");
-			}
-
-			{
-				Subparser sp = subs.addParser("addtype");
-				sp.addArgument("name");
-				sp.addArgument("class");
-			}
-
-			{
-				Subparser sp = subs.addParser("deltype");
-				sp.addArgument("name");
 			}
 
 			{
