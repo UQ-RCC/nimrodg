@@ -1,0 +1,59 @@
+#!/bin/sh
+
+set -e
+
+if [ "$1" = "configure" ] || [ "$1" = "reconfigure" ] ; then
+	# create nimrod-portal-backend group
+	if ! getent group nimrod-portal-backend >/dev/null; then
+		addgroup --system nimrod-portal-backend
+	fi
+
+	# create nimrod-portal-backend user
+	if ! getent passwd nimrod-portal-backend >/dev/null; then
+		adduser --system \
+		--ingroup nimrod-portal-backend \
+		--home /var/lib/nimrod-portal-backend \
+                --no-create-home \
+		--gecos "RCC Portal Service User" \
+                --disabled-login nimrod-portal-backend
+	fi
+
+    mkdir -p /var/lib/nimrod-portal-backend
+    chown nimrod-portal-backend:nimrod-portal-backend /var/lib/nimrod-portal-backend
+
+    mkdir -p /var/log/nimrod-portal-backend
+    chmod 1775 /var/log/nimrod-portal-backend
+    chown root:nimrod-portal-backend /var/log/nimrod-portal-backend
+fi
+
+# Automatically added by dh_installsystemd/11.1.6ubuntu2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if deb-systemd-helper debian-installed 'nimrod-portal-backend.service'; then
+		# This will only remove masks created by d-s-h on package removal.
+		deb-systemd-helper unmask 'nimrod-portal-backend.service' >/dev/null || true
+
+		if deb-systemd-helper --quiet was-enabled 'nimrod-portal-backend.service'; then
+			# Create new symlinks, if any.
+			deb-systemd-helper enable 'nimrod-portal-backend.service' >/dev/null || true
+		fi
+	fi
+
+	# Update the statefile to add new symlinks (if any), which need to be cleaned
+	# up on purge. Also remove old symlinks.
+	deb-systemd-helper update-state 'nimrod-portal-backend.service' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/11.1.6ubuntu2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if [ -d /run/systemd/system ]; then
+		systemctl --system daemon-reload >/dev/null || true
+		if [ -n "$2" ]; then
+			deb-systemd-invoke try-restart 'nimrod-portal-backend.service' >/dev/null || true
+		fi
+	fi
+fi
+# End automatically added section
+
+
+exit 0
+
