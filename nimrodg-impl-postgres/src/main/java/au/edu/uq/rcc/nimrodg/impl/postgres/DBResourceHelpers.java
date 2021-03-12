@@ -82,7 +82,7 @@ public class DBResourceHelpers extends DBBaseHelper {
 	public DBResourceHelpers(Connection conn, List<PreparedStatement> statements) throws SQLException {
 		super(conn, statements);
 		this.qGetResourceTypeInfo = prepareStatement("SELECT * FROM nimrod_resource_types WHERE name = ?");
-		this.qGetResourceTypeInfo2 = prepareStatement("ELECT * FROM nimrod_resource_type");
+		this.qGetResourceTypeInfo2 = prepareStatement("SELECT * FROM nimrod_resource_types");
 
 		this.qGetResource = prepareStatement("SELECT * FROM nimrod_full_resources WHERE name = ?");
 		this.qAddResource = prepareStatement("SELECT * FROM add_resource(?, ?, ?::JSONB, make_uri(?, ?, ?, ?), make_uri(?, ?, ?, ?))");
