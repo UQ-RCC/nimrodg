@@ -4,8 +4,8 @@ buildscript {
 	}
 
 	dependencies {
-		classpath 'com.netflix.nebula:gradle-ospackage-plugin:6.1.2'
-		classpath 'de.undercouch:gradle-download-task:3.4.3'
+		classpath group: 'com.netflix.nebula', name: 'gradle-ospackage-plugin', version: OSPACKAGE_VERSION
+		classpath group: 'de.undercouch', name: 'gradle-download-task', version: '3.4.3'
 	}
 }
 

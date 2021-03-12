@@ -4,7 +4,7 @@ buildscript {
     }
 
     dependencies {
-        classpath 'com.netflix.nebula:gradle-ospackage-plugin:6.1.2'
+        classpath group: 'com.netflix.nebula', name: 'gradle-ospackage-plugin', version: OSPACKAGE_VERSION
     }
 }
 
