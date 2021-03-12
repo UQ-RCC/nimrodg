@@ -197,14 +197,6 @@ public class DBUtils {
 		return ((JsonString)v).getString();
 	}
 
-	public static MasterResourceType createType(ResourceTypeInfo ti) throws ReflectiveOperationException {
-		if(ti.clazz != null) {
-			return createType(ti.clazz);
-		}
-
-		return createType(ti.className);
-	}
-
 	public static MasterResourceType createType(String className) throws ReflectiveOperationException {
 		return createType(Class.forName(className));
 	}
@@ -228,6 +220,20 @@ public class DBUtils {
 			clazz = null;
 		}
 
-		return new ResourceTypeInfo(trt.name, trt.clazz, clazz);
+		if(clazz == null) {
+			return new ResourceTypeInfo(trt.name, trt.clazz, clazz, null);
+		}
+
+		MasterResourceType rt;
+
+		if(!ResourceType.class.isAssignableFrom(clazz)) {
+			rt = null;
+		} else try {
+			rt = (MasterResourceType)clazz.getConstructor().newInstance();
+		} catch(ReflectiveOperationException e) {
+			rt = null;
+		}
+
+		return new ResourceTypeInfo(trt.name, trt.clazz, clazz, rt);
 	}
 }

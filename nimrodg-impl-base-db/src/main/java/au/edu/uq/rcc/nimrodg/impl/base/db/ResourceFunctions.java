@@ -60,7 +60,7 @@ public interface ResourceFunctions<T extends Resource, E extends Experiment, A e
 
 	T addResource(String name, String type, JsonStructure config, NimrodURI amqpUri, NimrodURI txUri) throws X;
 
-	ResourceTypeInfo getResourceImplementation(T node) throws X;
+	TempResourceType getResourceImplementation(T node) throws X;
 
 	//-----------------ASSIGNMENTS-----------------//
 	Collection<T> getAssignedResources(E exp) throws X;

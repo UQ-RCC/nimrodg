@@ -23,7 +23,7 @@ import au.edu.uq.rcc.nimrodg.api.Experiment;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodException;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
-import au.edu.uq.rcc.nimrodg.api.ResourceType;
+import au.edu.uq.rcc.nimrodg.api.ResourceTypeInfo;
 import au.edu.uq.rcc.nimrodg.api.setup.UserConfig;
 import au.edu.uq.rcc.nimrodg.cli.CommandEntry;
 import au.edu.uq.rcc.nimrodg.cli.NimrodCLI;
@@ -96,22 +96,20 @@ public final class ResourceCmd extends NimrodCLICommand {
 			return 1;
 		}
 
-		ResourceType rt;
-		try {
-			rt = api.getResourceTypeInfo(type);
-			if(rt == null) {
-				err.printf("No such resource type '%s'.\n", type);
-				return 1;
-			}
-		} catch(NimrodException e) {
-			err.printf("Error instantiating resource type '%s'.\n", type);
-			e.printStackTrace(err);
+		ResourceTypeInfo rti = api.getResourceTypeInfo(type);
+		if(rti == null) {
+			err.printf("No such resource type '%s'.\n", type);
+			return 1;
+		}
+
+		if(rti.instance == null) {
+			err.println("Resource class doesn't exist in this implementation or could not be instantiated.");
 			return 1;
 		}
 
 		String[] resArgs = args.getList("args").toArray(new String[args.getList("args").size()]);
 
-		JsonStructure cfg = rt.parseCommandArguments(api, resArgs, out, err, configDirs);
+		JsonStructure cfg = rti.instance.parseCommandArguments(api, resArgs, out, err, configDirs);
 		if(cfg == null) {
 			return 1;
 		}

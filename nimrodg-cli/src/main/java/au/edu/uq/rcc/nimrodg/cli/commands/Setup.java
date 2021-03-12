@@ -159,10 +159,7 @@ public final class Setup extends DefaultCLICommand {
 			}
 			case "deltype": {
 				try(NimrodAPI api = fact.createNimrod(config)) {
-					ResourceType rt = api.getResourceTypeInfo(args.getString("name"));
-					if(rt != null) {
-						api.deleteResourceType(rt);
-					}
+					api.deleteResourceType(args.getString("name"));
 				}
 				return 0;
 			}

@@ -369,18 +369,8 @@ public class RunDMC extends SQLUUUUU<NimrodException.DbError> implements NimrodD
 	}
 
 	@Override
-	public synchronized ResourceTypeInfo getResourceImplementation(TempResource.Impl node) throws SQLException {
-		Class<?> clazz;
-		try {
-			clazz = Class.forName(node.base.typeClass);
-		} catch(ClassNotFoundException e) {
-			clazz = null;
-		}
-		return new ResourceTypeInfo(
-				node.base.typeName,
-				node.base.typeClass,
-				clazz
-		);
+	public synchronized TempResourceType getResourceImplementation(TempResource.Impl node) throws SQLException {
+		return resourceHelpers.getResourceTypeInfo(node.base.typeName).orElseThrow(IllegalStateException::new);
 	}
 
 	@Override

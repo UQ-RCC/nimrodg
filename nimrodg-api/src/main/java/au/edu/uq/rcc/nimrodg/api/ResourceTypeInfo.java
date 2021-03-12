@@ -19,15 +19,19 @@
  */
 package au.edu.uq.rcc.nimrodg.api;
 
+import java.util.Objects;
+
 public final class ResourceTypeInfo {
 
 	public final String type;
 	public final String className;
 	public final Class<?> clazz;
+	public final ResourceType instance;
 
-	public ResourceTypeInfo(String type, String className, Class<?> clazz) {
-		this.type = type;
-		this.className = className;
+	public ResourceTypeInfo(String type, String className, Class<?> clazz, ResourceType instance) {
+		this.type = Objects.requireNonNull(type, "type");
+		this.className = Objects.requireNonNull(className, "className");
 		this.clazz = clazz;
+		this.instance = instance;
 	}
 }

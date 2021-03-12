@@ -231,13 +231,13 @@ public interface NimrodAPI extends AgentProvider, AutoCloseable {
 
 	Optional<NimrodURI> getAssignmentStatus(Resource res, Experiment exp);
 
-	Collection<ResourceType> getResourceTypeInfo();
+	Collection<ResourceTypeInfo> getResourceTypeInfo();
 
-	ResourceType getResourceTypeInfo(String name);
+	ResourceTypeInfo getResourceTypeInfo(String name);
 
-	ResourceType addResourceType(String name, String clazz);
+	ResourceTypeInfo addResourceType(String name, String clazz);
 
-	boolean deleteResourceType(ResourceType type);
+	boolean deleteResourceType(String name);
 
 	AgentInfo getAgentByUUID(UUID uuid);
 
