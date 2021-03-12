@@ -22,6 +22,7 @@ package au.edu.uq.rcc.nimrodg.cli;
 import au.edu.uq.rcc.nimrodg.cli.commands.AgentCmd;
 import au.edu.uq.rcc.nimrodg.cli.commands.JobCmd;
 import au.edu.uq.rcc.nimrodg.cli.commands.PropertyCmd;
+import au.edu.uq.rcc.nimrodg.cli.commands.ResourceTypeCmd;
 import au.edu.uq.rcc.nimrodg.utils.AppDirs;
 import au.edu.uq.rcc.nimrodg.cli.commands.Compile;
 import au.edu.uq.rcc.nimrodg.cli.commands.ExperimentCmd;
@@ -53,6 +54,7 @@ public class NimrodCLI {
 			ExperimentCmd.DEFINITION,
 			MasterCmd.DEFINITION,
 			ResourceCmd.DEFINITION,
+			ResourceTypeCmd.DEFINITION,
 			JobCmd.DEFINITION,
 			Setup.DEFINITION,
 			Compile.DEFINITION,
