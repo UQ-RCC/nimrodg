@@ -21,7 +21,8 @@ import java.util.Objects;
 
 public final class AgentCmd extends NimrodCLICommand {
 	private static final Map<String, Subcommand> COMMAND_MAP = Map.of(
-			"list", AgentCmd::executeList
+			"list", AgentCmd::executeList,
+			"platform", AgentCmd::executePlatform
 	);
 
 	private AgentCmd() {
@@ -89,6 +90,34 @@ public final class AgentCmd extends NimrodCLICommand {
 		return 0;
 	}
 
+	private static int executePlatform(NimrodAPI nimrod, Namespace args, PrintStream out, PrintStream err, Path[] configDirs) throws NimrodException {
+		SimpleTable st = SimpleTable.of().nextRow().nextCell("Platform").nextCell("Path");
+
+		switch(args.getString("platop")) {
+			case "list":
+				nimrod.lookupAgents().forEach((k, v) -> st.nextRow().nextCell(k).nextCell(Objects.toString(v.getPath())));
+				printTable(st, out);
+				return 0;
+
+			case "add": {
+				String plat = args.getString("platform_string");
+				String path = args.getString("path");
+				nimrod.addAgentPlatform(plat, Path.of(path));
+				st.nextRow().nextCell(plat).nextCell(path);
+				printTable(st, out);
+				return 0;
+			}
+			case "remove": {
+				nimrod.deleteAgentPlatform(args.getString("platform_string"));
+				return 0;
+			}
+			default:
+				break;
+		}
+
+		throw new IllegalArgumentException();
+	}
+
 	public static final CommandEntry DEFINITION = new CommandEntry(new AgentCmd(), "Agent Operations.") {
 		@Override
 		public void addArgs(Subparser parser) {
@@ -99,6 +128,28 @@ public final class AgentCmd extends NimrodCLICommand {
 			Subparser list = subs.addParser("list")
 					.help("List all the current agents.");
 			addResNameArg(list);
+
+			Subparser platform = subs.addParser("platform");
+
+			Subparsers psub = platform.addSubparsers().dest("platop");
+
+			psub.addParser("list")
+					.help("List agent platforms")
+					.description("List agent platforms");
+
+			Subparser platAdd = psub.addParser("add")
+					.help("Add an agent platform")
+					.description("Add an agent platform");
+			platAdd.addArgument("platform_string")
+					.help("Platform string");
+			platAdd.addArgument("path")
+					.help("Path to agent binary");
+
+			Subparser platRemove = psub.addParser("remove")
+					.help("Remove an agent platform")
+					.description("Remove an agent platform");
+			platRemove.addArgument("platform_string")
+					.help("Platform string");
 		}
 	};
 }
