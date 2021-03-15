@@ -27,7 +27,6 @@ import au.edu.uq.rcc.nimrodg.api.MachinePair;
 import au.edu.uq.rcc.nimrodg.api.NimrodConfig;
 import au.edu.uq.rcc.nimrodg.api.NimrodException;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
-import au.edu.uq.rcc.nimrodg.api.ResourceTypeInfo;
 import au.edu.uq.rcc.nimrodg.api.events.ConfigChangeMasterEvent;
 import au.edu.uq.rcc.nimrodg.api.events.JobAddMasterEvent;
 import au.edu.uq.rcc.nimrodg.api.events.NimrodMasterEvent;
@@ -53,7 +52,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
-import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
@@ -62,7 +60,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import javax.json.Json;
@@ -238,56 +235,40 @@ public class SQLite3DB extends SQLUUUUU<NimrodException.DbError> implements Nimr
 		return props;
 	}
 
-	private TempAgentDefinition.Impl tempAgentInfoFromResultSet(ResultSet rs) throws SQLException {
-		String plat = null;
-		String path = null;
-		Long id = null;
-
-		Set<MachinePair> mappings = new HashSet<>();
+	private Map<String, TempAgentDefinition.Impl> agentMappingsFromResultSet(ResultSet rs) throws SQLException {
+		Map<String, TempAgentDefinition.Impl> mappings = new HashMap<>();
 		while(rs.next()) {
-			if(id == null) {
-				id = rs.getLong("id");
-			}
+			long id = rs.getLong("id");
+			String plat = rs.getString("platform_string");
+			String path = rs.getString("path");
 
-			if(plat == null) {
-				plat = rs.getString("platform_string");
-			}
-
-			if(path == null) {
-				path = rs.getString("path");
-			}
+			TempAgentDefinition.Impl tad = NimrodUtils.getOrAddLazy(mappings, plat,
+					p -> new TempAgentDefinition(id, plat, path, new HashSet<>()).create()
+			);
 
 			/* These may be null if there's no mappings. */
 			String system = rs.getString("system");
 			String machine = rs.getString("machine");
 			if(system != null && machine != null) {
-				mappings.add(MachinePair.of(system, machine));
+				tad.base.posixMappings.add(MachinePair.of(system, machine));
 			}
 		}
 
-		if(id == null) {
-			return null;
-		}
-		return new TempAgentDefinition(id, plat, path, mappings).create();
+		return mappings;
 	}
 
 	@Override
 	public synchronized Map<String, TempAgentDefinition.Impl> lookupAgents() throws SQLException {
-		Map<String, TempAgentDefinition.Impl> a = new HashMap<>();
 		try(ResultSet rs = qGetAgentDefinition.executeQuery()) {
-			while(rs.next()) {
-				TempAgentDefinition.Impl tai = tempAgentInfoFromResultSet(rs);
-				a.put(tai.getPlatformString(), tai);
-			}
+			return agentMappingsFromResultSet(rs);
 		}
-		return a;
 	}
 
 	@Override
 	public synchronized Optional<TempAgentDefinition.Impl> lookupAgentByPlatform(String platform) throws SQLException {
 		qGetAgentDefinitionByPlatform.setString(1, platform);
 		try(ResultSet rs = qGetAgentDefinitionByPlatform.executeQuery()) {
-			return Optional.of(tempAgentInfoFromResultSet(rs));
+			return Optional.ofNullable(agentMappingsFromResultSet(rs).get(platform));
 		}
 	}
 
@@ -296,7 +277,7 @@ public class SQLite3DB extends SQLUUUUU<NimrodException.DbError> implements Nimr
 		qGetAgentDefinitionByPosix.setString(1, system);
 		qGetAgentDefinitionByPosix.setString(2, machine);
 		try(ResultSet rs = qGetAgentDefinitionByPosix.executeQuery()) {
-			return Optional.of(tempAgentInfoFromResultSet(rs));
+			return agentMappingsFromResultSet(rs).values().stream().findAny();
 		}
 	}
 
