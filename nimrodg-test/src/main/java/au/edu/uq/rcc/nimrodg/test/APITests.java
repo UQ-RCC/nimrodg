@@ -716,7 +716,7 @@ public abstract class APITests {
 	}
 
 	@Test
-	public void agentLookupTests() {
+	public void agentPlatformTests() {
 		NimrodAPI api = getNimrod();
 
 		AgentDefinition ai = api.lookupAgentByPlatform("x86_64-pc-linux-musl");
@@ -733,7 +733,10 @@ public abstract class APITests {
 		Assert.assertNotNull(ai2);
 		Assert.assertEquals(ai, ai2);
 
-		api.lookupAgentByPlatform("noop");
+		AgentDefinition noop = api.lookupAgentByPlatform("noop");
+		Assert.assertTrue(api.lookupAgents().containsKey(noop.getPlatformString()));
+		Assert.assertTrue(api.deleteAgentPlatform(noop.getPlatformString()));
+		Assert.assertFalse(api.lookupAgents().containsKey(noop.getPlatformString()));
 	}
 
 	@Test
