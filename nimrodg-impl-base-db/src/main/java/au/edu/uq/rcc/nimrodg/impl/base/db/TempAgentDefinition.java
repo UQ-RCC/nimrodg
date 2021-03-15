@@ -23,7 +23,7 @@ import au.edu.uq.rcc.nimrodg.api.AgentDefinition;
 import au.edu.uq.rcc.nimrodg.api.MachinePair;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.Set;
 
 public class TempAgentDefinition {
@@ -37,7 +37,7 @@ public class TempAgentDefinition {
 		this.id = id;
 		this.platform = platform;
 		this.path = path;
-		this.posixMappings = Set.copyOf(posixMappings);
+		this.posixMappings = posixMappings;
 	}
 
 	public Impl create() {
@@ -47,9 +47,13 @@ public class TempAgentDefinition {
 	public class Impl implements AgentDefinition {
 
 		public final TempAgentDefinition base;
+		public final Path path;
+		public final Set<MachinePair> pairs;
 
 		private Impl() {
 			this.base = TempAgentDefinition.this;
+			this.path = Path.of(this.base.path);
+			this.pairs = Collections.unmodifiableSet(this.base.posixMappings);
 		}
 
 		@Override
@@ -59,12 +63,12 @@ public class TempAgentDefinition {
 
 		@Override
 		public Path getPath() {
-			return Paths.get(path);
+			return path;
 		}
 
 		@Override
 		public Set<MachinePair> posixMappings() {
-			return posixMappings;
+			return pairs;
 		}
 
 		@Override
