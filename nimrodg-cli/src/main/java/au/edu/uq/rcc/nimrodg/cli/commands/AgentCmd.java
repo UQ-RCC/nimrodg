@@ -17,7 +17,6 @@ import net.sourceforge.argparse4j.inf.Subparsers;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Path;
-import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
 
