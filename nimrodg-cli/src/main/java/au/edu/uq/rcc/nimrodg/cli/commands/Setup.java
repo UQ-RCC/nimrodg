@@ -123,7 +123,7 @@ public final class Setup extends DefaultCLICommand {
 				}
 				return 0;
 			}
-			case "init2": {
+			case "configure": {
 				SetupConfig cfg = new SetupConfigBuilder()
 						.workDir(args.getString("workdir"))
 						.storeDir(args.getString("storedir"))
@@ -271,7 +271,7 @@ public final class Setup extends DefaultCLICommand {
 			}
 
 			{
-				Subparser sp = subs.addParser("init2");
+				Subparser sp = subs.addParser("configure");
 				sp.addArgument("--workdir")
 						.dest("workdir")
 						.help("Base Working Directory.")
