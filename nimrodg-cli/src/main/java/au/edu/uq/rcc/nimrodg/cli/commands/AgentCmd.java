@@ -1,6 +1,8 @@
 package au.edu.uq.rcc.nimrodg.cli.commands;
 
+import au.edu.uq.rcc.nimrodg.api.AgentDefinition;
 import au.edu.uq.rcc.nimrodg.api.AgentInfo;
+import au.edu.uq.rcc.nimrodg.api.MachinePair;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodException;
 import au.edu.uq.rcc.nimrodg.api.Resource;
@@ -92,8 +94,9 @@ public final class AgentCmd extends NimrodCLICommand {
 
 	private static int executePlatform(NimrodAPI nimrod, Namespace args, PrintStream out, PrintStream err, Path[] configDirs) throws NimrodException {
 		SimpleTable st = SimpleTable.of().nextRow().nextCell("Platform").nextCell("Path");
+		String op = args.getString("platop");
 
-		switch(args.getString("platop")) {
+		switch(op) {
 			case "list":
 				nimrod.lookupAgents().forEach((k, v) -> st.nextRow().nextCell(k).nextCell(Objects.toString(v.getPath())));
 				printTable(st, out);
@@ -109,6 +112,33 @@ public final class AgentCmd extends NimrodCLICommand {
 			}
 			case "remove": {
 				nimrod.deleteAgentPlatform(args.getString("platform_string"));
+				return 0;
+			}
+			case "unmap": {
+				nimrod.unmapAgentPosixPlatform(MachinePair.of(args.getString("system"), args.getString("machine")));
+				return 0;
+			}
+			case "map": {
+				String plat = args.getString("platform_string");
+				MachinePair mp = MachinePair.of(args.getString("system"), args.getString("machine"));
+				AgentDefinition platDef = nimrod.lookupAgentByPlatform(plat);
+				AgentDefinition posixDef = nimrod.lookupAgentByPosix(mp.system(), mp.machine());
+
+				if(platDef == null) {
+					err.printf("No such agent platform \"%s\"\n", plat);
+					return 1;
+				}
+
+				if(posixDef != null) {
+					if(plat.equals(posixDef.getPlatformString())) {
+						return 0;
+					}
+
+					err.printf("Cannot map agent platform %s to (%s): Already mapped to %s.\n", plat, mp, posixDef.getPlatformString());
+					return 1;
+				}
+
+				nimrod.mapAgentPosixPlatform(plat, mp);
 				return 0;
 			}
 			default:
@@ -150,6 +180,26 @@ public final class AgentCmd extends NimrodCLICommand {
 					.description("Remove an agent platform");
 			platRemove.addArgument("platform_string")
 					.help("Platform string");
+
+			Subparser platMap = psub.addParser("map")
+					.help("Map an agent platform to a POSIX (system, machine) pair")
+					.description("Map an agent platform to a POSIX (system, machine) pair");
+			platMap.addArgument("platform_string")
+					.help("Platform string");
+			platMap.addArgument("system")
+					.help("POSIX system (uname -s)");
+			platMap.addArgument("machine")
+					.help("POSIX machine (uname -m)");
+
+			Subparser platUnmap = psub.addParser("unmap")
+					.help("Unmap an agent platform to a POSIX (system, machine) pair")
+					.description("Unmap an agent platform to a POSIX (system, machine) pair");
+			platUnmap.addArgument("platform_string")
+					.help("Platform string");
+			platUnmap.addArgument("system")
+					.help("POSIX system (uname -s)");
+			platUnmap.addArgument("machine")
+					.help("POSIX machine (uname -m)");
 		}
 	};
 }
