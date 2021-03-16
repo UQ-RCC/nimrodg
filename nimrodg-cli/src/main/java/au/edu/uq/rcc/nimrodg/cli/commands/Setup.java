@@ -118,30 +118,6 @@ public final class Setup extends DefaultCLICommand {
 				}
 				return 0;
 			}
-			case "addagent": {
-				try(NimrodAPI api = fact.createNimrod(config)) {
-					api.addAgentPlatform(args.getString("platform_string"), Paths.get(args.getString("path")));
-				}
-				return 0;
-			}
-			case "delagent": {
-				try(NimrodAPI api = fact.createNimrod(config)) {
-					api.deleteAgentPlatform(args.getString("platform_string"));
-				}
-				return 0;
-			}
-			case "mapagent": {
-				try(NimrodAPI api = fact.createNimrod(config)) {
-					api.mapAgentPosixPlatform(args.getString("platform_string"), MachinePair.of(args.getString("system"), args.getString("machine")));
-				}
-				return 0;
-			}
-			case "unmapagent": {
-				try(NimrodAPI api = fact.createNimrod(config)) {
-					api.unmapAgentPosixPlatform(MachinePair.of(args.getString("system"), args.getString("machine")));
-				}
-				return 0;
-			}
 		}
 
 		return 0;
@@ -260,30 +236,6 @@ public final class Setup extends DefaultCLICommand {
 						.setDefault((String)null)
 						.nargs("?")
 						.help("The user setup configuration. May be omitted.");
-			}
-
-			{
-				Subparser sp = subs.addParser("addagent");
-				sp.addArgument("platform-string").dest("platform_string");
-				sp.addArgument("path");
-			}
-
-			{
-				Subparser sp = subs.addParser("delagent");
-				sp.addArgument("platform-string").dest("platform_string");
-			}
-
-			{
-				Subparser sp = subs.addParser("mapagent");
-				sp.addArgument("platform-string").dest("platform_string");
-				sp.addArgument("system");
-				sp.addArgument("machine");
-			}
-
-			{
-				Subparser sp = subs.addParser("unmapagent");
-				sp.addArgument("system");
-				sp.addArgument("machine");
 			}
 		}
 
