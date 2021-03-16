@@ -121,7 +121,7 @@ public final class AgentCmd extends NimrodCLICommand {
 				String plat = args.getString("platform_string");
 				MachinePair mp = MachinePair.of(args.getString("system"), args.getString("machine"));
 				AgentDefinition platDef = nimrod.lookupAgentByPlatform(plat);
-				AgentDefinition posixDef = nimrod.lookupAgentByPosix(mp.system(), mp.machine());
+				AgentDefinition posixDef = nimrod.lookupAgentByPosix(mp);
 
 				if(platDef == null) {
 					err.printf("No such agent platform \"%s\"\n", plat);

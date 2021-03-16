@@ -30,7 +30,7 @@ public abstract class ActuatorOpsAdapter implements Actuator.Operations {
 	}
 
 	@Override
-	public AgentDefinition lookupAgentByPosix(String system, String machine) {
-		return nimrod.lookupAgentByPosix(system, machine);
+	public AgentDefinition lookupAgentByPosix(MachinePair pair) {
+		return nimrod.lookupAgentByPosix(pair);
 	}
 }

@@ -78,9 +78,9 @@ public class TestAgentProvider implements AgentProvider {
 	}
 
 	@Override
-	public AgentDefinition lookupAgentByPosix(String system, String machine) {
+	public AgentDefinition lookupAgentByPosix(MachinePair pair) {
 		return this.lookupAgents().values().stream()
-				.filter(ai -> ai.posixMappings().contains(MachinePair.of(system, machine)))
+				.filter(ai -> ai.posixMappings().contains(pair))
 				.findFirst()
 				.orElse(null);
 	}

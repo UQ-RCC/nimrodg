@@ -27,5 +27,5 @@ public interface AgentProvider {
 
 	AgentDefinition lookupAgentByPlatform(String platString);
 
-	AgentDefinition lookupAgentByPosix(String system, String machine);
+	AgentDefinition lookupAgentByPosix(MachinePair pair);
 }

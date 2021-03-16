@@ -242,8 +242,8 @@ public abstract class TempNimrodAPIImpl implements NimrodAPI, NimrodMasterAPI {
 	}
 
 	@Override
-	public AgentDefinition lookupAgentByPosix(String system, String machine) {
-		return db.runSQL(() -> db.lookupAgentByPOSIX(system, machine).orElse(null));
+	public AgentDefinition lookupAgentByPosix(MachinePair pair) {
+		return db.runSQL(() -> db.lookupAgentByPOSIX(pair.system(), pair.machine()).orElse(null));
 	}
 
 	@Override

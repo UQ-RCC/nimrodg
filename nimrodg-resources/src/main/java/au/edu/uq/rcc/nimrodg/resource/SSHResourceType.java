@@ -20,6 +20,7 @@
 package au.edu.uq.rcc.nimrodg.resource;
 
 import au.edu.uq.rcc.nimrodg.api.AgentDefinition;
+import au.edu.uq.rcc.nimrodg.api.MachinePair;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.api.Actuator;
 import au.edu.uq.rcc.nimrodg.api.AgentProvider;
@@ -193,7 +194,7 @@ public abstract class SSHResourceType extends BaseResourceType {
 
 		try(RemoteShell shell = tf.create(cfg, tmpDir)) {
 			SystemInformation sysInfo = SystemInformation.getSystemInformation(shell);
-			AgentDefinition agent = ap.lookupAgentByPosix(sysInfo.kernelName, sysInfo.machine);
+			AgentDefinition agent = ap.lookupAgentByPosix(MachinePair.of(sysInfo.kernelName, sysInfo.machine));
 			if(agent == null) {
 				return null;
 			}

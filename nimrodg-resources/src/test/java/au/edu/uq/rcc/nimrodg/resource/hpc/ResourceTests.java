@@ -23,6 +23,7 @@ import au.edu.uq.rcc.nimrodg.api.Actuator;
 import au.edu.uq.rcc.nimrodg.api.AgentDefinition;
 import au.edu.uq.rcc.nimrodg.api.AgentInfo;
 import au.edu.uq.rcc.nimrodg.api.AgentProvider;
+import au.edu.uq.rcc.nimrodg.api.MachinePair;
 import au.edu.uq.rcc.nimrodg.api.MasterResourceType;
 import au.edu.uq.rcc.nimrodg.api.NimrodConfig;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
@@ -394,8 +395,8 @@ public class ResourceTests {
 		}
 
 		@Override
-		public AgentDefinition lookupAgentByPosix(String system, String machine) {
-			return agentProvider.lookupAgentByPosix(system, machine);
+		public AgentDefinition lookupAgentByPosix(MachinePair pair) {
+			return agentProvider.lookupAgentByPosix(pair);
 		}
 	}
 

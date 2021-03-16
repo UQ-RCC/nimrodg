@@ -725,11 +725,11 @@ public abstract class APITests {
 
 		Assert.assertEquals(Set.of(MachinePair.of("Linux", "x86_64"), MachinePair.of("Linux", "k10m")), ai.posixMappings());
 
-		AgentDefinition ai2 = api.lookupAgentByPosix("Linux", "x86_64");
+		AgentDefinition ai2 = api.lookupAgentByPosix(MachinePair.of("Linux", "x86_64"));
 		Assert.assertNotNull(ai2);
 		Assert.assertEquals(ai, ai2);
 
-		ai2 = api.lookupAgentByPosix("Linux", "k10m");
+		ai2 = api.lookupAgentByPosix(MachinePair.of("Linux", "k10m"));
 		Assert.assertNotNull(ai2);
 		Assert.assertEquals(ai, ai2);
 
