@@ -59,7 +59,8 @@ public class NimrodAPIFactoryImpl implements NimrodAPIDatabaseFactory {
 		return new SetupAPIImpl(conn);
 	}
 
-	private static Connection createConnection(UserConfig config) throws SQLException {
+	@Override
+	public Connection createConnection(UserConfig config) throws SQLException {
 		Properties dbconfig = new Properties();
 
 		Map<String, String> pgconfig = config.config().get("postgres");

@@ -61,7 +61,8 @@ public class SQLite3APIFactory implements NimrodAPIDatabaseFactory {
 		return new SQLite3SetupAPI(conn);
 	}
 
-	private static Connection createConnection(UserConfig config) throws SQLException {
+	@Override
+	public Connection createConnection(UserConfig config) throws SQLException {
 		Map<String, String> pgconfig = config.config().get("sqlite3");
 		if(pgconfig == null) {
 			throw new IllegalArgumentException("No sqlite3 configuration");
