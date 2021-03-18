@@ -50,7 +50,7 @@ public class SQLite3APIFactory implements NimrodAPIDatabaseFactory {
 	@Override
 	public NimrodAPI createNimrod(UserConfig config) {
 		try {
-			return createNimrod(createConnection(config, true));
+			return createNimrod(createConnection(config));
 		} catch(SQLException e) {
 			throw new NimrodException.DbError(e);
 		}
@@ -61,7 +61,7 @@ public class SQLite3APIFactory implements NimrodAPIDatabaseFactory {
 		return new SQLite3SetupAPI(conn);
 	}
 
-	private static Connection createConnection(UserConfig config, boolean foreignKeys) throws SQLException {
+	private static Connection createConnection(UserConfig config) throws SQLException {
 		Map<String, String> pgconfig = config.config().get("sqlite3");
 		if(pgconfig == null) {
 			throw new IllegalArgumentException("No sqlite3 configuration");
@@ -81,11 +81,7 @@ public class SQLite3APIFactory implements NimrodAPIDatabaseFactory {
 		}
 
 		try(Statement s = c.createStatement()) {
-			if(foreignKeys) {
-				s.execute("PRAGMA foreign_keys = true");
-			} else {
-				s.execute("PRAGMA foreign_keys = false");
-			}
+			s.execute("PRAGMA foreign_keys = true");
 			s.execute("PRAGMA recursive_triggers = true");
 		}
 		return c;
@@ -122,7 +118,7 @@ public class SQLite3APIFactory implements NimrodAPIDatabaseFactory {
 	@Override
 	public NimrodSetupAPI getSetupAPI(UserConfig config) {
 		try {
-			return getSetupAPI(createConnection(config, false));
+			return getSetupAPI(createConnection(config));
 		} catch(SQLException e) {
 			throw new NimrodException.DbError(e);
 		}
