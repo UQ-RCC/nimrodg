@@ -1,6 +1,6 @@
 buildscript {
 	ext {
-		OSPACKAGE_VERSION = '6.1.2'
+		OSPACKAGE_VERSION = '8.5.6'
 	}
 }
 
