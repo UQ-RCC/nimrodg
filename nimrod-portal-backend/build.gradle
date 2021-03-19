@@ -1,16 +1,10 @@
-buildscript {
-    repositories {
-        jcenter()
-    }
-
-    dependencies {
-        classpath group: 'com.netflix.nebula', name: 'gradle-ospackage-plugin', version: OSPACKAGE_VERSION
-    }
+plugins {
+    id 'de.undercouch.download' version '4.1.1'
+    id 'nebula.ospackage' version '8.5.6'
 }
 
 apply plugin: 'application'
 apply plugin: 'distribution'
-apply plugin: 'nebula.deb'
 
 mainClassName = 'au.edu.uq.rcc.nimrodg.portal.PortalServerApplication'
 
@@ -91,17 +85,15 @@ distTar {
 
 import org.redline_rpm.header.Flags
 
-task buildDeb(type: Deb, dependsOn: assembleDist) {
+ospackage {
     packageName         'nimrod-portal-backend'
     summary             'Nimrod Portal Backend Server'
     packageDescription  'Handles Nimrod-specific functionality'
-    arch                'all'
-    url                 'https://rcc.uq.edu.au/nimrod'
-    version             "${project.version.replace('_', '-')}-0ubuntu1"
-    maintainer          'Research Computing Centre <rcc-admin@uq.edu.au>'
 
-    requires            'default-jre-headless', '1.11', Flags.GREATER | Flags.EQUAL
-    requires            'adduser'
+    url                 'https://rcc.uq.edu.au/nimrod'
+    version             project.version
+    maintainer          'Research Computing Centre <rcc-admin@uq.edu.au>'
+    packager            maintainer
 
     user                'root'
     permissionGroup     'root'
@@ -111,35 +103,39 @@ task buildDeb(type: Deb, dependsOn: assembleDist) {
     preUninstallFile    file('debian/prerm')
     postUninstallFile   file('debian/postrm')
 
-    with copySpec {
-        into("usr/share/${project.name}") {
-            with distributions.main.contents
-        }
-
-        into("etc/${project.name}") {
-            from('application.sample.yml')
-            rename('application.sample.yml', 'application.yml')
-            fileMode 0644
-            //fileType = CONFIG
-        }
-
-        into("etc/${project.name}") {
-            from('logback-spring.xml')
-            fileMode 0644
-            //fileType = CONFIG
-        }
-
-        into("/lib/systemd/system") {
-            from("debian/${project.name}.service")
-            fileMode 0644
-        }
-
-        /* Work around https://github.com/nebula-plugins/gradle-ospackage-plugin/issues/118 */
-        configurationFile("/etc/${project.name}/application.yml")
-        configurationFile("/etc/${project.name}/logback-spring.xml")
-
-        exclude 'nimrod-portal-backend.bat'
+    into("usr/share/${project.name}") {
+        with distributions.main.contents
     }
+
+    into("etc/${project.name}") {
+        from('application.sample.yml')
+        rename('application.sample.yml', 'application.yml')
+        fileMode 0644
+        //fileType CONFIG | NOREPLACE
+    }
+
+    into("etc/${project.name}") {
+        from('logback-spring.xml')
+        fileMode 0644
+        //fileType CONFIG | NOREPLACE
+    }
+
+    into("/lib/systemd/system") {
+        from("debian/${project.name}.service")
+        fileMode 0644
+    }
+
+    /* Work around https://github.com/nebula-plugins/gradle-ospackage-plugin/issues/118 */
+    configurationFile("/etc/${project.name}/application.yml")
+    configurationFile("/etc/${project.name}/logback-spring.xml")
+
+    exclude 'nimrod-portal-backend.bat'
+}
+
+buildDeb {
+    arch                'all'
+    requires            'default-jre-headless', '1.11', Flags.GREATER | Flags.EQUAL
+    requires            'adduser'
 }
 
 task(generateArtifacts, dependsOn:[assembleDist, buildDeb]) {
