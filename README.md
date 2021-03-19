@@ -16,17 +16,16 @@ optional arguments:
 
 valid commands:
   command
-    setprop              Set a configuration property.
-    getprop              Get a configuration property.
-    addexp               Add a new, empty experiment from a planfile.
-    delexp               Delete an experiment and all associated data from the database.
-    addjobs              Add a list of jobs to the given run.
+    property             Property Operations.
     experiment           Experiment Operations.
     master               Start the experiment master.
     resource             Resource operations.
+    resource-type        Resource type operations.
+    job                  Job operations.
     setup                Nimrod/G setup functionality.
     compile              Compile a planfile.
     genconfig            Generate a default configuration file.
+    agent                Agent Operations.
     staging              Execute staging commands.
 ```
 
