@@ -877,13 +877,13 @@ public class NimrodPortalEndpoints {
 
 	@Bean
 	@Qualifier("pgbuilder")
-	public UriBuilder createPostgresUriBuilder(@Value("${nimrod.remote.postgres_uritemplate}") String s) {
+	public static UriBuilder createPostgresUriBuilder(@Value("${nimrod.remote.postgres_uritemplate}") String s) {
 		return new DefaultUriBuilderFactory().uriString(s);
 	}
 
 	@Bean
 	@RequestScope
-	public ResourceClient createResourceClient(
+	public static ResourceClient createResourceClient(
 			@Value("${nimrod.resource.api}") URI api,
 			@Value("${nimrod.resource.cacert:#{null}}") String cacert
 	) throws GeneralSecurityException, IOException {
@@ -907,7 +907,7 @@ public class NimrodPortalEndpoints {
 	}
 
 	@Bean
-	public RabbitManagementClient createRabbitManagementClient(
+	public static RabbitManagementClient createRabbitManagementClient(
 			@Value("${nimrod.rabbitmq.api}") URI api,
 			@Value("${nimrod.rabbitmq.user}") String user,
 			@Value("${nimrod.rabbitmq.password}") String password,
