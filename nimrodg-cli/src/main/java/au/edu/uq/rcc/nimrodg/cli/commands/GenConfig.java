@@ -30,6 +30,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+
+import au.edu.uq.rcc.nimrodg.utils.NimrodUtils;
 import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
@@ -49,10 +51,7 @@ public final class GenConfig implements CLICommand {
 	public int execute(Namespace args, PrintStream out, PrintStream err, Path[] configDirs) throws IOException, NimrodException {
 		Path config = Paths.get(args.getString("config"));
 
-		byte[] rawCfg;
-		try(InputStream is = NimrodCLI.class.getResourceAsStream("nimrod-ini-sample.ini")) {
-			rawCfg = is.readAllBytes();
-		}
+		byte[] rawCfg = NimrodUtils.readEmbeddedFile(NimrodCLI.class, "nimrod-ini-sample.ini");
 
 		Files.createDirectories(config.getParent());
 

@@ -33,9 +33,11 @@ import au.edu.uq.rcc.nimrodg.cli.DefaultCLICommand;
 import au.edu.uq.rcc.nimrodg.cli.IniSetupConfig;
 import au.edu.uq.rcc.nimrodg.cli.NimrodCLI;
 import au.edu.uq.rcc.nimrodg.cli.NimrodCLICommand;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.io.StringReader;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.file.Files;
@@ -80,10 +82,7 @@ public final class Setup extends DefaultCLICommand {
 			case "generate": {
 
 				/* NB: Not using resolveSetupConfiguration() here to keep the formatting. */
-				byte[] rawCfg;
-				try(InputStream is = NimrodCLI.class.getResourceAsStream("nimrod-setup-defaults.ini")) {
-					rawCfg = is.readAllBytes();
-				}
+				byte[] rawCfg = NimrodUtils.readEmbeddedFile(NimrodCLI.class, "nimrod-setup-defaults.ini");
 
 				String _ini = args.getString("setupini");
 				if(_ini.equals("-")) {
@@ -159,8 +158,8 @@ public final class Setup extends DefaultCLICommand {
 		Ini internalDefaults = new Ini();
 		if(!skipInternal) {
 			/* Load our internal defaults. */
-			try(InputStream is = NimrodCLI.class.getResourceAsStream("nimrod-setup-defaults.ini")) {
-				internalDefaults.load(is);
+			try(StringReader r = new StringReader(NimrodUtils.readEmbeddedFileAsString(NimrodCLI.class, "nimrod-setup-defaults.ini"))) {
+				internalDefaults.load(r);
 			} catch(IOException e) {
 				throw new UncheckedIOException(e);
 			}
