@@ -172,12 +172,7 @@ public class HPCDefinition {
 		} else if(jsub.containsKey("template_file")) {
 			submitTemplate = Files.readString(Paths.get(jsub.getString("template_file")), StandardCharsets.UTF_8);
 		} else if(jsub.containsKey("template_classpath")) {
-			try(InputStream is = HPCDefinition.class.getClassLoader().getResourceAsStream(jsub.getString("template_classpath"))) {
-				if(is == null) {
-					throw new IOException("No such template in classpath");
-				}
-				submitTemplate = new String(is.readAllBytes(), StandardCharsets.UTF_8);
-			}
+			submitTemplate = NimrodUtils.readEmbeddedFileAsString(HPCDefinition.class, jsub.getString("template_classpath"));
 		} else {
 			/* Should be caught by the schema first. */
 			throw new IllegalArgumentException();
