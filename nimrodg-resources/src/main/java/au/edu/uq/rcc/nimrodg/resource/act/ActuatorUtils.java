@@ -32,6 +32,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
+import java.io.StringReader;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -64,6 +65,7 @@ import javax.json.JsonStructure;
 
 import au.edu.uq.rcc.nimrodg.api.Resource;
 import au.edu.uq.rcc.nimrodg.shell.ShellUtils;
+import au.edu.uq.rcc.nimrodg.utils.NimrodUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.bouncycastle.openssl.PEMKeyPair;
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
@@ -192,10 +194,7 @@ public class ActuatorUtils {
 	}
 
 	public static JsonObject loadInternalSchema(Class<?> clazz, String name) {
-		try(InputStream is = clazz.getResourceAsStream(name)) {
-			if(is == null) {
-				throw new RuntimeException("Internal schema '" + name + "' doesn't exist. This is a bug.");
-			}
+		try(ByteArrayInputStream is = new ByteArrayInputStream(NimrodUtils.readEmbeddedFile(clazz, name))) {
 			return Json.createReader(is).readObject();
 		} catch(IOException e) {
 			throw new UncheckedIOException(e);
