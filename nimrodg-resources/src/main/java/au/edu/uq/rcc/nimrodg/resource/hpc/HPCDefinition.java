@@ -1,6 +1,7 @@
 package au.edu.uq.rcc.nimrodg.resource.hpc;
 
 import au.edu.uq.rcc.nimrodg.resource.act.ActuatorUtils;
+import au.edu.uq.rcc.nimrodg.utils.NimrodUtils;
 
 import javax.json.Json;
 import javax.json.JsonObject;
@@ -52,7 +53,7 @@ public class HPCDefinition {
 					.mapState("W", "Launching")
 					.mapState("X", "Disconnected")
 					.build(),
-			new String(ActuatorUtils.loadInternalFile(HPCDefinition.class, "hpc.pbspro.j2"), StandardCharsets.UTF_8)
+			NimrodUtils.readEmbeddedFileAsString(HPCDefinition.class, "hpc.pbspro.j2")
 	);
 
 	public static final HPCDefinition DEFINITION_SLURM = new HPCDefinition(
@@ -100,7 +101,7 @@ public class HPCDefinition {
 					.mapState("SUSPENDED", "Launched")
 					.mapState("TIMEOUT", "Disconnected")
 					.build(),
-			new String(ActuatorUtils.loadInternalFile(HPCDefinition.class, "hpc.slurm.j2"), StandardCharsets.UTF_8)
+			NimrodUtils.readEmbeddedFileAsString(HPCDefinition.class, "hpc.slurm.j2")
 	);
 
 	public static final HPCDefinition DEFINITION_LSF = new HPCDefinition(
@@ -123,7 +124,7 @@ public class HPCDefinition {
 					.argv("true")
 					.parser(new NoopParser())
 					.build(),
-			new String(ActuatorUtils.loadInternalFile(HPCDefinition.class, "hpc.lsf.j2"), StandardCharsets.UTF_8)
+			NimrodUtils.readEmbeddedFileAsString(HPCDefinition.class, "hpc.lsf.j2")
 	);
 
 	static Map<String, HPCDefinition> INBUILT_DEFINITIONS = Map.of(
