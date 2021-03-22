@@ -202,18 +202,6 @@ public class ActuatorUtils {
 		}
 	}
 
-	public static byte[] loadInternalFile(Class<?> clazz, String name) {
-		try(InputStream is = clazz.getResourceAsStream(name)) {
-			if(is == null) {
-				throw new RuntimeException("Internal file '" + name + "' doesn't exist. This is a bug.");
-			}
-
-			return is.readAllBytes();
-		} catch(IOException e) {
-			throw new UncheckedIOException(e);
-		}
-	}
-
 	public static String posixJoinPaths(String... args) {
 		/* We can't rely on nio.Path here, separators might be wrong.  */
 		//return String.join("/", args);
