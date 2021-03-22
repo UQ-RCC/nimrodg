@@ -95,7 +95,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -166,12 +165,7 @@ public class NimrodPortalEndpoints {
 
 	public NimrodPortalEndpoints() {
 		this.jinJava = new Jinjava();
-
-		try(InputStream is = NimrodPortalEndpoints.class.getResourceAsStream("nimrod.ini.j2")) {
-			nimrodIniTemplate = new String(is.readAllBytes(), StandardCharsets.UTF_8);
-		} catch(IOException e) {
-			throw new UncheckedIOException(e);
-		}
+		this.nimrodIniTemplate = NimrodUtils.readEmbeddedFileAsString(this.getClass(), "nimrod.ini.j2");
 
 		try {
 			hpcDefs = HPCResourceType.loadConfig(new Path[0], new ArrayList<>());
