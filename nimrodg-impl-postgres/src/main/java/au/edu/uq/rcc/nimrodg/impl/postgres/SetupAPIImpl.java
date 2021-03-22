@@ -20,10 +20,10 @@
 package au.edu.uq.rcc.nimrodg.impl.postgres;
 
 import au.edu.uq.rcc.nimrodg.api.setup.NimrodSetupAPI;
+import au.edu.uq.rcc.nimrodg.utils.NimrodUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -87,12 +87,9 @@ public class SetupAPIImpl implements NimrodSetupAPI {
 		/* Collate all the schema files together. */
 		try(ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
 			for(String s : DATABASE_FILES) {
-				try(InputStream is = NimrodAPIFactoryImpl.class.getResourceAsStream(s)) {
-					byte[] d = is.readAllBytes();
-					baos.write(d, 0, d.length);
-					/* In case the last line is a comment */
-					baos.write('\n');
-				}
+				baos.write(NimrodUtils.readEmbeddedFile(NimrodAPIFactoryImpl.class, s));
+				/* In case the last line is a comment */
+				baos.write('\n');
 			}
 
 			dbData = baos.toString(StandardCharsets.UTF_8);
