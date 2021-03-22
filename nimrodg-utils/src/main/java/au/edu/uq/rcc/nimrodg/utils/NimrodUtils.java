@@ -26,6 +26,10 @@ import au.edu.uq.rcc.nimrodg.api.setup.SetupConfig;
 import au.edu.uq.rcc.nimrodg.api.setup.TransferConfig;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -248,5 +252,29 @@ public class NimrodUtils {
 		cfg.properties().forEach(nimrod::setProperty);
 
 		return nimrod;
+	}
+
+	public static String readEmbeddedFileAsString(Class<?> clazz, String path) {
+		return readEmbeddedFileAsString(clazz, path, StandardCharsets.UTF_8);
+	}
+
+	public static String readEmbeddedFileAsString(Class<?> clazz, String path, Charset charset) {
+		Objects.requireNonNull(charset, "charset");
+		return new String(readEmbeddedFile(clazz, path), charset);
+	}
+
+	public static byte[] readEmbeddedFile(Class<?> clazz, String path) {
+		Objects.requireNonNull(clazz, "clazz");
+		Objects.requireNonNull(path, "path");
+
+		try(InputStream is = clazz.getResourceAsStream(path)) {
+			if(is == null) {
+				throw new IOException("Internal file '" + path + "' doesn't exist in package " + clazz.getPackageName() + ". This is a bug.");
+			}
+
+			return is.readAllBytes();
+		} catch(IOException e) {
+			throw new UncheckedIOException(e);
+		}
 	}
 }
