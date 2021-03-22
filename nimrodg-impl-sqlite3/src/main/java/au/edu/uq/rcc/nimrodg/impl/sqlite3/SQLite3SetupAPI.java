@@ -22,6 +22,7 @@ package au.edu.uq.rcc.nimrodg.impl.sqlite3;
 import au.edu.uq.rcc.nimrodg.impl.base.db.SQLUUUUU;
 import au.edu.uq.rcc.nimrodg.api.setup.NimrodSetupAPI;
 import au.edu.uq.rcc.nimrodg.api.setup.NimrodSetupAPI.SetupException;
+import au.edu.uq.rcc.nimrodg.utils.NimrodUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -72,12 +73,9 @@ public class SQLite3SetupAPI extends SQLUUUUU<SetupException> implements NimrodS
 		/* Collate all the schema files together. */
 		try(ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
 			for(String s : DATABASE_FILES) {
-				try(InputStream is = SQLite3APIFactory.class.getResourceAsStream(s)) {
-					byte[] d = is.readAllBytes();
-					baos.write(d, 0, d.length);
-					/* In case the last line is a comment */
-					baos.write('\n');
-				}
+				baos.write(NimrodUtils.readEmbeddedFile(SQLite3APIFactory.class, s));
+				/* In case the last line is a comment */
+				baos.write('\n');
 			}
 
 			dbData = baos.toString(StandardCharsets.UTF_8);
