@@ -43,11 +43,6 @@ import java.util.Properties;
 
 public class SQLite3APIFactory implements NimrodAPIDatabaseFactory {
 
-	/* Follow Semver 2.0 for these. */
-	public static final int SCHEMA_MAJOR = 4;
-	public static final int SCHEMA_MINOR = 0;
-	public static final int SCHEMA_PATCH = 0;
-
 	public static final SchemaVersion NATIVE_SCHEMA = SchemaVersion.of(4, 0, 0);
 
 	public static final MigrationPlan RESET_PLAN;
@@ -173,30 +168,8 @@ public class SQLite3APIFactory implements NimrodAPIDatabaseFactory {
 		return RESET_PLAN;
 	}
 
-	static boolean isSchemaCompatible(Connection c) throws SQLException {
-		int major, minor, patch;
-
-		try(PreparedStatement ps = c.prepareStatement("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'nimrod_schema_version'")) {
-			try(ResultSet rs = ps.executeQuery()) {
-				if(!rs.next()) {
-					return false;
-				}
-			}
-		}
-
-		try(PreparedStatement ps = c.prepareStatement("SELECT major, minor, patch FROM nimrod_schema_version")) {
-			try(ResultSet rs = ps.executeQuery()) {
-				major = rs.getInt("major");
-				minor = rs.getInt("minor");
-				patch = rs.getInt("patch");
-			}
-		}
-
-		return major == SCHEMA_MAJOR && minor <= SCHEMA_MINOR && patch <= SCHEMA_PATCH;
-	}
-
-	private static void checkSchemaVersion(Connection c) throws SQLException {
-		if(!isSchemaCompatible(c)) {
+	private void checkSchemaVersion(Connection c) throws SQLException {
+		if(!getCurrentSchemaVersion(c).isCompatible(NATIVE_SCHEMA)) {
 			throw new SchemaMismatch(new SQLException("Incompatible schema"));
 		}
 	}
