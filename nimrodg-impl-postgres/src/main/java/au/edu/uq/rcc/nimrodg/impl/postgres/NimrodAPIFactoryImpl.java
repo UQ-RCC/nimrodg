@@ -192,6 +192,15 @@ public class NimrodAPIFactoryImpl implements NimrodAPIDatabaseFactory {
 	}
 
 	@Override
+	public MigrationPlan buildMigrationPlan(final SchemaVersion from, final SchemaVersion to) {
+		if(to.compareTo(NATIVE_SCHEMA) > 0) {
+			return MigrationPlan.invalid(from, to, "Target version too new");
+		}
+
+		return DBUtils.buildMigrationPlan(from, to, UPGRADE_STEP_MAP);
+	}
+
+	@Override
 	public NimrodSetupAPI getSetupAPI(UserConfig config) {
 		try {
 			return getSetupAPI(createConnection(config));
