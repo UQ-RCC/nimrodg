@@ -24,8 +24,13 @@ import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.api.ResourceType;
 import au.edu.uq.rcc.nimrodg.api.ResourceTypeInfo;
 import au.edu.uq.rcc.nimrodg.utils.NimrodUtils;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.StringReader;
+import java.io.UncheckedIOException;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -235,5 +240,20 @@ public class DBUtils {
 		}
 
 		return new ResourceTypeInfo(trt.name, trt.clazz, clazz, rt);
+	}
+
+	public static String combineEmbeddedFiles(Class<?> clazz, String... fileList) {
+		/* Collate all the schema files together. */
+		try(ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+			for(String s : fileList) {
+				baos.write(NimrodUtils.readEmbeddedFile(clazz, s));
+				/* In case the last line is a comment */
+				baos.write('\n');
+			}
+
+			return baos.toString(StandardCharsets.UTF_8);
+		} catch(IOException e) {
+			throw new UncheckedIOException(e);
+		}
 	}
 }
