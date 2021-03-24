@@ -21,6 +21,7 @@ package au.edu.uq.rcc.nimrodg.impl.postgres;
 
 import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodException;
+import au.edu.uq.rcc.nimrodg.api.setup.SchemaVersion;
 import au.edu.uq.rcc.nimrodg.impl.base.db.NimrodAPIDatabaseFactory;
 import au.edu.uq.rcc.nimrodg.api.setup.NimrodSetupAPI;
 import au.edu.uq.rcc.nimrodg.api.setup.UserConfig;
@@ -38,6 +39,8 @@ public class NimrodAPIFactoryImpl implements NimrodAPIDatabaseFactory {
 	public static final int SCHEMA_MAJOR = 5;
 	public static final int SCHEMA_MINOR = 0;
 	public static final int SCHEMA_PATCH = 0;
+
+	public static final SchemaVersion NATIVE_SCHEMA = SchemaVersion.of(5, 0, 0);
 
 	@Override
 	public NimrodAPI createNimrod(Connection conn) throws SQLException {
@@ -84,6 +87,11 @@ public class NimrodAPIFactoryImpl implements NimrodAPIDatabaseFactory {
 		}
 
 		return c;
+	}
+
+	@Override
+	public SchemaVersion getNativeSchemaVersion() {
+		return NATIVE_SCHEMA;
 	}
 
 	private static void checkSchemaVersion(Connection c) throws SQLException {

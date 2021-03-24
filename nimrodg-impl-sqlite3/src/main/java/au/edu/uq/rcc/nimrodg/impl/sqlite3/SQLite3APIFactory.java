@@ -21,6 +21,7 @@ package au.edu.uq.rcc.nimrodg.impl.sqlite3;
 
 import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodException;
+import au.edu.uq.rcc.nimrodg.api.setup.SchemaVersion;
 import au.edu.uq.rcc.nimrodg.impl.base.db.NimrodAPIDatabaseFactory;
 import au.edu.uq.rcc.nimrodg.api.setup.NimrodSetupAPI;
 import au.edu.uq.rcc.nimrodg.api.setup.UserConfig;
@@ -40,6 +41,8 @@ public class SQLite3APIFactory implements NimrodAPIDatabaseFactory {
 	public static final int SCHEMA_MAJOR = 4;
 	public static final int SCHEMA_MINOR = 0;
 	public static final int SCHEMA_PATCH = 0;
+
+	public static final SchemaVersion NATIVE_SCHEMA = SchemaVersion.of(4, 0, 0);
 
 	@Override
 	public NimrodAPI createNimrod(Connection conn) throws SQLException {
@@ -86,6 +89,11 @@ public class SQLite3APIFactory implements NimrodAPIDatabaseFactory {
 			s.execute("PRAGMA recursive_triggers = true");
 		}
 		return c;
+	}
+
+	@Override
+	public SchemaVersion getNativeSchemaVersion() {
+		return NATIVE_SCHEMA;
 	}
 
 	static boolean isSchemaCompatible(Connection c) throws SQLException {
