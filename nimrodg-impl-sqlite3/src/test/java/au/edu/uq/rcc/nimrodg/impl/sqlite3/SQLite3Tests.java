@@ -31,6 +31,7 @@ import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 
 import java.nio.file.Path;
+import java.sql.Connection;
 import java.util.Map;
 
 public class SQLite3Tests extends APITests {
@@ -66,9 +67,11 @@ public class SQLite3Tests extends APITests {
 		};
 
 		SQLite3APIFactory fimpl = new SQLite3APIFactory();
-		try(NimrodSetupAPI api = fimpl.getSetupAPI(ucfg)) {
+		try(Connection c = fimpl.createConnection(ucfg)) {
+			NimrodSetupAPI api = fimpl.getSetupAPI(c);
 			api.reset();
-			Assert.assertTrue(api.isCompatibleSchema());
+
+			Assert.assertEquals(fimpl.getNativeSchemaVersion(), fimpl.getCurrentSchemaVersion(c));
 		}
 
 		NimrodAPI nimrod = fimpl.createNimrod(ucfg);

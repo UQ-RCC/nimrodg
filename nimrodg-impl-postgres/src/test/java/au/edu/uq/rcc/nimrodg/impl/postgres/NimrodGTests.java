@@ -24,6 +24,7 @@ import au.edu.uq.rcc.nimrodg.api.setup.NimrodSetupAPI;
 import au.edu.uq.rcc.nimrodg.api.setup.UserConfig;
 import au.edu.uq.rcc.nimrodg.test.APITests;
 import java.nio.file.Path;
+import java.sql.Connection;
 import java.util.Map;
 
 import au.edu.uq.rcc.nimrodg.utils.NimrodUtils;
@@ -62,9 +63,11 @@ public class NimrodGTests extends APITests {
 		};
 
 		NimrodAPIFactoryImpl fimpl = new NimrodAPIFactoryImpl();
-		try(NimrodSetupAPI api = fimpl.getSetupAPI(ucfg)) {
+		try(Connection c = fimpl.createConnection(ucfg)) {
+			NimrodSetupAPI api = fimpl.getSetupAPI(c);
 			api.reset();
-			Assert.assertTrue(api.isCompatibleSchema());
+
+			Assert.assertEquals(fimpl.getNativeSchemaVersion(), fimpl.getCurrentSchemaVersion(c));
 		}
 
 		nimrod = fimpl.createNimrod(ucfg);

@@ -26,8 +26,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
@@ -45,43 +43,16 @@ public class SetupAPIImpl implements NimrodSetupAPI {
 
 	private final Connection conn;
 	private final boolean managed;
-	private final PreparedStatement qIsSchemaCompatible;
 
-	public SetupAPIImpl(Connection conn) throws SQLException {
+	public SetupAPIImpl(Connection conn) {
 		this(conn, true);
 	}
 
-	SetupAPIImpl(Connection conn, boolean manage) throws SQLException {
+	SetupAPIImpl(Connection conn, boolean manage) {
 		this.conn = conn;
 		this.managed = manage;
-
-		this.qIsSchemaCompatible = conn.prepareStatement("SELECT is_schema_compatible(?, ?, ?)");
 	}
 
-	@Override
-	public synchronized boolean isCompatibleSchema() throws SetupException {
-		try {
-			qIsSchemaCompatible.setInt(1, NimrodAPIFactoryImpl.SCHEMA_MAJOR);
-			qIsSchemaCompatible.setInt(2, NimrodAPIFactoryImpl.SCHEMA_MINOR);
-			qIsSchemaCompatible.setInt(3, NimrodAPIFactoryImpl.SCHEMA_PATCH);
-
-			try(ResultSet rs = qIsSchemaCompatible.executeQuery()) {
-				if(!rs.next()) {
-					return false;
-				}
-				return rs.getBoolean(1);
-			}
-		} catch(SQLException e) {
-			if("42883".equals(e.getSQLState())) {
-				/* undefined_function */
-				return false;
-			}
-
-			throw new SetupException(e);
-		}
-	}
-
-	@Override
 	public synchronized void reset() throws SetupException {
 		String dbData;
 		/* Collate all the schema files together. */
