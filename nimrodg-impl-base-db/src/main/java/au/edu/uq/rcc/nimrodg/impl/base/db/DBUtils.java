@@ -23,6 +23,7 @@ import au.edu.uq.rcc.nimrodg.api.MasterResourceType;
 import au.edu.uq.rcc.nimrodg.api.NimrodURI;
 import au.edu.uq.rcc.nimrodg.api.ResourceType;
 import au.edu.uq.rcc.nimrodg.api.ResourceTypeInfo;
+import au.edu.uq.rcc.nimrodg.api.setup.SchemaVersion;
 import au.edu.uq.rcc.nimrodg.utils.NimrodUtils;
 
 import java.io.ByteArrayOutputStream;
@@ -37,6 +38,9 @@ import java.sql.SQLException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.Objects;
 import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
@@ -240,6 +244,46 @@ public class DBUtils {
 		}
 
 		return new ResourceTypeInfo(trt.name, trt.clazz, clazz, rt);
+	}
+
+	public static MigrationPlan buildMigrationPlan(final SchemaVersion from, final SchemaVersion to, final Map<SchemaVersion, UpgradeStep> upgradeSteps) {
+		Objects.requireNonNull(from, "from");
+		Objects.requireNonNull(to, "to");
+		Objects.requireNonNull(upgradeSteps, "steps");
+
+		if(from.compareTo(to) > 0) {
+			return MigrationPlan.invalid(from, to, "Can't upgrade to an older version");
+		}
+
+		if(from.compareTo(SchemaVersion.of(1, 0, 0)) < 0) {
+			/*
+			 * Due to early screw-ups, this can't safely be done automatically.
+			 * Upgrade manually to 1.0.0 first, then we can do things.
+			 */
+			return MigrationPlan.invalid(from, to, "Please upgrade to 1.0.0 manually, then rerun this command");
+		}
+
+		/* Find an upgrade path. */
+		final ArrayList<UpgradeStep> steps = new ArrayList<>(upgradeSteps.size());
+		for(SchemaVersion _from = from; _from.compareTo(to) < 0; ) {
+			UpgradeStep step = upgradeSteps.get(_from);
+			if(step == null) {
+				return MigrationPlan.invalid(_from, to, "Unable to determine upgrade path");
+			}
+
+			assert step.from.equals(_from);
+			assert step.from.compareTo(step.to) < 0;
+
+			steps.add(step);
+			_from = step.to;
+		}
+
+		if(!steps.isEmpty() && !steps.get(steps.size() - 1).to.equals(to)) {
+			/* We overshot the target. */
+			return MigrationPlan.invalid(from, to, "Unable to determine upgrade path");
+		}
+
+		return MigrationPlan.valid(from, to, steps);
 	}
 
 	public static String combineEmbeddedFiles(Class<?> clazz, String... fileList) {
