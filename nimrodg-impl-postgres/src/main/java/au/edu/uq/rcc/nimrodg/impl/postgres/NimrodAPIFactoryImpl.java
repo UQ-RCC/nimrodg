@@ -22,21 +22,42 @@ package au.edu.uq.rcc.nimrodg.impl.postgres;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodException;
 import au.edu.uq.rcc.nimrodg.api.setup.SchemaVersion;
+import au.edu.uq.rcc.nimrodg.impl.base.db.DBUtils;
+import au.edu.uq.rcc.nimrodg.impl.base.db.MigrationPlan;
 import au.edu.uq.rcc.nimrodg.impl.base.db.NimrodAPIDatabaseFactory;
 import au.edu.uq.rcc.nimrodg.api.setup.NimrodSetupAPI;
 import au.edu.uq.rcc.nimrodg.api.setup.UserConfig;
+import au.edu.uq.rcc.nimrodg.impl.base.db.UpgradeStep;
 
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
 public class NimrodAPIFactoryImpl implements NimrodAPIDatabaseFactory {
 
 	public static final SchemaVersion NATIVE_SCHEMA = SchemaVersion.of(5, 0, 0);
+
+	public static final MigrationPlan RESET_PLAN;
+
+	static {
+		RESET_PLAN = MigrationPlan.valid(SchemaVersion.UNVERSIONED, NATIVE_SCHEMA, List.of(UpgradeStep.of(
+				SchemaVersion.UNVERSIONED, NATIVE_SCHEMA, DBUtils.combineEmbeddedFiles(
+						NimrodAPIFactoryImpl.class,
+						"db/00-ddl.sql",
+						"db/01-ddl-experiments.sql",
+						"db/02-ddl-exporttasks.sql",
+						"db/03-ddl-add-compiledexperiment.sql",
+						"db/04-ddl-utility.sql",
+						"db/05-ddl-resources.sql",
+						"db/07-ddl-messages.sql"
+				)
+		)));
+	}
 
 	@Override
 	public NimrodAPI createNimrod(Connection conn) throws SQLException {
@@ -107,6 +128,11 @@ public class NimrodAPIFactoryImpl implements NimrodAPIDatabaseFactory {
 
 			throw e;
 		}
+	}
+
+	@Override
+	public MigrationPlan buildResetPlan() {
+		return RESET_PLAN;
 	}
 
 	private static void checkSchemaVersion(Connection c) throws SQLException {

@@ -22,9 +22,12 @@ package au.edu.uq.rcc.nimrodg.impl.sqlite3;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodException;
 import au.edu.uq.rcc.nimrodg.api.setup.SchemaVersion;
+import au.edu.uq.rcc.nimrodg.impl.base.db.DBUtils;
+import au.edu.uq.rcc.nimrodg.impl.base.db.MigrationPlan;
 import au.edu.uq.rcc.nimrodg.impl.base.db.NimrodAPIDatabaseFactory;
 import au.edu.uq.rcc.nimrodg.api.setup.NimrodSetupAPI;
 import au.edu.uq.rcc.nimrodg.api.setup.UserConfig;
+import au.edu.uq.rcc.nimrodg.impl.base.db.UpgradeStep;
 
 import java.sql.Connection;
 import java.sql.Driver;
@@ -32,6 +35,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
@@ -43,6 +47,20 @@ public class SQLite3APIFactory implements NimrodAPIDatabaseFactory {
 	public static final int SCHEMA_PATCH = 0;
 
 	public static final SchemaVersion NATIVE_SCHEMA = SchemaVersion.of(4, 0, 0);
+
+	public static final MigrationPlan RESET_PLAN;
+
+	static {
+		RESET_PLAN = MigrationPlan.valid(SchemaVersion.UNVERSIONED, NATIVE_SCHEMA, List.of(UpgradeStep.of(
+				SchemaVersion.UNVERSIONED, NATIVE_SCHEMA, DBUtils.combineEmbeddedFiles(
+						SQLite3APIFactory.class,
+						"db/setup/00-config.sql",
+						"db/setup/01-experiments.sql",
+						"db/setup/02-resources.sql",
+						"db/setup/03-messages.sql"
+				)
+		)));
+	}
 
 	@Override
 	public NimrodAPI createNimrod(Connection conn) throws SQLException {
@@ -115,6 +133,11 @@ public class SQLite3APIFactory implements NimrodAPIDatabaseFactory {
 				);
 			}
 		}
+	}
+
+	@Override
+	public MigrationPlan buildResetPlan() {
+		return RESET_PLAN;
 	}
 
 	static boolean isSchemaCompatible(Connection c) throws SQLException {
