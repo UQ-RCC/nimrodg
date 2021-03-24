@@ -176,6 +176,11 @@ public class SQLite3APIFactory implements NimrodAPIDatabaseFactory {
 		return DBUtils.buildMigrationPlan(from, to, UPGRADE_STEP_MAP);
 	}
 
+	@Override
+	public List<UpgradeStep> getUpgradePairs() {
+		return UPGRADE_STEPS;
+	}
+
 	private void checkSchemaVersion(Connection c) throws SQLException {
 		if(!getCurrentSchemaVersion(c).isCompatible(NATIVE_SCHEMA)) {
 			throw new SchemaMismatch(new SQLException("Incompatible schema"));

@@ -28,6 +28,7 @@ import au.edu.uq.rcc.nimrodg.api.setup.UserConfig;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.List;
 
 public interface NimrodAPIDatabaseFactory extends NimrodAPIFactory {
 
@@ -50,4 +51,6 @@ public interface NimrodAPIDatabaseFactory extends NimrodAPIFactory {
 	MigrationPlan buildResetPlan();
 
 	MigrationPlan buildMigrationPlan(SchemaVersion from, SchemaVersion to);
+
+	List<UpgradeStep> getUpgradePairs();
 }

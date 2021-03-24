@@ -201,6 +201,11 @@ public class NimrodAPIFactoryImpl implements NimrodAPIDatabaseFactory {
 	}
 
 	@Override
+	public List<UpgradeStep> getUpgradePairs() {
+		return UPGRADE_STEPS;
+	}
+
+	@Override
 	public NimrodSetupAPI getSetupAPI(UserConfig config) {
 		try {
 			return getSetupAPI(createConnection(config));
