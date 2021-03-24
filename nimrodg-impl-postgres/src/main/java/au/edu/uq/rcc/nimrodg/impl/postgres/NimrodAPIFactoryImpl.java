@@ -36,11 +36,6 @@ import java.util.Properties;
 
 public class NimrodAPIFactoryImpl implements NimrodAPIDatabaseFactory {
 
-	/* Follow Semver 2.0 for these. */
-	public static final int SCHEMA_MAJOR = 5;
-	public static final int SCHEMA_MINOR = 0;
-	public static final int SCHEMA_PATCH = 0;
-
 	public static final SchemaVersion NATIVE_SCHEMA = SchemaVersion.of(5, 0, 0);
 
 	@Override
@@ -117,9 +112,9 @@ public class NimrodAPIFactoryImpl implements NimrodAPIDatabaseFactory {
 	private static void checkSchemaVersion(Connection c) throws SQLException {
 		/* Check the schema version, this will RAISE if it's incompatible. */
 		try(PreparedStatement ps = c.prepareStatement("SELECT require_schema_compatible(?, ?, ?)")) {
-			ps.setInt(1, SCHEMA_MAJOR);
-			ps.setInt(2, SCHEMA_MINOR);
-			ps.setInt(3, SCHEMA_PATCH);
+			ps.setInt(1, NATIVE_SCHEMA.major);
+			ps.setInt(2, NATIVE_SCHEMA.minor);
+			ps.setInt(3, NATIVE_SCHEMA.patch);
 			ps.execute();
 		} catch(SQLException e) {
 			switch(e.getSQLState()) {
