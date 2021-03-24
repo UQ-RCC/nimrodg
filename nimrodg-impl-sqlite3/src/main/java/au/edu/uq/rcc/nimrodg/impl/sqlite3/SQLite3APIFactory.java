@@ -28,6 +28,7 @@ import au.edu.uq.rcc.nimrodg.impl.base.db.NimrodAPIDatabaseFactory;
 import au.edu.uq.rcc.nimrodg.api.setup.NimrodSetupAPI;
 import au.edu.uq.rcc.nimrodg.api.setup.UserConfig;
 import au.edu.uq.rcc.nimrodg.impl.base.db.UpgradeStep;
+import au.edu.uq.rcc.nimrodg.utils.NimrodUtils;
 
 import java.sql.Connection;
 import java.sql.Driver;
@@ -35,6 +36,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -50,6 +52,9 @@ public class SQLite3APIFactory implements NimrodAPIDatabaseFactory {
 
 	public static final MigrationPlan RESET_PLAN;
 
+	public static final List<UpgradeStep> UPGRADE_STEPS;
+	private static final Map<SchemaVersion, UpgradeStep> UPGRADE_STEP_MAP;
+
 	static {
 		RESET_PLAN = MigrationPlan.valid(SchemaVersion.UNVERSIONED, NATIVE_SCHEMA, List.of(UpgradeStep.of(
 				SchemaVersion.UNVERSIONED, NATIVE_SCHEMA, DBUtils.combineEmbeddedFiles(
@@ -60,6 +65,34 @@ public class SQLite3APIFactory implements NimrodAPIDatabaseFactory {
 						"db/setup/03-messages.sql"
 				)
 		)));
+
+		UPGRADE_STEPS = List.of(
+				UpgradeStep.of(
+						SchemaVersion.of(1, 0, 0),
+						SchemaVersion.of(2, 0, 0),
+						NimrodUtils.readEmbeddedFileAsString(SQLite3APIFactory.class, "db/setup/upgrade/1.0.0_to_2.0.0.sql")
+				),
+				UpgradeStep.of(
+						SchemaVersion.of(2, 0, 0),
+						SchemaVersion.of(2, 1, 0),
+						NimrodUtils.readEmbeddedFileAsString(SQLite3APIFactory.class, "db/setup/upgrade/2.0.0_to_2.1.0.sql")
+				),
+				UpgradeStep.of(
+						SchemaVersion.of(2, 1, 0),
+						SchemaVersion.of(3, 0, 0),
+						NimrodUtils.readEmbeddedFileAsString(SQLite3APIFactory.class, "db/setup/upgrade/2.1.0_to_3.0.0.sql")
+				),
+				UpgradeStep.of(
+						SchemaVersion.of(3, 0, 0),
+						SchemaVersion.of(4, 0, 0),
+						NimrodUtils.readEmbeddedFileAsString(SQLite3APIFactory.class, "db/setup/upgrade/3.0.0_to_4.0.0.sql")
+				)
+		);
+
+		UPGRADE_STEP_MAP = new HashMap<>();
+		for(UpgradeStep s : UPGRADE_STEPS) {
+			UPGRADE_STEP_MAP.put(s.from, s);
+		}
 	}
 
 	@Override
