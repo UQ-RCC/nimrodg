@@ -44,4 +44,6 @@ public interface NimrodAPIDatabaseFactory extends NimrodAPIFactory {
 	Connection createConnection(UserConfig config) throws SQLException;
 
 	SchemaVersion getNativeSchemaVersion();
+
+	SchemaVersion getCurrentSchemaVersion(Connection conn) throws SQLException;
 }

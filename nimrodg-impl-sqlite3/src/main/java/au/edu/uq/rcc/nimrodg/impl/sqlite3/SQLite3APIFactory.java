@@ -96,6 +96,27 @@ public class SQLite3APIFactory implements NimrodAPIDatabaseFactory {
 		return NATIVE_SCHEMA;
 	}
 
+	@Override
+	public SchemaVersion getCurrentSchemaVersion(Connection conn) throws SQLException {
+		try(PreparedStatement ps = conn.prepareStatement("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'nimrod_schema_version'")) {
+			try(ResultSet rs = ps.executeQuery()) {
+				if(!rs.next()) {
+					return SchemaVersion.UNVERSIONED;
+				}
+			}
+		}
+
+		try(PreparedStatement ps = conn.prepareStatement("SELECT major, minor, patch FROM nimrod_schema_version")) {
+			try(ResultSet rs = ps.executeQuery()) {
+				return SchemaVersion.of(
+						rs.getInt("major"),
+						rs.getInt("minor"),
+						rs.getInt("patch")
+				);
+			}
+		}
+	}
+
 	static boolean isSchemaCompatible(Connection c) throws SQLException {
 		int major, minor, patch;
 

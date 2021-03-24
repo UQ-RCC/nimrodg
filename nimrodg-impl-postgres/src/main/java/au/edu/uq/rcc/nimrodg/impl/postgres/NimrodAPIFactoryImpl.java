@@ -29,6 +29,7 @@ import au.edu.uq.rcc.nimrodg.api.setup.UserConfig;
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Map;
 import java.util.Properties;
@@ -92,6 +93,25 @@ public class NimrodAPIFactoryImpl implements NimrodAPIDatabaseFactory {
 	@Override
 	public SchemaVersion getNativeSchemaVersion() {
 		return NATIVE_SCHEMA;
+	}
+
+	@Override
+	public SchemaVersion getCurrentSchemaVersion(Connection conn) throws SQLException {
+		try(PreparedStatement ps = conn.prepareStatement("SELECT * FROM get_schema_version()")) {
+			try(ResultSet rs = ps.executeQuery()) {
+				if(!rs.next()) {
+					throw new SQLException("get_schema_version() returned no rows");
+				}
+				return SchemaVersion.of(rs.getInt(1), rs.getInt(2), rs.getInt(3));
+			}
+		} catch(SQLException e) {
+			if("42883".equals(e.getSQLState())) {
+				/* undefined_function */
+				return SchemaVersion.UNVERSIONED;
+			}
+
+			throw e;
+		}
 	}
 
 	private static void checkSchemaVersion(Connection c) throws SQLException {
