@@ -18,6 +18,7 @@ dependencies {
 	implementation project(':nimrodg-resources')
 	implementation project(':nimrodg-master')
 	implementation project(':nimrodg-utils')
+	implementation project(':nimrodg-impl-base-db')
 
 	runtimeOnly project(':nimrodg-impl-postgres')
 	runtimeOnly project(':nimrodg-impl-sqlite3')

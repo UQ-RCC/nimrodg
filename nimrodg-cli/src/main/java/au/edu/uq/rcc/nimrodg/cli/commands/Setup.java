@@ -152,7 +152,13 @@ public final class Setup extends DefaultCLICommand {
 				}
 				return 0;
 			}
+			case "db":
+				switch(args.getString("dbop")) {
+					case "migrate:":
+						return DbMigrateCmd.DEFINITION.command.execute(args, out, err, configDirs);
+				}
 		}
+
 
 		return 0;
 	}
@@ -278,6 +284,18 @@ public final class Setup extends DefaultCLICommand {
 						.required(true);
 
 				addPrefixedUriArg(sp, "tx", "Transfer", true);
+			}
+
+			{
+				Subparser sp = subs.addParser("db")
+						.help("Database functionality");
+
+				Subparsers dbsp = sp.addSubparsers().dest("dbop");
+
+				Subparser migrate = dbsp.addParser("migrate")
+						.help(DbMigrateCmd.DEFINITION.help)
+						.description(DbMigrateCmd.DEFINITION.description);
+				DbMigrateCmd.DEFINITION.addArgs(migrate);
 			}
 		}
 
