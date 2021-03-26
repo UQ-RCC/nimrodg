@@ -98,12 +98,6 @@ public final class Setup extends DefaultCLICommand {
 				System.err.println("  nimrod setup init <path>");
 				return 0;
 			}
-			case "bareinit": {
-				try(NimrodSetupAPI api = fact.getSetupAPI(config)) {
-					api.reset();
-				}
-				return 0;
-			}
 			case "init": {
 				Ini ini = resolveSetupConfiguration(
 						configDirs,
@@ -248,10 +242,6 @@ public final class Setup extends DefaultCLICommand {
 						.type(Boolean.TYPE)
 						.action(Arguments.storeTrue())
 						.help("Only reinitialise the backend, don't add default configuration.");
-			}
-
-			{
-				subs.addParser("bareinit");
 			}
 
 			{
