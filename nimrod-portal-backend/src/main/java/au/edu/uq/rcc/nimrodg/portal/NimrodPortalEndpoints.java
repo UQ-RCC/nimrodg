@@ -42,8 +42,6 @@ import au.edu.uq.rcc.nimrodg.resource.hpc.HPCDefinition;
 import au.edu.uq.rcc.nimrodg.resource.hpc.HPCResourceType;
 import au.edu.uq.rcc.nimrodg.resource.ssh.ClientFactories;
 import au.edu.uq.rcc.nimrodg.resource.ssh.TransportFactory;
-import au.edu.uq.rcc.nimrodg.api.setup.NimrodSetupAPI;
-import au.edu.uq.rcc.nimrodg.api.setup.SetupConfigBuilder;
 import au.edu.uq.rcc.nimrodg.utils.NimrodUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -883,22 +881,6 @@ public class NimrodPortalEndpoints {
 			}
 			throw e;
 		}
-	}
-
-	private NimrodSetupAPI createNimrodSetup(String username) throws SQLException {
-		/* NB: Can't use try-with-resources here. */
-		Connection c = dataSource.getConnection();
-		try {
-			/* ...Also can't use prepareStatement() with SET. The username should always be safe regardless. */
-			try(Statement stmt = c.createStatement()) {
-				stmt.execute(String.format("SET search_path = %s", username));
-			}
-		} catch(SQLException e) {
-			c.close();
-			throw e;
-		}
-
-		return new NimrodAPIFactoryImpl().getSetupAPI(c);
 	}
 
 	@SuppressWarnings("WeakerAccess")
