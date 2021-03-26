@@ -54,10 +54,10 @@ public class SQLite3APIFactory implements NimrodAPIDatabaseFactory {
 		RESET_PLAN = MigrationPlan.valid(SchemaVersion.UNVERSIONED, NATIVE_SCHEMA, List.of(UpgradeStep.of(
 				SchemaVersion.UNVERSIONED, NATIVE_SCHEMA, DBUtils.combineEmbeddedFiles(
 						SQLite3APIFactory.class,
-						"db/setup/00-config.sql",
-						"db/setup/01-experiments.sql",
-						"db/setup/02-resources.sql",
-						"db/setup/03-messages.sql"
+						"db/00-config.sql",
+						"db/01-experiments.sql",
+						"db/02-resources.sql",
+						"db/03-messages.sql"
 				)
 		)));
 
@@ -65,22 +65,22 @@ public class SQLite3APIFactory implements NimrodAPIDatabaseFactory {
 				UpgradeStep.of(
 						SchemaVersion.of(1, 0, 0),
 						SchemaVersion.of(2, 0, 0),
-						NimrodUtils.readEmbeddedFileAsString(SQLite3APIFactory.class, "db/setup/upgrade/1.0.0_to_2.0.0.sql")
+						NimrodUtils.readEmbeddedFileAsString(SQLite3APIFactory.class, "db/upgrade/1.0.0_to_2.0.0.sql")
 				),
 				UpgradeStep.of(
 						SchemaVersion.of(2, 0, 0),
 						SchemaVersion.of(2, 1, 0),
-						NimrodUtils.readEmbeddedFileAsString(SQLite3APIFactory.class, "db/setup/upgrade/2.0.0_to_2.1.0.sql")
+						NimrodUtils.readEmbeddedFileAsString(SQLite3APIFactory.class, "db/upgrade/2.0.0_to_2.1.0.sql")
 				),
 				UpgradeStep.of(
 						SchemaVersion.of(2, 1, 0),
 						SchemaVersion.of(3, 0, 0),
-						NimrodUtils.readEmbeddedFileAsString(SQLite3APIFactory.class, "db/setup/upgrade/2.1.0_to_3.0.0.sql")
+						NimrodUtils.readEmbeddedFileAsString(SQLite3APIFactory.class, "db/upgrade/2.1.0_to_3.0.0.sql")
 				),
 				UpgradeStep.of(
 						SchemaVersion.of(3, 0, 0),
 						SchemaVersion.of(4, 0, 0),
-						NimrodUtils.readEmbeddedFileAsString(SQLite3APIFactory.class, "db/setup/upgrade/3.0.0_to_4.0.0.sql")
+						NimrodUtils.readEmbeddedFileAsString(SQLite3APIFactory.class, "db/upgrade/3.0.0_to_4.0.0.sql")
 				)
 		);
 
