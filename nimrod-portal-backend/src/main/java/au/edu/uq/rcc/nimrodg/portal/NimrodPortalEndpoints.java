@@ -242,7 +242,7 @@ public class NimrodPortalEndpoints {
 
 		ArrayNode exps = objectMapper.createArrayNode();
 
-		try(NimrodAPI nimrod = createNimrod(userState.username)) {
+		try(NimrodAPI nimrod = createNimrod(userState)) {
 			for(Experiment exp : nimrod.getExperiments()) {
 				exps.add(toJson(nimrod, exp));
 			}
@@ -266,7 +266,7 @@ public class NimrodPortalEndpoints {
 			return ResponseEntity.badRequest().body(response);
 		}
 
-		try(NimrodAPI nimrod = createNimrod(userState.username)) {
+		try(NimrodAPI nimrod = createNimrod(userState)) {
 			Experiment exp = nimrod.getExperiment(addExperiment.name);
 			if(exp != null) {
 				return ResponseEntity.status(HttpStatus.CONFLICT).build();
@@ -295,7 +295,7 @@ public class NimrodPortalEndpoints {
 	public ResponseEntity<JsonNode> deleteExperiment(JwtAuthenticationToken jwt, @PathVariable String expName) throws SQLException {
 		UserState userState = getUserState(jwt);
 
-		try(NimrodAPI nimrod = createNimrod(userState.username)) {
+		try(NimrodAPI nimrod = createNimrod(userState)) {
 			Experiment exp = nimrod.getExperiment(expName);
 			if(exp == null) {
 				return ResponseEntity.notFound().build();
@@ -380,7 +380,7 @@ public class NimrodPortalEndpoints {
 	public ResponseEntity<JsonNode> getExperiment(JwtAuthenticationToken jwt, @PathVariable String expName) throws SQLException {
 		UserState userState = getUserState(jwt);
 
-		try(NimrodAPI nimrod = createNimrod(userState.username)) {
+		try(NimrodAPI nimrod = createNimrod(userState)) {
 			Experiment exp = nimrod.getExperiment(expName);
 			if(exp == null) {
 				return ResponseEntity.notFound().build();
@@ -428,7 +428,7 @@ public class NimrodPortalEndpoints {
 
 		UserState userState = getUserState(jwt);
 
-		try(NimrodAPI nimrod = createNimrod(userState.username)) {
+		try(NimrodAPI nimrod = createNimrod(userState)) {
 			Experiment exp = nimrod.getExperiment(expName);
 			if(exp == null) {
 				return ResponseEntity.notFound().build();
@@ -470,7 +470,7 @@ public class NimrodPortalEndpoints {
 	public ResponseEntity<JsonNode> getAssignments(JwtAuthenticationToken jwt, @PathVariable String expName) throws SQLException {
 		UserState userState = getUserState(jwt);
 
-		try(NimrodAPI nimrod = createNimrod(userState.username)) {
+		try(NimrodAPI nimrod = createNimrod(userState)) {
 			Experiment exp = nimrod.getExperiment(expName);
 			if(exp == null) {
 				return ResponseEntity.notFound().build();
@@ -489,7 +489,7 @@ public class NimrodPortalEndpoints {
 	public ResponseEntity<JsonNode> setAssignments(JwtAuthenticationToken jwt, @PathVariable String expName, @RequestBody List<String> ds) throws SQLException {
 		UserState userState = getUserState(jwt);
 
-		try(NimrodAPI nimrod = createNimrod(userState.username)) {
+		try(NimrodAPI nimrod = createNimrod(userState)) {
 			Experiment exp = nimrod.getExperiment(expName);
 			if(exp == null) {
 				return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
@@ -512,7 +512,7 @@ public class NimrodPortalEndpoints {
 	public ResponseEntity<JsonNode> getResources(JwtAuthenticationToken jwt) throws SQLException {
 		UserState userState = getUserState(jwt);
 
-		try(NimrodAPI nimrod = createNimrod(userState.username)) {
+		try(NimrodAPI nimrod = createNimrod(userState)) {
 			return ResponseEntity.ok(toJson(nimrod.getResources()));
 		}
 	}
@@ -522,7 +522,7 @@ public class NimrodPortalEndpoints {
 	public ResponseEntity<JsonNode> getResource(JwtAuthenticationToken jwt, @PathVariable String resName) throws SQLException {
 		UserState userState = getUserState(jwt);
 
-		try(NimrodAPI nimrod = createNimrod(userState.username)) {
+		try(NimrodAPI nimrod = createNimrod(userState)) {
 			Resource res = nimrod.getResource(resName);
 			if(res == null) {
 				return ResponseEntity.notFound().build();
@@ -537,7 +537,7 @@ public class NimrodPortalEndpoints {
 	public ResponseEntity<Void> addResource(JwtAuthenticationToken jwt, UriComponentsBuilder uriComponentsBuilder, @RequestBody AddResource addResource) throws SQLException {
 		UserState userState = getUserState(jwt);
 
-		try(NimrodAPI nimrod = createNimrod(userState.username)) {
+		try(NimrodAPI nimrod = createNimrod(userState)) {
 			HPCConfig hpcc = new HPCConfig(
 					new SSHResourceType.SSHConfig(
 							nimrod.lookupAgentByPlatform("x86_64-pc-linux-musl"),
@@ -584,7 +584,7 @@ public class NimrodPortalEndpoints {
 	public ResponseEntity<JsonNode> deleteResource(JwtAuthenticationToken jwt, @PathVariable String resName) throws SQLException {
 		UserState userState = getUserState(jwt);
 
-		try(NimrodAPI nimrod = createNimrod(userState.username)) {
+		try(NimrodAPI nimrod = createNimrod(userState)) {
 			Resource res = nimrod.getResource(resName);
 			if(res == null) {
 				return ResponseEntity.notFound().build();
@@ -602,7 +602,7 @@ public class NimrodPortalEndpoints {
 	public ResponseEntity<JsonNode> getResourceAgents(JwtAuthenticationToken jwt, @PathVariable String resName) throws SQLException {
 		UserState userState = getUserState(jwt);
 
-		try(NimrodAPI nimrod = createNimrod(userState.username)) {
+		try(NimrodAPI nimrod = createNimrod(userState)) {
 			Resource res = nimrod.getResource(resName);
 			if(res == null) {
 				return ResponseEntity.notFound().build();
@@ -792,23 +792,6 @@ public class NimrodPortalEndpoints {
 
 		LOGGER.debug("{}: getUserState({}) => {id={}}", request.getRequestURI(), userState.username, userState.id);
 		return userState;
-	}
-
-
-	private NimrodAPI createNimrod(String username) throws SQLException {
-		/* NB: Can't use try-with-resources here. */
-		Connection c = dataSource.getConnection();
-		try {
-			/* ...Also can't use prepareStatement() with SET. The username should always be safe regardless. */
-			try(Statement stmt = c.createStatement()) {
-				stmt.execute(String.format("SET search_path = %s", username));
-			}
-		} catch(SQLException e) {
-			c.close();
-			throw e;
-		}
-
-		return new NimrodAPIFactoryImpl().createNimrod(c);
 	}
 
 	private NimrodAPI createNimrod(UserState userState) throws SQLException {
