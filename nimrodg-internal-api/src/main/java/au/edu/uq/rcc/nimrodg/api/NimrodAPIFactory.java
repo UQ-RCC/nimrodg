@@ -19,12 +19,8 @@
  */
 package au.edu.uq.rcc.nimrodg.api;
 
-import au.edu.uq.rcc.nimrodg.api.setup.NimrodSetupAPI;
 import au.edu.uq.rcc.nimrodg.api.setup.UserConfig;
 
 public interface NimrodAPIFactory {
 	NimrodAPI createNimrod(UserConfig config);
-
-	NimrodSetupAPI getSetupAPI(UserConfig config);
-
 }

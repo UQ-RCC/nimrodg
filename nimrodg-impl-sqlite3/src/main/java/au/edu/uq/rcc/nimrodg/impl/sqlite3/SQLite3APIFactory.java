@@ -25,7 +25,6 @@ import au.edu.uq.rcc.nimrodg.api.setup.SchemaVersion;
 import au.edu.uq.rcc.nimrodg.impl.base.db.DBUtils;
 import au.edu.uq.rcc.nimrodg.impl.base.db.MigrationPlan;
 import au.edu.uq.rcc.nimrodg.impl.base.db.NimrodAPIDatabaseFactory;
-import au.edu.uq.rcc.nimrodg.api.setup.NimrodSetupAPI;
 import au.edu.uq.rcc.nimrodg.api.setup.UserConfig;
 import au.edu.uq.rcc.nimrodg.impl.base.db.UpgradeStep;
 import au.edu.uq.rcc.nimrodg.utils.NimrodUtils;
@@ -106,11 +105,6 @@ public class SQLite3APIFactory implements NimrodAPIDatabaseFactory {
 	}
 
 	@Override
-	public NimrodSetupAPI getSetupAPI(Connection conn) {
-		return new SQLite3SetupAPI(conn);
-	}
-
-	@Override
 	public Connection createConnection(UserConfig config) throws SQLException {
 		Map<String, String> pgconfig = config.config().get("sqlite3");
 		if(pgconfig == null) {
@@ -186,14 +180,4 @@ public class SQLite3APIFactory implements NimrodAPIDatabaseFactory {
 			throw new SchemaMismatch(new SQLException("Incompatible schema"));
 		}
 	}
-
-	@Override
-	public NimrodSetupAPI getSetupAPI(UserConfig config) {
-		try {
-			return getSetupAPI(createConnection(config));
-		} catch(SQLException e) {
-			throw new NimrodException.DbError(e);
-		}
-	}
-
 }

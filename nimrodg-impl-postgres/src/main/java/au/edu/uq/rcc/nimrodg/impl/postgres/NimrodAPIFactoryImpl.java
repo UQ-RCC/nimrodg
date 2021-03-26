@@ -25,7 +25,6 @@ import au.edu.uq.rcc.nimrodg.api.setup.SchemaVersion;
 import au.edu.uq.rcc.nimrodg.impl.base.db.DBUtils;
 import au.edu.uq.rcc.nimrodg.impl.base.db.MigrationPlan;
 import au.edu.uq.rcc.nimrodg.impl.base.db.NimrodAPIDatabaseFactory;
-import au.edu.uq.rcc.nimrodg.api.setup.NimrodSetupAPI;
 import au.edu.uq.rcc.nimrodg.api.setup.UserConfig;
 import au.edu.uq.rcc.nimrodg.impl.base.db.UpgradeStep;
 import au.edu.uq.rcc.nimrodg.utils.NimrodUtils;
@@ -110,11 +109,6 @@ public class NimrodAPIFactoryImpl implements NimrodAPIDatabaseFactory {
 		} catch(SQLException e) {
 			throw new NimrodException.DbError(e);
 		}
-	}
-
-	@Override
-	public NimrodSetupAPI getSetupAPI(Connection conn) throws SQLException {
-		return new SetupAPIImpl(conn);
 	}
 
 	@Override
@@ -204,15 +198,4 @@ public class NimrodAPIFactoryImpl implements NimrodAPIDatabaseFactory {
 	public List<UpgradeStep> getUpgradePairs() {
 		return UPGRADE_STEPS;
 	}
-
-	@Override
-	public NimrodSetupAPI getSetupAPI(UserConfig config) {
-		try {
-			return getSetupAPI(createConnection(config));
-		} catch(SQLException e) {
-			throw new NimrodException.DbError(e);
-		}
-	}
-
-
 }
