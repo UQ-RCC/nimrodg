@@ -156,6 +156,8 @@ public final class Setup extends DefaultCLICommand {
 				switch(args.getString("dbop")) {
 					case "migrate:":
 						return DbMigrateCmd.DEFINITION.command.execute(args, out, err, configDirs);
+					case "stats":
+						return DbStatsCmd.DEFINITION.command.execute(args, out, err, configDirs);
 				}
 		}
 
@@ -291,6 +293,11 @@ public final class Setup extends DefaultCLICommand {
 						.help("Database functionality");
 
 				Subparsers dbsp = sp.addSubparsers().dest("dbop");
+
+				Subparser stats = dbsp.addParser("stats")
+						.help(DbStatsCmd.DEFINITION.help)
+						.description(DbStatsCmd.DEFINITION.description);
+				DbStatsCmd.DEFINITION.addArgs(stats);
 
 				Subparser migrate = dbsp.addParser("migrate")
 						.help(DbMigrateCmd.DEFINITION.help)
