@@ -29,6 +29,7 @@ import au.edu.uq.rcc.nimrodg.api.setup.UserConfig;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Objects;
 
 public interface NimrodAPIDatabaseFactory extends NimrodAPIFactory {
 
@@ -49,6 +50,23 @@ public interface NimrodAPIDatabaseFactory extends NimrodAPIFactory {
 	SchemaVersion getCurrentSchemaVersion(Connection conn) throws SQLException;
 
 	MigrationPlan buildResetPlan();
+
+	default MigrationPlan buildUpgradePlan(Connection conn) throws SQLException {
+		Objects.requireNonNull(conn, "conn");
+
+		SchemaVersion curr = getCurrentSchemaVersion(conn);
+		if(SchemaVersion.UNVERSIONED.equals(curr)) {
+			return buildResetPlan();
+		}
+
+		SchemaVersion nat = getNativeSchemaVersion();
+
+		if(curr.isCompatible(nat)) {
+			return MigrationPlan.valid(curr, curr, List.of());
+		}
+
+		return buildMigrationPlan(curr, getNativeSchemaVersion());
+	}
 
 	MigrationPlan buildMigrationPlan(SchemaVersion from, SchemaVersion to);
 
