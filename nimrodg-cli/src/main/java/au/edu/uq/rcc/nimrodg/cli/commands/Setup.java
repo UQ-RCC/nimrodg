@@ -23,7 +23,6 @@ import au.edu.uq.rcc.nimrodg.api.MachinePair;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPIFactory;
 import au.edu.uq.rcc.nimrodg.api.setup.AMQPConfigBuilder;
-import au.edu.uq.rcc.nimrodg.api.setup.NimrodSetupAPI;
 import au.edu.uq.rcc.nimrodg.api.setup.SetupConfig;
 import au.edu.uq.rcc.nimrodg.api.setup.SetupConfigBuilder;
 import au.edu.uq.rcc.nimrodg.api.setup.TransferConfigBuilder;
@@ -49,6 +48,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -107,9 +107,13 @@ public final class Setup extends DefaultCLICommand {
 				);
 
 				SetupConfig cfg = IniSetupConfig.parseToBuilder(ini, config.configPath()).build();
-				try(NimrodSetupAPI api = fact.getSetupAPI(config)) {
-					api.reset();
-				}
+				int r = DbMigrateCmd.DEFINITION.command.execute(new Namespace(Map.of(
+						"config", args.get("config"),
+						"migop", "apply",
+						"auto_approve", true
+				)), new PrintStream(PrintStream.nullOutputStream()), err, configDirs);
+				if(r != 0)
+					return r;
 
 				try(NimrodAPI api = fact.createNimrod(config)) {
 					NimrodUtils.setupApi(api, cfg);
@@ -134,9 +138,14 @@ public final class Setup extends DefaultCLICommand {
 								.noVerifyHost(Objects.requireNonNullElse(args.getBoolean("tx_no_verify_host"), false))
 								.build())
 						.build();
-				try(NimrodSetupAPI api = fact.getSetupAPI(config)) {
-					api.reset();
-				}
+
+				int r = DbMigrateCmd.DEFINITION.command.execute(new Namespace(Map.of(
+						"config", args.get("config"),
+						"migop", "apply",
+						"auto_approve", true
+				)), new PrintStream(PrintStream.nullOutputStream()), err, configDirs);
+				if(r != 0)
+					return r;
 
 				try(NimrodAPI api = fact.createNimrod(config)) {
 					NimrodUtils.setupApi(api, cfg);
