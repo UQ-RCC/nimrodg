@@ -245,7 +245,12 @@ public final class Setup extends DefaultCLICommand {
 			}
 
 			{
-				Subparser sp = subs.addParser("init");
+				Subparser sp = subs.addParser("init")
+						.help("(Re)initialise the Nimrod backend.")
+						.description(
+								"(Re)initialise the Nimrod backend.\n"
+								+ "WARNING: THIS WILL DESTROY ALL DATA"
+						);
 
 				sp.addArgument("--skip-system")
 						.dest("skip_system")
