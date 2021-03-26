@@ -20,16 +20,14 @@
 package au.edu.uq.rcc.nimrodg.impl.postgres;
 
 import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
-import au.edu.uq.rcc.nimrodg.api.setup.NimrodSetupAPI;
 import au.edu.uq.rcc.nimrodg.api.setup.UserConfig;
+import au.edu.uq.rcc.nimrodg.impl.base.db.DBUtils;
 import au.edu.uq.rcc.nimrodg.test.APITests;
 import java.nio.file.Path;
-import java.sql.Connection;
 import java.util.Map;
 
-import au.edu.uq.rcc.nimrodg.utils.NimrodUtils;
+import au.edu.uq.rcc.nimrodg.test.TestUtils;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
@@ -62,16 +60,7 @@ public class NimrodGTests extends APITests {
 			}
 		};
 
-		NimrodAPIFactoryImpl fimpl = new NimrodAPIFactoryImpl();
-		try(Connection c = fimpl.createConnection(ucfg)) {
-			NimrodSetupAPI api = fimpl.getSetupAPI(c);
-			api.reset();
-
-			Assert.assertEquals(fimpl.getNativeSchemaVersion(), fimpl.getCurrentSchemaVersion(c));
-		}
-
-		nimrod = fimpl.createNimrod(ucfg);
-		NimrodUtils.setupApi(nimrod, APITests.getTestSetupConfig(root));
+		nimrod = TestUtils.resetAndCreateNimrod(new NimrodAPIFactoryImpl(), ucfg, APITests.getTestSetupConfig(root));
 	}
 
 	@After
