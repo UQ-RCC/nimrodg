@@ -67,11 +67,7 @@ public abstract class SQLUUUUU<X extends RuntimeException> implements ISQLBase<X
 				conn.rollback();
 				conn.setAutoCommit(autocommit);
 			} catch(SQLException e2) {
-				if(e instanceof NimrodException.DbError) {
-					e2.setNextException(((NimrodException.DbError)e).sql);
-				}
-
-				/* DB error, just discard the NimrodException. */
+				e2.addSuppressed(e);
 				throw makeException(e2);
 			}
 			throw e;
@@ -80,7 +76,8 @@ public abstract class SQLUUUUU<X extends RuntimeException> implements ISQLBase<X
 				conn.rollback();
 				conn.setAutoCommit(autocommit);
 			} catch(SQLException e2) {
-				e.setNextException(e2);
+				e2.addSuppressed(e);
+				throw makeException(e2);
 			}
 
 			throw makeException(e);
