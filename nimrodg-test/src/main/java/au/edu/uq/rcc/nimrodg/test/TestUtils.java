@@ -22,11 +22,20 @@ package au.edu.uq.rcc.nimrodg.test;
 import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodParseAPI;
 import au.edu.uq.rcc.nimrodg.api.PlanfileParseException;
+import au.edu.uq.rcc.nimrodg.api.setup.SetupConfig;
+import au.edu.uq.rcc.nimrodg.api.setup.UserConfig;
 import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledRun;
 import au.edu.uq.rcc.nimrodg.api.utils.run.RunfileBuildException;
+import au.edu.uq.rcc.nimrodg.impl.base.db.MigrationPlan;
+import au.edu.uq.rcc.nimrodg.impl.base.db.NimrodAPIDatabaseFactory;
 import au.edu.uq.rcc.nimrodg.parsing.ANTLR4ParseAPIImpl;
+import au.edu.uq.rcc.nimrodg.utils.NimrodUtils;
 
 import javax.json.JsonValue;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.Objects;
 
 public class TestUtils {
 
@@ -129,4 +138,40 @@ public class TestUtils {
 			+ "cPr7cec8RrHum7WYUuYPAkB4t33FTP31lI7VeRpR+5W77BP78dSvv11RH+kKME1n\n"
 			+ "pFqF3KeBYNpq66XTLSjNTM8lcJgNfzrMEED/DyXYuMlx\n"
 			+ "-----END RSA PRIVATE KEY-----";
+
+
+	public static NimrodAPI resetAndCreateNimrod(NimrodAPIDatabaseFactory fact, UserConfig ucfg, SetupConfig cfg) throws SQLException {
+		Objects.requireNonNull(fact, "fact");
+		Objects.requireNonNull(ucfg, "ucfg");
+		Objects.requireNonNull(cfg, "cfg");
+
+		MigrationPlan plan = fact.buildResetPlan();
+		if(!plan.valid) {
+			throw new IllegalStateException("Invalid initial migration plan: " + plan.message);
+		}
+
+		/* Can't use try-with-resources, as we need to steal the connection. */
+		Connection conn = null;
+		try {
+			conn = fact.createConnection(ucfg);
+
+			conn.setAutoCommit(false);
+			try(Statement s = conn.createStatement()) {
+				s.executeUpdate(plan.sql);
+			}
+
+			NimrodAPI nimrod = fact.createNimrod(conn);
+			NimrodUtils.setupApi(nimrod, cfg);
+			conn.commit();
+			conn.setAutoCommit(true);
+
+			/* NimrodAPI now owns the Connection. */
+			conn = null;
+			return nimrod;
+		} finally {
+			if(conn != null) {
+				conn.close();
+			}
+		}
+	}
 }
