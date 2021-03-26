@@ -113,7 +113,10 @@ public class DBResourceHelpers extends DBBaseHelper {
 
 		this.qAddResourceType = prepareStatement("INSERT INTO nimrod_resource_types(name, implementation_class) VALUES (?, ?)", true);
 		this.qDeleteResourceType = prepareStatement("DELETE FROM nimrod_resource_types WHERE name = ?");
-		this.qAddAgentPlatform = prepareStatement("INSERT INTO nimrod_agents(platform_string, path) VALUES(?, ?)");
+		this.qAddAgentPlatform = prepareStatement(
+				"INSERT INTO nimrod_agents(platform_string, path) VALUES(?, ?) "
+				+ "ON CONFLICT(platform_string) DO UPDATE SET path = EXCLUDED.path"
+		);
 		this.qDelAgentPlatform = prepareStatement("DELETE FROM nimrod_agents WHERE platform_string = ?");
 		this.qMapAgent = prepareStatement("INSERT INTO nimrod_agent_mappings(system, machine, agent_id)"
 										  + "SELECT ?, ?, id FROM nimrod_agents WHERE platform_string = ?");

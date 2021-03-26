@@ -326,8 +326,8 @@ public abstract class TempNimrodAPIImpl implements NimrodAPI, NimrodMasterAPI {
 	}
 
 	@Override
-	public boolean addAgentPlatform(String platformString, Path path) {
-		return db.runSQL(() -> db.addAgentPlatform(platformString, path));
+	public void addAgentPlatform(String platformString, Path path) {
+		db.runSQL(() -> db.addAgentPlatform(platformString, path));
 	}
 
 	@Override

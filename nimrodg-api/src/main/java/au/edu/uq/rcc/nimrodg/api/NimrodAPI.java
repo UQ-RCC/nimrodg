@@ -245,7 +245,16 @@ public interface NimrodAPI extends AgentProvider, AutoCloseable {
 
 	Collection<? extends AgentInfo> getResourceAgents(Resource node);
 
-	boolean addAgentPlatform(String platformString, Path path);
+	/**
+	 * Map an agent platform string to an agent binary.
+	 *
+	 * If such a mapping already exists, it is overwritten.
+	 *
+	 * @param platformString The agent platform string. Must not be NULL.
+	 * @param path The path to the agent binary on the machine where the experiment
+	 *             master is running. Must not be NULL.
+	 */
+	void addAgentPlatform(String platformString, Path path);
 
 	boolean deleteAgentPlatform(String platformString);
 
