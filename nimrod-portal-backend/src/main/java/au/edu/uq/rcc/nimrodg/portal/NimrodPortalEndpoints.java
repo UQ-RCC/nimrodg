@@ -27,10 +27,13 @@ import au.edu.uq.rcc.nimrodg.api.NimrodAPI;
 import au.edu.uq.rcc.nimrodg.api.NimrodException;
 import au.edu.uq.rcc.nimrodg.api.PlanfileParseException;
 import au.edu.uq.rcc.nimrodg.api.Resource;
+import au.edu.uq.rcc.nimrodg.api.setup.SetupConfig;
 import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledRun;
 import au.edu.uq.rcc.nimrodg.api.utils.run.JsonUtils;
 import au.edu.uq.rcc.nimrodg.api.utils.run.RunBuilder;
 import au.edu.uq.rcc.nimrodg.api.utils.run.RunfileBuildException;
+import au.edu.uq.rcc.nimrodg.impl.base.db.DBUtils;
+import au.edu.uq.rcc.nimrodg.impl.base.db.MigrationPlan;
 import au.edu.uq.rcc.nimrodg.impl.postgres.NimrodAPIFactoryImpl;
 import au.edu.uq.rcc.nimrodg.parsing.ANTLR4ParseAPIImpl;
 import au.edu.uq.rcc.nimrodg.resource.SSHResourceType;
@@ -109,6 +112,8 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.Instant;
@@ -201,24 +206,12 @@ public class NimrodPortalEndpoints {
 			return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
 		}
 
-		if(!userState.initialised) {
-			try(NimrodSetupAPI setup = createNimrodSetup(userState.username)) {
-				setup.reset();
-			} catch(NimrodSetupAPI.SetupException | SQLException e) {
-				LOGGER.error(String.format("Unable to initialise Nimrod tables for user %s", userState.username), e);
-				return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
-			}
-
-			try(NimrodAPI nimrod = createNimrod(userState.username)) {
-				SetupConfigBuilder b = setupConfig.toBuilder(userState.vars);
-				NimrodUtils.setupApi(nimrod, b.build());
-			} catch(NimrodSetupAPI.SetupException | SQLException e) {
-				LOGGER.error(String.format("Unable to configure Nimrod for user %s", userState.username), e);
-				return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
-			}
+		try(NimrodAPI nimrod = createNimrod(userState)) {
+			/* nop */
+		} catch(RuntimeException|SQLException e) {
+			LOGGER.error(String.format("Unable to configure Nimrod for user %s", userState.username), e);
+			return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
 		}
-
-		jdbc.queryForRowSet("SELECT * FROM public.portal_fix_user(?)", userState.dbUser);
 
 		/* Template the config file out to the HPC */
 		ResponseEntity<String> jo;
@@ -818,6 +811,78 @@ public class NimrodPortalEndpoints {
 		}
 
 		return new NimrodAPIFactoryImpl().createNimrod(c);
+	}
+
+	private NimrodAPI createNimrod(UserState userState) throws SQLException {
+		Objects.requireNonNull(userState, "userState");
+
+		SetupConfig cfg = setupConfig.toBuilder(userState.vars).build();
+		NimrodAPIFactoryImpl fact = new NimrodAPIFactoryImpl();
+
+		LOGGER.trace("Creating NimrodAPI for user {}...", userState.username);
+
+		/* NB: Can't use try-with-resources here, as we need the connection to live.  */
+		Connection c = dataSource.getConnection();
+		try {
+			c.setAutoCommit(false);
+
+			/* ...Also can't use prepareStatement() with SET. The username should always be safe regardless. */
+			try(Statement stmt = c.createStatement()) {
+				stmt.executeUpdate("SET search_path = " + userState.username);
+			}
+
+			/* Build an upgrade plan in case the user hasn't logged in in a bit. */
+			MigrationPlan plan = fact.buildUpgradePlan(c);
+			if(!plan.valid) {
+				LOGGER.error("Built migration plan, details follow:");
+				LOGGER.error(" Valid: {}", plan.valid);
+				LOGGER.error("  From: {}", plan.from);
+				LOGGER.error("    To: {}", plan.to);
+				LOGGER.error(" Steps: {}", plan.path.size());
+				/* This is a bug, should never happen. */
+				throw new IllegalStateException("Invalid migration plan: " + plan.message);
+			} else {
+				LOGGER.trace("Built migration plan, details follow:");
+				LOGGER.trace(" Valid: {}", plan.valid);
+				LOGGER.trace("  From: {}", plan.from);
+				LOGGER.trace("    To: {}", plan.to);
+				LOGGER.trace(" Steps: {}", plan.path.size());
+			}
+
+			LOGGER.trace("Running migration...");
+			try(Statement s = c.createStatement()) {
+				s.executeUpdate(plan.sql);
+			}
+
+			/* NimrodAPI now owns the Connection. */
+			NimrodAPI nimrod = fact.createNimrod(c);
+			/* NB: This is idempotent. Will also correct anything that's been messed up. */
+			LOGGER.trace("Configuring Nimrod...");
+			NimrodUtils.setupApi(nimrod, cfg);
+
+			LOGGER.trace("Fixing table permissions...");
+			try(PreparedStatement s = c.prepareStatement("SELECT * FROM public.portal_fix_user(?)")) {
+				s.setString(1, userState.username);
+				try(ResultSet rs = s.executeQuery()) {
+					if(!rs.next()) {
+						/* Also a bug, should never happen. */
+						throw new IllegalStateException("portal_fix_user(" + userState.username + ") failed, no rows returned");
+					}
+				}
+			}
+
+			c.commit();
+			c.setAutoCommit(true);
+			return nimrod;
+		} catch(RuntimeException|SQLException e) {
+			try {
+				c.close();
+			} catch(SQLException ee) {
+				ee.addSuppressed(e);
+				throw ee;
+			}
+			throw e;
+		}
 	}
 
 	private NimrodSetupAPI createNimrodSetup(String username) throws SQLException {
