@@ -21,6 +21,7 @@ package au.edu.uq.rcc.nimrodg.api.setup;
 
 import au.edu.uq.rcc.nimrodg.api.NimrodException;
 
+@Deprecated
 public interface NimrodSetupAPI extends AutoCloseable {
 
 	class SetupException extends NimrodException {
@@ -42,6 +43,7 @@ public interface NimrodSetupAPI extends AutoCloseable {
 
 	}
 
+	@Deprecated
 	void reset() throws SetupException;
 
 	@Override
