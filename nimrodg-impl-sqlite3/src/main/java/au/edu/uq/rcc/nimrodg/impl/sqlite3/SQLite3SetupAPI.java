@@ -26,7 +26,6 @@ import au.edu.uq.rcc.nimrodg.utils.NimrodUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -34,8 +33,6 @@ import java.sql.Statement;
 
 /**
  * SQLite3 Setup API for Nimrod.
- *
- * Queries can't be prepared here as the tables may not exist.
  */
 public class SQLite3SetupAPI extends SQLUUUUU<SetupException> implements NimrodSetupAPI {
 
