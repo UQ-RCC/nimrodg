@@ -230,21 +230,6 @@ public final class Setup extends DefaultCLICommand {
 			}
 
 			{
-				Subparser sp = subs.addParser("dbinit")
-						.help("(Re)initialise the API Backend Storage.")
-						.description(
-								"(Re)initialise Backend Storage default configuration.\n"
-								+ "WARNING: THIS WILL DESTROY ALL DATA"
-						);
-
-				sp.addArgument("--no-defaults", "-nd")
-						.dest("no_defaults")
-						.type(Boolean.TYPE)
-						.action(Arguments.storeTrue())
-						.help("Only reinitialise the backend, don't add default configuration.");
-			}
-
-			{
 				Subparser sp = subs.addParser("init")
 						.help("(Re)initialise the Nimrod backend.")
 						.description(
