@@ -47,7 +47,9 @@ public abstract class SQLUUUUU<X extends RuntimeException> implements ISQLBase<X
 	@Override
 	public synchronized <T> T runSQLTransaction(SQLReturnProc<T> proc) {
 		Connection conn = this.getConnection();
+		boolean autocommit = true;
 		try {
+			autocommit = conn.getAutoCommit();
 			conn.setAutoCommit(false);
 			T t;
 			try {
@@ -58,12 +60,12 @@ public abstract class SQLUUUUU<X extends RuntimeException> implements ISQLBase<X
 				throw new SQLException(e);
 			}
 			conn.commit();
-			conn.setAutoCommit(true);
+			conn.setAutoCommit(autocommit);
 			return t;
 		} catch(NimrodException e) {
 			try {
 				conn.rollback();
-				conn.setAutoCommit(true);
+				conn.setAutoCommit(autocommit);
 			} catch(SQLException e2) {
 				if(e instanceof NimrodException.DbError) {
 					e2.setNextException(((NimrodException.DbError)e).sql);
@@ -76,7 +78,7 @@ public abstract class SQLUUUUU<X extends RuntimeException> implements ISQLBase<X
 		} catch(SQLException e) {
 			try {
 				conn.rollback();
-				conn.setAutoCommit(true);
+				conn.setAutoCommit(autocommit);
 			} catch(SQLException e2) {
 				e.setNextException(e2);
 			}
