@@ -19,22 +19,91 @@
  */
 package au.edu.uq.rcc.nimrodg.portal;
 
+import net.sourceforge.argparse4j.ArgumentParsers;
+import net.sourceforge.argparse4j.inf.ArgumentParser;
+import net.sourceforge.argparse4j.inf.ArgumentParserException;
+import net.sourceforge.argparse4j.inf.Namespace;
+import net.sourceforge.argparse4j.inf.Subparser;
+import net.sourceforge.argparse4j.inf.Subparsers;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.config.ConfigDataEnvironmentPostProcessor;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.web.servlet.ServletComponentScan;
+import org.springframework.core.env.CommandLinePropertySource;
+import org.springframework.core.env.ConfigurableEnvironment;
+import org.springframework.core.env.SimpleCommandLinePropertySource;
+import org.springframework.core.env.StandardEnvironment;
 
 import java.security.Security;
+import java.util.ArrayList;
+import java.util.List;
 
 @ServletComponentScan
 @SpringBootApplication
 @EnableConfigurationProperties
 @ConfigurationPropertiesScan
 public class PortalServerApplication {
+	public static int cliMain(String[] args) {
+		ArgumentParser parser = ArgumentParsers.newArgumentParser("nimrod-portal-backend")
+				.defaultHelp(true);
+
+		Subparsers aa = parser.addSubparsers().dest("operation");
+
+		Subparser db = aa.addParser("db")
+				.help("Database commands");
+
+		Subparsers dbop = db.addSubparsers().dest("dbop");
+		dbop.addParser("init")
+				.help("Initialise database");
+
+		aa.addParser("run")
+				.help("Run the application server");
+
+		Namespace ns;
+		List<String> springArgs = new ArrayList<>();
+		try {
+			ns = parser.parseKnownArgs(args, springArgs);
+		} catch(ArgumentParserException e) {
+			parser.handleError(e);
+			return 2;
+		}
+
+		String op = ns.getString("operation");
+		if(op == null) {
+			return -1;
+		}
+
+		/*
+		 * NB: This is a bit hacky. Use argparse to handle everything, but since
+		 *  it doesn't support arbitrary --XXX arguments, gather all these "unrecognized" arguments
+		 *  and give them to Spring directly.
+		 */
+		ConfigurableEnvironment env = new StandardEnvironment();
+		env.getPropertySources().addFirst(new SimpleCommandLinePropertySource(springArgs.stream().toArray(String[]::new)));
+		ConfigDataEnvironmentPostProcessor.applyTo(env);
+
+		if("db".equals(op)) {
+			return DbCli.withEnvironment(env).run(ns, System.out, System.err);
+		} else if("run".equals(op)) {
+			SpringApplication sapp = new SpringApplication(PortalServerApplication.class);
+			sapp.setEnvironment(env);
+			sapp.run();
+			return -1;
+		}
+		return 1;
+	}
+
 	public static void main(String[] args) {
 		Security.addProvider(new BouncyCastleProvider());
-		SpringApplication.run(PortalServerApplication.class, args);
+		int r = cliMain(args);
+		if(r >= 0) {
+			System.exit(r);
+		}
+
+		/* Special-case, if cliMain() returns <0, then it's started the application. */
 	}
+
 }
