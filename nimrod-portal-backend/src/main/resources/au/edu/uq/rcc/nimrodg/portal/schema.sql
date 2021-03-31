@@ -88,6 +88,7 @@ BEGIN
 END $$ LANGUAGE 'plpgsql';
 
 CREATE OR REPLACE FUNCTION public.portal_set_user_debug(_username NAME) RETURNS VOID AS $$
+BEGIN
     EXECUTE format('GRANT SELECT,INSERT,UPDATE,DELETE   ON %I.nimrod_full_experiments               TO %I', _username, _username);
     EXECUTE format('GRANT USAGE                         ON %I.nimrod_experiments_id_seq             TO %I', _username, _username);
     EXECUTE format('GRANT SELECT,INSERT,UPDATE,DELETE   ON %I.nimrod_variables                      TO %I', _username, _username);
