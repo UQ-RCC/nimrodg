@@ -1,6 +1,6 @@
 /*
  * Nimrod Portal Backend
- * https://github.com/UQ-RCC/nimrod-portal-backend
+ * https://github.com/UQ-RCC/nimrodg
  *
  * SPDX-License-Identifier: Apache-2.0
  * Copyright (c) 2020 The University of Queensland
