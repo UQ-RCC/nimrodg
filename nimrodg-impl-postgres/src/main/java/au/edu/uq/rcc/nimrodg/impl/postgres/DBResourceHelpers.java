@@ -119,6 +119,7 @@ public class DBResourceHelpers extends DBBaseHelper {
 		this.qMapAgent = conn.prepareStatement(
 				"INSERT INTO nimrod_agent_mappings(system, machine, agent_id)"
 				+ "SELECT ?, ?, id FROM nimrod_agents WHERE platform_string = ?"
+				+ "ON CONFLICT (system, machine) DO UPDATE SET system = EXCLUDED.system, machine = EXCLUDED.machine"
 		);
 
 		this.qUnmapAgent = conn.prepareStatement(

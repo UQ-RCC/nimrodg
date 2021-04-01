@@ -258,7 +258,15 @@ public interface NimrodAPI extends AgentProvider, AutoCloseable {
 
 	boolean deleteAgentPlatform(String platformString);
 
-	boolean mapAgentPosixPlatform(String platformString, MachinePair pair);
+	/**
+	 * Map a POSIX (system, machine) tuple to an agent platform.
+	 *
+	 * If such a mapping already exists, it is overwritten.
+	 *
+	 * @param platformString The agent platform string. Must not be NULL.
+	 * @param pair The POSIX (system, machine) tuple to map. Must not be NULL.
+	 */
+	void mapAgentPosixPlatform(String platformString, MachinePair pair);
 
 	boolean unmapAgentPosixPlatform(MachinePair pair);
 

@@ -336,8 +336,8 @@ public abstract class TempNimrodAPIImpl implements NimrodAPI, NimrodMasterAPI {
 	}
 
 	@Override
-	public boolean mapAgentPosixPlatform(String platformString, MachinePair pair) {
-		return db.runSQL(() -> db.mapAgentPosixPlatform(platformString, pair.system(), pair.machine()));
+	public void mapAgentPosixPlatform(String platformString, MachinePair pair) {
+		db.runSQL(() -> db.mapAgentPosixPlatform(platformString, pair.system(), pair.machine()));
 	}
 
 	@Override

@@ -118,8 +118,11 @@ public class DBResourceHelpers extends DBBaseHelper {
 				+ "ON CONFLICT(platform_string) DO UPDATE SET path = EXCLUDED.path"
 		);
 		this.qDelAgentPlatform = prepareStatement("DELETE FROM nimrod_agents WHERE platform_string = ?");
-		this.qMapAgent = prepareStatement("INSERT INTO nimrod_agent_mappings(system, machine, agent_id)"
-										  + "SELECT ?, ?, id FROM nimrod_agents WHERE platform_string = ?");
+		this.qMapAgent = prepareStatement(
+				"INSERT INTO nimrod_agent_mappings(system, machine, agent_id)"
+				+ "SELECT ?, ?, id FROM nimrod_agents WHERE platform_string = ? "
+				+ "ON CONFLICT (system, machine) DO UPDATE SET system = EXCLUDED.system, machine = EXCLUDED.machine"
+		);
 		this.qUnmapAgent = prepareStatement("DELETE FROM nimrod_agents WHERE platform_string = ?");
 	}
 
