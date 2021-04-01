@@ -235,6 +235,18 @@ public interface NimrodAPI extends AgentProvider, AutoCloseable {
 
 	ResourceTypeInfo getResourceTypeInfo(String name);
 
+	/**
+	 * Add a resource type with a given implementation class.
+	 *
+	 * If such a mapping already exists, it is overwritten.
+	 *
+	 * @param name The resource type name. Must not be NULL.
+	 * @param clazz The canonical name of the implementation class. Must not be NULL.
+	 *              This class must implement the {@link ResourceType} interface and have
+	 *              a default public constructor.
+	 * @return A {@link ResourceTypeInfo} structure representing the new/updated
+	 *         resource type;
+	 */
 	ResourceTypeInfo addResourceType(String name, String clazz);
 
 	boolean deleteResourceType(String name);

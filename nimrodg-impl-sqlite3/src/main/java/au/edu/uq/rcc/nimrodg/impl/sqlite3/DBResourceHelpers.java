@@ -111,7 +111,11 @@ public class DBResourceHelpers extends DBBaseHelper {
 				+ ") VALUES(?, ?, ?, ?, ?, ?, COALESCE(?, LOWER(HEX(RANDOMBLOB(16)))), ?, ?)", true);
 		this.qUpdateAgent = prepareStatement("UPDATE nimrod_resource_agents SET state = ?, queue = ?, shutdown_signal = ?, shutdown_reason = ?, connected_at = ?, last_heard_from = ?, expiry_time = ?, expired = ?, actuator_data = ? WHERE agent_uuid = ?");
 
-		this.qAddResourceType = prepareStatement("INSERT INTO nimrod_resource_types(name, implementation_class) VALUES (?, ?)", true);
+		this.qAddResourceType = prepareStatement(
+				"INSERT INTO nimrod_resource_types(name, implementation_class) VALUES (?, ?) "
+				+ "ON CONFLICT(name) DO UPDATE SET implementation_class = EXCLUDED.implementation_class",
+				true
+		);
 		this.qDeleteResourceType = prepareStatement("DELETE FROM nimrod_resource_types WHERE name = ?");
 		this.qAddAgentPlatform = prepareStatement(
 				"INSERT INTO nimrod_agents(platform_string, path) VALUES(?, ?) "

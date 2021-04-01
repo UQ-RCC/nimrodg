@@ -105,7 +105,9 @@ public class DBResourceHelpers extends DBBaseHelper {
 		this.qUpdateAgent = prepareStatement("SELECT * FROM update_agent(?::UUID, ?::nimrod_agent_state, ?, ?, ?::nimrod_agent_shutdown_reason, ?, ?, ?, ?, ?::JSONB)");
 
 		this.qAddResourceType = conn.prepareStatement(
-				"INSERT INTO nimrod_resource_types(name, implementation_class) VALUES (?, ?) RETURNING id"
+				"INSERT INTO nimrod_resource_types(name, implementation_class) VALUES (?, ?) "
+				+ "ON CONFLICT(name) DO UPDATE SET implementation_class = EXCLUDED.implementation_class "
+				+ "RETURNING id"
 		);
 
 		this.qDeleteResourceType = conn.prepareStatement("DELETE FROM nimrod_resource_types WHERE name = ?");
