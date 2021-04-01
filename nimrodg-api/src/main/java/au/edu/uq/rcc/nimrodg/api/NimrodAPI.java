@@ -249,6 +249,14 @@ public interface NimrodAPI extends AgentProvider, AutoCloseable {
 	 */
 	ResourceTypeInfo addResourceType(String name, String clazz);
 
+	/**
+	 * Remove a resource type.
+	 *
+	 * This function will throw if an existing resource references the to-be-removed type.
+	 *
+	 * @param name The resource type name. Must not be NULL.
+	 * @return true if a mapping was removed. Otherwise false.
+	 */
 	boolean deleteResourceType(String name);
 
 	AgentInfo getAgentByUUID(UUID uuid);
