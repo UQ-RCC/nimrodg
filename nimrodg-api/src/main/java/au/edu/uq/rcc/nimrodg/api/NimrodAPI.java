@@ -256,6 +256,14 @@ public interface NimrodAPI extends AgentProvider, AutoCloseable {
 	 */
 	void addAgentPlatform(String platformString, Path path);
 
+	/**
+	 * Unmap an agent platform string from an agent binary.
+	 *
+	 * If no mapping exists, no action is taken.
+	 *
+	 * @param platformString The agent platform string. Must not be NULL.
+	 * @return true if a mapping was removed. Otherwise false.
+	 */
 	boolean deleteAgentPlatform(String platformString);
 
 	/**
@@ -268,6 +276,14 @@ public interface NimrodAPI extends AgentProvider, AutoCloseable {
 	 */
 	void mapAgentPosixPlatform(String platformString, MachinePair pair);
 
+	/**
+	 * Unmap a POSIX (system, machine) tuple from an agent platform.
+	 *
+	 * If no mapping exists, no action is taken.
+	 *
+	 * @param pair The POSIX (system, machine) tuple to unmap. Must not be NULL.
+	 * @return true if a mapping was removed. Otherwise false.
+	 */
 	boolean unmapAgentPosixPlatform(MachinePair pair);
 
 	@Override
