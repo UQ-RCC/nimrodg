@@ -52,6 +52,7 @@ import au.edu.uq.rcc.nimrodg.api.setup.AMQPConfigBuilder;
 import au.edu.uq.rcc.nimrodg.api.setup.SetupConfig;
 import au.edu.uq.rcc.nimrodg.api.setup.SetupConfigBuilder;
 import au.edu.uq.rcc.nimrodg.api.setup.TransferConfigBuilder;
+import au.edu.uq.rcc.nimrodg.utils.NimrodUtils;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -895,6 +896,41 @@ public abstract class APITests {
 		Assert.assertEquals(nuri, cfg.getAmqpUri());
 		Assert.assertEquals(nuri, cfg.getTransferUri());
 		Assert.assertEquals("string", cfg.getAmqpRoutingKey());
+	}
+
+	private static void validateConfig(NimrodAPI api, SetupConfig setupConfig) {
+		NimrodConfig cfg = api.getConfig();
+		Assert.assertEquals(setupConfig.workDir(), cfg.getWorkDir());
+		Assert.assertEquals(setupConfig.storeDir(), cfg.getRootStore());
+		Assert.assertEquals(setupConfig.amqp().toNimrodUri(), cfg.getAmqpUri());
+		Assert.assertEquals(setupConfig.amqp().routingKey(), cfg.getAmqpRoutingKey());
+		Assert.assertEquals(setupConfig.transfer().toNimrodUri(), cfg.getTransferUri());
+
+		Assert.assertEquals(api.getProperties(), setupConfig.properties());
+
+		Map<String, String> types = api.getResourceTypeInfo().stream()
+				.collect(Collectors.toMap(rti -> rti.type, rti -> rti.className));
+		Assert.assertEquals(setupConfig.resourceTypes(), types);
+
+		Map<String, AgentDefinition> agentDefs = api.lookupAgents();
+		Map<String, Path> agentPlatforms = agentDefs.values().stream().collect(Collectors.toMap(
+				AgentDefinition::getPlatformString,
+				AgentDefinition::getPath
+		));
+		Assert.assertEquals(setupConfig.agents(), agentPlatforms);
+
+		Map<MachinePair, String> posixMappings = agentDefs.values().stream().flatMap(
+				def -> def.posixMappings().stream().map(mp -> Map.entry(mp, def.getPlatformString()))
+		).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+		Assert.assertEquals(setupConfig.agentMappings(), posixMappings);
+	}
+
+	@Test
+	public void setupTests() {
+		NimrodAPI api = getNimrod();
+
+		SetupConfig cfg = getTestSetupConfig(getRoot());
+		validateConfig(api, cfg);
 	}
 
 	public static SetupConfig getTestSetupConfig(Path root) {
