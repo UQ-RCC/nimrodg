@@ -35,13 +35,15 @@ import java.util.Map;
 public class SQLite3Tests extends APITests {
 
 	public NimrodAPI nimrod;
+	public Path root;
 
 	@Rule
 	public TemporaryFolder tmpDir = new TemporaryFolder();
 
 	@Before
 	public void setupDb() throws Exception {
-		nimrod = createTestNimrod(tmpDir.getRoot().toPath());
+		root = tmpDir.getRoot().toPath();
+		nimrod = createTestNimrod(root);
 	}
 
 	public static NimrodAPI createTestNimrod(Path root) throws Exception {
@@ -78,5 +80,10 @@ public class SQLite3Tests extends APITests {
 	@Override
 	protected NimrodAPI getNimrod() {
 		return nimrod;
+	}
+
+	@Override
+	protected Path getRoot() {
+		return root;
 	}
 }

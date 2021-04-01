@@ -35,13 +35,14 @@ import org.junit.rules.TemporaryFolder;
 public class NimrodGTests extends APITests {
 
 	public NimrodAPI nimrod;
+	public Path root;
 
 	@Rule
 	public TemporaryFolder tmpDir = new TemporaryFolder();
 
 	@Before
 	public void setupDb() throws Exception {
-		Path root = tmpDir.getRoot().toPath();
+		root = tmpDir.getRoot().toPath();
 
 		TestInfo testInfo = TestInfo.getBestEffort();
 
@@ -73,5 +74,10 @@ public class NimrodGTests extends APITests {
 	@Override
 	protected NimrodAPI getNimrod() {
 		return nimrod;
+	}
+
+	@Override
+	protected Path getRoot() {
+		return root;
 	}
 }

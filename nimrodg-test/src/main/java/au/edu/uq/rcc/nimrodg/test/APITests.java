@@ -79,6 +79,7 @@ import java.util.stream.Collectors;
 public abstract class APITests {
 
 	protected abstract NimrodAPI getNimrod();
+	protected abstract Path getRoot();
 
 	protected NimrodMasterAPI getNimrodMasterAPI() {
 		NimrodAPI nimrod = getNimrod();
