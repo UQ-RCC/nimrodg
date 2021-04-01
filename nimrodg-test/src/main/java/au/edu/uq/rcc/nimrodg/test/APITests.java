@@ -930,6 +930,12 @@ public abstract class APITests {
 		NimrodAPI api = getNimrod();
 
 		SetupConfig cfg = getTestSetupConfig(getRoot());
+
+		/* Validate the initial state. */
+		validateConfig(api, cfg);
+
+		/* This is idempotent, there should be no change. */
+		NimrodUtils.setupApi(api, cfg);
 		validateConfig(api, cfg);
 	}
 
