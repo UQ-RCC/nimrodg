@@ -14,6 +14,10 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
+/**
+ * A wrapper for {@link ClientFactories#SSHD_FACTORY} that accepts a {@link KeyPair} instance
+ * rather than a path.
+ */
 final class CloudSshFactory implements TransportFactory {
 
 	public final KeyPair keyPair;
