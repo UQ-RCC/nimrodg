@@ -139,7 +139,7 @@ public abstract class SSHResourceType extends BaseResourceType {
 		if(!detectHostKey) {
 			try {
 				hkk = Optional.of(ShellUtils.parseAuthorizedKeyEntry(hostKey));
-			} catch(IOException | GeneralSecurityException e) {
+			} catch(GeneralSecurityException e) {
 				e.printStackTrace(err);
 				valid = false;
 			}

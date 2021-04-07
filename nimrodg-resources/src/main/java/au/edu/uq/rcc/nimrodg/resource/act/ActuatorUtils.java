@@ -431,7 +431,7 @@ public class ActuatorUtils {
 
 		try {
 			return Optional.of(ShellUtils.parseAuthorizedKeyEntry(key));
-		} catch(IllegalArgumentException | IOException | GeneralSecurityException e) {
+		} catch(IllegalArgumentException | GeneralSecurityException e) {
 			errors.add("Invalid host key.");
 			errors.addAll(Arrays.stream(e.getStackTrace()).map(ee -> ee.toString()).collect(Collectors.toList()));
 		}

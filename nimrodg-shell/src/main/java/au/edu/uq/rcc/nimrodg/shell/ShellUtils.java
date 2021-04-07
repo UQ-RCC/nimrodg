@@ -50,9 +50,13 @@ public class ShellUtils {
         return AuthorizedKeyEntry.toString(pk);
     }
 
-    public static PublicKey parseAuthorizedKeyEntry(String s) throws IOException, GeneralSecurityException {
-        return AuthorizedKeyEntry.parseAuthorizedKeyEntry(s)
-                .resolvePublicKey(null, PublicKeyEntryResolver.FAILING);
+    public static PublicKey parseAuthorizedKeyEntry(String s) throws GeneralSecurityException {
+        try {
+            return AuthorizedKeyEntry.parseAuthorizedKeyEntry(s)
+                    .resolvePublicKey(null, PublicKeyEntryResolver.FAILING);
+        } catch(IOException e) {
+            throw new GeneralSecurityException(e);
+        }
     }
     public static Optional<String> getUriUser(URI uri) {
         return getUriUser(Optional.ofNullable(uri));
