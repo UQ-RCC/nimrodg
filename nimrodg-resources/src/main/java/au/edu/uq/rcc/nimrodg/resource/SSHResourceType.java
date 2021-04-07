@@ -105,7 +105,7 @@ public abstract class SSHResourceType extends BaseResourceType {
 		}
 
 		/* This is checked by validateUri. */
-		Optional<String> user = ShellUtils.getUriUser(uri);
+		ShellUtils.getUriUser(uri);
 
 		String transport = ns.getString("transport");
 		TransportFactory tf = createTransportFactory(transport);
@@ -149,7 +149,7 @@ public abstract class SSHResourceType extends BaseResourceType {
 				uri,
 				hkk.map(k -> new PublicKey[]{k}).orElse(new PublicKey[0]),
 				keyFile,
-				Optional.ofNullable(ns.getString("openssh_executable")).map(s -> Paths.get(s))
+				Optional.ofNullable(ns.getString("openssh_executable")).map(Paths::get)
 		);
 
 		TransportFactory.Config cfg;
@@ -291,11 +291,11 @@ public abstract class SSHResourceType extends BaseResourceType {
 			return false;
 		}
 
-		if(!tf.validateConfiguration(transportCfg, errors).isPresent()) {
+		if(tf.validateConfiguration(transportCfg, errors).isEmpty()) {
 			valid = false;
 		}
 
-		if(!ActuatorUtils.lookupAgentByPlatform(ap, cfg.getString("agent_platform"), errors).isPresent()) {
+		if(ActuatorUtils.lookupAgentByPlatform(ap, cfg.getString("agent_platform"), errors).isEmpty()) {
 			valid = false;
 		}
 
@@ -320,12 +320,12 @@ public abstract class SSHResourceType extends BaseResourceType {
 		}
 
 		Optional<TransportFactory.Config> transConfig = tf.validateConfiguration(tcfg, errors);
-		if(!transConfig.isPresent()) {
+		if(transConfig.isEmpty()) {
 			throw new IOException(errors.get(0));
 		}
 
 		Optional<AgentDefinition> ai = ActuatorUtils.lookupAgentByPlatform(ops, cfg.getString("agent_platform"), errors);
-		if(!ai.isPresent()) {
+		if(ai.isEmpty()) {
 			throw new IOException(errors.get(0));
 		}
 
