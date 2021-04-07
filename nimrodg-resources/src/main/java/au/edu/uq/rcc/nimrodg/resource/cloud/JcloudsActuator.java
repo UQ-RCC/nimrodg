@@ -159,7 +159,7 @@ public class JcloudsActuator implements Actuator {
 				.options(opts)
 				.build();
 
-		this.groupName = String.format("nimrodg-jclouds-%d", this.hashCode());
+		this.groupName = ActuatorUtils.buildUniqueString(this);
 		this.nodes = new HashMap<>();
 		this.agentMap = new HashMap<>();
 		this.subOpts = new SubOptions();
