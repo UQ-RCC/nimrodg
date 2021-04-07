@@ -34,8 +34,8 @@ final class CloudSshFactory implements TransportFactory {
 	}
 
 	@Override
-	public Config resolveConfiguration(Config cfg) throws IOException {
-		return ClientFactories.SSHD_FACTORY.resolveConfiguration(cfg);
+	public Config resolveConfiguration(Config cfg) {
+		throw new UnsupportedOperationException();
 	}
 
 
