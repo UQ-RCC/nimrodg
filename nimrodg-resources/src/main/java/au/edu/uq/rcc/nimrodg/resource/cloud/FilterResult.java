@@ -20,6 +20,7 @@
 package au.edu.uq.rcc.nimrodg.resource.cloud;
 
 import java.util.ArrayDeque;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -80,9 +81,7 @@ class FilterResult {
 		}
 
 		Set<Actuator.Request> leftovers = new HashSet<>(requests.length - i);
-		for(int j = i; j < requests.length; ++j) {
-			leftovers.add(requests[j]);
-		}
+		leftovers.addAll(Arrays.asList(requests).subList(i, requests.length));
 
 		Map<Actuator.Request, Integer> indexMap = new HashMap<>(requests.length);
 		for(i = 0; i < requests.length; ++i) {

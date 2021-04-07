@@ -282,9 +282,7 @@ public class JcloudsActuator implements Actuator {
 		 * Wait for the actuators to be created. This is uninterruptible, as each future
 		 * should fail-fast interrupted and complete this future.
 		 */
-		waitUninterruptibly(CompletableFuture.allOf(actFutures), e -> {
-			return null;
-		});
+		waitUninterruptibly(CompletableFuture.allOf(actFutures), e -> null);
 
 		{
 			/* NB: LinkedHashSet, iteration order is consistent. */
