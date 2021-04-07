@@ -25,6 +25,7 @@ import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.UUID;
 import javax.json.JsonObject;
 
@@ -78,17 +79,30 @@ public interface Actuator extends AutoCloseable {
 
 	}
 
-	class Request {
+	final class Request {
 		public final UUID uuid;
 		public final String secretKey;
 
 		public Request(UUID uuid, String secretKey) {
-			this.uuid = uuid;
-			this.secretKey = secretKey;
+			this.uuid = Objects.requireNonNull(uuid, "uuid");
+			this.secretKey = Objects.requireNonNull(secretKey, "secretLey");
 		}
 
 		public static Request forAgent(UUID uuid, String secretKey) {
 			return new Request(uuid, secretKey);
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if(this == o) return true;
+			if(o == null || getClass() != o.getClass()) return false;
+			Request request = (Request)o;
+			return uuid.equals(request.uuid);
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(uuid);
 		}
 	}
 
