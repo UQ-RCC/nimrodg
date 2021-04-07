@@ -20,11 +20,9 @@
 package au.edu.uq.rcc.nimrodg.api;
 
 import au.edu.uq.rcc.nimrodg.agent.AgentState;
-import au.edu.uq.rcc.nimrodg.agent.messages.AgentShutdown;
 
 import java.io.IOException;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.Objects;
 import java.util.UUID;
 import javax.json.JsonObject;
