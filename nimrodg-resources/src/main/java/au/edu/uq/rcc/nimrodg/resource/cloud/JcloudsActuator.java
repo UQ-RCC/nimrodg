@@ -238,14 +238,11 @@ public class JcloudsActuator implements Actuator {
 		outBad.putAll(bad);
 
 		/* Attempt to resolve the host keys. */
-		nodes.values().forEach(ni -> {
-			ni.sshConfig = CompletableFuture.supplyAsync(() -> resolveTransportFromNode(ni, agentInfo));
-		});
+		nodes.values().forEach(ni -> ni.sshConfig = CompletableFuture.supplyAsync(() -> resolveTransportFromNode(ni, agentInfo)));
 	}
 
 	@Override
 	public LaunchResult[] launchAgents(Request... requests) {
-
 		/* See if there's any space left on our existing nodes. */
 		LinkedHashSet<NodeInfo> good = nodes.values().stream()
 				.filter(ni -> ni.agents.size() < agentsPerNode)
@@ -274,7 +271,7 @@ public class JcloudsActuator implements Actuator {
 			good.addAll(newNodes.values());
 		}
 
-		CompletableFuture[] actFutures = good.stream()
+		CompletableFuture<?>[] actFutures = good.stream()
 				.map(ni -> ni.actuator)
 				.toArray(CompletableFuture[]::new);
 

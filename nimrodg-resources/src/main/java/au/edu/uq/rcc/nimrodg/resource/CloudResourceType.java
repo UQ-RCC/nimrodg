@@ -186,22 +186,22 @@ public class CloudResourceType extends BaseResourceType {
 				.flatMap(name -> cs.listHardwareProfiles().stream().filter(h -> name.equals(h.getName())).findFirst()));
 
 		hw.ifPresent(h -> jb.add("hardware_id", h.getId()));
-		if(!hw.isPresent()) {
+		if(hw.isEmpty()) {
 			valid = false;
-			err.printf("No such hardware.\n");
+			err.println("No such hardware.");
 		}
 
 		Image img = cs.getImage(ns.getString("image_id"));
 		if(img == null) {
 			valid = false;
-			err.printf("No such image.\n");
+			err.println("No such image.");
 		} else {
 			jb.add("image_id", img.getId());
 		}
 
 		if(!hw.map(h -> h.supportsImage().apply(img)).orElse(true)) {
 			valid = false;
-			err.printf("Hardware doesn't support image.\n");
+			err.println("Hardware doesn't support image.");
 		}
 
 		jb.add("availability_zone", Optional.ofNullable(ns.getString("availability_zone")).orElse(""));
@@ -236,7 +236,7 @@ public class CloudResourceType extends BaseResourceType {
 		JsonObject cfg = _cfg.asJsonObject();
 
 		Properties props = new Properties();
-		cfg.getJsonObject("properties").entrySet().forEach(e -> props.put(e.getKey(), (JsonString)e.getValue()));
+		cfg.getJsonObject("properties").forEach((k, v) -> props.put(k, ((JsonString)v).getString()));
 
 		AgentDefinition agentDef = ops.lookupAgentByPlatform(cfg.getString("agent_platform"));
 
