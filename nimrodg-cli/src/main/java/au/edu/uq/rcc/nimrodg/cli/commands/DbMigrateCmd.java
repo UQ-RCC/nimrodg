@@ -50,6 +50,18 @@ public final class DbMigrateCmd extends DefaultCLICommand {
 			case "plan":
 				return planOrApply(args, config, out, err, configDirs);
 
+			case "reset": {
+				int r;
+
+				MigrationPlan plan = fact.buildResetPlan();
+				try(Connection c = fact.createConnection(config)) {
+					c.setAutoCommit(false);
+					r = executeMigrationPlan(c, plan, MigrateOperation.MIGRATE_AUTO, out, err);
+					c.commit();
+				}
+				return r;
+			}
+
 			case "show-paths":
 				return DbMigrateCmd.showPaths(fact, out);
 		}
@@ -215,6 +227,9 @@ public final class DbMigrateCmd extends DefaultCLICommand {
 					.metavar("version")
 					.help("Target schema version. Defaults to the latest.");
 
+
+			sp.addParser("reset")
+					.help("Reset to default, empty state. THIS WILL NOT ASK FOR CONFIRMATION.");
 
 			sp.addParser("show-paths")
 					.help("Show migration paths")
