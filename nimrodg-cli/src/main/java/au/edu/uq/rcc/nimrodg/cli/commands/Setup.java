@@ -109,8 +109,7 @@ public final class Setup extends DefaultCLICommand {
 				SetupConfig cfg = IniSetupConfig.parseToBuilder(ini, config.configPath()).build();
 				int r = DbMigrateCmd.DEFINITION.command.execute(new Namespace(Map.of(
 						"config", args.get("config"),
-						"migop", "apply",
-						"auto_approve", true
+						"migop", "reset"
 				)), new PrintStream(PrintStream.nullOutputStream()), err, configDirs);
 				if(r != 0)
 					return r;
