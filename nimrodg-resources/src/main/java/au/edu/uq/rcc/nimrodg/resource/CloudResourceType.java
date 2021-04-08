@@ -89,6 +89,7 @@ public class CloudResourceType extends BaseResourceType {
 				.setDefault("/tmp");
 
 		parser.addArgument("--context")
+				.help("JClouds context provider name.")
 				.type(String.class)
 				.required(true);
 
@@ -131,13 +132,14 @@ public class CloudResourceType extends BaseResourceType {
 
 		parser.addArgument("-D")
 				.type(String.class)
-				.help("Additional configuration properties. These are passed directly to jclouds.")
+				.help("JClouds context override properties. These are passed directly to ContextBuilder#overrides().")
 				.dest("properties")
 				.action(Arguments.append());
 	}
 
 	@Override
 	protected boolean parseArguments(AgentProvider ap, Namespace ns, PrintStream out, PrintStream err, Path[] configDirs, JsonObjectBuilder jb) {
+		System.out.println(ns);
 		boolean valid = super.parseArguments(ap, ns, out, err, configDirs, jb);
 
 		Properties ppp = new Properties();
@@ -243,7 +245,7 @@ public class CloudResourceType extends BaseResourceType {
 		return new JcloudsActuator(ops, node, amqpUri, certs, agentDef, cfg.getInt("agents_per_node"), cfg.getString("tmpdir"), new CloudConfig(
 				cfg.getString("context"),
 				URI.create(cfg.getString("endpoint")),
-				cfg.getString("location"),
+				cfg.getString("location_id"),
 				cfg.getString("hardware_id"),
 				cfg.getString("image_id"),
 				cfg.getString("username"),
