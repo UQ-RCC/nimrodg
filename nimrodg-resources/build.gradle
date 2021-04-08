@@ -26,6 +26,8 @@ dependencies {
 	implementation group: 'com.google.guava', name: 'guava', version: '21.0'
 
 	implementation group: 'org.apache.jclouds', name: 'jclouds-allcompute', version: '2.3.0'
+	/* Because JClouds has issues with Java 11. */
+	implementation group: 'javax.annotation', name: 'javax.annotation-api', version: '1.3.2'
 
 	runtimeOnly group: 'javax.xml.bind', name: 'jaxb-api', version: '2.2.11'
 
