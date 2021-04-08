@@ -153,7 +153,7 @@ public final class Setup extends DefaultCLICommand {
 			}
 			case "db":
 				switch(args.getString("dbop")) {
-					case "migrate:":
+					case "migrate":
 						return DbMigrateCmd.DEFINITION.command.execute(args, out, err, configDirs);
 					case "stats":
 						return DbStatsCmd.DEFINITION.command.execute(args, out, err, configDirs);
