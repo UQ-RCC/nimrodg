@@ -637,8 +637,17 @@ public class JcloudsActuator implements Actuator {
 
 	@Override
 	public AgentStatus queryStatus(UUID uuid) {
-		/* FIXME: */
-		return AgentStatus.Unknown;
+		NodeInfo ni = agentMap.get(uuid);
+		if(ni == null) {
+			return AgentStatus.Unknown;
+		}
+
+		Actuator act = ni.actuator.getNow(null);
+		if(act == null) {
+			return AgentStatus.Launching;
+		}
+
+		return act.queryStatus(uuid);
 	}
 
 	private static SSHResourceType.SSHConfig resolveTransportFromNode(NodeInfo ni, AgentDefinition agentDef) {
