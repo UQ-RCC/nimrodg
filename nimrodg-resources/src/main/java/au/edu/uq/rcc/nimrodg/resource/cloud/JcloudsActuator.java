@@ -50,6 +50,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
@@ -104,7 +105,6 @@ public class JcloudsActuator implements Actuator {
 	private final String groupName;
 	private final Map<NodeMetadata, NodeInfo> nodes;
 	private final Map<UUID, NodeInfo> agentMap;
-	private final SubOptions subOpts;
 	private boolean isClosed;
 
 	public static class CloudConfig {
@@ -162,7 +162,6 @@ public class JcloudsActuator implements Actuator {
 		this.groupName = ActuatorUtils.buildUniqueString(this);
 		this.nodes = new HashMap<>();
 		this.agentMap = new HashMap<>();
-		this.subOpts = new SubOptions();
 		this.isClosed = false;
 	}
 
@@ -265,7 +264,7 @@ public class JcloudsActuator implements Actuator {
 			launchNodes(compute, numRequired, groupName, template, agentDef, newNodes, bad);
 
 			/* Launch the actuator. */
-			newNodes.values().forEach(ni -> ni.actuator = ni.sshConfig.thenApplyAsync(this::launchActuator));
+			newNodes.forEach((nm, ni) -> ni.actuator = ni.sshConfig.thenApplyAsync(cfg -> launchActuator(nm, cfg)));
 
 			nodes.putAll(newNodes);
 			good.addAll(newNodes.values());
@@ -608,7 +607,7 @@ public class JcloudsActuator implements Actuator {
 		if(!ni.actuator.isDone()) {
 			RemoteActuator act;
 			try {
-				act = launchActuator(sscfg);
+				act = launchActuator(ni.node, sscfg);
 			} catch(UncheckedIOException e) {
 				ni.actuator.completeExceptionally(e);
 				LOGGER.error("Unable to launch actuator.", e);
@@ -667,15 +666,20 @@ public class JcloudsActuator implements Actuator {
 	}
 
 	/* Helper for use in lambdas. */
-	private RemoteActuator launchActuator(SSHResourceType.SSHConfig sscfg) {
+	private RemoteActuator launchActuator(NodeMetadata nodeMetadata, SSHResourceType.SSHConfig sscfg) {
 		try {
-			return new RemoteActuator(subOpts, node, amqpUri, certs, agentsPerNode, tmpDir, sscfg);
+			return new RemoteActuator(new SubOptions(nodeMetadata), node, amqpUri, certs, agentsPerNode, tmpDir, sscfg);
 		} catch(IOException e) {
 			throw new UncheckedIOException(e);
 		}
 	}
 
 	private class SubOptions implements Actuator.Operations {
+		public final NodeMetadata nodeMetadata;
+
+		public SubOptions(NodeMetadata nodeMetadata) {
+			this.nodeMetadata = Objects.requireNonNull(nodeMetadata, "nodeMetadata");
+		}
 
 		@Override
 		public void reportAgentFailure(Actuator act, UUID uuid, AgentInfo.ShutdownReason reason, int signal) throws IllegalArgumentException {
@@ -695,8 +699,12 @@ public class JcloudsActuator implements Actuator {
 
 		@Override
 		public int getAgentCount(Resource res) {
-			/* FIXME: */
-			throw new UnsupportedOperationException();
+			NodeInfo ni = JcloudsActuator.this.nodes.get(nodeMetadata);
+			if(ni == null) {
+				return 0;
+			}
+
+			return ni.agents.size();
 		}
 
 		@Override
