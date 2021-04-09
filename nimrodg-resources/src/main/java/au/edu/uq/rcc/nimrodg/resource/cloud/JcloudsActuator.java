@@ -582,7 +582,7 @@ public class JcloudsActuator implements Actuator {
 			n = Optional.ofNullable(compute.getNodeMetadata(nodeId.get()));
 			if(n.isEmpty()) {
 				LOGGER.trace("Rejecting {}, node {} doesn't exist.", state.getUUID(), nodeId.get());
-				return AdoptStatus.Rejected;
+				return AdoptStatus.Stale;
 			}
 
 			Optional<TransportFactory.Config> tcfg = Optional.ofNullable(no.getJsonObject("transport"))
