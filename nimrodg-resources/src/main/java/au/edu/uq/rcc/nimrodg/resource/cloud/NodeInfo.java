@@ -31,7 +31,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
-import javax.ws.rs.core.UriBuilder;
+
+import io.mikael.urlbuilder.UrlBuilder;
 import org.jclouds.compute.domain.NodeMetadata;
 import org.jclouds.domain.LoginCredentials;
 
@@ -98,12 +99,13 @@ class NodeInfo {
 		}
 
 		this.uris = node.getPublicAddresses().stream()
-				.map(addr -> UriBuilder.fromUri("")
-				.scheme("ssh")
-				.host(addr)
-				.userInfo(creds.getUser())
-				.port(node.getLoginPort())
-				.build()).collect(Collectors.toList());
+				.map(addr -> UrlBuilder.empty()
+						.withScheme("ssh")
+						.withUserInfo(creds.getUser())
+						.withHost(addr)
+						.withPort(node.getLoginPort())
+						.toUri()
+				).collect(Collectors.toList());
 		this.isConfigured = true;
 	}
 }

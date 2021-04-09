@@ -29,6 +29,8 @@ dependencies {
 	/* Because JClouds has issues with Java 11. */
 	implementation group: 'javax.annotation', name: 'javax.annotation-api', version: '1.3.2'
 
+	implementation group: 'io.mikael', name: 'urlbuilder', version: '2.0.9'
+
 	runtimeOnly group: 'javax.xml.bind', name: 'jaxb-api', version: '2.2.11'
 
 	implementation project(':nimrodg-internal-api')
