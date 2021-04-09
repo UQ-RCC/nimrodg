@@ -389,10 +389,10 @@ public class Master implements MessageQueueListener, AutoCloseable {
 						LOGGER.info("Resource {} adopted orphaned agent {}.", r.getName(), as.getUUID());
 						ai.actuator.complete(a);
 					} else if(adopt == Actuator.AdoptStatus.Stale) {
-						LOGGER.info("Resource {} marked orphaned agent {} as stale, expiring...", r.getName(), as.getUUID());
+						LOGGER.info("Resource {} marked orphaned agent {} as stale, marking as expired.", r.getName(), as.getUUID());
 						orphanage.adopt(as);
 						ai.actuator.complete(orphanage);
-						runLater("checkOrphanage", () -> Master.this.doExpire(ai), true);
+						heart.forceExpire(as.getUUID());
 					} else {
 						LOGGER.info("Resource {} rejected orphaned agent {}.", r.getName(), as.getUUID());
 						orphanage.adopt(as);
