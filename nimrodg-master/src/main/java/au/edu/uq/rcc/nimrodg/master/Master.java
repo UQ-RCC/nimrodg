@@ -586,6 +586,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 		}
 
 		ai.state.setExpired(true);
+		heart.onAgentDisconnect(ai.uuid);
 		runLater("heartExpireAgent", () -> agentScheduler.onAgentExpiry(ai.instance, ai.resource));
 		nimrod.updateAgent(ai.state);
 		return true;
