@@ -325,7 +325,7 @@ public class ActuatorUtils {
 
 		return String.format("act-%s-%s-%d",
 				res.getName(),
-				act.getClass().getSimpleName(),
+				act.getClass().getSimpleName().toLowerCase(Locale.ENGLISH),
 				(long)hash & 0xFFFFFFFFL
 		);
 	}
