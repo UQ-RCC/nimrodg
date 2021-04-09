@@ -179,8 +179,7 @@ public class RemoteActuator extends POSIXActuator<SSHResourceType.SSHConfig> {
 			return;
 		}
 
-		String[] spids = IntStream.of(pids).mapToObj(String::valueOf).toArray(String[]::new);
-		String[] args = Stream.concat(Stream.of("kill", "-9"), Arrays.stream(spids)).toArray(String[]::new);
+		String[] args = Stream.concat(Stream.of("kill", "-9"), IntStream.of(pids).mapToObj(String::valueOf)).toArray(String[]::new);
 
 		try {
 			shell.runCommand(args);
