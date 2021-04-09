@@ -27,10 +27,8 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -106,18 +104,16 @@ class Heart implements ConfigListener {
 	}
 
 	public void tick(Instant now) {
-		Set<UUID> exps = new HashSet<>();
-		expiryInfo.keySet().forEach(u -> tickAgent(u, now, exps));
-		exps.forEach(expiryInfo::remove);
+		expiryInfo.keySet().forEach(u -> tickAgent(u, now));
 	}
 
-	private void tickAgent(UUID u, Instant now, Set<UUID> exps) {
+	private void tickAgent(UUID u, Instant now) {
 		ExpiryInfo ei = expiryInfo.get(u);
 
 		tickWalltime(u, ei, now);
 
 		if(!ei.isExpiring()) {
-			tickHeartbeat(u, ei, now, exps);
+			tickHeartbeat(u, ei, now);
 		}
 
 	}
@@ -147,7 +143,7 @@ class Heart implements ConfigListener {
 		ei.lastExpiryCheck = now;
 	}
 
-	private void tickHeartbeat(UUID u, ExpiryInfo ei, Instant now, Set<UUID> exps) {
+	private void tickHeartbeat(UUID u, ExpiryInfo ei, Instant now) {
 		/* FIXME: This logic needs to be redone. */
 		long commDiff = ops.getLastHeardFrom(u).until(now, ChronoUnit.SECONDS);
 		/* FIXME: Set this to the actual delay */
@@ -158,7 +154,6 @@ class Heart implements ConfigListener {
 
 		if(ei.missedBeats >= heartbeatMissedThreshold && heartbeatMissedThreshold > 0) {
 			ops.logInfo("Agent %s missed %d heartbeats, expiring...", u, ei.missedBeats);
-			exps.add(u);
 			ops.expireAgent(u);
 			return;
 		}
