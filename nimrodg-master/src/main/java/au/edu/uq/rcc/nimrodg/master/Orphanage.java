@@ -15,11 +15,13 @@ public final class Orphanage implements Actuator {
 
 	private final Resource resource;
 	private final HashSet<UUID> agents;
+	private final NimrodException fullException;
 	private boolean closed;
 
 	public Orphanage() {
 		this.resource = null;
 		this.agents = new HashSet<>();
+		this.fullException = new NimrodException.ResourceFull(this.resource);
 		this.closed = false;
 	}
 
@@ -31,7 +33,7 @@ public final class Orphanage implements Actuator {
 	@Override
 	public LaunchResult[] launchAgents(Request... requests) {
 		LaunchResult[] lrs = new LaunchResult[requests.length];
-		Arrays.fill(lrs, new LaunchResult(null, new NimrodException.ResourceFull(resource)));
+		Arrays.fill(lrs, new LaunchResult(null, fullException));
 		return lrs;
 	}
 
