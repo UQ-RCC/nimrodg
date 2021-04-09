@@ -569,7 +569,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 
 			if(act == null) {
 				/* Actuator isn't ready, the agent gets a pass. */
-				runLater("heartResetBeats", () -> heart.resetBeats(ai.uuid));
+				heart.resetBeats(ai.uuid);
 				return false;
 			}
 
@@ -580,7 +580,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 			 * eventually and the state would change to Unknown or Dead.
 			 */
 			if(status == Actuator.AgentStatus.Launching || status == Actuator.AgentStatus.Launched) {
-				runLater("heartResetBeats", () -> heart.resetBeats(ai.uuid));
+				heart.resetBeats(ai.uuid);
 				return false;
 			}
 		}
