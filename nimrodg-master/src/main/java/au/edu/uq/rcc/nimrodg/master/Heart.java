@@ -54,7 +54,7 @@ class Heart implements ConfigListener {
 		public int retryCount;
 
 		public Instant lastPing;
-		public int missedBeats;
+		public long missedBeats;
 
 		public ExpiryInfo(Instant now) {
 			this.lastExpiryCheck = Instant.MIN;
@@ -215,6 +215,18 @@ class Heart implements ConfigListener {
 		ExpiryInfo ei = expiryInfo.get(u);
 		if(ei != null) {
 			ei.missedBeats = 0;
+		}
+	}
+
+	/**
+	 * Force-expire an agent.
+	 *
+	 * @param u The UUID of the agent.
+	 */
+	public void forceExpire(UUID u) {
+		ExpiryInfo ei = expiryInfo.get(u);
+		if(ei != null) {
+			ei.missedBeats = Integer.MAX_VALUE;
 		}
 	}
 
