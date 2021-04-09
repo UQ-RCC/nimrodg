@@ -536,23 +536,23 @@ public class Master implements MessageQueueListener, AutoCloseable {
 
 		heart.tick(Instant.now());
 
-		{
+		if(!heartOps.toExpire.isEmpty()) {
 			List<MasterAgentInfo> ais = heartOps.toExpire.stream()
-					.map(allAgents::remove)
+					.map(allAgents::get)
 					.filter(Objects::nonNull)
+					.filter(this::doExpire)
+					.map(ai -> ai.uuid)
+					.map(allAgents::remove)
 					.collect(Collectors.toList());
-
-			ais.forEach(this::doExpire);
 
 			Map<Resource, List<UUID>> aa = NimrodUtils.mapToParent(ais, ai -> ai.resource, ai -> ai.uuid);
 			aa.forEach((k, v) -> aaaaa.runWithActuator(k, a -> a.forceTerminateAgent(v.stream().toArray(UUID[]::new))));
-
+			heartOps.toExpire.clear();
 		}
-		heartOps.toExpire.clear();
 	}
 
 	/* Expire an agent. */
-	private void doExpire(MasterAgentInfo ai) {
+	private boolean doExpire(MasterAgentInfo ai) {
 		if(ai.state.getState() == AgentInfo.State.WAITING_FOR_HELLO) {
 			/*
 			 * We're still WAITING_FOR_HELLO, ask the actuator what's going on.
@@ -570,7 +570,7 @@ public class Master implements MessageQueueListener, AutoCloseable {
 			if(act == null) {
 				/* Actuator isn't ready, the agent gets a pass. */
 				runLater("heartResetBeats", () -> heart.resetBeats(ai.uuid));
-				return;
+				return false;
 			}
 
 			Actuator.AgentStatus status = act.queryStatus(ai.uuid);
@@ -581,13 +581,14 @@ public class Master implements MessageQueueListener, AutoCloseable {
 			 */
 			if(status == Actuator.AgentStatus.Launching || status == Actuator.AgentStatus.Launched) {
 				runLater("heartResetBeats", () -> heart.resetBeats(ai.uuid));
-				return;
+				return false;
 			}
 		}
 
 		ai.state.setExpired(true);
 		runLater("heartExpireAgent", () -> agentScheduler.onAgentExpiry(ai.instance, ai.resource));
 		nimrod.updateAgent(ai.state);
+		return true;
 	}
 
 	private void processQueue(BlockingDeque<QTask> tasks) {
