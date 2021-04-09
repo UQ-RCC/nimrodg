@@ -83,7 +83,7 @@ public interface Actuator extends AutoCloseable {
 
 		public Request(UUID uuid, String secretKey) {
 			this.uuid = Objects.requireNonNull(uuid, "uuid");
-			this.secretKey = Objects.requireNonNull(secretKey, "secretLey");
+			this.secretKey = Objects.requireNonNull(secretKey, "secretKey");
 		}
 
 		public static Request forAgent(UUID uuid, String secretKey) {
