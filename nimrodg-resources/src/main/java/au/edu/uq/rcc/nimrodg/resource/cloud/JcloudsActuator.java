@@ -526,15 +526,20 @@ public class JcloudsActuator implements Actuator {
 	public Actuator.AdoptStatus adopt(AgentState state) {
 		JsonObject jo = state.getActuatorData();
 		if(jo == null) {
+			LOGGER.trace("Rejecting {}, no state.", state.getUUID());
 			return AdoptStatus.Rejected;
 		}
 
+		/* TODO: Schema validate. */
+
 		if(state.getState() == AgentInfo.State.SHUTDOWN) {
+			LOGGER.trace("Rejecting {}, already shutdown.", state.getUUID());
 			return AdoptStatus.Rejected;
 		}
 
 		JsonObject no = jo.getJsonObject("node");
 		if(no == null) {
+			LOGGER.trace("Rejecting {}, missing /node key.", state.getUUID());
 			return AdoptStatus.Rejected;
 		}
 
@@ -543,6 +548,7 @@ public class JcloudsActuator implements Actuator {
 				.map(j -> ((JsonString)j).getString());
 
 		if(nodeId.isEmpty()) {
+			LOGGER.trace("Rejecting {}, missing or invalid /node/id.", state.getUUID());
 			return AdoptStatus.Rejected;
 		}
 
@@ -551,6 +557,7 @@ public class JcloudsActuator implements Actuator {
 				.map(j -> ((JsonString)j).getString());
 
 		if(_privateKey.isEmpty()) {
+			LOGGER.trace("Rejecting {}, missing or invalid /node/private_key.", state.getUUID());
 			return AdoptStatus.Rejected;
 		}
 
@@ -559,7 +566,7 @@ public class JcloudsActuator implements Actuator {
 		try {
 			keyPair = ActuatorUtils.readPEMKey(_privateKey.get());
 		} catch(IOException e) {
-			LOGGER.warn("Unable to adopt agent {}, unable to parse private key.", state.getUUID(), e);
+			LOGGER.warn("Rejecting {}, unable to parse private key.", state.getUUID(), e);
 			return AdoptStatus.Rejected;
 		}
 
@@ -574,6 +581,7 @@ public class JcloudsActuator implements Actuator {
 			/* We don't know about the node, try to reconstruct it. */
 			n = Optional.ofNullable(compute.getNodeMetadata(nodeId.get()));
 			if(n.isEmpty()) {
+				LOGGER.trace("Rejecting {}, node {} doesn't exist.", state.getUUID(), nodeId.get());
 				return AdoptStatus.Rejected;
 			}
 
@@ -581,6 +589,7 @@ public class JcloudsActuator implements Actuator {
 					.flatMap(cfg -> factory.validateConfiguration(cfg, new ArrayList<>()));
 
 			if(tcfg.isEmpty()) {
+				LOGGER.trace("Rejecting {}, missing or invalid /node/transport.", state.getUUID());
 				return AdoptStatus.Rejected;
 			}
 
@@ -621,6 +630,7 @@ public class JcloudsActuator implements Actuator {
 
 		JsonObject ro = jo.getJsonObject("remote");
 		if(ro == null) {
+			LOGGER.trace("Rejecting {}, missing /remote key.", state.getUUID());
 			return AdoptStatus.Rejected;
 		}
 
@@ -630,7 +640,7 @@ public class JcloudsActuator implements Actuator {
 		try {
 			return ni.actuator.thenApply(act -> act.adopt(as)).get();
 		} catch(InterruptedException | ExecutionException e) {
-			LOGGER.error("Unable to ask nested actuator to adopt agent.");
+			LOGGER.error("Rejecting {}, unable to ask nested actuator to adopt agent.", state.getUUID(), e);
 			return AdoptStatus.Rejected;
 		}
 	}
