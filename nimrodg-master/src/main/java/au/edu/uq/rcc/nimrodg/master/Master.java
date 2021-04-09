@@ -1103,16 +1103,5 @@ public class Master implements MessageQueueListener, AutoCloseable {
 		public Instant getWalltime(UUID u) {
 			return allAgents.get(u).state.getExpiryTime();
 		}
-
-		@Override
-		public void logInfo(String fmt, Object... args) {
-			LOGGER.info("{}", String.format(fmt, args));
-		}
-
-		@Override
-		public void logTrace(String fmt, Object... args) {
-			//LOGGER.trace("{}", String.format(fmt, args));
-		}
-
 	}
 }

@@ -90,9 +90,17 @@ class Heart implements ConfigListener {
 
 		Instant getWalltime(UUID u);
 
-		void logInfo(String fmt, Object... args);
+		default void logInfo(String fmt, Object... args) {
+			if(LOGGER.isInfoEnabled()) {
+				LOGGER.info("{}", String.format(fmt, args));
+			}
+		}
 
-		void logTrace(String fmt, Object... args);
+		default void logTrace(String fmt, Object... args) {
+			if(LOGGER.isTraceEnabled()) {
+				LOGGER.trace("{}", String.format(fmt, args));
+			}
+		}
 	}
 
 	Heart(Operations ops) {
