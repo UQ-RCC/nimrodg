@@ -63,9 +63,9 @@ nimrod:
       nimrod.master.amqp.tls_protocol: TLSv1.2
 spring:
   datasource:
-    url: jdbc:postgresql://db.example.com:5432/nimrod_portal
-    username: nimrod-portal
-    password: password
+    url: jdbc:postgresql://localhost:5432/nimrod_portal
+    username: nimrod_portal
+    password: nimrod_portal
     driver: org.postgresql.Driver
   security:
     oauth2:
