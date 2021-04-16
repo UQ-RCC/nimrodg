@@ -41,6 +41,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Random;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -59,22 +60,21 @@ public class NimrodUtils {
 		x86_64
 	}
 
-	public static <T> T selectRandomFromContainer(Collection<T> c) {
+	public static <T> Optional<T> selectRandomFromContainer(Collection<T> c) {
 		return selectRandomFromContainer(c, new Random());
 	}
 
-	public static <T> T selectRandomFromContainer(Collection<T> c, Random rnd) {
+	public static <T> Optional<T> selectRandomFromContainer(Collection<T> c, Random rnd) {
 		Objects.requireNonNull(c, "c");
 		Objects.requireNonNull(rnd, "rnd");
 
 		if(c.isEmpty()) {
-			return null;
+			return Optional.empty();
 		}
 
 		return c.stream()
 				.skip(rnd.nextInt(c.size()))
-				.findFirst()
-				.orElse(null);
+				.findFirst();
 	}
 
 	public static <T, U> Map<T, List<U>> mapToParent(Collection<U> vals, Function<U, T> mapper) {

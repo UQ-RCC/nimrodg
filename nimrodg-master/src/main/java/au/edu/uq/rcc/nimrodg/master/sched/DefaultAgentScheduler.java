@@ -403,14 +403,10 @@ public class DefaultAgentScheduler implements AgentScheduler {
 			 */
 			for(Map.Entry<JobAttempt, Resource> ee : resMap.entrySet()) {
 				List<Agent> agents = agentMap.get(ee.getValue());
-				Agent ag = NimrodUtils.selectRandomFromContainer(agents);
+				Optional<Agent> ag = NimrodUtils.selectRandomFromContainer(agents);
 				m_PendingJobs.remove(ee.getKey());
 				m_HeldJobs.add(ee.getKey());
-				if(ag == null) {
-					requestAgentLaunch(ee.getValue());
-					continue;
-				}
-				agents.remove(ag);
+				ag.ifPresentOrElse(agents::remove, () -> requestAgentLaunch(ee.getValue()));
 			}
 		}
 	}

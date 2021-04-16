@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -41,15 +42,16 @@ public class UtilsTests {
 
 		for(int i = 0; i < 10; ++i) {
 			String expected = TEST_STRINGS.get(rnd.nextInt(TEST_STRINGS.size()));
-			String actual = NimrodUtils.selectRandomFromContainer(TEST_STRINGS, rnd2);
-			Assert.assertEquals(expected, actual);
+			Optional<String> actual = NimrodUtils.selectRandomFromContainer(TEST_STRINGS, rnd2);
+			Assert.assertTrue(actual.isPresent());
+			Assert.assertEquals(expected, actual.get());
 		}
 
 		rnd.setSeed(0);
 		rnd2.setSeed(0);
 
-		Assert.assertNull(NimrodUtils.selectRandomFromContainer(TEST_EMPTY_LIST));
-		Assert.assertNull(NimrodUtils.selectRandomFromContainer(TEST_EMPTY_LIST, rnd2));
+		Assert.assertFalse(NimrodUtils.selectRandomFromContainer(TEST_EMPTY_LIST).isPresent());
+		Assert.assertFalse(NimrodUtils.selectRandomFromContainer(TEST_EMPTY_LIST, rnd2).isPresent());
 	}
 
 	@Test
