@@ -138,6 +138,33 @@ public class StringTests {
 	}
 
 	@Test
+	public void identifierTests() {
+		for(int i = 0; i < 10; ++i) {
+			char c = Character.forDigit(i, 10);
+			Assert.assertTrue(StringUtils.isIdentifierDigit(c));
+			Assert.assertFalse(StringUtils.isIdentifierNonDigit(c));
+		}
+
+		for(int i = 0; i < 26; ++i) {
+			int upper = 'A' + i;
+			int lower = 'a' + i;
+
+			Assert.assertTrue(StringUtils.isIdentifierNonDigit(upper));
+			Assert.assertTrue(StringUtils.isIdentifierNonDigit(lower));
+
+			Assert.assertFalse(StringUtils.isIdentifierDigit(upper));
+			Assert.assertFalse(StringUtils.isIdentifierDigit(lower));
+		}
+
+		Assert.assertTrue(StringUtils.isIdentifier("abc123"));
+		Assert.assertTrue(StringUtils.isIdentifier("abcdef"));
+		Assert.assertTrue(StringUtils.isIdentifier("a"));
+		Assert.assertFalse(StringUtils.isIdentifier("0"));
+		Assert.assertFalse(StringUtils.isIdentifier(""));
+		Assert.assertFalse(StringUtils.isIdentifier("0asdf"));
+	}
+
+	@Test
 	public void walltimeParseTest() {
 		Assert.assertEquals(12, StringUtils.parseWalltime("12"));
 		Assert.assertEquals(12 * 60 + 34, StringUtils.parseWalltime("12:34"));

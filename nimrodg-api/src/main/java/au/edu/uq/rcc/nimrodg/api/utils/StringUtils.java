@@ -72,15 +72,30 @@ public class StringUtils {
 	/**
 	 * Is the given code point a digit? [0-9]
 	 */
-	private static boolean isIdentifierDigit(int cp) {
+	public static boolean isIdentifierDigit(int cp) {
 		return cp >= '0' && cp <= '9';
 	}
 
 	/**
 	 * Is the given code point a nondigit? [a-zA-Z_]
 	 */
-	private static boolean isIdentifierNonDigit(int cp) {
+	public static boolean isIdentifierNonDigit(int cp) {
 		return (cp >= 'a' && cp <= 'z') || (cp >= 'A' && cp <= 'Z') || cp == '_';
+	}
+
+	/**
+	 * Is the given string an identifier?
+	 */
+	public static boolean isIdentifier(String s) {
+		if(s.isEmpty()) {
+			return false;
+		}
+
+		if(isIdentifierDigit(s.charAt(0))) {
+			return false;
+		}
+
+		return s.chars().allMatch(i -> isIdentifierDigit(i) || isIdentifierNonDigit(i));
 	}
 
 	/**
