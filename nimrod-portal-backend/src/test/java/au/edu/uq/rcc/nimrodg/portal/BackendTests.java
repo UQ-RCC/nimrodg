@@ -19,6 +19,7 @@
  */
 package au.edu.uq.rcc.nimrodg.portal;
 
+import au.edu.uq.rcc.nimrodg.api.utils.StringUtils;
 import au.edu.uq.rcc.nimrodg.utils.NimrodUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,8 +29,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import javax.sql.DataSource;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 
 @SpringBootTest
 public class BackendTests {
@@ -41,6 +44,25 @@ public class BackendTests {
     @Autowired
     private DataSource dataSource;
 
+    private static void nukeUsers(Connection c) throws SQLException {
+        ArrayList<String> users = new ArrayList<>();
+        try(Statement s = c.createStatement()) {
+            try(ResultSet rs = s.executeQuery("SELECT username FROM public.portal_users")) {
+                while (rs.next()) {
+                    users.add(rs.getString("username"));
+                }
+            }
+
+            for(String u : users) {
+                if(!StringUtils.isIdentifier(u)) {
+                    throw new IllegalStateException("Invalid username " + u + ", please investigate.");
+                }
+                /* NB: Can't use a prepared statement here. */
+                s.executeUpdate("DROP SCHEMA IF EXISTS " + u + " CASCADE");
+            }
+        }
+    }
+
     @BeforeEach
     public void initDatabase() throws SQLException  {
         try(Connection c = dataSource.getConnection()) {
@@ -48,6 +70,7 @@ public class BackendTests {
             try(Statement s = c.createStatement()) {
                 s.executeUpdate(SCHEMA_SQL);
             }
+            nukeUsers(c);
             c.commit();
         }
     }
