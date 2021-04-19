@@ -11,12 +11,11 @@ import org.apache.sshd.server.command.CommandFactory;
 import org.apache.sshd.server.scp.ScpCommandFactory;
 import org.apache.sshd.server.shell.UnknownCommand;
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.io.File;
 import java.io.IOException;
@@ -43,8 +42,8 @@ import java.util.Optional;
 
 public class ShellTests {
 
-    @Rule
-    public TemporaryFolder tmpDir = new TemporaryFolder();
+    @TempDir
+    public Path tmpDir;
 
     private SshServer sshd;
     private KeyPair hostKey;
@@ -96,7 +95,7 @@ public class ShellTests {
         }
 
         /* Use the on-disk key. */
-        try(OpenSSHClient client = new OpenSSHClient(uri, tmpDir.getRoot().toPath(), Optional.of(keyPath), Optional.of(openSsh), Map.of(
+        try(OpenSSHClient client = new OpenSSHClient(uri, tmpDir, Optional.of(keyPath), Optional.of(openSsh), Map.of(
                 "StrictHostKeyChecking", "no",
                 "UserKnownHostsFile", "/dev/null",
                 "LogLevel", "DEBUG3"
@@ -105,7 +104,7 @@ public class ShellTests {
         }
 
         /* Use the in-memory key. */
-        try(OpenSSHClient client = new OpenSSHClient(uri, tmpDir.getRoot().toPath(), Optional.of(memKeyPath), Optional.of(openSsh), Map.of(
+        try(OpenSSHClient client = new OpenSSHClient(uri, tmpDir, Optional.of(memKeyPath), Optional.of(openSsh), Map.of(
                 "StrictHostKeyChecking", "no",
                 "UserKnownHostsFile", "/dev/null",
                 "LogLevel", "DEBUG3"
@@ -116,15 +115,15 @@ public class ShellTests {
 
     private void testClient(RemoteShell client) throws IOException {
         RemoteShell.CommandResult cr = client.runCommand("echo", "asdf");
-        Assert.assertEquals(0, cr.status);
-        Assert.assertEquals("asdf\n", cr.stdout);
-        Assert.assertEquals("", cr.stderr);
+        Assertions.assertEquals(0, cr.status);
+        Assertions.assertEquals("asdf\n", cr.stdout);
+        Assertions.assertEquals("", cr.stderr);
 
         byte[] payload = new byte[]{'a', 's', 'd', 'f', 0x0D, 0x0A};
         Path asdfPath = memFs.getPath("/asdf");
         client.upload(asdfPath.toString(), payload, EnumSet.of(PosixFilePermission.OWNER_READ), Instant.now());
-        Assert.assertArrayEquals(payload, Files.readAllBytes(asdfPath));
-        Assert.assertEquals(EnumSet.of(PosixFilePermission.OWNER_READ), Files.getPosixFilePermissions(asdfPath));
+        Assertions.assertArrayEquals(payload, Files.readAllBytes(asdfPath));
+        Assertions.assertEquals(EnumSet.of(PosixFilePermission.OWNER_READ), Files.getPosixFilePermissions(asdfPath));
     }
 
     private static class _CommandFactory implements CommandFactory {
@@ -164,7 +163,7 @@ public class ShellTests {
         }
     }
 
-    @Before
+    @BeforeEach
     public void setup() throws IOException, GeneralSecurityException {
         /* https://docs.oracle.com/javase/7/docs/api/java/security/KeyPairGenerator.html */
         KeyPairGenerator keygen = KeyPairGenerator.getInstance("RSA");
@@ -172,7 +171,7 @@ public class ShellTests {
         keyPair = keygen.generateKeyPair();
         hostKey = keygen.generateKeyPair();
 
-        keyPath = tmpDir.newFile("key").toPath();
+        keyPath = tmpDir.resolve("key");
 
         writePEM(keyPath, keyPair.getPrivate());
         Files.setPosixFilePermissions(keyPath, EnumSet.of(PosixFilePermission.OWNER_READ));
@@ -197,7 +196,7 @@ public class ShellTests {
         sshd.start();
     }
 
-    @After
+    @AfterEach
     public void shutdown() throws IOException {
         if(sshd != null) {
             sshd.stop(true);

@@ -53,8 +53,9 @@ import au.edu.uq.rcc.nimrodg.api.setup.SetupConfig;
 import au.edu.uq.rcc.nimrodg.api.setup.SetupConfigBuilder;
 import au.edu.uq.rcc.nimrodg.api.setup.TransferConfigBuilder;
 import au.edu.uq.rcc.nimrodg.utils.NimrodUtils;
-import org.junit.Assert;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import javax.json.Json;
 import javax.json.JsonObject;
@@ -84,13 +85,13 @@ public abstract class APITests {
 
 	protected NimrodMasterAPI getNimrodMasterAPI() {
 		NimrodAPI nimrod = getNimrod();
-		Assert.assertTrue(nimrod.getAPICaps().master);
+		Assertions.assertTrue(nimrod.getAPICaps().master);
 		return (NimrodMasterAPI)nimrod;
 	}
 
 	@Test
 	public void getNonExistentExperimentTestw() {
-		Assert.assertNull(getNimrod().getExperiment("asdfasdf"));
+		Assertions.assertNull(getNimrod().getExperiment("asdfasdf"));
 	}
 
 	@Test
@@ -102,7 +103,7 @@ public abstract class APITests {
 		Experiment exp4 = api.addExperiment("test4", TestUtils.getSampleExperiment());
 
 		Experiment[] exp = api.getExperiments().stream().toArray(Experiment[]::new);
-		Assert.assertArrayEquals(new Experiment[]{exp1, exp2, exp3, exp4}, exp);
+		Assertions.assertArrayEquals(new Experiment[]{exp1, exp2, exp3, exp4}, exp);
 	}
 
 	@Test
@@ -112,12 +113,12 @@ public abstract class APITests {
 
 		Experiment exp2 = api.getExperiment("test1");
 
-		Assert.assertEquals(exp, exp2);
+		Assertions.assertEquals(exp, exp2);
 
 		exp.getTasks();
 
 		Job newJob = api.addSingleJob(exp, Map.of("x", "xxx", "y", "yyy"));
-		Assert.assertEquals(Map.of(
+		Assertions.assertEquals(Map.of(
 				"x", "xxx",
 				"y", "yyy",
 				"jobindex", "3",
@@ -126,7 +127,7 @@ public abstract class APITests {
 
 		List<Job> jobs = new ArrayList<>(api.filterJobs(exp, EnumSet.allOf(JobAttempt.Status.class), 0, 0));
 
-		Assert.assertEquals(newJob, jobs.get(2));
+		Assertions.assertEquals(newJob, jobs.get(2));
 
 		Resource node = api.addResource("test", "dummy", JsonValue.EMPTY_JSON_OBJECT, null, null);
 
@@ -134,7 +135,7 @@ public abstract class APITests {
 
 		List<Resource> ass = new ArrayList<>(api.getAssignedResources(exp));
 
-		Assert.assertEquals(node, ass.get(0));
+		Assertions.assertEquals(node, ass.get(0));
 	}
 
 	@Test
@@ -145,9 +146,9 @@ public abstract class APITests {
 		Collection<String> vars = exp.getVariables();
 
 		/* Make sure we don't contain any of our implicit variables. */
-		Assert.assertEquals(2, vars.size());
-		Assert.assertTrue(vars.contains("x"));
-		Assert.assertTrue(vars.contains("y"));
+		Assertions.assertEquals(2, vars.size());
+		Assertions.assertTrue(vars.contains("x"));
+		Assertions.assertTrue(vars.contains("y"));
 
 	}
 
@@ -169,12 +170,12 @@ public abstract class APITests {
 			CommandResult cr1 = api.addCommandResult(att, CommandResult.CommandResultStatus.SUCCESS,
 					1, 10.0f, 0, "Success", 0, true);
 
-			Assert.assertEquals(1, cr1.getIndex());
+			Assertions.assertEquals(1, cr1.getIndex());
 
 			CommandResult cr2 = api.addCommandResult(att, CommandResult.CommandResultStatus.ABORTED,
 					-1, 0.0f, 0, "", 0, true);
 
-			Assert.assertEquals(2, cr2.getIndex());
+			Assertions.assertEquals(2, cr2.getIndex());
 		}
 	}
 
@@ -192,29 +193,29 @@ public abstract class APITests {
 		{
 			JobAttempt att = api.createJobAttempts(List.of(j)).get(0);
 
-			Assert.assertNull(att.getAgentUUID());
-			Assert.assertNull(att.getStartTime());
-			Assert.assertNull(att.getFinishTime());
-			Assert.assertEquals(JobAttempt.Status.NOT_RUN, att.getStatus());
-			Assert.assertEquals(JobAttempt.Status.NOT_RUN, api.getJobStatus(j));
+			Assertions.assertNull(att.getAgentUUID());
+			Assertions.assertNull(att.getStartTime());
+			Assertions.assertNull(att.getFinishTime());
+			Assertions.assertEquals(JobAttempt.Status.NOT_RUN, att.getStatus());
+			Assertions.assertEquals(JobAttempt.Status.NOT_RUN, api.getJobStatus(j));
 
 			api.startJobAttempt(att, agentUuid);
 
-			Assert.assertEquals(agentUuid, att.getAgentUUID());
-			Assert.assertNotNull(att.getStartTime());
-			Assert.assertNull(att.getFinishTime());
-			Assert.assertEquals(JobAttempt.Status.RUNNING, att.getStatus());
-			Assert.assertEquals(JobAttempt.Status.RUNNING, api.getJobStatus(j));
+			Assertions.assertEquals(agentUuid, att.getAgentUUID());
+			Assertions.assertNotNull(att.getStartTime());
+			Assertions.assertNull(att.getFinishTime());
+			Assertions.assertEquals(JobAttempt.Status.RUNNING, att.getStatus());
+			Assertions.assertEquals(JobAttempt.Status.RUNNING, api.getJobStatus(j));
 
 			/* Add a command result for goot measure. Note this has no affect on the attempt status. */
 			api.addCommandResult(att, CommandResult.CommandResultStatus.SUCCESS, 1, 10.0f, 0, "Success", 0, true);
 
 			api.finishJobAttempt(att, false);
-			Assert.assertEquals(agentUuid, att.getAgentUUID());
-			Assert.assertNotNull(att.getStartTime());
-			Assert.assertNotNull(att.getFinishTime());
-			Assert.assertEquals(JobAttempt.Status.COMPLETED, att.getStatus());
-			Assert.assertEquals(JobAttempt.Status.COMPLETED, api.getJobStatus(j));
+			Assertions.assertEquals(agentUuid, att.getAgentUUID());
+			Assertions.assertNotNull(att.getStartTime());
+			Assertions.assertNotNull(att.getFinishTime());
+			Assertions.assertEquals(JobAttempt.Status.COMPLETED, att.getStatus());
+			Assertions.assertEquals(JobAttempt.Status.COMPLETED, api.getJobStatus(j));
 
 			attempts.add(att);
 		}
@@ -223,19 +224,19 @@ public abstract class APITests {
 		{
 			JobAttempt att = api.createJobAttempts(List.of(j)).get(0);
 
-			Assert.assertNull(att.getAgentUUID());
-			Assert.assertNull(att.getStartTime());
-			Assert.assertNull(att.getFinishTime());
-			Assert.assertEquals(JobAttempt.Status.NOT_RUN, att.getStatus());
-			Assert.assertEquals(JobAttempt.Status.COMPLETED, api.getJobStatus(j));
+			Assertions.assertNull(att.getAgentUUID());
+			Assertions.assertNull(att.getStartTime());
+			Assertions.assertNull(att.getFinishTime());
+			Assertions.assertEquals(JobAttempt.Status.NOT_RUN, att.getStatus());
+			Assertions.assertEquals(JobAttempt.Status.COMPLETED, api.getJobStatus(j));
 
 			api.finishJobAttempt(att, true);
 
-			Assert.assertNull(att.getAgentUUID());
-			Assert.assertNotNull(att.getStartTime());
-			Assert.assertNotNull(att.getFinishTime());
-			Assert.assertEquals(JobAttempt.Status.FAILED, att.getStatus());
-			Assert.assertEquals(JobAttempt.Status.COMPLETED, api.getJobStatus(j));
+			Assertions.assertNull(att.getAgentUUID());
+			Assertions.assertNotNull(att.getStartTime());
+			Assertions.assertNotNull(att.getFinishTime());
+			Assertions.assertEquals(JobAttempt.Status.FAILED, att.getStatus());
+			Assertions.assertEquals(JobAttempt.Status.COMPLETED, api.getJobStatus(j));
 
 			attempts.add(att);
 		}
@@ -254,14 +255,14 @@ public abstract class APITests {
 			Set<JobAttempt> js0 = new HashSet<>(attempts);
 			Set<JobAttempt> js1 = new HashSet<>(api.filterJobAttempts(j, EnumSet.allOf(JobAttempt.Status.class)));
 
-			Assert.assertEquals(js0, js1);
+			Assertions.assertEquals(js0, js1);
 
 			/* See if we can filter the NOT_RUN attempt. */
-			Assert.assertEquals(notRunAtt, api.filterJobAttempts(j, EnumSet.of(JobAttempt.Status.NOT_RUN)).stream()
+			Assertions.assertEquals(notRunAtt, api.filterJobAttempts(j, EnumSet.of(JobAttempt.Status.NOT_RUN)).stream()
 					.findFirst().orElseThrow(IllegalStateException::new));
 
 			/* See if we can filter the RUNNING attempt. */
-			Assert.assertEquals(runningAtt, api.filterJobAttempts(j, EnumSet.of(JobAttempt.Status.RUNNING)).stream()
+			Assertions.assertEquals(runningAtt, api.filterJobAttempts(j, EnumSet.of(JobAttempt.Status.RUNNING)).stream()
 					.findFirst().orElseThrow(IllegalStateException::new));
 		}
 
@@ -273,11 +274,11 @@ public abstract class APITests {
 							Map.Entry::getKey,
 							e -> new HashSet<>(e.getValue())
 					));
-			Assert.assertEquals(j0, j1);
+			Assertions.assertEquals(j0, j1);
 		}
 	}
 
-	@Test(expected = NimrodException.DbError.class)
+	@Test
 	public void commandResultTest1() throws RunfileBuildException {
 		NimrodMasterAPI api = getNimrodMasterAPI();
 		Experiment exp = api.addExperiment("test1", TestUtils.getSimpleSampleExperiment());
@@ -291,10 +292,10 @@ public abstract class APITests {
 		api.startJobAttempt(att, agentUuid);
 
 		/* Try adding a command result for a non-existent command. */
-		api.addCommandResult(att, CommandResult.CommandResultStatus.SUCCESS, 100, 10.0f, 0, "Success", 0, true);
+		Assertions.assertThrows(NimrodException.DbError.class, () -> api.addCommandResult(att, CommandResult.CommandResultStatus.SUCCESS, 100, 10.0f, 0, "Success", 0, true));
 	}
 
-	@Test(expected = NimrodException.DbError.class)
+	@Test
 	public void commandResultTest2() throws RunfileBuildException {
 		NimrodMasterAPI api = getNimrodMasterAPI();
 		Experiment exp = api.addExperiment("test1", TestUtils.getSimpleSampleExperiment());
@@ -309,7 +310,8 @@ public abstract class APITests {
 
 		/* Try adding the command result twice. */
 		api.addCommandResult(att, CommandResult.CommandResultStatus.SUCCESS, 0, 10.0f, 0, "Success", 0, true);
-		api.addCommandResult(att, CommandResult.CommandResultStatus.SUCCESS, 0, 10.0f, 0, "Success", 0, true);
+
+		Assertions.assertThrows(NimrodException.DbError.class, () -> api.addCommandResult(att, CommandResult.CommandResultStatus.SUCCESS, 0, 10.0f, 0, "Success", 0, true));
 	}
 
 	@Test
@@ -362,7 +364,7 @@ public abstract class APITests {
 		CommandResult att2cr1 = api.addCommandResult(att2, CommandResult.CommandResultStatus.SUCCESS, 0, 10.0f, 0, "Success", 0, true);
 
 		Map<JobAttempt, List<CommandResult>> crs = api.getCommandResults(List.of(att1, att2));
-		Assert.assertEquals(Map.of(
+		Assertions.assertEquals(Map.of(
 				att1, List.of(att1cr1),
 				att2, List.of(att2cr1)
 		), crs);
@@ -381,7 +383,7 @@ public abstract class APITests {
 
 		NetworkJob.ExecCommand cmd = (NetworkJob.ExecCommand)nj.commands.get(0);
 
-		Assert.assertEquals("echo value-x-0 value-y-0 1 1", cmd.arguments.get(0));
+		Assertions.assertEquals("echo value-x-0 value-y-0 1 1", cmd.arguments.get(0));
 	}
 
 	@Test
@@ -397,7 +399,7 @@ public abstract class APITests {
 		NetworkJob nj = MsgUtils.resolveJob(UUID.randomUUID(), job, Task.Name.Main, URI.create("http://localhost"));
 
 		NetworkJob.ExecCommand cmd = (NetworkJob.ExecCommand)nj.commands.get(1);
-		Assert.assertEquals("/home/uqzvanim/nimbench.sh GET 1kb", cmd.arguments.get(0));
+		Assertions.assertEquals("/home/uqzvanim/nimbench.sh GET 1kb", cmd.arguments.get(0));
 	}
 
 	private static class _FactuatorOps extends ActuatorOpsAdapter {
@@ -439,7 +441,7 @@ public abstract class APITests {
 		ra.reset(UUID.randomUUID());
 		AgentState nas = mapi.addAgent(res, as);
 		as.update(nas);
-		Assert.assertNotNull(as.getSecretKey());
+		Assertions.assertNotNull(as.getSecretKey());
 
 		ra.disconnect(AgentInfo.ShutdownReason.HostSignal, 9);
 
@@ -447,7 +449,7 @@ public abstract class APITests {
 		ra.reset(UUID.randomUUID(), "abc123");
 		nas = mapi.addAgent(res, as);
 		as.update(nas);
-		Assert.assertEquals("abc123", as.getSecretKey());
+		Assertions.assertEquals("abc123", as.getSecretKey());
 	}
 
 	@Test
@@ -463,7 +465,7 @@ public abstract class APITests {
 
 		mapi.addAgent(rootResource, as);
 
-		Assert.assertNull(as.getActuatorData());
+		Assertions.assertNull(as.getActuatorData());
 
 		as.setActuatorData(Json.createObjectBuilder()
 				.add("x", 0)
@@ -472,7 +474,7 @@ public abstract class APITests {
 		mapi.updateAgent(as);
 
 		AgentState as2 = mapi.getAgentByUUID(as.getUUID());
-		Assert.assertEquals(as.getActuatorData(), as2.getActuatorData());
+		Assertions.assertEquals(as.getActuatorData(), as2.getActuatorData());
 	}
 
 	@Test
@@ -512,7 +514,7 @@ public abstract class APITests {
 				agents[i].reset(requests[i].uuid);
 				agents[i].processMessage(hellos.get(i), Instant.now());
 
-				Assert.assertEquals(
+				Assertions.assertEquals(
 						Json.createObjectBuilder()
 								.add("hashCode", agents[i].getDataStore().hashCode())
 								.build(),
@@ -549,7 +551,7 @@ public abstract class APITests {
 			FakeAgentListener l = new FakeAgentListener(api, act);
 
 			Actuator.LaunchResult lr = act.launchAgents(Actuator.Request.forAgent(uuid, "secret"))[0];
-			Assert.assertNull(lr.t);
+			Assertions.assertNull(lr.t);
 
 			DefaultAgentState as = new DefaultAgentState();
 			ReferenceAgent ra = new ReferenceAgent(as, l);
@@ -562,14 +564,14 @@ public abstract class APITests {
 		/* This is a new instance. */
 		AgentState as = api.getAgentByUUID(uuid);
 
-		Assert.assertEquals(AgentInfo.State.SHUTDOWN, as.getState());
-		Assert.assertNull(as.getQueue());
-		Assert.assertTrue(as.getExpired());
-		Assert.assertEquals(AgentInfo.ShutdownReason.Requested, as.getShutdownReason());
-		Assert.assertEquals(-1, as.getShutdownSignal());
+		Assertions.assertEquals(AgentInfo.State.SHUTDOWN, as.getState());
+		Assertions.assertNull(as.getQueue());
+		Assertions.assertTrue(as.getExpired());
+		Assertions.assertEquals(AgentInfo.ShutdownReason.Requested, as.getShutdownReason());
+		Assertions.assertEquals(-1, as.getShutdownSignal());
 	}
 
-	@Test(expected = NimrodException.DbError.class)
+	@Test
 	public void resourceDeletionWhenAssignedTest() throws RunfileBuildException {
 		NimrodAPI api = getNimrod();
 		TestUtils.createSampleResources(api);
@@ -579,7 +581,7 @@ public abstract class APITests {
 		Experiment exp1 = api.addExperiment("exp1", TestUtils.getSimpleSampleEmptyExperiment());
 		api.assignResource(root, exp1);
 
-		api.deleteResource(root);
+		Assertions.assertThrows(NimrodException.DbError.class, () -> api.deleteResource(root));
 	}
 
 	@Test
@@ -605,27 +607,27 @@ public abstract class APITests {
 		api.assignResource(flashlite, exp1);
 
 		Collection<Resource> roots = api.getResources();
-		Assert.assertEquals(5, roots.size());
-		Assert.assertTrue(roots.contains(root));
-		Assert.assertTrue(roots.contains(tinaroo));
-		Assert.assertTrue(roots.contains(awoonga));
-		Assert.assertTrue(roots.contains(flashlite));
-		Assert.assertTrue(roots.contains(nectar));
+		Assertions.assertEquals(5, roots.size());
+		Assertions.assertTrue(roots.contains(root));
+		Assertions.assertTrue(roots.contains(tinaroo));
+		Assertions.assertTrue(roots.contains(awoonga));
+		Assertions.assertTrue(roots.contains(flashlite));
+		Assertions.assertTrue(roots.contains(nectar));
 
 		{
 			Collection<Resource> res = api.getAssignedResources(exp1);
-			Assert.assertTrue(res.contains(root));
-			Assert.assertTrue(res.contains(flashlite));
+			Assertions.assertTrue(res.contains(root));
+			Assertions.assertTrue(res.contains(flashlite));
 		}
 
 		{
 			Collection<Resource> res = api.getAssignedResources(exp2);
-			Assert.assertTrue(res.contains(root));
+			Assertions.assertTrue(res.contains(root));
 		}
 
 		{
 			Collection<Resource> res = api.getAssignedResources(exp3);
-			Assert.assertTrue(res.contains(root));
+			Assertions.assertTrue(res.contains(root));
 		}
 	}
 
@@ -643,20 +645,20 @@ public abstract class APITests {
 		api.assignResource(tinaroo, exp1);
 
 		/* Everything should be incapable initially. */
-		Assert.assertFalse(api.isResourceCapable(tinaroo, exp1));
-		Assert.assertFalse(api.isResourceCapable(tinaroo, exp2));
+		Assertions.assertFalse(api.isResourceCapable(tinaroo, exp1));
+		Assertions.assertFalse(api.isResourceCapable(tinaroo, exp2));
 
 		/* Make tinaroo capable of exp1. */
 		api.addResourceCaps(tinaroo, exp1);
-		Assert.assertTrue(api.isResourceCapable(tinaroo, exp1));
+		Assertions.assertTrue(api.isResourceCapable(tinaroo, exp1));
 
 		/* tinaroo isn't assigned to exp2, so this shouldn't do anything */
 		api.addResourceCaps(tinaroo, exp2);
-		Assert.assertTrue(api.isResourceCapable(tinaroo, exp2));
+		Assertions.assertTrue(api.isResourceCapable(tinaroo, exp2));
 
 		/* Unassign tinaroo from exp1 and check its capability was removed */
 		api.unassignResource(tinaroo, exp1);
-		Assert.assertFalse(api.isResourceCapable(tinaroo, exp1));
+		Assertions.assertFalse(api.isResourceCapable(tinaroo, exp1));
 	}
 
 	@Test
@@ -669,25 +671,25 @@ public abstract class APITests {
 		api.pollMasterEvents();
 
 		/* A job added to a stopped run shouldn't generate an event. */
-		Assert.assertEquals(Experiment.State.STOPPED, exp.getState());
+		Assertions.assertEquals(Experiment.State.STOPPED, exp.getState());
 		api.addSingleJob(exp, Map.of("x", "xx", "y", "yy"));
 
 		Collection<NimrodMasterEvent> _evts = api.pollMasterEvents();
-		Assert.assertEquals(0, _evts.size());
+		Assertions.assertEquals(0, _evts.size());
 
 		/* Start the experiment, this should cause an event to be created. */
 		api.updateExperimentState(exp, Experiment.State.STARTED);
 		api.addSingleJob(exp, Map.of("x", "xx", "y", "yy"));
 
 		List<NimrodMasterEvent> evts = new ArrayList<>(api.pollMasterEvents());
-		Assert.assertEquals(1, evts.size());
+		Assertions.assertEquals(1, evts.size());
 
 		{
 			NimrodMasterEvent nme = evts.get(0);
-			Assert.assertEquals(NimrodMasterEvent.Type.JobAdd, nme.getType());
+			Assertions.assertEquals(NimrodMasterEvent.Type.JobAdd, nme.getType());
 
 			JobAddMasterEvent ja = (JobAddMasterEvent)nme;
-			Assert.assertEquals(exp, ja.exp);
+			Assertions.assertEquals(exp, ja.exp);
 		}
 	}
 
@@ -713,8 +715,8 @@ public abstract class APITests {
 		NimrodAPI api = getNimrod();
 		Experiment exp1 = api.addExperiment("exp1", TestUtils.getSimpleSampleEmptyExperiment());
 
-		Assert.assertEquals(Set.of("x", "y"), exp1.getVariables());
-		Assert.assertTrue(api.filterJobs(exp1, EnumSet.allOf(JobAttempt.Status.class), 0, 0).isEmpty());
+		Assertions.assertEquals(Set.of("x", "y"), exp1.getVariables());
+		Assertions.assertTrue(api.filterJobs(exp1, EnumSet.allOf(JobAttempt.Status.class), 0, 0).isEmpty());
 	}
 
 	@Test
@@ -722,23 +724,23 @@ public abstract class APITests {
 		NimrodAPI api = getNimrod();
 
 		AgentDefinition ai = api.lookupAgentByPlatform("x86_64-pc-linux-musl");
-		Assert.assertNotNull(ai);
-		Assert.assertEquals("x86_64-pc-linux-musl", ai.getPlatformString());
+		Assertions.assertNotNull(ai);
+		Assertions.assertEquals("x86_64-pc-linux-musl", ai.getPlatformString());
 
-		Assert.assertEquals(Set.of(MachinePair.of("Linux", "x86_64"), MachinePair.of("Linux", "k10m")), ai.posixMappings());
+		Assertions.assertEquals(Set.of(MachinePair.of("Linux", "x86_64"), MachinePair.of("Linux", "k10m")), ai.posixMappings());
 
 		AgentDefinition ai2 = api.lookupAgentByPosix(MachinePair.of("Linux", "x86_64"));
-		Assert.assertNotNull(ai2);
-		Assert.assertEquals(ai, ai2);
+		Assertions.assertNotNull(ai2);
+		Assertions.assertEquals(ai, ai2);
 
 		ai2 = api.lookupAgentByPosix(MachinePair.of("Linux", "k10m"));
-		Assert.assertNotNull(ai2);
-		Assert.assertEquals(ai, ai2);
+		Assertions.assertNotNull(ai2);
+		Assertions.assertEquals(ai, ai2);
 
 		AgentDefinition noop = api.lookupAgentByPlatform("noop");
-		Assert.assertTrue(api.lookupAgents().containsKey(noop.getPlatformString()));
-		Assert.assertTrue(api.deleteAgentPlatform(noop.getPlatformString()));
-		Assert.assertFalse(api.lookupAgents().containsKey(noop.getPlatformString()));
+		Assertions.assertTrue(api.lookupAgents().containsKey(noop.getPlatformString()));
+		Assertions.assertTrue(api.deleteAgentPlatform(noop.getPlatformString()));
+		Assertions.assertFalse(api.lookupAgents().containsKey(noop.getPlatformString()));
 	}
 
 	@Test
@@ -748,7 +750,7 @@ public abstract class APITests {
 		Experiment exp1 = api.addExperiment("exp1", TestUtils.getSimpleSampleExperiment());
 
 		/* Ensure we're a directory. */
-		Assert.assertTrue(exp1.getWorkingDirectory().endsWith("/"));
+		Assertions.assertTrue(exp1.getWorkingDirectory().endsWith("/"));
 
 		Resource res = api.addResource("test1", "dummy", JsonValue.EMPTY_JSON_OBJECT, null,
 				NimrodURI.create(URI.create("file:///path/to/storage/root/"), null, null, null)
@@ -759,10 +761,10 @@ public abstract class APITests {
 			api.assignResource(res, exp1, NimrodURI.create(URI.create("file:///some/other/path/to/root/"), null, null, null));
 
 			Optional<NimrodURI> nuri = api.getAssignmentStatus(res, exp1);
-			Assert.assertTrue(nuri.isPresent());
+			Assertions.assertTrue(nuri.isPresent());
 
 			NimrodURI txUri = nuri.get();
-			Assert.assertEquals(URI.create("file:///some/other/path/to/root/"), txUri.uri.normalize());
+			Assertions.assertEquals(URI.create("file:///some/other/path/to/root/"), txUri.uri.normalize());
 
 			api.unassignResource(res, exp1);
 		}
@@ -771,11 +773,11 @@ public abstract class APITests {
 		{
 			api.assignResource(res, exp1);
 			Optional<NimrodURI> nuri = api.getAssignmentStatus(res, exp1);
-			Assert.assertTrue(nuri.isPresent());
+			Assertions.assertTrue(nuri.isPresent());
 
 			URI expUri = res.getTransferUri().uri;
 			NimrodURI txUri = nuri.get();
-			Assert.assertEquals(expUri, txUri.uri.normalize());
+			Assertions.assertEquals(expUri, txUri.uri.normalize());
 
 			api.unassignResource(res, exp1);
 		}
@@ -783,7 +785,7 @@ public abstract class APITests {
 		/* Test no assignment, with resource override. */
 		{
 			Optional<NimrodURI> nuri = api.getAssignmentStatus(res, exp1);
-			Assert.assertFalse(nuri.isPresent());
+			Assertions.assertFalse(nuri.isPresent());
 		}
 
 		Resource res2 = api.addResource("test2", "dummy", JsonValue.EMPTY_JSON_OBJECT, null, null);
@@ -792,11 +794,11 @@ public abstract class APITests {
 		{
 			api.assignResource(res2, exp1);
 			Optional<NimrodURI> nuri = api.getAssignmentStatus(res2, exp1);
-			Assert.assertTrue(nuri.isPresent());
+			Assertions.assertTrue(nuri.isPresent());
 
 			URI expUri = api.getConfig().getTransferUri().uri;
 			NimrodURI txUri = nuri.get();
-			Assert.assertEquals(expUri, txUri.uri.normalize());
+			Assertions.assertEquals(expUri, txUri.uri.normalize());
 
 			api.unassignResource(res2, exp1);
 		}
@@ -810,8 +812,8 @@ public abstract class APITests {
 			api.assignResource(res3, exp1);
 			Optional<NimrodURI> uri = api.getAssignmentStatus(res3, exp1);
 
-			Assert.assertTrue(uri.isPresent());
-			Assert.assertEquals(URI.create("file:/path/to/storage/root/?key1=val1&key2=val2"), uri.get().uri);
+			Assertions.assertTrue(uri.isPresent());
+			Assertions.assertEquals(URI.create("file:/path/to/storage/root/?key1=val1&key2=val2"), uri.get().uri);
 		}
 
 		Resource res4 = api.addResource("test4", "dummy", JsonValue.EMPTY_JSON_OBJECT, null,
@@ -823,8 +825,8 @@ public abstract class APITests {
 			api.assignResource(res4, exp1, NimrodURI.create(assUri, null, null, null));
 			Optional<NimrodURI> uri = api.getAssignmentStatus(res4, exp1);
 
-			Assert.assertTrue(uri.isPresent());
-			Assert.assertEquals(assUri, uri.get().uri);
+			Assertions.assertTrue(uri.isPresent());
+			Assertions.assertEquals(assUri, uri.get().uri);
 		}
 	}
 
@@ -835,13 +837,13 @@ public abstract class APITests {
 		Experiment exp = api.addExperiment("exp1", TestUtils.getSimpleSampleEmptyExperiment());
 
 		List<Job> jobs = new ArrayList<>(api.filterJobs(exp, EnumSet.allOf(JobAttempt.Status.class), 0, 0));
-		Assert.assertEquals(0, jobs.size());
+		Assertions.assertEquals(0, jobs.size());
 
 		List<Map<String, String>> newJobs = new ArrayList<>();
 		api.addJobs(exp, newJobs);
 
 		jobs = new ArrayList<>(api.filterJobs(exp, EnumSet.allOf(JobAttempt.Status.class), 0, 0));
-		Assert.assertEquals(0, jobs.size());
+		Assertions.assertEquals(0, jobs.size());
 
 		newJobs.add(new HashMap<>() {
 			{
@@ -852,22 +854,22 @@ public abstract class APITests {
 		api.addJobs(exp, newJobs);
 
 		jobs = new ArrayList<>(api.filterJobs(exp, EnumSet.allOf(JobAttempt.Status.class), 0, 0));
-		Assert.assertEquals(1, jobs.size());
+		Assertions.assertEquals(1, jobs.size());
 	}
 
-	@Test(expected = NimrodException.InvalidResourceConfiguration.class)
+	@Test
 	public void invalidResourceConfigTest() {
 		NimrodAPI api = getNimrod();
 
 		/* The dummy resource expects an empty json object. */
-		api.addResource("test", "dummy", Json.createObjectBuilder()
-				.add("x", 1).build(), null, null);
+		Assertions.assertThrows(NimrodException.InvalidResourceConfiguration.class, () -> api.addResource("test", "dummy", Json.createObjectBuilder()
+				.add("x", 1).build(), null, null));
 	}
 
-	@Test(expected = NimrodException.InvalidResourceType.class)
+	@Test
 	public void invalidResourceTypeTest() {
 		NimrodAPI api = getNimrod();
-		api.addResource("test", "dummy2", JsonValue.EMPTY_JSON_OBJECT, null, null);
+		Assertions.assertThrows(NimrodException.InvalidResourceType.class, () -> api.addResource("test", "dummy2", JsonValue.EMPTY_JSON_OBJECT, null, null));
 	}
 
 	@Test
@@ -891,38 +893,38 @@ public abstract class APITests {
 		);
 
 		NimrodConfig cfg = api.getConfig();
-		Assert.assertEquals("string", cfg.getWorkDir());
-		Assert.assertEquals("string", cfg.getRootStore());
-		Assert.assertEquals(nuri, cfg.getAmqpUri());
-		Assert.assertEquals(nuri, cfg.getTransferUri());
-		Assert.assertEquals("string", cfg.getAmqpRoutingKey());
+		Assertions.assertEquals("string", cfg.getWorkDir());
+		Assertions.assertEquals("string", cfg.getRootStore());
+		Assertions.assertEquals(nuri, cfg.getAmqpUri());
+		Assertions.assertEquals(nuri, cfg.getTransferUri());
+		Assertions.assertEquals("string", cfg.getAmqpRoutingKey());
 	}
 
 	private static void validateConfig(NimrodAPI api, SetupConfig setupConfig) {
 		NimrodConfig cfg = api.getConfig();
-		Assert.assertEquals(setupConfig.workDir(), cfg.getWorkDir());
-		Assert.assertEquals(setupConfig.storeDir(), cfg.getRootStore());
-		Assert.assertEquals(setupConfig.amqp().toNimrodUri(), cfg.getAmqpUri());
-		Assert.assertEquals(setupConfig.amqp().routingKey(), cfg.getAmqpRoutingKey());
-		Assert.assertEquals(setupConfig.transfer().toNimrodUri(), cfg.getTransferUri());
+		Assertions.assertEquals(setupConfig.workDir(), cfg.getWorkDir());
+		Assertions.assertEquals(setupConfig.storeDir(), cfg.getRootStore());
+		Assertions.assertEquals(setupConfig.amqp().toNimrodUri(), cfg.getAmqpUri());
+		Assertions.assertEquals(setupConfig.amqp().routingKey(), cfg.getAmqpRoutingKey());
+		Assertions.assertEquals(setupConfig.transfer().toNimrodUri(), cfg.getTransferUri());
 
-		Assert.assertEquals(api.getProperties(), setupConfig.properties());
+		Assertions.assertEquals(api.getProperties(), setupConfig.properties());
 
 		Map<String, String> types = api.getResourceTypeInfo().stream()
 				.collect(Collectors.toMap(rti -> rti.type, rti -> rti.className));
-		Assert.assertEquals(setupConfig.resourceTypes(), types);
+		Assertions.assertEquals(setupConfig.resourceTypes(), types);
 
 		Map<String, AgentDefinition> agentDefs = api.lookupAgents();
 		Map<String, Path> agentPlatforms = agentDefs.values().stream().collect(Collectors.toMap(
 				AgentDefinition::getPlatformString,
 				AgentDefinition::getPath
 		));
-		Assert.assertEquals(setupConfig.agents(), agentPlatforms);
+		Assertions.assertEquals(setupConfig.agents(), agentPlatforms);
 
 		Map<MachinePair, String> posixMappings = agentDefs.values().stream().flatMap(
 				def -> def.posixMappings().stream().map(mp -> Map.entry(mp, def.getPlatformString()))
 		).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-		Assert.assertEquals(setupConfig.agentMappings(), posixMappings);
+		Assertions.assertEquals(setupConfig.agentMappings(), posixMappings);
 	}
 
 	@Test

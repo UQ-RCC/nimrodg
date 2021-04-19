@@ -47,8 +47,8 @@ import org.antlr.v4.runtime.RecognitionException;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.Vocabulary;
 import org.antlr.v4.runtime.misc.ParseCancellationException;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.List;
@@ -103,24 +103,24 @@ public class ParseTests {
 		return parser.nimrodFile().accept(NimrodFileVisitor.INSTANCE);
 	}
 
-	@Test(expected = RunfileBuildException.DuplicateVariable.class)
-	public void runfileVariableDuplicateNameTest() throws IOException, RunfileBuildException {
-		getRunBuilder(getFile("onlyvars-dup-name.run")).build();
+	@Test
+	public void runfileVariableDuplicateNameTest() {
+		Assertions.assertThrows(RunfileBuildException.DuplicateVariable.class, () -> getRunBuilder(getFile("onlyvars-dup-name.run")).build());
 	}
 
-	@Test(expected = RunfileBuildException.DuplicateVariableIndex.class)
-	public void runfileVariableDuplicateIndexTest() throws IOException, RunfileBuildException {
-		getRunBuilder(getFile("onlyvars-dup-index.run")).build();
+	@Test
+	public void runfileVariableDuplicateIndexTest() {
+		Assertions.assertThrows(RunfileBuildException.DuplicateVariableIndex.class, () -> getRunBuilder(getFile("onlyvars-dup-index.run")).build());
 	}
 
-	@Test(expected = RunfileBuildException.NonConsecutiveVariableIndex.class)
-	public void runfileVariableNonConsecutiveIndexTest() throws IOException, RunfileBuildException {
-		getRunBuilder(getFile("onlyvars-bad-index.run")).build();
+	@Test
+	public void runfileVariableNonConsecutiveIndexTest() {
+		Assertions.assertThrows(RunfileBuildException.NonConsecutiveVariableIndex.class, () -> getRunBuilder(getFile("onlyvars-bad-index.run")).build());
 	}
 
-	@Test(expected = RunfileBuildException.FirstVariableIndexNonZero.class)
-	public void runfileVariableFistIndexNonzero() throws IOException, RunfileBuildException {
-		getRunBuilder(getFile("onlyvars-first-nonzero.run")).build();
+	@Test
+	public void runfileVariableFistIndexNonzero() {
+		Assertions.assertThrows(RunfileBuildException.FirstVariableIndexNonZero.class, () -> getRunBuilder(getFile("onlyvars-first-nonzero.run")).build());
 	}
 
 	@Test
@@ -128,29 +128,29 @@ public class ParseTests {
 		getRunBuilder(getFile("onlyvars-good.run")).build();
 	}
 
-	@Test(expected = RunfileBuildException.FirstJobIndexNonOne.class)
-	public void runfileJobFirstIndexNononeTest() throws IOException, RunfileBuildException {
-		getRunBuilder(getFile("onlyjobs-first-nonone.run")).build();
+	@Test
+	public void runfileJobFirstIndexNononeTest() {
+		Assertions.assertThrows(RunfileBuildException.FirstJobIndexNonOne.class, () -> getRunBuilder(getFile("onlyjobs-first-nonone.run")).build());
 	}
 
-	@Test(expected = RunfileBuildException.NonConsecutiveJobIndex.class)
-	public void runfileJobNonConsecutiveIndexTest() throws IOException, RunfileBuildException {
-		getRunBuilder(getFile("onlyjobs-nonconsec-index.run")).build();
+	@Test
+	public void runfileJobNonConsecutiveIndexTest() {
+		Assertions.assertThrows(RunfileBuildException.NonConsecutiveJobIndex.class, () -> getRunBuilder(getFile("onlyjobs-nonconsec-index.run")).build());
 	}
 
-	@Test(expected = RunfileBuildException.InvalidJobVariables.class)
-	public void runfileJobTooManyVariablesTest() throws IOException, RunfileBuildException {
-		getRunBuilder(getFile("onlyjobs-vars-toomany.run")).build();
+	@Test
+	public void runfileJobTooManyVariablesTest() {
+		Assertions.assertThrows(RunfileBuildException.InvalidJobVariables.class, () -> getRunBuilder(getFile("onlyjobs-vars-toomany.run")).build());
 	}
 
-	@Test(expected = RunfileBuildException.InvalidJobVariables.class)
-	public void runfileJobTooFewVariablesTest() throws IOException, RunfileBuildException {
-		getRunBuilder(getFile("onlyjobs-vars-toofew.run")).build();
+	@Test
+	public void runfileJobTooFewVariablesTest() {
+		Assertions.assertThrows(RunfileBuildException.InvalidJobVariables.class, () -> getRunBuilder(getFile("onlyjobs-vars-toofew.run")).build());
 	}
 
-	@Test(expected = RunfileBuildException.InvalidJobVariableIndex.class)
-	public void runfileJobInvalidVariableValueTest() throws IOException, RunfileBuildException {
-		getRunBuilder(getFile("onlyjobs-vars-badval.run")).build();
+	@Test
+	public void runfileJobInvalidVariableValueTest() {
+		Assertions.assertThrows(RunfileBuildException.InvalidJobVariableIndex.class, () -> getRunBuilder(getFile("onlyjobs-vars-badval.run")).build());
 	}
 
 	@Test
@@ -158,9 +158,9 @@ public class ParseTests {
 		getRunBuilder(getFile("onlyjobs-good.run")).build();
 	}
 
-	@Test(expected = RunfileBuildException.DuplicateTaskName.class)
-	public void runfileTaskDuplicateNameTest() throws IOException, RunfileBuildException {
-		getRunBuilder(getFile("onlytasks-dup-name.run")).build();
+	@Test
+	public void runfileTaskDuplicateNameTest() {
+		Assertions.assertThrows(RunfileBuildException.DuplicateTaskName.class, () -> getRunBuilder(getFile("onlytasks-dup-name.run")).build());
 	}
 
 	@Test
@@ -176,31 +176,31 @@ public class ParseTests {
 				+ "endtask\n";
 
 		BiFunction<CompiledCommand, String, Void> checkShexec = (cmd, arg1) -> {
-			Assert.assertEquals(cmd.type, Command.Type.Exec);
+			Assertions.assertEquals(cmd.type, Command.Type.Exec);
 
 			/* search_path should be false, and program should be null. */
 			CompiledExecCommand ccmd = (CompiledExecCommand)cmd;
-			Assert.assertFalse(ccmd.searchPath);
-			Assert.assertTrue(ccmd.program.isEmpty());
+			Assertions.assertFalse(ccmd.searchPath);
+			Assertions.assertTrue(ccmd.program.isEmpty());
 
 			List<CompiledArgument> args = ccmd.arguments;
-			Assert.assertEquals(1, args.size());
+			Assertions.assertEquals(1, args.size());
 
-			Assert.assertEquals(0, args.get(0).getSubstitutions().size());
+			Assertions.assertEquals(0, args.get(0).getSubstitutions().size());
 
-			Assert.assertEquals(arg1, args.get(0).getText());
+			Assertions.assertEquals(arg1, args.get(0).getText());
 			return null;
 		};
 
 		CompiledRun r = getRunBuilder(getString(s)).build();
 
-		Assert.assertEquals(1, r.numTasks);
+		Assertions.assertEquals(1, r.numTasks);
 
 		CompiledTask task = r.tasks.get(0);
-		Assert.assertEquals(Task.Name.Main, task.name);
+		Assertions.assertEquals(Task.Name.Main, task.name);
 
 		List<CompiledCommand> commands = task.commands;
-		Assert.assertEquals(4, commands.size());
+		Assertions.assertEquals(4, commands.size());
 
 		/* Quoted */
 		checkShexec.apply(commands.get(0), "/absolute/path/folder/");
@@ -237,10 +237,10 @@ public class ParseTests {
 
 		CompiledRun r = getRunBuilder(getString(s)).build();
 
-		Assert.assertEquals(1, r.numTasks);
+		Assertions.assertEquals(1, r.numTasks);
 
 		CompiledTask task = r.tasks.get(0);
-		Assert.assertEquals(Task.Name.Main, task.name);
+		Assertions.assertEquals(Task.Name.Main, task.name);
 
 		class CArg {
 
@@ -267,23 +267,23 @@ public class ParseTests {
 
 		List<CompiledCommand> commands = task.commands;
 
-		Assert.assertEquals(cargs.length, commands.size());
+		Assertions.assertEquals(cargs.length, commands.size());
 
 		for(int i = 0; i < commands.size(); ++i) {
 			CompiledCommand cmd = commands.get(i);
-			Assert.assertEquals(cmd.type, Command.Type.Exec);
+			Assertions.assertEquals(cmd.type, Command.Type.Exec);
 
 			CompiledExecCommand ccmd = (CompiledExecCommand)cmd;
-			Assert.assertFalse(ccmd.searchPath);
-			Assert.assertTrue(ccmd.program.isEmpty());
+			Assertions.assertFalse(ccmd.searchPath);
+			Assertions.assertTrue(ccmd.program.isEmpty());
 
 			List<CompiledArgument> args = ccmd.arguments;
-			Assert.assertEquals(1, args.size());
+			Assertions.assertEquals(1, args.size());
 
 			CompiledArgument arg = args.get(0);
-			Assert.assertEquals(cargs[i].text, arg.getText());
-			Assert.assertEquals(1, arg.getSubstitutions().size());
-			Assert.assertEquals(cargs[i].sub, arg.getSubstitutions().get(0));
+			Assertions.assertEquals(cargs[i].text, arg.getText());
+			Assertions.assertEquals(1, arg.getSubstitutions().size());
+			Assertions.assertEquals(cargs[i].sub, arg.getSubstitutions().get(0));
 		}
 	}
 
@@ -291,21 +291,21 @@ public class ParseTests {
 	public void runfileTaskGoodTest() throws IOException, RunfileBuildException {
 		CompiledRun r = getRunBuilder(getFile("onlytasks-good.run")).build();
 
-		Assert.assertEquals(1, r.numTasks);
+		Assertions.assertEquals(1, r.numTasks);
 
 		CompiledTask _task = r.tasks.get(0);
-		Assert.assertEquals(_task.name, Task.Name.Main);
+		Assertions.assertEquals(_task.name, Task.Name.Main);
 	}
 
 	private static void assertCopyCommand(CompiledCommand cmd, CopyCommand.Context srcCtx, String srcPath, CopyCommand.Context dstCtx, String dstPath) {
-		Assert.assertEquals(Command.Type.Copy, cmd.type);
+		Assertions.assertEquals(Command.Type.Copy, cmd.type);
 
 		CompiledCopyCommand ccmd = (CompiledCopyCommand)cmd;
 
-		Assert.assertEquals(srcCtx, ccmd.sourceContext);
-		Assert.assertEquals(srcPath, ccmd.sourcePath.getText());
-		Assert.assertEquals(dstCtx, ccmd.destContext);
-		Assert.assertEquals(dstPath, ccmd.destPath.getText());
+		Assertions.assertEquals(srcCtx, ccmd.sourceContext);
+		Assertions.assertEquals(srcPath, ccmd.sourcePath.getText());
+		Assertions.assertEquals(dstCtx, ccmd.destContext);
+		Assertions.assertEquals(dstPath, ccmd.destPath.getText());
 	}
 
 	@Test
@@ -321,13 +321,13 @@ public class ParseTests {
 
 		CompiledRun r = getRunBuilder(getString(s)).build();
 
-		Assert.assertEquals(1, r.numTasks);
+		Assertions.assertEquals(1, r.numTasks);
 
 		CompiledTask t = r.tasks.get(0);
-		Assert.assertEquals(Task.Name.Main, t.name);
+		Assertions.assertEquals(Task.Name.Main, t.name);
 
 		List<CompiledCommand> commands = t.commands;
-		Assert.assertEquals(3, commands.size());
+		Assertions.assertEquals(3, commands.size());
 
 		assertCopyCommand(commands.get(0), CopyCommand.Context.Root, "relfile-in.txt", CopyCommand.Context.Node, "relfile-out.txt");
 		assertCopyCommand(commands.get(1), CopyCommand.Context.Root, "/bin.sh", CopyCommand.Context.Node, "/bin/sh");
@@ -348,29 +348,29 @@ public class ParseTests {
 		RunBuilder rb = getRunBuilder(getString(s));
 		CompiledRun r = rb.build();
 
-		Assert.assertEquals(1, r.numTasks);
+		Assertions.assertEquals(1, r.numTasks);
 
 		CompiledTask t = r.tasks.get(0);
-		Assert.assertEquals(Task.Name.Main, t.name);
+		Assertions.assertEquals(Task.Name.Main, t.name);
 
 		List<CompiledCommand> commands = t.commands;
-		Assert.assertEquals(1, commands.size());
+		Assertions.assertEquals(1, commands.size());
 
 		CompiledExecCommand cmd = (CompiledExecCommand)commands.get(0);
 
-		Assert.assertEquals("python", cmd.program);
+		Assertions.assertEquals("python", cmd.program);
 
 		String[] expectedArgs = new String[]{
 			"",
 			"/path/to/script.py"
 		};
 
-		Assert.assertArrayEquals(expectedArgs, cmd.arguments.stream().map(CompiledArgument::getText).toArray());
+		Assertions.assertArrayEquals(expectedArgs, cmd.arguments.stream().map(CompiledArgument::getText).toArray());
 	}
 
-	@Test(expected = RunfileBuildException.InvalidVariableSubstitutionReference.class)
+	@Test
 	public void invalidVariableSubstitutionTest() throws IOException, RunfileBuildException {
-		getRunBuilder(getFile("invalid-variable-substitution.pln")).build();
+		Assertions.assertThrows(RunfileBuildException.InvalidVariableSubstitutionReference.class, () -> getRunBuilder(getFile("invalid-variable-substitution.pln")).build());
 	}
 
 	@Test
@@ -392,9 +392,9 @@ public class ParseTests {
 				+ "\tshexec \"/home/uqzvanim/nimbench.sh $op $file\"\n"
 				+ "endtask")).build();
 
-		Assert.assertEquals(1818, rr.numJobs);
-		Assert.assertEquals(3, rr.numVariables);
-		Assert.assertEquals(1, rr.numTasks);
+		Assertions.assertEquals(1818, rr.numJobs);
+		Assertions.assertEquals(3, rr.numVariables);
+		Assertions.assertEquals(1, rr.numTasks);
 
 	}
 
@@ -411,16 +411,16 @@ public class ParseTests {
 				+ "    onerror ignore\n"
 				+ "endtask")).build();
 
-		Assert.assertEquals(1, rr.numJobs);
+		Assertions.assertEquals(1, rr.numJobs);
 
 		CompiledJob j = rr.jobs.get(0);
-		Assert.assertEquals(1, j.index);
+		Assertions.assertEquals(1, j.index);
 
 		int[] indices = j.indices;
-		Assert.assertEquals(2, indices.length);
+		Assertions.assertEquals(2, indices.length);
 
-		Assert.assertEquals(0, indices[0]);
-		Assert.assertEquals(0, indices[1]);
+		Assertions.assertEquals(0, indices[0]);
+		Assertions.assertEquals(0, indices[1]);
 	}
 
 	@Test
@@ -435,19 +435,19 @@ public class ParseTests {
 				+ "    onerror ignore\n"
 				+ "endtask")).build();
 
-		Assert.assertEquals(0, rr.jobs.size());
+		Assertions.assertEquals(0, rr.jobs.size());
 	}
 
-	@Test(expected = ParseCancellationException.class)
-	public void parameterMissingTypeTest() throws RunfileBuildException {
-		CompiledRun rr = getRunBuilder(getString(
+	@Test
+	public void parameterMissingTypeTest() {
+		Assertions.assertThrows(ParseCancellationException.class, () -> getRunBuilder(getString(
 				"parameter x range from 0 to 100 step 1\n"
 				+ "task main\n"
 				+ "    onerror fail\n"
 				+ "    shexec \"uname -a > $jobindex.txt\"\n"
 				+ "    shexec \"echo variable x = $x >> $jobindex.txt\"\n"
 				+ "    copy node:$jobindex.txt root:$jobindex.txt\n"
-				+ "endtask")).build();
+				+ "endtask")).build());
 	}
 
 	@Test
@@ -528,14 +528,14 @@ public class ParseTests {
 				+ "endtask")).build();
 	}
 
-	@Test(expected = ParseCancellationException.class)
-	public void badTaskNameTest() throws IOException, RunfileBuildException {
-		getRunBuilder(getFile("test_badtask.pln")).build();
+	@Test
+	public void badTaskNameTest() {
+		Assertions.assertThrows(ParseCancellationException.class, () -> getRunBuilder(getFile("test_badtask.pln")).build());
 	}
 
-	@Test(expected = ParseCancellationException.class)
-	public void truncParamTest() throws IOException, RunfileBuildException {
-		getRunBuilder(getFile("test_truncparam.pln")).build();
+	@Test
+	public void truncParamTest() {
+		Assertions.assertThrows(ParseCancellationException.class, () -> getRunBuilder(getFile("test_truncparam.pln")).build());
 	}
 
 	/*

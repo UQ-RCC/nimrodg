@@ -23,8 +23,8 @@ import au.edu.uq.rcc.nimrodg.agent.messages.AgentInit;
 import au.edu.uq.rcc.nimrodg.master.sig.AuthHeader;
 import au.edu.uq.rcc.nimrodg.master.sig.SigUtils;
 import com.rabbitmq.client.AMQP;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
@@ -67,21 +67,21 @@ public class SigTests {
 	@Test
 	public void headerParseTest() {
 		AuthHeader hdr = AuthHeader.parse(HEADER_SHA256);
-		Assert.assertNotNull(hdr);
-		Assert.assertEquals("NIM1-HMAC-SHA256", hdr.algorithm);
-		Assert.assertEquals("00000000000000000000000000000000/20200519T035924Z/0/nimrod", hdr.credential);
-		Assert.assertEquals("00000000000000000000000000000000", hdr.accessKey);
-		Assert.assertEquals("20200519T035924Z", hdr.timestampString);
-		Assert.assertEquals(TIMESTAMP, hdr.timestamp);
-		Assert.assertEquals("nimrod", hdr.appid);
+		Assertions.assertNotNull(hdr);
+		Assertions.assertEquals("NIM1-HMAC-SHA256", hdr.algorithm);
+		Assertions.assertEquals("00000000000000000000000000000000/20200519T035924Z/0/nimrod", hdr.credential);
+		Assertions.assertEquals("00000000000000000000000000000000", hdr.accessKey);
+		Assertions.assertEquals("20200519T035924Z", hdr.timestampString);
+		Assertions.assertEquals(TIMESTAMP, hdr.timestamp);
+		Assertions.assertEquals("nimrod", hdr.appid);
 		/* Compare them as lists to check iteration order. AuthHeader should be using TreeSets. */
-		Assert.assertEquals(
+		Assertions.assertEquals(
 				List.of("app-id", "content-encoding", "content-type", "delivery-mode", "message-id", "timestamp", "type", "user-id"),
 				new ArrayList<>(hdr.signedProperties)
 		);
-		Assert.assertEquals(List.of("user-agent", "x-nimrodg-sent-at"), new ArrayList<>(hdr.signedHeaders));
-		Assert.assertEquals("ff261c65f718620d16dfecc2a5bf6d998e25951347bf845852599c7f5e7cadc3", hdr.signature);
-		Assert.assertEquals(HEADER_SHA256, hdr.header);
+		Assertions.assertEquals(List.of("user-agent", "x-nimrodg-sent-at"), new ArrayList<>(hdr.signedHeaders));
+		Assertions.assertEquals("ff261c65f718620d16dfecc2a5bf6d998e25951347bf845852599c7f5e7cadc3", hdr.signature);
+		Assertions.assertEquals(HEADER_SHA256, hdr.header);
 	}
 
 	@Test
@@ -89,12 +89,12 @@ public class SigTests {
 		AuthHeader hdr = AuthHeader.parse(HEADER_NULL);
 		AMQP.BasicProperties props = makeBasicProperties(APPID, HEADER_NULL);
 
-		Assert.assertNotNull(hdr);
+		Assertions.assertNotNull(hdr);
 		AMQP.BasicProperties newProps = SigUtils.buildBasicProperties(hdr, props);
 
 		AuthHeader newAuth = SigUtils.buildAuthHeader(hdr.algorithm, hdr.accessKey, SECRET_KEY, TIMESTAMP, NONCE, PAYLOAD.getBytes(StandardCharsets.UTF_8), newProps);
 
-		Assert.assertEquals(hdr, newAuth);
+		Assertions.assertEquals(hdr, newAuth);
 	}
 
 	@Test
@@ -102,12 +102,12 @@ public class SigTests {
 		AuthHeader hdr = AuthHeader.parse(HEADER_SHA224);
 		AMQP.BasicProperties props = makeBasicProperties(APPID, HEADER_SHA224);
 
-		Assert.assertNotNull(hdr);
+		Assertions.assertNotNull(hdr);
 		AMQP.BasicProperties newProps = SigUtils.buildBasicProperties(hdr, props);
 
 		AuthHeader newAuth = SigUtils.buildAuthHeader(hdr.algorithm, hdr.accessKey, SECRET_KEY, TIMESTAMP, NONCE, PAYLOAD.getBytes(StandardCharsets.UTF_8), newProps);
 
-		Assert.assertEquals(hdr, newAuth);
+		Assertions.assertEquals(hdr, newAuth);
 	}
 
 	@Test
@@ -115,12 +115,12 @@ public class SigTests {
 		AuthHeader hdr = AuthHeader.parse(HEADER_SHA256);
 		AMQP.BasicProperties props = makeBasicProperties(APPID, HEADER_SHA256);
 
-		Assert.assertNotNull(hdr);
+		Assertions.assertNotNull(hdr);
 		AMQP.BasicProperties newProps = SigUtils.buildBasicProperties(hdr, props);
 
 		AuthHeader newAuth = SigUtils.buildAuthHeader(hdr.algorithm, hdr.accessKey, SECRET_KEY, TIMESTAMP, NONCE, PAYLOAD.getBytes(StandardCharsets.UTF_8), newProps);
 
-		Assert.assertEquals(hdr, newAuth);
+		Assertions.assertEquals(hdr, newAuth);
 	}
 
 	@Test
@@ -128,12 +128,12 @@ public class SigTests {
 		AuthHeader hdr = AuthHeader.parse(HEADER_SHA384);
 		AMQP.BasicProperties props = makeBasicProperties(APPID, HEADER_SHA384);
 
-		Assert.assertNotNull(hdr);
+		Assertions.assertNotNull(hdr);
 		AMQP.BasicProperties newProps = SigUtils.buildBasicProperties(hdr, props);
 
 		AuthHeader newAuth = SigUtils.buildAuthHeader(hdr.algorithm, hdr.accessKey, SECRET_KEY, TIMESTAMP, NONCE, PAYLOAD.getBytes(StandardCharsets.UTF_8), newProps);
 
-		Assert.assertEquals(hdr, newAuth);
+		Assertions.assertEquals(hdr, newAuth);
 	}
 
 	@Test
@@ -141,12 +141,12 @@ public class SigTests {
 		AuthHeader hdr = AuthHeader.parse(HEADER_SHA512);
 		AMQP.BasicProperties props = makeBasicProperties(APPID, HEADER_SHA512);
 
-		Assert.assertNotNull(hdr);
+		Assertions.assertNotNull(hdr);
 		AMQP.BasicProperties newProps = SigUtils.buildBasicProperties(hdr, props);
 
 		AuthHeader newAuth = SigUtils.buildAuthHeader(hdr.algorithm, hdr.accessKey, SECRET_KEY, TIMESTAMP, NONCE, PAYLOAD.getBytes(StandardCharsets.UTF_8), newProps);
 
-		Assert.assertEquals(hdr, newAuth);
+		Assertions.assertEquals(hdr, newAuth);
 	}
 
 	@Test
@@ -154,31 +154,31 @@ public class SigTests {
 		AuthHeader hdr = AuthHeader.parse(HEADER_SHA256);
 		AMQP.BasicProperties props = makeBasicProperties(APPID, HEADER_SHA256);
 
-		Assert.assertNotNull(hdr);
+		Assertions.assertNotNull(hdr);
 
 		/* Valid message, exact times */
-		Assert.assertTrue(SigUtils.validateMessage(props, hdr, new AgentInit.Builder()
+		Assertions.assertTrue(SigUtils.validateMessage(props, hdr, new AgentInit.Builder()
 				.agentUuid(UUID.randomUUID())
 				.timestamp(hdr.timestamp)
 				.build(), SigUtils.DEFAULT_APPID
 		));
 
 		/* Valid message, with subsecond drift. */
-		Assert.assertTrue(SigUtils.validateMessage(props, hdr, new AgentInit.Builder()
+		Assertions.assertTrue(SigUtils.validateMessage(props, hdr, new AgentInit.Builder()
 				.agentUuid(UUID.randomUUID())
 				.timestamp(hdr.timestamp.plusMillis(500))
 				.build(), SigUtils.DEFAULT_APPID
 		));
 
 		/* Invalid message, timestamp out of range. */
-		Assert.assertFalse(SigUtils.validateMessage(props, hdr, new AgentInit.Builder()
+		Assertions.assertFalse(SigUtils.validateMessage(props, hdr, new AgentInit.Builder()
 				.agentUuid(UUID.randomUUID())
 				.timestamp(hdr.timestamp.plusSeconds(1))
 				.build(), SigUtils.DEFAULT_APPID
 		));
 
 		/* Invalid message, differing appid. */
-		Assert.assertFalse(SigUtils.validateMessage(props, hdr, new AgentInit.Builder()
+		Assertions.assertFalse(SigUtils.validateMessage(props, hdr, new AgentInit.Builder()
 				.agentUuid(UUID.randomUUID())
 				.timestamp(hdr.timestamp)
 				.build(), "badapp"

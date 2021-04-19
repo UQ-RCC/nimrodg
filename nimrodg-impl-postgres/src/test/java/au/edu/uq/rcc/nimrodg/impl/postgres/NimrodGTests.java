@@ -27,23 +27,19 @@ import java.nio.file.Path;
 import java.util.Map;
 
 import au.edu.uq.rcc.nimrodg.test.TestUtils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.io.TempDir;
 
 public class NimrodGTests extends APITests {
 
 	public NimrodAPI nimrod;
+
+	@TempDir
 	public Path root;
 
-	@Rule
-	public TemporaryFolder tmpDir = new TemporaryFolder();
-
-	@Before
+	@BeforeEach
 	public void setupDb() throws Exception {
-		root = tmpDir.getRoot().toPath();
-
 		TestInfo testInfo = TestInfo.getBestEffort();
 
 		UserConfig ucfg = new UserConfig() {
@@ -64,7 +60,7 @@ public class NimrodGTests extends APITests {
 		nimrod = TestUtils.resetAndCreateNimrod(new NimrodAPIFactoryImpl(), ucfg, APITests.getTestSetupConfig(root));
 	}
 
-	@After
+	@AfterEach
 	public void closeDb() throws Exception {
 		if(nimrod != null) {
 			nimrod.close();

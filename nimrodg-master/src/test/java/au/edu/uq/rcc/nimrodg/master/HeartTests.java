@@ -1,7 +1,7 @@
 package au.edu.uq.rcc.nimrodg.master;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 import java.util.Map;

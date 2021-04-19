@@ -59,9 +59,9 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import javax.json.JsonObject;
 import javax.json.JsonStructure;
@@ -158,7 +158,7 @@ public class ResourceTests {
 		return converter.getCertificate(holder);
 	}
 
-	@Before
+	@BeforeEach
 	public void before() throws IOException, OperatorCreationException, CertificateException {
 		memFs = Jimfs.newFileSystem(Configuration.unix().toBuilder().setAttributeViews("posix").build());
 		fsRoot = memFs.getPath("/");
@@ -171,7 +171,7 @@ public class ResourceTests {
 
 		List<String> errors = new ArrayList<>();
 		hostKey = ActuatorUtils.validateHostKey(TestUtils.RSA_PEM_KEY_PUBLIC, errors);
-		Assert.assertTrue(hostKey.isPresent());
+		Assertions.assertTrue(hostKey.isPresent());
 
 		keyPair = ActuatorUtils.readPEMKey(privKey);
 
@@ -278,24 +278,24 @@ public class ResourceTests {
 			};
 
 			JsonStructure js = ssh.parseCommandArguments(agentProvider, sshdArgs, System.out, System.err, new Path[0]);
-			Assert.assertNotNull(js);
+			Assertions.assertNotNull(js);
 
 			JsonObject cfg = js.asJsonObject();
 
-			Assert.assertEquals(Set.of("transport", "agent_platform", "forwarded_environment"), cfg.keySet());
-			Assert.assertEquals(DEFAULT_AGENT, cfg.getString("agent_platform"));
+			Assertions.assertEquals(Set.of("transport", "agent_platform", "forwarded_environment"), cfg.keySet());
+			Assertions.assertEquals(DEFAULT_AGENT, cfg.getString("agent_platform"));
 
 			List<String> errors = new ArrayList<>();
 			Optional<TransportFactory.Config> topt = ClientFactories.SSHD_FACTORY.validateConfiguration(cfg.getJsonObject("transport"), errors);
-			Assert.assertTrue(topt.isPresent());
+			Assertions.assertTrue(topt.isPresent());
 
 			TransportFactory.Config tcfg = topt.get();
-			Assert.assertTrue(tcfg.uri.isPresent());
-			Assert.assertEquals(uri, tcfg.uri.get());
-			Assert.assertArrayEquals(new PublicKey[]{hostKey.get()}, tcfg.hostKeys);
-			Assert.assertTrue(tcfg.privateKey.isPresent());
-			Assert.assertEquals(privKey, tcfg.privateKey.get());
-			Assert.assertFalse(tcfg.executablePath.isPresent());
+			Assertions.assertTrue(tcfg.uri.isPresent());
+			Assertions.assertEquals(uri, tcfg.uri.get());
+			Assertions.assertArrayEquals(new PublicKey[]{hostKey.get()}, tcfg.hostKeys);
+			Assertions.assertTrue(tcfg.privateKey.isPresent());
+			Assertions.assertEquals(privKey, tcfg.privateKey.get());
+			Assertions.assertFalse(tcfg.executablePath.isPresent());
 		}
 
 		{
@@ -311,25 +311,25 @@ public class ResourceTests {
 			};
 
 			JsonStructure js = ssh.parseCommandArguments(agentProvider, openSshArgs, System.out, System.err, new Path[0]);
-			Assert.assertNotNull(js);
+			Assertions.assertNotNull(js);
 
 			JsonObject cfg = js.asJsonObject();
 
-			Assert.assertEquals(Set.of("transport", "agent_platform", "forwarded_environment"), cfg.keySet());
-			Assert.assertEquals(DEFAULT_AGENT, cfg.getString("agent_platform"));
+			Assertions.assertEquals(Set.of("transport", "agent_platform", "forwarded_environment"), cfg.keySet());
+			Assertions.assertEquals(DEFAULT_AGENT, cfg.getString("agent_platform"));
 
 			List<String> errors = new ArrayList<>();
 			Optional<TransportFactory.Config> topt = ClientFactories.OPENSSH_FACTORY.validateConfiguration(cfg.getJsonObject("transport"), errors);
-			Assert.assertTrue(topt.isPresent());
+			Assertions.assertTrue(topt.isPresent());
 
 			TransportFactory.Config tcfg = topt.get();
-			Assert.assertTrue(tcfg.uri.isPresent());
-			Assert.assertEquals(uri, tcfg.uri.get());
-			Assert.assertArrayEquals(new PublicKey[0], tcfg.hostKeys);
-			Assert.assertTrue(tcfg.privateKey.isPresent());
-			Assert.assertEquals(privKey, tcfg.privateKey.get());
-			Assert.assertTrue(tcfg.executablePath.isPresent());
-			Assert.assertEquals(tcfg.executablePath.get(), Paths.get("/path/to/ssh"));
+			Assertions.assertTrue(tcfg.uri.isPresent());
+			Assertions.assertEquals(uri, tcfg.uri.get());
+			Assertions.assertArrayEquals(new PublicKey[0], tcfg.hostKeys);
+			Assertions.assertTrue(tcfg.privateKey.isPresent());
+			Assertions.assertEquals(privKey, tcfg.privateKey.get());
+			Assertions.assertTrue(tcfg.executablePath.isPresent());
+			Assertions.assertEquals(tcfg.executablePath.get(), Paths.get("/path/to/ssh"));
 		}
 
 	}
@@ -348,17 +348,17 @@ public class ResourceTests {
 				"--hostkey", "none"
 		}, System.out, System.err, new Path[0]);
 
-		Assert.assertNull(js);
+		Assertions.assertNull(js);
 	}
 
 	@Test
 	public void certificateTests() throws IOException, CertificateException {
 		Certificate[] emptyCerts = new Certificate[0];
-		Assert.assertArrayEquals(emptyCerts, ActuatorUtils.readX509Certificates((String)null));
-		Assert.assertArrayEquals(emptyCerts, ActuatorUtils.readX509Certificates(""));
+		Assertions.assertArrayEquals(emptyCerts, ActuatorUtils.readX509Certificates((String)null));
+		Assertions.assertArrayEquals(emptyCerts, ActuatorUtils.readX509Certificates(""));
 
 		Certificate[] cert = ActuatorUtils.readX509Certificates(x509Path);
-		Assert.assertArrayEquals(new Certificate[]{x509}, cert);
+		Assertions.assertArrayEquals(new Certificate[]{x509}, cert);
 	}
 
 	private class _TestOps implements Actuator.Operations {
@@ -421,10 +421,10 @@ public class ResourceTests {
 			}
 
 			for(int i = 0; i < lrs.length; ++i) {
-				Assert.assertNotNull(lrs[i].actuatorData);
-				Assert.assertTrue(lrs[i].actuatorData.containsKey("batch_id"));
-				Assert.assertTrue(lrs[i].actuatorData.containsKey("batch_size"));
-				Assert.assertTrue(lrs[i].actuatorData.containsKey("batch_index"));
+				Assertions.assertNotNull(lrs[i].actuatorData);
+				Assertions.assertTrue(lrs[i].actuatorData.containsKey("batch_id"));
+				Assertions.assertTrue(lrs[i].actuatorData.containsKey("batch_size"));
+				Assertions.assertTrue(lrs[i].actuatorData.containsKey("batch_index"));
 			}
 
 			Map<String, List<Actuator.LaunchResult>> l2rs = NimrodUtils.mapToParent(Arrays.stream(lrs),
@@ -432,11 +432,11 @@ public class ResourceTests {
 			);
 
 			int[] sizes = l2rs.values().stream().mapToInt(List::size).sorted().toArray();
-			Assert.assertArrayEquals(new int[]{1, 3, 3, 3}, sizes);
+			Assertions.assertArrayEquals(new int[]{1, 3, 3, 3}, sizes);
 
 			for(Map.Entry<String, List<Actuator.LaunchResult>> e : l2rs.entrySet()) {
 				for(Actuator.LaunchResult lr : e.getValue()) {
-					Assert.assertEquals(e.getValue().size(), lr.actuatorData.getInt("batch_size"));
+					Assertions.assertEquals(e.getValue().size(), lr.actuatorData.getInt("batch_size"));
 				}
 			}
 		}

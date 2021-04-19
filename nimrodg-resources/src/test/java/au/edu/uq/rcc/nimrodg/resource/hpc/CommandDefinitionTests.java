@@ -6,9 +6,9 @@ import au.edu.uq.rcc.nimrodg.shell.RemoteShell;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import com.hubspot.jinjava.Jinjava;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import javax.json.Json;
 import javax.json.JsonObject;
@@ -117,7 +117,7 @@ public class CommandDefinitionTests {
 
 	private Path fsRoot;
 
-	@Before
+	@BeforeEach
 	public void before() {
 		fsRoot = Jimfs.newFileSystem(Configuration.unix().toBuilder().setAttributeViews("posix").build()).getPath("/");
 	}
@@ -131,7 +131,7 @@ public class CommandDefinitionTests {
 			errors.forEach(System.err::println);
 		}
 
-		Assert.assertEquals(List.of(), errors);
+		Assertions.assertEquals(List.of(), errors);
 	}
 
 	@Test
@@ -153,7 +153,7 @@ public class CommandDefinitionTests {
 				)
 				.build();
 
-		Assert.assertEquals(expected, jp.parse(PAYLOAD_PBSPRO.toString(), JOB_IDS_PBSPRO));
+		Assertions.assertEquals(expected, jp.parse(PAYLOAD_PBSPRO.toString(), JOB_IDS_PBSPRO));
 	}
 
 	@Test
@@ -168,7 +168,7 @@ public class CommandDefinitionTests {
 				.add("dummy", Json.createObjectBuilder().add("jobid", "1.tinmgr2"))
 				.build();
 
-		Assert.assertEquals(expected, p.parse(payload, new String[]{"dummy"}));
+		Assertions.assertEquals(expected, p.parse(payload, new String[]{"dummy"}));
 	}
 
 	@Test
@@ -187,7 +187,7 @@ public class CommandDefinitionTests {
 						.add("state", "RUNNING"))
 				.build();
 
-		Assert.assertEquals(expected, p.parse(PAYLOAD_SLURM, JOB_IDS_SLURM));
+		Assertions.assertEquals(expected, p.parse(PAYLOAD_SLURM, JOB_IDS_SLURM));
 	}
 
 	@Test
@@ -236,13 +236,13 @@ public class CommandDefinitionTests {
 			));
 
 			SubmitCommand.Response qsubR = qsub.execute(sh, "/path/to/script.sh");
-			Assert.assertEquals(EXPECTED_RESPONSE_QSUB, qsubR);
+			Assertions.assertEquals(EXPECTED_RESPONSE_QSUB, qsubR);
 
 			QueryCommand.Response qstatR = qstat.execute(sh, JOB_IDS_PBSPRO);
-			Assert.assertEquals(EXPECTED_RESPONSE_QSTAT, qstatR);
+			Assertions.assertEquals(EXPECTED_RESPONSE_QSTAT, qstatR);
 
 			QueryCommand.Response squeueR = squeue.execute(sh, JOB_IDS_SLURM);
-			Assert.assertEquals(EXPECTED_RESPONSE_SQUEUE, squeueR);
+			Assertions.assertEquals(EXPECTED_RESPONSE_SQUEUE, squeueR);
 		}
 	}
 
@@ -254,7 +254,7 @@ public class CommandDefinitionTests {
 				.filter(l -> l.startsWith(marker))
 				.collect(Collectors.toSet());
 
-		Assert.assertEquals(expected, hash);
+		Assertions.assertEquals(expected, hash);
 	}
 
 	@Test

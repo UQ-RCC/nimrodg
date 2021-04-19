@@ -20,8 +20,8 @@
 package au.edu.uq.rcc.nimrodg.api.utils;
 
 import au.edu.uq.rcc.nimrodg.utils.NimrodUtils;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.List;
@@ -43,23 +43,23 @@ public class UtilsTests {
 		for(int i = 0; i < 10; ++i) {
 			String expected = TEST_STRINGS.get(rnd.nextInt(TEST_STRINGS.size()));
 			Optional<String> actual = NimrodUtils.selectRandomFromContainer(TEST_STRINGS, rnd2);
-			Assert.assertTrue(actual.isPresent());
-			Assert.assertEquals(expected, actual.get());
+			Assertions.assertTrue(actual.isPresent());
+			Assertions.assertEquals(expected, actual.get());
 		}
 
 		rnd.setSeed(0);
 		rnd2.setSeed(0);
 
-		Assert.assertFalse(NimrodUtils.selectRandomFromContainer(TEST_EMPTY_LIST).isPresent());
-		Assert.assertFalse(NimrodUtils.selectRandomFromContainer(TEST_EMPTY_LIST, rnd2).isPresent());
+		Assertions.assertFalse(NimrodUtils.selectRandomFromContainer(TEST_EMPTY_LIST).isPresent());
+		Assertions.assertFalse(NimrodUtils.selectRandomFromContainer(TEST_EMPTY_LIST, rnd2).isPresent());
 	}
 
 	@Test
 	public void coalesceTest() {
-		Assert.assertEquals("a", NimrodUtils.coalesce("a", null, null));
-		Assert.assertEquals("b", NimrodUtils.coalesce(null, "b", null));
-		Assert.assertEquals("c", NimrodUtils.coalesce(null, null, "c"));
-		Assert.assertNull(NimrodUtils.coalesce(null, null, null));
+		Assertions.assertEquals("a", NimrodUtils.coalesce("a", null, null));
+		Assertions.assertEquals("b", NimrodUtils.coalesce(null, "b", null));
+		Assertions.assertEquals("c", NimrodUtils.coalesce(null, null, "c"));
+		Assertions.assertNull(NimrodUtils.coalesce(null, null, null));
 	}
 
 	@Test
@@ -79,8 +79,8 @@ public class UtilsTests {
 			});
 		}
 
-		Assert.assertEquals(4, invokeCount.get());
-		Assert.assertEquals(Map.of(
+		Assertions.assertEquals(4, invokeCount.get());
+		Assertions.assertEquals(Map.of(
 				"a", "A", "b", "B", "c", "C",
 				"d", "D", "e", "E", "f", "F"
 		), map);
@@ -93,7 +93,7 @@ public class UtilsTests {
 				v -> v.toLowerCase(Locale.ENGLISH)
 		);
 
-		Assert.assertEquals(Map.of(
+		Assertions.assertEquals(Map.of(
 				"a", List.of("A"), "b", List.of("B"), "c", List.of("C"),
 				"d", List.of("D"), "e", List.of("E"), "f", List.of("F")
 		), m1);

@@ -20,8 +20,8 @@
 package au.edu.uq.rcc.nimrodg.api.utils;
 
 import au.edu.uq.rcc.nimrodg.api.setup.SchemaVersion;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class SetupTests {
 	@Test
@@ -33,21 +33,21 @@ public class SetupTests {
 		SchemaVersion v300 = SchemaVersion.of(3, 0, 0);
 		SchemaVersion v301 = SchemaVersion.of(3, 0, 1);
 
-		Assert.assertEquals(v100, v100_2);
-		Assert.assertTrue(v100.isCompatible(v110));
-		Assert.assertFalse(v110.isCompatible(v100));
-		Assert.assertEquals(v100.compareTo(v100_2), 0);
-		Assert.assertTrue(v100.compareTo(v110) < 0);
-		Assert.assertTrue(v110.compareTo(v100) > 0);
-		Assert.assertFalse(v100.isCompatible(v201));
-		Assert.assertFalse(v201.isCompatible(v100));
-		Assert.assertFalse(v201.isCompatible(v110));
-		Assert.assertTrue(v100.compareTo(v201) < 0);
-		Assert.assertTrue(v201.compareTo(v100) > 0);
+		Assertions.assertEquals(v100, v100_2);
+		Assertions.assertTrue(v100.isCompatible(v110));
+		Assertions.assertFalse(v110.isCompatible(v100));
+		Assertions.assertEquals(v100.compareTo(v100_2), 0);
+		Assertions.assertTrue(v100.compareTo(v110) < 0);
+		Assertions.assertTrue(v110.compareTo(v100) > 0);
+		Assertions.assertFalse(v100.isCompatible(v201));
+		Assertions.assertFalse(v201.isCompatible(v100));
+		Assertions.assertFalse(v201.isCompatible(v110));
+		Assertions.assertTrue(v100.compareTo(v201) < 0);
+		Assertions.assertTrue(v201.compareTo(v100) > 0);
 
-		Assert.assertTrue(v300.compareTo(v301) < 0);
-		Assert.assertFalse(v300.compareTo(v301) > 0);
-		Assert.assertTrue(v300.isCompatible(v301));
-		Assert.assertFalse(v301.isCompatible(v300));
+		Assertions.assertTrue(v300.compareTo(v301) < 0);
+		Assertions.assertFalse(v300.compareTo(v301) > 0);
+		Assertions.assertTrue(v300.isCompatible(v301));
+		Assertions.assertFalse(v301.isCompatible(v300));
 	}
 }

@@ -1,8 +1,8 @@
 package au.edu.uq.rcc.nimrodg.api.utils;
 
 import au.edu.uq.rcc.nimrodg.api.utils.run.suppliers.ValueSupplier;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -45,7 +45,7 @@ public class SupplierTests {
 	}
 
 	private void testSupplier(ValueSupplier s, List<String> expectedValues, boolean testDup) {
-		Assert.assertEquals(expectedValues.size(), s.getTotalCount());
+		Assertions.assertEquals(expectedValues.size(), s.getTotalCount());
 
 		ArrayList<String> valuesByGet = new ArrayList<>(expectedValues.size());
 		ArrayList<String> valuesByGetAt = new ArrayList<>(expectedValues.size());
@@ -64,11 +64,11 @@ public class SupplierTests {
 			valuesByGetAtAfterReset.add(s.getAt(i));
 		}
 
-		Assert.assertEquals(expectedValues, valuesByGet);
-		Assert.assertEquals(expectedValues, valuesByGetAt);
-		Assert.assertEquals(expectedValues, valuesByGetAfterReset);
-		Assert.assertEquals(expectedValues, valuesByGetAtAfterReset);
-		Assert.assertEquals(expectedValues, ValueSupplier.stream(s).collect(Collectors.toList()));
+		Assertions.assertEquals(expectedValues, valuesByGet);
+		Assertions.assertEquals(expectedValues, valuesByGetAt);
+		Assertions.assertEquals(expectedValues, valuesByGetAfterReset);
+		Assertions.assertEquals(expectedValues, valuesByGetAtAfterReset);
+		Assertions.assertEquals(expectedValues, ValueSupplier.stream(s).collect(Collectors.toList()));
 
 		if(testDup) {
 			testSupplier(s.duplicateFromStart(), expectedValues, false);
