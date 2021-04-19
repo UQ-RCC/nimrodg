@@ -50,6 +50,10 @@ public class PortalServerApplication {
 		ArgumentParser parser = ArgumentParsers.newArgumentParser("nimrod-portal-backend")
 				.defaultHelp(true);
 
+		if(args.length == 0) {
+			args = new String[] { "run" };
+		}
+
 		Subparsers aa = parser.addSubparsers().dest("operation");
 
 		Subparser db = aa.addParser("db")
