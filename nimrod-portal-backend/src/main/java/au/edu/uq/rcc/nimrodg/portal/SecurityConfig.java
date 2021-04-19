@@ -29,8 +29,6 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
@@ -40,34 +38,14 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
-import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 
 @Configuration
 public class SecurityConfig extends WebSecurityConfigurerAdapter  {
 	@Override
 	protected void configure(HttpSecurity http) throws Exception {
-
-		JwtAuthenticationConverter jc = new JwtAuthenticationConverter();
-		jc.setJwtGrantedAuthoritiesConverter(jwt -> {
-			JwtGrantedAuthoritiesConverter cvt = new JwtGrantedAuthoritiesConverter();
-			ArrayList<GrantedAuthority> authorities = new ArrayList<>(cvt.convert(jwt));
-
-			Map<String, Object> realmAccess = jwt.getClaim("realm_access");
-			Object _roles = realmAccess.get("roles");
-			if(_roles != null) {
-				((Collection<?>)_roles).stream()
-						.map(s -> new SimpleGrantedAuthority(s.toString().toUpperCase()))
-						.forEach(authorities::add);
-			}
-			return authorities;
-		});
-
 		http.csrf().ignoringAntMatchers("/api/compile");
 
 		http.authorizeRequests()
@@ -77,7 +55,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter  {
 				.and()
 				.oauth2ResourceServer()
 				.jwt()
-				.jwtAuthenticationConverter(jc);
+				.jwtAuthenticationConverter(PortalJwtAuthenticationConverter.INSTANCE);
 	}
 
 	/* All of this is edited from OAuth2ResourceServerJwtConfiguration */
