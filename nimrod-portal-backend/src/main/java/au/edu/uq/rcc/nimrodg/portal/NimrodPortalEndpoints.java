@@ -736,6 +736,7 @@ public class NimrodPortalEndpoints {
 
 	private UserState getUserState(JwtAuthenticationToken jwt, boolean create) throws ResponseStatusException {
 		if(jwt == null) {
+			LOGGER.warn("getUserState() called with NULL token.");
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN);
 		}
 
