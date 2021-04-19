@@ -805,8 +805,6 @@ public class NimrodPortalEndpoints {
 		/* NB: Can't use try-with-resources here, as we need the connection to live.  */
 		Connection c = dataSource.getConnection();
 		try {
-			c.setAutoCommit(false);
-
 			/* ...Also can't use prepareStatement() with SET. The username should always be safe regardless. */
 			try(Statement stmt = c.createStatement()) {
 				stmt.executeUpdate("SET search_path = " + userState.username);
@@ -851,9 +849,6 @@ public class NimrodPortalEndpoints {
 					}
 				}
 			}
-
-			c.commit();
-			c.setAutoCommit(true);
 			return nimrod;
 		} catch(RuntimeException|SQLException e) {
 			try {
