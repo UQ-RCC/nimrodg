@@ -32,7 +32,6 @@ import au.edu.uq.rcc.nimrodg.api.utils.run.CompiledRun;
 import au.edu.uq.rcc.nimrodg.api.utils.run.JsonUtils;
 import au.edu.uq.rcc.nimrodg.api.utils.run.RunBuilder;
 import au.edu.uq.rcc.nimrodg.api.utils.run.RunfileBuildException;
-import au.edu.uq.rcc.nimrodg.impl.base.db.DBUtils;
 import au.edu.uq.rcc.nimrodg.impl.base.db.MigrationPlan;
 import au.edu.uq.rcc.nimrodg.impl.postgres.NimrodAPIFactoryImpl;
 import au.edu.uq.rcc.nimrodg.parsing.ANTLR4ParseAPIImpl;
