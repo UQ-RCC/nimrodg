@@ -84,6 +84,8 @@ spring:
           client-secret: 00000000-0000-0000-0000-000000000000
           audience-id: audience-id
 management:
+  server:
+    port: 9001
   endpoint:
     health:
       show-details: always
