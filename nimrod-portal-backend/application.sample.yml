@@ -3,6 +3,13 @@ server:
   servlet:
     contextPath: /nimrod
 
+cors:
+  allowed-origin-patterns:
+    - '*'
+    # - 'nimrod.example.com'
+    # - '*.example.com'
+  max-age: 3600
+
 nimrod:
   rabbitmq:
     user: nimrod-portal
@@ -79,5 +86,6 @@ spring:
 management:
   endpoint:
     health:
+      show-details: always
       probes:
         enabled: true
