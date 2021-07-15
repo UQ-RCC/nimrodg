@@ -148,6 +148,9 @@ public class NimrodPortalEndpoints {
 	private ResourceClient resource;
 
 	@Autowired
+	private Submitter submitter;
+
+	@Autowired
 	private ObjectMapper objectMapper;
 
 	private Map<String, String> remoteVars;
@@ -448,10 +451,7 @@ public class NimrodPortalEndpoints {
 		}
 
 		try {
-			resource.executeJob("startexperiment", Map.of(
-					"exp_name", expName,
-					"account", account
-			));
+			submitter.submitNimrod(expName, account);
 		} catch(HttpStatusCodeException e) {
 			/* If we 401, pass that back to the user so they can refresh the token. */
 			if(e.getStatusCode() == org.springframework.http.HttpStatus.FORBIDDEN) {
@@ -927,6 +927,12 @@ public class NimrodPortalEndpoints {
 		RestTemplate rest = new RestTemplate(new HttpComponentsClientHttpRequestFactory(b.build()));
 
 		return new ResourceClient(rest, api);
+	}
+
+	@Bean
+	@RequestScope
+	public static Submitter createSubmitter(@Autowired ResourceClient rc) {
+		return new HPCRSSubmitter(rc);
 	}
 
 	@Bean
