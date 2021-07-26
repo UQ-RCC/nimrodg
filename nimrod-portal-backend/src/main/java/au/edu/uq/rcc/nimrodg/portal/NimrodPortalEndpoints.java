@@ -835,6 +835,7 @@ public class NimrodPortalEndpoints {
 
 			/* NimrodAPI now owns the Connection. */
 			NimrodAPI nimrod = fact.createNimrod(c);
+			c.setAutoCommit(false);
 			/* NB: This is idempotent. Will also correct anything that's been messed up. */
 			LOGGER.trace("Configuring Nimrod...");
 			NimrodUtils.setupApi(nimrod, cfg);
@@ -849,6 +850,9 @@ public class NimrodPortalEndpoints {
 					}
 				}
 			}
+
+			c.commit();
+			c.setAutoCommit(true);
 			return nimrod;
 		} catch(RuntimeException|SQLException e) {
 			try {
