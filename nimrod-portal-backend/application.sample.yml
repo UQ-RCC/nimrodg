@@ -5,9 +5,8 @@ server:
 
 cors:
   allowed-origin-patterns:
-    - '*'
-    # - 'nimrod.example.com'
-    # - '*.example.com'
+    - 'https://nimrod.example.com'
+    - 'https://*.example.com'
   max-age: 3600
 
 nimrod:
