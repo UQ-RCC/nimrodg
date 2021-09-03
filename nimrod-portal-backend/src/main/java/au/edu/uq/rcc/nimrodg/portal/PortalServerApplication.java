@@ -63,6 +63,21 @@ public class PortalServerApplication {
 		dbop.addParser("init")
 				.help("Initialise database");
 
+		{
+			/* So I don't have to set up rabbitmqctl in a different container. */
+			Subparser rmq = aa.addParser("rmq")
+					.help("RabbitMQ commands");
+
+			Subparsers rmqop = rmq.addSubparsers().dest("rmqop");
+			Subparser sp = rmqop.addParser("init")
+					.help("Initialise user");
+
+			sp.addArgument("userfile")
+					.help("File containing an admin username");
+			sp.addArgument("passfile")
+					.help("File containing an admin password");
+		}
+
 		aa.addParser("run")
 				.help("Run the application server");
 
@@ -91,6 +106,8 @@ public class PortalServerApplication {
 
 		if("db".equals(op)) {
 			return DbCli.withEnvironment(env).run(ns, System.out, System.err);
+		} else if("rmq".equals(op)) {
+			return RmqCli.withEnvironment(env).run(ns, System.out, System.err);
 		} else if("run".equals(op)) {
 			SpringApplication sapp = new SpringApplication(PortalServerApplication.class);
 			sapp.setEnvironment(env);
