@@ -51,13 +51,17 @@ public class RabbitManagementClient {
 	}
 
 	public ResponseEntity<Void> addUser(String username, String password) {
+		return addUser(username, password, new String[0]);
+	}
+
+	public ResponseEntity<Void> addUser(String username, String password, String... tags) {
 		HttpHeaders headers = new HttpHeaders();
 		headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
 		headers.setBasicAuth(managementUser, managementPassword, StandardCharsets.UTF_8);
 
 		String payload = objectMapper.createObjectNode()
 				.put("password", password)
-				.put("tags", "")
+				.put("tags", String.join(",", tags))
 				.toString();
 
 		URI uri = UriComponentsBuilder.fromUri(managementApi)
